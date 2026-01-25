@@ -69,77 +69,26 @@ export function parseInputSpecifier(spec: string): ParsedInputSpecifier {
 
 /**
  * Parse a deferred output specifier string into a structured object.
+ * Note: Output specifiers no longer contain inline arguments.
+ * Use parseOutputField() for field specifiers that may have arguments.
  *
  * @example
  * parseOutputSpecifier("o|users|![]!")
  * // { kind: "object", name: "users", modifier: "![]!", arguments: {} }
- *
- * parseOutputSpecifier("s|Int|!|columns:e|select_column|![]?")
- * // { kind: "scalar", name: "Int", modifier: "!", arguments: { columns: "e|select_column|![]?" } }
  */
 export function parseOutputSpecifier(spec: string): ParsedOutputSpecifier {
   const parts = spec.split("|");
 
   const kindChar = parts[0]!;
   const name = parts[1]!;
+  const modifier = parts[2]!;
 
   const kind = OUTPUT_KIND_MAP[kindChar];
   if (!kind) {
     throw new Error(`Invalid output specifier kind: ${kindChar}`);
   }
 
-  // Find where the modifier ends and arguments begin
-  // Modifier is at index 2, arguments start at index 3
-  const modifier = parts[2]!;
-  const arguments_: Record<string, string> = {};
-
-  // Parse arguments if present (format: "argName:k|Type|Mod,argName2:k|Type|Mod")
-  if (parts.length > 3) {
-    const argsStr = parts.slice(3).join("|");
-    const argPairs = splitArguments(argsStr);
-
-    for (const argPair of argPairs) {
-      const colonIdx = argPair.indexOf(":");
-      if (colonIdx > 0) {
-        const argName = argPair.slice(0, colonIdx);
-        const argSpec = argPair.slice(colonIdx + 1);
-        // Store the deferred string, don't parse
-        arguments_[argName] = argSpec;
-      }
-    }
-  }
-
-  return { kind, name, modifier, arguments: arguments_ };
-}
-
-/**
- * Split comma-separated arguments while respecting nested specifiers.
- * Arguments are separated by commas, but each argument contains pipes.
- */
-function splitArguments(argsStr: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let pipeCount = 0;
-
-  for (const char of argsStr) {
-    if (char === "|") {
-      pipeCount++;
-      current += char;
-    } else if (char === "," && pipeCount >= 2) {
-      // At least 2 pipes means we've seen a complete specifier
-      result.push(current);
-      current = "";
-      pipeCount = 0;
-    } else {
-      current += char;
-    }
-  }
-
-  if (current) {
-    result.push(current);
-  }
-
-  return result;
+  return { kind, name, modifier, arguments: {} };
 }
 
 // ============================================================
@@ -158,28 +107,24 @@ export function isFieldWithArgs(field: DeferredOutputField): field is DeferredOu
 }
 
 /**
- * Parse a field specifier (either format) into a structured object.
- * Handles both legacy inline format and new object format.
+ * Parse a field specifier into a structured object.
+ * Handles both string format (no arguments) and object format (with arguments).
  *
  * @example
- * // Legacy inline format
- * parseOutputField("o|User|!|id:s|ID|!")
- * // { kind: "object", name: "User", modifier: "!", arguments: { id: "s|ID|!" } }
- *
- * // New object format
+ * // Object format (with arguments)
  * parseOutputField({ spec: "o|User|!", arguments: { id: "s|ID|!" } })
  * // { kind: "object", name: "User", modifier: "!", arguments: { id: "s|ID|!" } }
  *
- * // Simple string (no arguments)
+ * // String format (no arguments)
  * parseOutputField("s|String|!")
  * // { kind: "scalar", name: "String", modifier: "!", arguments: {} }
  */
 export function parseOutputField(field: DeferredOutputField): ParsedOutputSpecifier {
   if (isFieldWithArgs(field)) {
-    // New object format - arguments already extracted
+    // Object format - arguments in separate property
     const spec = parseOutputSpecifier(field.spec);
     return { ...spec, arguments: field.arguments };
   }
-  // Legacy string format - parse inline arguments
+  // String format - no arguments
   return parseOutputSpecifier(field);
 }

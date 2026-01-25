@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { CanonicalId } from "@soda-gql/common";
-import type { AnyFieldSelection, AnyFields, AnyFragment, AnyOperation, DeferredOutputSpecifier, VariableDefinitions } from "@soda-gql/core";
+import type {
+  AnyFieldSelection,
+  AnyFields,
+  AnyFragment,
+  AnyOperation,
+  DeferredOutputSpecifier,
+  VariableDefinitions,
+} from "@soda-gql/core";
 import { type DocumentNode, Kind, type OperationTypeNode, type VariableDefinitionNode } from "graphql";
 import type { IntermediateArtifactElement } from "../intermediate-module";
 import { extractFieldSelections } from "./extractor";
@@ -79,11 +86,11 @@ const createMockField = (
   modifier: "!" | "?" | "![]!" | "![]?" | "?[]!" | "?[]?",
 ): AnyFieldSelection => {
   const kindChar = kind === "scalar" ? "s" : kind === "enum" ? "e" : kind === "object" ? "o" : "u";
-  const type: DeferredOutputSpecifier = `${kindChar}|${name}|${modifier}`;
+  const spec: DeferredOutputSpecifier = `${kindChar}|${name}|${modifier}`;
   return {
     parent,
     field,
-    type,
+    type: { spec, arguments: {} },
     args: {},
     directives: [],
     object: null,

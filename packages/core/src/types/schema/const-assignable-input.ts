@@ -45,15 +45,13 @@ export type ConstAssignableInput<TSchema extends AnyGraphqlSchema, TSpecifiers e
  * Works with VariableDefinitions (VarSpecifier objects) instead of deferred strings.
  */
 export type ConstAssignableInputFromVarDefs<TSchema extends AnyGraphqlSchema, TVarDefs extends VariableDefinitions> = {
-  readonly [K in keyof TVarDefs as IsOptionalVarSpec<TVarDefs[K]> extends true ? K : never]+?: ConstAssignableInputValueFromVarSpec<
-    TSchema,
-    TVarDefs[K]
-  >;
+  readonly [K in keyof TVarDefs as IsOptionalVarSpec<TVarDefs[K]> extends true
+    ? K
+    : never]+?: ConstAssignableInputValueFromVarSpec<TSchema, TVarDefs[K]>;
 } & {
-  readonly [K in keyof TVarDefs as IsOptionalVarSpec<TVarDefs[K]> extends false ? K : never]-?: ConstAssignableInputValueFromVarSpec<
-    TSchema,
-    TVarDefs[K]
-  >;
+  readonly [K in keyof TVarDefs as IsOptionalVarSpec<TVarDefs[K]> extends false
+    ? K
+    : never]-?: ConstAssignableInputValueFromVarSpec<TSchema, TVarDefs[K]>;
 };
 
 export type ConstAssignableInputValue<

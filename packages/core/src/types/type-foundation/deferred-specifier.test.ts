@@ -94,7 +94,6 @@ describe("ParseDeferredOutputSpec", () => {
       readonly kind: "object";
       readonly name: "users";
       readonly modifier: "![]!";
-      readonly arguments: {};
     };
 
     type _Test = Expect<Equal<Result, Expected>>;
@@ -107,38 +106,33 @@ describe("ParseDeferredOutputSpec", () => {
       readonly kind: "union";
       readonly name: "SearchResult";
       readonly modifier: "?";
-      readonly arguments: {};
     };
 
     type _Test = Expect<Equal<Result, Expected>>;
     expect(true).toBe(true);
   });
 
-  it("parses specifier with single argument", () => {
-    type Result = ParseDeferredOutputSpec<"s|jsonb|?|path:s|String|?">;
+  it("parses scalar specifier", () => {
+    type Result = ParseDeferredOutputSpec<"s|String|!">;
+    type Expected = {
+      readonly kind: "scalar";
+      readonly name: "String";
+      readonly modifier: "!";
+    };
 
-    // Note: Argument parsing has limitations in TypeScript template literal types
-    // The basic structure (kind, name, modifier) is correctly parsed
-    type _TestKind = Expect<Equal<Result["kind"], "scalar">>;
-    type _TestName = Expect<Equal<Result["name"], "jsonb">>;
-    type _TestMod = Expect<Equal<Result["modifier"], "?">>;
-
-    // Verify arguments object exists (may not fully parse complex nested args)
-    type HasArgs = Result["arguments"] extends object ? true : false;
-    type _TestHasArgs = Expect<Equal<HasArgs, true>>;
-
+    type _Test = Expect<Equal<Result, Expected>>;
     expect(true).toBe(true);
   });
 
-  it("parses specifier with arguments (basic verification)", () => {
-    // Note: Complex multi-argument parsing has limitations due to TypeScript
-    // template literal type inference. The basic specifier parsing works correctly.
-    type Result = ParseDeferredOutputSpec<"s|Int|!|columns:e|select_column|![]?">;
+  it("parses enum specifier", () => {
+    type Result = ParseDeferredOutputSpec<"e|Status|?">;
+    type Expected = {
+      readonly kind: "enum";
+      readonly name: "Status";
+      readonly modifier: "?";
+    };
 
-    type _TestKind = Expect<Equal<Result["kind"], "scalar">>;
-    type _TestName = Expect<Equal<Result["name"], "Int">>;
-    type _TestMod = Expect<Equal<Result["modifier"], "!">>;
-
+    type _Test = Expect<Equal<Result, Expected>>;
     expect(true).toBe(true);
   });
 });
@@ -189,11 +183,11 @@ describe("Resolution utilities", () => {
   it("GetSpecModifier extracts modifier from string", () => {
     type Result1 = GetSpecModifier<"s|uuid|!">;
     type Result2 = GetSpecModifier<"o|users|![]!">;
-    type Result3 = GetSpecModifier<"s|Int|!|arg:s|X|?">;
+    type Result3 = GetSpecModifier<"e|Status|?">;
 
     type _Test1 = Expect<Equal<Result1, "!">>;
     type _Test2 = Expect<Equal<Result2, "![]!">>;
-    type _Test3 = Expect<Equal<Result3, "!">>;
+    type _Test3 = Expect<Equal<Result3, "?">>;
     expect(true).toBe(true);
   });
 
@@ -210,18 +204,11 @@ describe("Resolution utilities", () => {
   it("GetSpecDefaultValue returns null for string without |D suffix", () => {
     type Result1 = GetSpecDefaultValue<"s|uuid|!">;
     type Result2 = GetSpecDefaultValue<"e|order_by|?">;
-    type Result3 = GetSpecDefaultValue<"s|Int|!|arg:s|X|?">; // has args but no |D
+    type Result3 = GetSpecDefaultValue<"i|Filter|?">;
 
     type _Test1 = Expect<Equal<Result1, null>>;
     type _Test2 = Expect<Equal<Result2, null>>;
     type _Test3 = Expect<Equal<Result3, null>>;
-    expect(true).toBe(true);
-  });
-
-  it("GetSpecDefaultValue with args but no |D returns null", () => {
-    // Arguments don't affect default value detection
-    type Result = GetSpecDefaultValue<"s|Int|!|arg:s|X|?">;
-    type _Test = Expect<Equal<Result, null>>;
     expect(true).toBe(true);
   });
 

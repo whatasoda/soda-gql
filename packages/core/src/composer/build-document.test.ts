@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Kind, print } from "graphql";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { InputTypeSpecifiers, TypeModifier } from "../types/type-foundation";
+import type { TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier, type EnumLookup } from "./build-document";
@@ -902,14 +902,14 @@ describe("Enum value handling", () => {
         Query: {
           name: "Query",
           fields: {
-            user: "o|User|?|status:e|Status|!",
+            user: { spec: "o|User|?", arguments: { status: "e|Status|!" } },
           },
         },
         User: {
           name: "User",
           fields: {
-            id: "s|ID|!",
-            name: "s|String|?",
+            id: { spec: "s|ID|!", arguments: {} },
+            name: { spec: "s|String|?", arguments: {} },
           },
         },
       },
@@ -920,14 +920,14 @@ describe("Enum value handling", () => {
         user: {
           parent: "Query",
           field: "user",
-          type: "o|User|?|status:e|Status|!",
+          type: { spec: "o|User|?", arguments: { status: "e|Status|!" } },
           args: { status: "ACTIVE" },
           directives: [],
           object: {
             id: {
               parent: "User",
               field: "id",
-              type: "s|ID|!",
+              type: { spec: "s|ID|!", arguments: {} },
               args: {},
               directives: [],
               object: null,

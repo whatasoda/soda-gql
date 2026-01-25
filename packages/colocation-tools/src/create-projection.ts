@@ -1,4 +1,4 @@
-import type { AnyFields, Fragment, GqlElementAttachment } from "@soda-gql/core";
+import type { AnyFieldsExtended, Fragment, GqlElementAttachment } from "@soda-gql/core";
 import { Projection } from "./projection";
 import type { SlicedExecutionResult } from "./sliced-execution-result";
 import type { AvailableFieldPathOf } from "./types/field-path";
@@ -15,7 +15,7 @@ type FragmentFields<TFragment extends AnyFragment> = ReturnType<TFragment["sprea
  * Options for creating a projection from a Fragment.
  */
 export type CreateProjectionOptions<
-  TFields extends AnyFields,
+  TFields extends AnyFieldsExtended,
   TOutput extends object,
   TPaths extends Tuple<AvailableFieldPathOf<TFields>>,
   TProjected,

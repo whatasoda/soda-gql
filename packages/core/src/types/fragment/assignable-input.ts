@@ -4,9 +4,7 @@ import type {
   AnyVarRef,
   ConstValue,
   DeferredInputSpecifier,
-  DeferredOutputSpecifier,
   GetAssignableType,
-  GetSpecArguments,
   GetSpecDefaultValue,
   GetSpecModifier,
   InputTypeSpecifiers,
@@ -105,4 +103,4 @@ export type AssignableInputByFieldName<
   TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"],
   TFieldName extends keyof TSchema["object"][TTypeName]["fields"],
-> = AssignableInput<TSchema, GetSpecArguments<TSchema["object"][TTypeName]["fields"][TFieldName] & string>>;
+> = AssignableInput<TSchema, TSchema["object"][TTypeName]["fields"][TFieldName]["arguments"]>;

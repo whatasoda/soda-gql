@@ -27,7 +27,13 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
 import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
-import { calculateFieldsType, generateInputObjectType, generateInputType, generateInputTypeFromSpecifiers, generateInputTypeFromVarDefs, parseInputSpecifier } from "@soda-gql/core";
+import {
+  calculateFieldsType,
+  generateInputObjectType,
+  generateInputType,
+  generateInputTypeFromVarDefs,
+  parseInputSpecifier,
+} from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import type { TypegenError } from "./errors";
@@ -263,7 +269,7 @@ const collectUsedInputObjects = (
  * Collect all input object types used in InputTypeSpecifiers.
  * Recursively collects nested input objects from the schema.
  */
-const collectUsedInputObjectsFromSpecifiers = (schema: AnyGraphqlSchema, specifiers: InputTypeSpecifiers): Set<string> => {
+const _collectUsedInputObjectsFromSpecifiers = (schema: AnyGraphqlSchema, specifiers: InputTypeSpecifiers): Set<string> => {
   const directInputs = new Set<string>();
   for (const specStr of Object.values(specifiers)) {
     const parsed = parseInputSpecifier(specStr);

@@ -87,9 +87,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
       const directives = extras?.directives ?? [];
 
       if (parsedType.kind === "object") {
-        const factoryReturn = (<TNested extends AnyNestedObject>(
-          nest: NestedObjectFieldsBuilder<TSchema, string, TNested>,
-        ) => {
+        const factoryReturn = (<TNested extends AnyNestedObject>(nest: NestedObjectFieldsBuilder<TSchema, string, TNested>) => {
           // Build new path for this field
           const currentPath = getCurrentFieldPath();
           const newPath = appendToPath(currentPath, {
@@ -104,7 +102,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           return wrap({
             parent: typeName,
             field: fieldName,
-            type: typeSpecifier as DeferredOutputSpecifier,
+            type: typeSpecifier,
             args: fieldArgs ?? {},
             directives,
             object: nestedFields,
@@ -143,7 +141,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           return wrap({
             parent: typeName,
             field: fieldName,
-            type: typeSpecifier as DeferredOutputSpecifier,
+            type: typeSpecifier,
             args: fieldArgs ?? {},
             directives,
             object: null,
@@ -158,7 +156,7 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
         const factoryReturn = wrap({
           parent: typeName,
           field: fieldName,
-          type: typeSpecifier as DeferredOutputSpecifier,
+          type: typeSpecifier,
           args: fieldArgs ?? {},
           directives,
           object: null,

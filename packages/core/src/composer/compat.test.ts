@@ -44,7 +44,13 @@ describe("createCompatComposer", () => {
 
     it("stores variables when provided", () => {
       const queryCompat = createCompatComposer<Schema, "query">(schema, "query");
-      const mockVarDef = { kind: "scalar" as const, name: "ID" as const, modifier: "!" as const, defaultValue: null, directives: {} };
+      const mockVarDef = {
+        kind: "scalar" as const,
+        name: "ID" as const,
+        modifier: "!" as const,
+        defaultValue: null,
+        directives: {},
+      };
 
       const compat = queryCompat({
         name: "GetUser",

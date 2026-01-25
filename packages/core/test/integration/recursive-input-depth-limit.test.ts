@@ -244,8 +244,10 @@ describe("Recursive input type depth limit", () => {
     type SchemaWithOverrides1 = ReturnType<typeof createSchemaWithDepthOverrides<{ user_bool_exp: 1 }>>;
     type SchemaNoOverrides = ReturnType<typeof createSchemaWithDepthOverrides<Record<string, never>>>;
 
-    type GetInputSpecifierForSchema<TSchema extends AnyGraphqlSchema, TInputName extends keyof TSchema["input"]> =
-      `i|${TInputName & string}|!`;
+    type GetInputSpecifierForSchema<
+      TSchema extends AnyGraphqlSchema,
+      TInputName extends keyof TSchema["input"],
+    > = `i|${TInputName & string}|!`;
 
     it("should use overridden depth for specific input types", () => {
       // user_bool_exp has depth override of 5

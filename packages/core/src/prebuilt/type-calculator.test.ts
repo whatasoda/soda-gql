@@ -124,7 +124,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "name",
-      type: "s|String|!",
+      type: { spec: "s|String|!", arguments: {} },
       args: {},
       directives: [],
       object: null,
@@ -138,7 +138,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "email",
-      type: "s|String|?",
+      type: { spec: "s|String|?", arguments: {} },
       args: {},
       directives: [],
       object: null,
@@ -152,7 +152,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "status",
-      type: "e|Status|!",
+      type: { spec: "e|Status|!", arguments: {} },
       args: {},
       directives: [],
       object: null,
@@ -166,7 +166,7 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "User",
       field: "__typename",
-      type: "s|User|!",
+      type: { spec: "s|User|!", arguments: {} },
       args: {},
       directives: [],
       object: null,
@@ -180,14 +180,14 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "Query",
       field: "user",
-      type: "o|User|!",
+      type: { spec: "o|User|!", arguments: {} },
       args: {},
       directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
-          type: "s|ID|!",
+          type: { spec: "s|ID|!", arguments: {} },
           args: {},
           directives: [],
           object: null,
@@ -196,7 +196,7 @@ describe("calculateFieldType", () => {
         name: {
           parent: "User",
           field: "name",
-          type: "s|String|!",
+          type: { spec: "s|String|!", arguments: {} },
           args: {},
           directives: [],
           object: null,
@@ -215,14 +215,14 @@ describe("calculateFieldType", () => {
     const selection: AnyFieldSelection = {
       parent: "Query",
       field: "users",
-      type: "o|User|![]!",
+      type: { spec: "o|User|![]!", arguments: {} },
       args: {},
       directives: [],
       object: {
         id: {
           parent: "User",
           field: "id",
-          type: "s|ID|!",
+          type: { spec: "s|ID|!", arguments: {} },
           args: {},
           directives: [],
           object: null,
@@ -246,7 +246,7 @@ describe("calculateFieldsType", () => {
       id: {
         parent: "User",
         field: "id",
-        type: "s|ID|!",
+        type: { spec: "s|ID|!", arguments: {} },
         args: {},
         directives: [],
         object: null,
@@ -255,7 +255,7 @@ describe("calculateFieldsType", () => {
       name: {
         parent: "User",
         field: "name",
-        type: "s|String|?",
+        type: { spec: "s|String|?", arguments: {} },
         args: {},
         directives: [],
         object: null,
@@ -620,7 +620,7 @@ describe("TypeFormatters", () => {
         id: {
           parent: "User",
           field: "id",
-          type: "s|ID|!",
+          type: { spec: "s|ID|!", arguments: {} },
           args: {},
           directives: [],
           object: null,
@@ -640,7 +640,7 @@ describe("TypeFormatters", () => {
         name: {
           parent: "User",
           field: "name",
-          type: "s|String|!",
+          type: { spec: "s|String|!", arguments: {} },
           args: {},
           directives: [],
           object: null,
@@ -772,18 +772,18 @@ const schemaWithFields: AnyGraphqlSchema = {
     User: {
       name: "User",
       fields: {
-        id: "s|ID|!",
-        name: "s|String|!",
-        email: "s|String|?",
-        status: "e|Status|!",
-        profile: "o|Profile|?",
+        id: { spec: "s|ID|!", arguments: {} },
+        name: { spec: "s|String|!", arguments: {} },
+        email: { spec: "s|String|?", arguments: {} },
+        status: { spec: "e|Status|!", arguments: {} },
+        profile: { spec: "o|Profile|?", arguments: {} },
       },
     },
     Profile: {
       name: "Profile",
       fields: {
-        bio: "s|String|?",
-        avatarUrl: "s|String|?",
+        bio: { spec: "s|String|?", arguments: {} },
+        avatarUrl: { spec: "s|String|?", arguments: {} },
       },
     },
   },
@@ -817,7 +817,7 @@ describe("calculateFieldsType with shorthand", () => {
       name: {
         parent: "User",
         field: "name",
-        type: "s|String|!",
+        type: { spec: "s|String|!", arguments: {} },
         args: {},
         directives: [],
         object: null,
@@ -834,7 +834,7 @@ describe("calculateFieldsType with shorthand", () => {
       profile: {
         parent: "User",
         field: "profile",
-        type: "o|Profile|?",
+        type: { spec: "o|Profile|?", arguments: {} },
         args: {},
         directives: [],
         object: {

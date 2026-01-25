@@ -10,8 +10,13 @@
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
 import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { InputDepthOverrides, InputTypeSpecifiers, TypeModifier, VariableDefinitions } from "../types/type-foundation";
-import type { DeferredOutputField } from "../types/type-foundation";
+import type {
+  DeferredOutputField,
+  InputDepthOverrides,
+  InputTypeSpecifiers,
+  TypeModifier,
+  VariableDefinitions,
+} from "../types/type-foundation";
 import { parseInputSpecifier, parseOutputField } from "../utils/deferred-specifier-parser";
 
 /**

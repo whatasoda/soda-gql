@@ -184,9 +184,7 @@ export type PickTypeSpecifierByFieldName<
 export type InputFieldRecord<
   TSchema extends AnyGraphqlSchema,
   TSpecifier extends DeferredInputSpecifier,
-> = TSpecifier extends `i|${infer TName extends string}|${string}`
-  ? TSchema["input"][TName]["fields"]
-  : never;
+> = TSpecifier extends `i|${infer TName extends string}|${string}` ? TSchema["input"][TName]["fields"] : never;
 
 export type ObjectFieldRecord<TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"]> = {
   readonly [TFieldName in keyof TSchema["object"][TTypeName]["fields"]]: TSchema["object"][TTypeName]["fields"][TFieldName];
@@ -196,12 +194,14 @@ export type UnionTypeRecord<TSchema extends AnyGraphqlSchema, TSpecifier extends
   readonly [TTypeName in UnionMemberName<TSchema, TSpecifier>]: TSchema["object"][TTypeName];
 };
 
-export type UnionMemberName<TSchema extends AnyGraphqlSchema, TSpecifier extends OutputUnionSpecifier | DeferredOutputSpecifier> =
-  TSpecifier extends { name: infer TName extends string }
+export type UnionMemberName<
+  TSchema extends AnyGraphqlSchema,
+  TSpecifier extends OutputUnionSpecifier | DeferredOutputSpecifier,
+> = TSpecifier extends { name: infer TName extends string }
+  ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
+  : TSpecifier extends `u|${infer TName extends string}|${string}`
     ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
-    : TSpecifier extends `u|${infer TName extends string}|${string}`
-      ? Extract<keyof TSchema["object"], keyof TSchema["union"][TName]["types"]> & string
-      : never;
+    : never;
 
 /**
  * Union of all input type names in a schema (scalars, enums, and input objects).

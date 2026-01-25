@@ -78,7 +78,7 @@ export type FragmentBuildersAll<
  * Configuration options for `createGqlElementComposer`.
  */
 export type GqlElementComposerOptions<
-  TSchema extends AnyGraphqlSchema,
+  _TSchema extends AnyGraphqlSchema,
   TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
 > = {

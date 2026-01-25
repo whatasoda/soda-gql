@@ -467,11 +467,11 @@ describe("generateMultiSchemaModule", () => {
     // Object code should contain type modifiers in deferred specifier format
     const objectCode = queryObjectDef?.code ?? "";
     // Deferred specifiers contain modifiers at the end after the second |
-    expect(objectCode).toContain('|!"');       // Required scalar
-    expect(objectCode).toContain('|?"');       // Optional scalar
-    expect(objectCode).toContain('|![]!"');    // Required list of required
-    expect(objectCode).toContain('|![]?"');    // Optional list of required
-    expect(objectCode).toContain('|?[]!"');    // Required list of optional
+    expect(objectCode).toContain('|!"'); // Required scalar
+    expect(objectCode).toContain('|?"'); // Optional scalar
+    expect(objectCode).toContain('|![]!"'); // Required list of required
+    expect(objectCode).toContain('|![]?"'); // Optional list of required
+    expect(objectCode).toContain('|?[]!"'); // Required list of optional
     expect(objectCode).toContain('|![]![]!"'); // Nested list
   });
 

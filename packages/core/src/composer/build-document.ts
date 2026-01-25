@@ -45,7 +45,7 @@ import type {
   VariableDefinitions,
 } from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
-import { parseInputSpecifier, parseOutputField, type ParsedInputSpecifier } from "../utils/deferred-specifier-parser";
+import { type ParsedInputSpecifier, parseInputSpecifier, parseOutputField } from "../utils/deferred-specifier-parser";
 
 /**
  * Context for determining if a value should be output as an enum.
@@ -528,10 +528,7 @@ export type AnyVarSpecifier = {
 
 // VariableDefinitions is imported from type-foundation
 
-const buildVariables = (
-  variables: Record<string, AnyVarSpecifier>,
-  schema: AnyGraphqlSchema,
-): VariableDefinitionNode[] => {
+const buildVariables = (variables: Record<string, AnyVarSpecifier>, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
   return Object.entries(variables).map(([name, varSpec]): VariableDefinitionNode => {
     // Build default value if present
     let defaultValue: ConstValueNode | undefined;
@@ -598,7 +595,10 @@ export const buildDocument = <
   variables: TVarDefinitions;
   fields: TFields;
   schema: TSchema;
-}): TypedDocumentNode<InferFieldsExtended<TSchema, TTypeName, TFields>, ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>> => {
+}): TypedDocumentNode<
+  InferFieldsExtended<TSchema, TTypeName, TFields>,
+  ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>
+> => {
   const { operationName, operationType, operationTypeName, variables, fields, schema } = options;
   return {
     kind: Kind.DOCUMENT,

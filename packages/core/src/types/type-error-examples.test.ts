@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType } from "../../test/utils/schema";
 import { defineScalar } from "../schema";
 import type { AssignableInputByFieldName, DeclaredVariables } from "./fragment/assignable-input";
 import type { AnyGraphqlSchema } from "./schema";
@@ -42,24 +42,27 @@ const createTestSchema = () =>
       }),
     },
     object: {
-      // Use explicit literal specifiers to preserve argument types at type level
+      // Use object format for field specifiers with arguments
       Query: {
         name: "Query" as const,
         fields: {
-          // Required ID argument: "o|User|?|id:s|ID|!"
-          user: "o|User|?|id:s|ID|!",
-          // Optional ID argument: "o|User|?|id:s|ID|?"
-          optionalUser: "o|User|?|id:s|ID|?",
-          // List argument: "o|User|![]!|ids:s|ID|![]?"
-          users: "o|User|![]!|ids:s|ID|![]?",
-          // String argument (for type mismatch tests): "o|User|?|name:s|String|!"
-          userByName: "o|User|?|name:s|String|!",
+          // Required ID argument
+          user: { spec: "o|User|?", arguments: { id: "s|ID|!" } },
+          // Optional ID argument
+          optionalUser: { spec: "o|User|?", arguments: { id: "s|ID|?" } },
+          // List argument
+          users: { spec: "o|User|![]!", arguments: { ids: "s|ID|![]?" } },
+          // String argument (for type mismatch tests)
+          userByName: { spec: "o|User|?", arguments: { name: "s|String|!" } },
         } as const,
       },
-      User: define("User").object({
-        id: unsafeOutputType.scalar("ID:!", {}),
-        name: unsafeOutputType.scalar("String:!", {}),
-      }),
+      User: {
+        name: "User" as const,
+        fields: {
+          id: { spec: "s|ID|!", arguments: {} },
+          name: { spec: "s|String|!", arguments: {} },
+        } as const,
+      },
     },
     union: {},
   }) satisfies AnyGraphqlSchema;

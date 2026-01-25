@@ -16,6 +16,7 @@ import type {
 } from "../../src/types/schema";
 import {
   type DeferredInputSpecifier,
+  type DeferredOutputFieldWithArgs,
   type DeferredOutputSpecifier,
   type InputTypeSpecifiers,
   type ModifiedTypeName,
@@ -141,11 +142,9 @@ type OutputKindChar<TKind extends "scalar" | "enum" | "object" | "union"> = TKin
 
 /**
  * Creates output type specifier factory for a given kind.
- * Returns deferred string specifiers in the format: `{kindChar}|{name}|{modifier}[|args]`
+ * Returns object format: `{ spec: "{kindChar}|{name}|{modifier}", arguments: {...} }`
  *
  * The return type preserves the kind, name, and modifier at the type level.
- * For fields without arguments, returns the exact literal.
- * For fields with arguments, uses a pattern that captures the structure.
  *
  * @param kind - The output type kind ('scalar', 'enum', 'object', 'union')
  * @returns Factory function that creates deferred type specifiers
@@ -154,33 +153,20 @@ type OutputKindChar<TKind extends "scalar" | "enum" | "object" | "union"> = TKin
 const createUnsafeOutputTypeSpecifierFactory = <const TKind extends "scalar" | "enum" | "object" | "union">(kind: TKind) => {
   const kindChar = OUTPUT_KIND_TO_CHAR[kind];
 
-  // Overload for no arguments - returns exact literal type
-  function factory<const TName extends string, const TModifier extends TypeModifier>(
-    type: ModifiedTypeName<[string], TName, TModifier>,
-    extras: { arguments?: {} },
-  ): `${OutputKindChar<TKind>}|${TName}|${TModifier}`;
-
-  // Overload for with arguments - returns pattern type that preserves structure
-  function factory<const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers>(
-    type: ModifiedTypeName<[string], TName, TModifier>,
-    extras: { arguments: TArguments },
-  ): `${OutputKindChar<TKind>}|${TName}|${TModifier}|${string}`;
-
-  // Implementation
-  function factory<const TName extends string, const TModifier extends TypeModifier, const TArguments extends InputTypeSpecifiers = {}>(
+  // Returns object format with spec and arguments
+  function factory<
+    const TName extends string,
+    const TModifier extends TypeModifier,
+    const TArguments extends InputTypeSpecifiers = {},
+  >(
     type: ModifiedTypeName<[string], TName, TModifier>,
     extras: { arguments?: TArguments },
-  ): DeferredOutputSpecifier {
+  ): { readonly spec: `${OutputKindChar<TKind>}|${TName}|${TModifier}`; readonly arguments: TArguments } {
     const { name, modifier } = parseModifiedTypeName(type);
+    const spec = `${kindChar}|${name}|${modifier}` as `${OutputKindChar<TKind>}|${TName}|${TModifier}`;
+    const args = (extras.arguments ?? {}) as TArguments;
 
-    // Build arguments string if present
-    let argsStr = "";
-    if (extras.arguments && Object.keys(extras.arguments).length > 0) {
-      const argParts = Object.entries(extras.arguments).map(([argName, argSpec]) => `${argName}:${argSpec}`);
-      argsStr = `|${argParts.join(",")}`;
-    }
-
-    return `${kindChar}|${name}|${modifier}${argsStr}` as DeferredOutputSpecifier;
+    return { spec, arguments: args };
   }
 
   return factory;
@@ -206,14 +192,15 @@ const createUnsafeOutputTypeSpecifierFactory = <const TKind extends "scalar" | "
  * Creates a __typename specifier.
  * __typename is a special scalar field that returns the object type name as a string literal.
  * We use "s|{TypeName}|!" format since typename is always a non-null string.
+ * Returns object format with empty arguments.
  */
 const createTypenameSpecifier = <const TName extends string, const TModifier extends TypeModifier>(
   type: ModifiedTypeName<[string], TName, TModifier>,
   _extras: Record<string, never>,
-): DeferredOutputSpecifier => {
+): DeferredOutputFieldWithArgs => {
   const { name, modifier } = parseModifiedTypeName(type);
   // __typename is effectively a scalar that returns the type name
-  return `s|${name}|${modifier}` as DeferredOutputSpecifier;
+  return { spec: `s|${name}|${modifier}` as DeferredOutputSpecifier, arguments: {} };
 };
 
 export const unsafeOutputType = {

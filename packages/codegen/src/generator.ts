@@ -431,10 +431,10 @@ const outputKindToChar = (kind: "scalar" | "enum" | "union" | "object" | "exclud
 };
 
 /**
- * Render arguments as inline strings for inclusion in deferred specifier.
- * Format: ["argName:k|T|M", "argName2:k|T|M", ...]
+ * Render arguments as object format for DeferredOutputFieldWithArgs.
+ * Returns array of "argName: \"spec\"" entries.
  */
-const renderInlineArguments = (
+const renderArgumentsObjectEntries = (
   schema: SchemaIndex,
   args: readonly InputValueDefinitionNode[],
   excluded: Set<string>,
@@ -457,7 +457,7 @@ const renderInlineArguments = (
       }
       const kindChar = inputKindToChar(kind);
       const defaultSuffix = arg.defaultValue ? "|D" : "";
-      return `${arg.name.value}:${kindChar}|${name}|${modifier}${defaultSuffix}`;
+      return `${arg.name.value}: "${kindChar}|${name}|${modifier}${defaultSuffix}"`;
     })
     .filter((spec): spec is string => spec !== null);
 };
@@ -502,18 +502,18 @@ const renderOutputRef = (
   }
 
   const kindChar = outputKindToChar(kind);
+  const spec = `${kindChar}|${name}|${modifier}`;
 
-  // Build inline arguments string if present
-  // Format: "kind|name|modifier|arg1:k|T|M,arg2:k|T|M"
-  let argsStr = "";
+  // Always use object format for consistency (avoids union type distribution issues)
   if (args && args.length > 0) {
-    const argParts = renderInlineArguments(schema, args, excluded);
-    if (argParts.length > 0) {
-      argsStr = `|${argParts.join(",")}`;
+    const argEntries = renderArgumentsObjectEntries(schema, args, excluded);
+    if (argEntries.length > 0) {
+      return `{ spec: "${spec}", arguments: { ${argEntries.join(", ")} } }`;
     }
   }
 
-  return `"${kindChar}|${name}|${modifier}${argsStr}"`;
+  // Fields without arguments still use object format with empty arguments
+  return `{ spec: "${spec}", arguments: {} }`;
 };
 
 const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
@@ -646,7 +646,11 @@ const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, exclude
  * Renders an input reference as a deferred string for directive arguments.
  * Format: "{kindChar}|{name}|{modifier}"
  */
-const renderDeferredDirectiveArgRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string | null => {
+const renderDeferredDirectiveArgRef = (
+  schema: SchemaIndex,
+  definition: InputValueDefinitionNode,
+  excluded: Set<string>,
+): string | null => {
   const { name, modifier } = parseTypeReference(definition.type);
 
   // Skip excluded types
