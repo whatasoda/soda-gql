@@ -15,7 +15,6 @@ import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
 import type { DeferredOutputField, DeferredOutputSpecifier } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
-import { mapValues } from "../utils/map-values";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
 
@@ -125,18 +124,31 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
             isList: isListType(parsedType.modifier),
           });
 
-          // Run nested builders with updated path context
-          const nestedUnion = withFieldPath(newPath, () =>
-            mapValues(
-              nest as Record<string, NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject> | undefined>,
-              (builder, memberName) => {
-                if (!builder) {
-                  throw new Error(`Builder is undefined for member name: ${memberName}`);
-                }
-                return builder({ f: createFieldFactories(schema, memberName) });
-              },
-            ),
-          ) as TNested;
+          // Extract __typename flag before processing
+          const typenameFlag = (nest as { __typename?: true }).__typename;
+
+          // Run nested builders with updated path context, filtering out __typename
+          const nestedUnion = withFieldPath(newPath, () => {
+            const result: Record<string, unknown> = {};
+            for (const [memberName, builder] of Object.entries(nest)) {
+              if (memberName === "__typename") {
+                continue; // Skip the flag, will be added back later
+              }
+              // Skip non-function values (shouldn't happen but guard for safety)
+              if (typeof builder !== "function") {
+                continue;
+              }
+              result[memberName] = (builder as NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject>)({
+                f: createFieldFactories(schema, memberName),
+              });
+            }
+            return result;
+          }) as TNested;
+
+          // Preserve __typename flag in the result
+          if (typenameFlag) {
+            (nestedUnion as Record<string, unknown>).__typename = true;
+          }
 
           return wrap({
             parent: typeName,
