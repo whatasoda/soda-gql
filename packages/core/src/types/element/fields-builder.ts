@@ -72,6 +72,9 @@ export type NestedObjectFieldsBuilderTools<
  * Builder for union type selections with per-member field definitions.
  * Supports shorthand syntax (`id: true`) within each member's field builder.
  * Use `__typename: true` to enable catch-all __typename discrimination for all union members.
+ *
+ * Note: The mapped type only includes union member names. The __typename flag is added via
+ * intersection. TUnionFields will NOT capture __typename - use direct input inspection instead.
  */
 export type NestedUnionFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
@@ -84,7 +87,7 @@ export type NestedUnionFieldsBuilder<
     NonNullable<TUnionFields[TTypename]> & AnyFieldsExtended
   >;
 } & {
-  readonly __typename?: true;
+  __typename?: true;
 };
 
 /** Map each field to a factory capable of emitting fully-typed references. */
@@ -158,16 +161,45 @@ export type FieldSelectionFactoryObjectReturn<
     TSelection["args"],
     TSelection["directives"],
     TNested,
-    null
+    null,
+    false // No union, so TUnionTypename is false
   >;
+};
+
+/**
+ * Remove __typename key from a type to get pure selections.
+ */
+type OmitTypename<T> = { [K in keyof T as K extends "__typename" ? never : K]: T[K] };
+
+/**
+ * Detect if T has __typename: true (not optional or missing).
+ * Uses a pattern that checks if the property is exactly `true` after removing index signatures.
+ */
+type InferTypenameFlag<T> = "__typename" extends keyof T
+  ? T["__typename"] extends true
+    ? true
+    : false
+  : false;
+
+/**
+ * Constraint for union builder input that allows member builders and optional __typename.
+ */
+type UnionBuilderInputConstraint<
+  TSchema extends AnyGraphqlSchema,
+  TMemberName extends string,
+> = {
+  [K in TMemberName]?: NestedObjectFieldsBuilder<TSchema, K, AnyFieldsExtended>;
+} & {
+  __typename?: true;
 };
 
 export type FieldSelectionFactoryUnionReturn<
   TSchema extends AnyGraphqlSchema,
   TSelection extends AnyFieldSelection & { type: { spec: UnionSpecifierPattern } },
   TAlias extends string | null,
-> = <TNested extends AnyNestedUnion>(
-  nest: NestedUnionFieldsBuilder<TSchema, UnionMemberNameFromDeferred<TSchema, TSelection["type"]["spec"]>, TNested>,
+  TMemberName extends string = UnionMemberNameFromDeferred<TSchema, TSelection["type"]["spec"]>,
+> = <TInput extends UnionBuilderInputConstraint<TSchema, TMemberName>>(
+  nest: TInput,
 ) => {
   [_ in TAlias extends null ? TSelection["field"] : TAlias]: AbstractFieldSelection<
     TSelection["parent"],
@@ -176,7 +208,8 @@ export type FieldSelectionFactoryUnionReturn<
     TSelection["args"],
     TSelection["directives"],
     null,
-    TNested
+    OmitTypename<TInput> & AnyNestedUnion,
+    InferTypenameFlag<TInput>
   >;
 };
 
@@ -199,7 +232,8 @@ export type FieldSelectionFactoryPrimitiveReturn<
     TSelection["args"],
     TSelection["directives"],
     null,
-    null
+    null,
+    false // No union, so TUnionTypename is false
   >;
 };
 

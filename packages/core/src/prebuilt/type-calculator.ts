@@ -8,7 +8,7 @@
  */
 
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
-import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
+import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyUnionSelection } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type {
   DeferredOutputField,
@@ -324,11 +324,11 @@ export const calculateFieldType = (
  */
 const calculateUnionType = (
   schema: AnyGraphqlSchema,
-  union: AnyNestedUnion,
+  union: AnyUnionSelection,
   formatters?: TypeFormatters,
   unionTypeName?: string,
 ): string => {
-  const hasTypenameFlag = (union as { __typename?: true }).__typename === true;
+  const { selections, __typename: hasTypenameFlag } = union;
   const memberTypes: string[] = [];
 
   if (hasTypenameFlag && unionTypeName) {
@@ -338,7 +338,7 @@ const calculateUnionType = (
       const allMemberNames = Object.keys(unionDef.types);
 
       for (const typeName of allMemberNames) {
-        const fields = union[typeName];
+        const fields = selections[typeName];
         if (fields && typeof fields === "object") {
           // Selected member: include fields + __typename
           const fieldsType = calculateFieldsType(schema, fields, formatters, typeName);
@@ -351,8 +351,8 @@ const calculateUnionType = (
     }
   } else {
     // Original behavior without __typename flag
-    for (const [typeName, fields] of Object.entries(union)) {
-      if (typeName !== "__typename" && fields && typeof fields === "object") {
+    for (const [typeName, fields] of Object.entries(selections)) {
+      if (fields && typeof fields === "object") {
         const memberType = calculateFieldsType(schema, fields, formatters, typeName);
         memberTypes.push(memberType);
       }

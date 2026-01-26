@@ -128,4 +128,99 @@ describe("Union field selection type inference", () => {
       expect(true).toBe(true);
     });
   });
+
+  describe("__typename: true catch-all", () => {
+    it("includes __typename for all union members", () => {
+      const Search = gql(({ query, $var }) =>
+        query.operation({
+          name: "Search",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              User: ({ f }) => ({ ...f.id() }),
+              __typename: true,
+            }),
+          }),
+        }),
+      );
+
+      type Output = typeof Search.$infer.output;
+      type SearchResult = Output["search"][number];
+
+      // All union members should have __typename (using readonly to match inferred type)
+      type _TestUser = Expect<Extends<{ readonly __typename: "User"; readonly id: string }, SearchResult>>;
+      type _TestPost = Expect<Extends<{ readonly __typename: "Post" }, SearchResult>>;
+      type _TestComment = Expect<Extends<{ readonly __typename: "Comment" }, SearchResult>>;
+      expect(true).toBe(true);
+    });
+
+    it("includes selected fields with __typename for selected members", () => {
+      const Search = gql(({ query, $var }) =>
+        query.operation({
+          name: "Search",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              User: ({ f }) => ({ ...f.id(), ...f.name() }),
+              Post: ({ f }) => ({ ...f.id(), ...f.title() }),
+              __typename: true,
+            }),
+          }),
+        }),
+      );
+
+      type Output = typeof Search.$infer.output;
+      type SearchResult = Output["search"][number];
+
+      // Selected members should have their fields + __typename
+      type _TestUser = Expect<Extends<{ readonly __typename: "User"; readonly id: string; readonly name: string }, SearchResult>>;
+      type _TestPost = Expect<Extends<{ readonly __typename: "Post"; readonly id: string; readonly title: string }, SearchResult>>;
+      // Unselected member should have only __typename
+      type _TestComment = Expect<Extends<{ readonly __typename: "Comment" }, SearchResult>>;
+      expect(true).toBe(true);
+    });
+
+    it("maintains backward compatibility without __typename flag", () => {
+      const Search = gql(({ query, $var }) =>
+        query.operation({
+          name: "Search",
+          variables: { ...$var("query").String("!") },
+          fields: ({ f, $ }) => ({
+            ...f.search({ query: $.query })({
+              User: ({ f }) => ({ ...f.id() }),
+            }),
+          }),
+        }),
+      );
+
+      type Output = typeof Search.$infer.output;
+      type SearchResult = Output["search"][number];
+
+      // Without __typename flag, only User appears with id (no __typename)
+      type _TestOnlyUser = Expect<Extends<SearchResult, { readonly id: string }>>;
+      expect(true).toBe(true);
+    });
+
+    it("works with nullable union field", () => {
+      const GetNode = gql(({ query, $var }) =>
+        query.operation({
+          name: "GetNode",
+          variables: { ...$var("id").ID("!") },
+          fields: ({ f, $ }) => ({
+            ...f.node({ id: $.id })({
+              User: () => ({ id: true }),
+              __typename: true,
+            }),
+          }),
+        }),
+      );
+
+      type Output = typeof GetNode.$infer.output;
+      // node is nullable and all members should have __typename
+      type _TestNullable = Expect<
+        Extends<Output, { readonly node: { readonly __typename: "User" | "Post" | "Comment" } | null | undefined }>
+      >;
+      expect(true).toBe(true);
+    });
+  });
 });

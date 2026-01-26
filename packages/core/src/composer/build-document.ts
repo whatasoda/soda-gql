@@ -32,7 +32,7 @@ import {
   type AnyFieldSelection,
   type AnyFieldsExtended,
   type AnyFieldValue,
-  type AnyNestedUnion,
+  type AnyUnionSelection,
   type InferFieldsExtended,
   type ScalarShorthand,
   VarRef,
@@ -298,11 +298,10 @@ const expandShorthand = (schema: AnyGraphqlSchema, typeName: string, fieldName: 
   };
 };
 
-const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): SelectionNode[] => {
-  const hasTypenameFlag = union.__typename === true;
+const buildUnionSelection = (union: AnyUnionSelection, schema: AnyGraphqlSchema): SelectionNode[] => {
+  const { selections, __typename: hasTypenameFlag } = union;
 
-  const inlineFragments: InlineFragmentNode[] = Object.entries(union)
-    .filter(([key]) => key !== "__typename")
+  const inlineFragments: InlineFragmentNode[] = Object.entries(selections)
     .map(([typeName, object]): InlineFragmentNode | null => {
       // Skip undefined values and non-object values (shouldn't happen but guard against it)
       if (!object || typeof object !== "object") {
