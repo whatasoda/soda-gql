@@ -71,6 +71,7 @@ export type NestedObjectFieldsBuilderTools<
 /**
  * Builder for union type selections with per-member field definitions.
  * Supports shorthand syntax (`id: true`) within each member's field builder.
+ * Use `__typename: true` to enable catch-all __typename discrimination for all union members.
  */
 export type NestedUnionFieldsBuilder<
   TSchema extends AnyGraphqlSchema,
@@ -82,6 +83,8 @@ export type NestedUnionFieldsBuilder<
     TTypename,
     NonNullable<TUnionFields[TTypename]> & AnyFieldsExtended
   >;
+} & {
+  readonly __typename?: true;
 };
 
 /** Map each field to a factory capable of emitting fully-typed references. */

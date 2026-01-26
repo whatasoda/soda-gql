@@ -36,8 +36,15 @@ export type AnyNestedObject = { readonly [alias: string]: AnyFieldSelection };
 
 /** Nested selection supporting shorthand syntax. */
 export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
-/** Nested selection produced when resolving a union field. Supports shorthand syntax. */
-export type AnyNestedUnion = { readonly [typeName: string]: AnyNestedObjectExtended | undefined };
+/**
+ * Nested selection produced when resolving a union field. Supports shorthand syntax.
+ * Use `__typename: true` to enable catch-all __typename discrimination for all union members.
+ */
+export type AnyNestedUnion = {
+  readonly [typeName: string]: AnyNestedObjectExtended | undefined;
+} & {
+  readonly __typename?: true;
+};
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
