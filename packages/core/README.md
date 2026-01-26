@@ -36,13 +36,12 @@ import { gql } from "@/graphql-system";
 Fragments define reusable field selections for a specific GraphQL type:
 
 ```typescript
-export const userFragment = gql.default(({ fragment, $var }) =>
+export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
-    variables: { ...$var("includeEmail").Boolean("?") },
-    fields: ({ f, $ }) => ({
+    fields: ({ f }) => ({
       ...f.id(),
       ...f.name(),
-      ...f.email({ if: $.includeEmail }),
+      ...f.email(),
     }),
   }),
 );
@@ -67,9 +66,9 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 export const getUserWithFragment = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUserWithFragment",
-    variables: { ...$var("id").ID("!"), ...$var("includeEmail").Boolean("?") },
+    variables: { ...$var("id").ID("!") },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...userFragment.spread({ includeEmail: $.includeEmail }) })),
+      ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })),
     }),
   }),
 );
@@ -95,8 +94,7 @@ Variables are declared using a string-based type syntax:
 | `...f.posts({ limit: 10 })` | Field with arguments |
 | `...f.posts()(({ f }) => ({ ... }))` | Nested selection (curried) |
 | `...f.id(null, { alias: "uuid" })` | Field with alias |
-| `...f.email({ if: $.includeEmail })` | Conditional field |
-| `...userFragment.spread({})` | Use fragment fields |
+| `...userFragment.spread()` | Use fragment fields |
 
 ## Understanding the Inject Module
 
