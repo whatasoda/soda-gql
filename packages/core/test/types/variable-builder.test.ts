@@ -9,7 +9,7 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
-import type { Expect, Extends } from "./_helpers";
+import type { Equal, Expect, Extends } from "./_helpers";
 import {
   enumInputTypeMethods,
   enumSchema,
@@ -86,6 +86,30 @@ describe("Variable builder type safety", () => {
       type Input = typeof op.$infer.input;
       // Enum variable is optional
       type _Test = Expect<Extends<Input, { role?: "ADMIN" | "USER" | "GUEST" | null | undefined }>>;
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("Enum output type inference", () => {
+    it("infers enum field output as union literal type", () => {
+      const op = enumGql(({ query, $var }) =>
+        query.operation({
+          name: "GetUsersWithRole",
+          variables: { ...$var("role").UserRole("?") },
+          fields: ({ f, $ }) => ({
+            ...f.users({ role: $.role })(({ f }) => ({
+              ...f.id(),
+              ...f.role(),
+            })),
+          }),
+        }),
+      );
+
+      type Output = typeof op.$infer.output;
+      type UserRole = NonNullable<Output["users"]>[number]["role"];
+
+      // Enum output should be union literal type, not just string
+      type _TestIsLiteral = Expect<Equal<UserRole, "ADMIN" | "USER" | "GUEST">>;
       expect(true).toBe(true);
     });
   });
