@@ -97,6 +97,24 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
   } & {};
 }[TSchema["label"]];
 
+/**
+ * Infer union type with __typename for all members when __typename: true is set.
+ * Selected members get their fields + __typename, unselected members get only __typename.
+ */
+type InferUnionWithTypename<
+  TSchema extends AnyGraphqlSchema,
+  TUnionName extends keyof TSchema["union"] & string,
+  TNested extends AnyNestedUnion,
+> = {
+  [TTypename in keyof TSchema["union"][TUnionName]["types"] & string]: TTypename extends keyof TNested
+    ? TNested[TTypename] extends AnyNestedObjectExtended
+      ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), NonNullable<TNested[TTypename]> & AnyFieldsExtended> & {
+          readonly __typename: TTypename;
+        }
+      : { readonly __typename: TTypename }
+    : { readonly __typename: TTypename };
+}[keyof TSchema["union"][TUnionName]["types"] & string];
+
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<
   TSchema extends AnyGraphqlSchema,
@@ -108,18 +126,22 @@ export type InferField<
             ? ApplyTypeModifier<InferFieldsExtended<TSchema, TName, TNested>, GetSpecModifier<TSpec>>
             : never
           : never)
-      | (TSpec extends `u|${string}|${string}`
+      | (TSpec extends `u|${infer TUnionName extends keyof TSchema["union"] & string}|${string}`
           ? TSelection extends { union: infer TNested extends AnyNestedUnion }
             ? ApplyTypeModifier<
-                {
-                  [TTypename in keyof TNested]: undefined extends TNested[TTypename]
-                    ? never
-                    : InferFieldsExtended<
-                        TSchema,
-                        TTypename & (keyof TSchema["object"] & string),
-                        NonNullable<TNested[TTypename]> & AnyFieldsExtended
-                      >;
-                }[keyof TNested],
+                TNested extends { readonly __typename: true }
+                  ? InferUnionWithTypename<TSchema, TUnionName, TNested>
+                  : {
+                      [TTypename in keyof TNested]: undefined extends TNested[TTypename]
+                        ? never
+                        : TTypename extends "__typename"
+                          ? never
+                          : InferFieldsExtended<
+                              TSchema,
+                              TTypename & (keyof TSchema["object"] & string),
+                              NonNullable<TNested[TTypename]> & AnyFieldsExtended
+                            >;
+                    }[keyof TNested],
                 GetSpecModifier<TSpec>
               >
             : never
