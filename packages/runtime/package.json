@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/runtime",
-  "version": "0.11.23",
+  "version": "0.11.24",
   "description": "Minimal runtime for soda-gql operations",
   "type": "module",
   "private": false,
