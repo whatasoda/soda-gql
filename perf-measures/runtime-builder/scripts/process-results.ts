@@ -18,6 +18,65 @@ export interface MemoryMetrics {
   external: MemorySnapshot;
 }
 
+/**
+ * Memory breakdown by data structure category.
+ * Provides estimated memory usage for key builder data structures.
+ */
+export interface MemoryBreakdown {
+  /** Total bytes for all DiscoverySnapshot objects */
+  snapshotsBytes: number;
+  /** Count of DiscoverySnapshot objects */
+  snapshotsCount: number;
+  /** Total bytes for IntermediateModule objects */
+  intermediateModulesBytes: number;
+  /** Count of IntermediateModule objects */
+  intermediateModulesCount: number;
+  /** Total bytes for ModuleAnalysis objects */
+  analysesBytes: number;
+  /** Count of ModuleAnalysis objects */
+  analysesCount: number;
+  /** Estimated overhead (Maps, Sets, other internal structures) */
+  overheadBytes: number;
+}
+
+/**
+ * Memory snapshot at a specific build phase.
+ */
+export interface PhaseMemorySnapshot {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  external: number;
+  timestamp: number;
+}
+
+/**
+ * Phase-based memory measurements.
+ * Captures memory state at key build phase boundaries.
+ */
+export interface PhaseMemoryMetrics {
+  /** Memory after file scanning/discovery phase */
+  afterDiscovery: PhaseMemorySnapshot;
+  /** Memory after intermediate module generation */
+  afterIntermediateGen: PhaseMemorySnapshot;
+  /** Memory after evaluation phase */
+  afterEvaluation: PhaseMemorySnapshot;
+  /** Memory delta between phases */
+  phaseDelta: {
+    discoveryToIntermediate: number;
+    intermediateToEvaluation: number;
+  };
+}
+
+/**
+ * Extended memory metrics with breakdown and phase information.
+ * Only collected when --extended flag is used.
+ */
+export interface ExtendedMemoryMetrics extends MemoryMetrics {
+  breakdown?: MemoryBreakdown;
+  phases?: PhaseMemoryMetrics;
+}
+
 export interface BuilderMetrics {
   // Timing
   wallTimeMs: number;
@@ -26,6 +85,9 @@ export interface BuilderMetrics {
 
   // Memory
   memory: MemoryMetrics;
+
+  // Extended memory (only with --extended flag)
+  extendedMemory?: ExtendedMemoryMetrics;
 
   // Discovery statistics
   discoveryHits: number;
