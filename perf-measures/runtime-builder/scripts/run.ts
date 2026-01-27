@@ -180,15 +180,20 @@ async function runCodegen(fixtureDir: string): Promise<void> {
 
 /**
  * Collect memory metrics during build.
+ * Supports both overall metrics and phase-based snapshots for extended profiling.
  */
 class MemoryCollector {
   private startMemory: NodeJS.MemoryUsage | null = null;
   private peakMemory: NodeJS.MemoryUsage | null = null;
   private intervalId: Timer | null = null;
+  private phaseSnapshots: Map<string, PhaseMemorySnapshot> = new Map();
+  private startTime: number = 0;
 
   start(): void {
     this.startMemory = process.memoryUsage();
     this.peakMemory = { ...this.startMemory };
+    this.startTime = performance.now();
+    this.phaseSnapshots.clear();
 
     this.intervalId = setInterval(() => {
       const current = process.memoryUsage();
@@ -199,6 +204,45 @@ class MemoryCollector {
         this.peakMemory.external = Math.max(this.peakMemory.external, current.external);
       }
     }, 10);
+  }
+
+  /**
+   * Record a memory snapshot at a specific build phase.
+   * Call this at phase boundaries when extended profiling is enabled.
+   */
+  recordPhase(phaseName: string): void {
+    const mem = process.memoryUsage();
+    this.phaseSnapshots.set(phaseName, {
+      heapUsed: mem.heapUsed,
+      heapTotal: mem.heapTotal,
+      rss: mem.rss,
+      external: mem.external,
+      timestamp: performance.now() - this.startTime,
+    });
+  }
+
+  /**
+   * Get phase-based memory metrics if phase snapshots were recorded.
+   * Returns undefined if phases were not recorded.
+   */
+  getPhaseMetrics(): PhaseMemoryMetrics | undefined {
+    const discovery = this.phaseSnapshots.get("discovery");
+    const intermediate = this.phaseSnapshots.get("intermediate");
+    const evaluation = this.phaseSnapshots.get("evaluation");
+
+    if (!discovery || !intermediate || !evaluation) {
+      return undefined;
+    }
+
+    return {
+      afterDiscovery: discovery,
+      afterIntermediateGen: intermediate,
+      afterEvaluation: evaluation,
+      phaseDelta: {
+        discoveryToIntermediate: intermediate.heapUsed - discovery.heapUsed,
+        intermediateToEvaluation: evaluation.heapUsed - intermediate.heapUsed,
+      },
+    };
   }
 
   stop(): MemoryMetrics {
