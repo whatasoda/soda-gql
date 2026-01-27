@@ -172,11 +172,15 @@ export const generateIntermediateModules = function* ({
     const contentHash = hash.digest("hex");
     const canonicalIds = analysis.definitions.map((definition) => definition.canonicalId);
 
+    // Memory optimization: transpiledCode is only needed to create the Script object.
+    // After script creation, we can release it to reduce memory footprint.
+    // sourceCode is only needed for debugging (DEBUG_INTERMEDIATE_MODULE env var).
+    const shouldKeepSource = !!process.env.DEBUG_INTERMEDIATE_MODULE;
     yield {
       filePath,
       canonicalIds,
-      sourceCode,
-      transpiledCode,
+      sourceCode: shouldKeepSource ? sourceCode : "",
+      transpiledCode: "", // Released after Script creation
       contentHash,
       script,
     };

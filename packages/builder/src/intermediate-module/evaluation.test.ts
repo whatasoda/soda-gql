@@ -4,6 +4,9 @@ import { createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { generateIntermediateModules } from "./evaluation";
 
+// Enable sourceCode preservation for testing
+process.env.DEBUG_INTERMEDIATE_MODULE = "true";
+
 // Test graphql-system path that won't match any test module paths
 const TEST_GRAPHQL_SYSTEM_PATH = "/test/graphql-system/index.ts";
 
