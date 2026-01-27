@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/common",
-  "version": "0.11.24",
+  "version": "0.11.25",
   "description": "Shared utilities for soda-gql packages",
   "type": "module",
   "private": false,
