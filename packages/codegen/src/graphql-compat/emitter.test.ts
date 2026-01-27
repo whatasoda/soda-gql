@@ -819,6 +819,119 @@ describe("inline fragments", () => {
   });
 });
 
+describe("__typename with inline fragments", () => {
+  const unionSchema = parse(`
+    type User { id: ID!, name: String! }
+    type Post { id: ID!, title: String! }
+    union SearchResult = User | Post
+    type Query { search(query: String!): [SearchResult!]! }
+  `);
+
+  it("emits __typename inside union object", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!) {
+        search(query: $q) {
+          __typename
+          ... on User { id name }
+          ... on Post { id title }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    // __typename should be INSIDE the union object, at same level as User/Post
+    expect(output).toContain("User: ({ f }) => ({");
+    expect(output).toContain("Post: ({ f }) => ({");
+    expect(output).toContain("__typename: true,");
+
+    // __typename should NOT be before the union spread object
+    expect(output).not.toMatch(/__typename: true,\s*\.\.\.\(\{/);
+  });
+
+  it("does not emit __typename when not in source", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!) {
+        search(query: $q) {
+          ... on User { id }
+          ... on Post { title }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    expect(output).not.toContain("__typename");
+  });
+
+  it("handles aliased __typename separately", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query Search($q: String!) {
+        search(query: $q) {
+          type: __typename
+          ... on User { id }
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, {
+      ...defaultOptions,
+      schemaDocument: unionSchema,
+    })._unsafeUnwrap();
+
+    // Aliased __typename should use spread syntax with alias (not inside union)
+    expect(output).toContain('...f.__typename(null, { alias: "type" })');
+  });
+
+  it("emits __typename without inline fragments normally", () => {
+    const parsed = parseGraphqlSource(
+      `
+      query GetUser {
+        user(id: "1") {
+          __typename
+          id
+          name
+        }
+      }
+    `,
+      "test.graphql",
+    )._unsafeUnwrap();
+    const { operations } = transformParsedGraphql(parsed, {
+      schemaDocument: testSchema,
+    })._unsafeUnwrap();
+
+    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
+
+    expect(output).toContain("__typename: true,");
+    expect(output).toContain("id: true,");
+    expect(output).toContain("name: true,");
+  });
+});
+
 describe("Literal Value List Coercion", () => {
   // Schema with list arguments for testing coercion
   const listSchema = parse(`

@@ -180,13 +180,17 @@ const emitSelectionsInternal = (
 ): Result<string, GraphqlCompatError> => {
   const lines: string[] = [];
 
-  // Separate inline fragments from other selections
+  // Separate inline fragments from other selections, detecting __typename field
   const inlineFragments: ParsedInlineFragment[] = [];
   const otherSelections: ParsedSelection[] = [];
+  let hasTypenameField = false;
 
   for (const sel of selections) {
     if (sel.kind === "inlineFragment") {
       inlineFragments.push(sel);
+    } else if (sel.kind === "field" && sel.name === "__typename" && !sel.alias) {
+      // Detect non-aliased __typename field for union selection
+      hasTypenameField = true;
     } else {
       otherSelections.push(sel);
     }
@@ -203,11 +207,16 @@ const emitSelectionsInternal = (
 
   // Emit grouped inline fragments as union selections
   if (inlineFragments.length > 0) {
-    const unionResult = emitInlineFragmentsAsUnion(inlineFragments, indent, variableNames, schema);
+    // Pass hasTypenameField to include __typename: true inside union object
+    const unionResult = emitInlineFragmentsAsUnion(inlineFragments, indent, variableNames, schema, hasTypenameField);
     if (unionResult.isErr()) {
       return err(unionResult.error);
     }
     lines.push(unionResult.value);
+  } else if (hasTypenameField) {
+    // __typename without inline fragments: emit as regular field
+    const padding = "  ".repeat(indent);
+    lines.push(`${padding}__typename: true,`);
   }
 
   return ok(lines.join("\n"));
@@ -238,13 +247,14 @@ const emitSingleSelection = (
 
 /**
  * Emit inline fragments grouped as a union selection.
- * Format: { TypeA: ({ f }) => ({ ...fields }), TypeB: ({ f }) => ({ ...fields }) }
+ * Format: { TypeA: ({ f }) => ({ ...fields }), TypeB: ({ f }) => ({ ...fields }), __typename: true }
  */
 const emitInlineFragmentsAsUnion = (
   inlineFragments: readonly ParsedInlineFragment[],
   indent: number,
   variableNames: Set<string>,
   schema: SchemaIndex | null,
+  includeTypename: boolean,
 ): Result<string, GraphqlCompatError> => {
   const padding = "  ".repeat(indent);
 
@@ -293,6 +303,12 @@ const emitInlineFragmentsAsUnion = (
     entries.push(`${innerPadding}${frag.onType}: ({ f }) => ({
 ${fieldsResult.value}
 ${innerPadding}}),`);
+  }
+
+  // Include __typename: true inside union object when flag is set
+  if (includeTypename) {
+    const innerPadding = "  ".repeat(indent + 1);
+    entries.push(`${innerPadding}__typename: true,`);
   }
 
   // Emit as spread with union callback: ...f.fieldName()({ Type: ... })
