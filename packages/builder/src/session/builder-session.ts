@@ -66,6 +66,8 @@ type BuildGenInput = {
   readonly previousIntermediateModules: ReadonlyMap<string, IntermediateModule>;
   readonly graphqlSystemPath: string;
   readonly graphqlHelper: ReturnType<typeof createGraphqlSystemIdentifyHelper>;
+  /** Optional phase callbacks for profiling */
+  readonly onPhase?: BuildPhaseCallbacks;
 };
 
 /**
@@ -81,6 +83,29 @@ type BuildGenResult = {
 };
 
 /**
+ * Optional callbacks for profiling build phases.
+ * Called at phase boundaries when provided.
+ */
+export interface BuildPhaseCallbacks {
+  /** Called after discovery phase completes */
+  afterDiscovery?: () => void;
+  /** Called after intermediate module generation completes */
+  afterIntermediateGen?: () => void;
+  /** Called after evaluation phase completes */
+  afterEvaluation?: () => void;
+}
+
+/**
+ * Options for build methods.
+ */
+export interface BuildOptions {
+  /** Force full rebuild ignoring cache */
+  force?: boolean;
+  /** Optional callbacks for profiling (called at phase boundaries) */
+  onPhase?: BuildPhaseCallbacks;
+}
+
+/**
  * Builder session interface for incremental builds.
  */
 export interface BuilderSession {
@@ -89,13 +114,13 @@ export interface BuilderSession {
    * The session automatically detects file changes using the file tracker.
    * Throws if any element requires async operations (e.g., async metadata factory).
    */
-  build(options?: { force?: boolean }): Result<BuilderArtifact, BuilderError>;
+  build(options?: BuildOptions): Result<BuilderArtifact, BuilderError>;
   /**
    * Perform build fully or incrementally (asynchronous).
    * The session automatically detects file changes using the file tracker.
    * Supports async metadata factories and parallel element evaluation.
    */
-  buildAsync(options?: { force?: boolean }): Promise<Result<BuilderArtifact, BuilderError>>;
+  buildAsync(options?: BuildOptions): Promise<Result<BuilderArtifact, BuilderError>>;
   /**
    * Get the current generation number.
    */
@@ -316,7 +341,7 @@ export const createBuilderSession = (options: {
    * Synchronous build using SyncScheduler.
    * Throws if any element requires async operations.
    */
-  const build = (options?: { force?: boolean }): Result<BuilderArtifact, BuilderError> => {
+  const build = (options?: BuildOptions): Result<BuilderArtifact, BuilderError> => {
     const prepResult = prepareBuildInput(options?.force ?? false);
     if (prepResult.isErr()) {
       return err(prepResult.error);
@@ -330,7 +355,7 @@ export const createBuilderSession = (options: {
     const scheduler = createSyncScheduler();
 
     try {
-      const result = scheduler.run(() => buildGen(input));
+      const result = scheduler.run(() => buildGen({ ...input, onPhase: options?.onPhase }));
 
       if (result.isErr()) {
         return err(convertSchedulerError(result.error));
@@ -350,7 +375,7 @@ export const createBuilderSession = (options: {
    * Asynchronous build using AsyncScheduler.
    * Supports async metadata factories and parallel element evaluation.
    */
-  const buildAsync = async (options?: { force?: boolean }): Promise<Result<BuilderArtifact, BuilderError>> => {
+  const buildAsync = async (options?: BuildOptions): Promise<Result<BuilderArtifact, BuilderError>> => {
     const prepResult = prepareBuildInput(options?.force ?? false);
     if (prepResult.isErr()) {
       return err(prepResult.error);
@@ -364,7 +389,7 @@ export const createBuilderSession = (options: {
     const scheduler = createAsyncScheduler();
 
     try {
-      const result = await scheduler.run(() => buildGen(input));
+      const result = await scheduler.run(() => buildGen({ ...input, onPhase: options?.onPhase }));
 
       if (result.isErr()) {
         return err(convertSchedulerError(result.error));
@@ -433,6 +458,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
     previousIntermediateModules,
     graphqlSystemPath,
     graphqlHelper,
+    onPhase,
   } = input;
 
   // Phase 1: Collect affected files
@@ -454,6 +480,9 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
       affectedFiles,
     },
   });
+
+  // Notify phase callback after discovery
+  onPhase?.afterDiscovery?.();
 
   const { cacheHits, cacheMisses, cacheSkips } = discoveryResult;
 
@@ -502,8 +531,14 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
+  // Notify phase callback after intermediate module generation
+  onPhase?.afterIntermediateGen?.();
+
   // Phase 5: Evaluate intermediate modules (yields element evaluation effects)
   const elements = yield* evaluateIntermediateModulesGen({ intermediateModules, graphqlSystemPath, analyses });
+
+  // Notify phase callback after evaluation
+  onPhase?.afterEvaluation?.();
 
   return {
     snapshots,
