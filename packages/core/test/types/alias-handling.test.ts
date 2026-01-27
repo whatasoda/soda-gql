@@ -9,8 +9,8 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
 import type { EqualPublic, Expect } from "./_helpers";
-import { basicInputTypeMethods, basicSchema, type BasicSchema } from "./_fixtures";
 
 const gql = createGqlElementComposer<BasicSchema, FragmentBuildersAll<BasicSchema>, StandardDirectives>(basicSchema, {
   inputTypeMethods: basicInputTypeMethods,
