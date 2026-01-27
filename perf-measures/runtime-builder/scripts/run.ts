@@ -341,7 +341,7 @@ function collectMemoryBreakdown(
  */
 async function measureBuild(
   fixtureDir: string,
-  options: { force: boolean; gc: boolean; analyzer: AnalyzerType }
+  options: { force: boolean; gc: boolean; analyzer: AnalyzerType; extended: boolean }
 ): Promise<BuilderMetrics> {
   // Force GC if requested (Bun supports global.gc when run with --smol or similar)
   if (options.gc && typeof global.gc === "function") {
@@ -370,13 +370,30 @@ async function measureBuild(
   const startTime = performance.now();
   const startCpu = process.cpuUsage();
 
-  // Run build
-  const buildResult = session.build({ force: options.force });
+  // Run build with optional phase callbacks for extended profiling
+  const buildResult = options.extended
+    ? session.build({
+        force: options.force,
+        onPhase: {
+          afterDiscovery: () => memoryCollector.recordPhase("discovery"),
+          afterIntermediateGen: () => memoryCollector.recordPhase("intermediate"),
+          afterEvaluation: () => memoryCollector.recordPhase("evaluation"),
+        },
+      })
+    : session.build({ force: options.force });
 
   // Stop measurements
   const endTime = performance.now();
   const endCpu = process.cpuUsage(startCpu);
   const memory = memoryCollector.stop();
+
+  // Collect extended memory metrics if requested
+  const extendedMemory = options.extended
+    ? {
+        ...memory,
+        phases: memoryCollector.getPhaseMetrics(),
+      }
+    : undefined;
 
   // Dispose session
   session.dispose();
@@ -400,6 +417,7 @@ async function measureBuild(
     cpuTimeMs: (endCpu.user + endCpu.system) / 1000,
     builderDurationMs: artifact.report.durationMs,
     memory,
+    extendedMemory,
     discoveryHits: artifact.report.stats.hits,
     discoveryMisses: artifact.report.stats.misses,
     discoverySkips: artifact.report.stats.skips,
@@ -430,7 +448,7 @@ async function runSingleAnalyzer(
       process.stdout.write(`  Cold build ${i + 1}/${options.iterations}...`);
     }
 
-    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc, analyzer });
+    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc, analyzer, extended: options.extended });
     coldIterations.push({ iteration: i + 1, metrics });
 
     if (!options.json) {
