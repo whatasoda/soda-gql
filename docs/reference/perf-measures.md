@@ -142,6 +142,11 @@ bun run perf:builder --fixture medium
 bun run perf:builder --fixture large
 bun run perf:builder --fixture xlarge
 
+# Enterprise-scale fixtures
+bun run perf:builder --fixture xxlarge
+bun run perf:builder --fixture xxxlarge
+bun run perf:builder --fixture stress
+
 # Multiple iterations for averages
 bun run perf:builder --fixture medium --iterations 5
 
@@ -157,6 +162,12 @@ bun run perf:builder --fixture medium --generate
 # Force GC between iterations (for accurate memory measurements)
 bun run perf:builder --fixture large --gc
 
+# Extended memory profiling (phase-based measurements)
+bun run perf:builder --fixture large --gc --extended
+
+# Compare TS vs SWC analyzers
+bun run perf:builder --fixture medium --analyzer both
+
 # Custom fixture configuration
 bun run perf:builder --fixture custom --total-files 300 --gql-ratio 0.1 --object-types 40
 ```
@@ -166,7 +177,7 @@ bun run perf:builder --fixture custom --total-files 300 --gql-ratio 0.1 --object
 *Preset Selection:*
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--fixture <name>` | small | Preset name: small, medium, large, xlarge |
+| `--fixture <name>` | small | Preset name: small, medium, large, xlarge, xxlarge, xxxlarge, stress |
 
 *Custom Configuration (override preset):*
 | Option | Description |
@@ -186,6 +197,8 @@ bun run perf:builder --fixture custom --total-files 300 --gql-ratio 0.1 --object
 | `--generate` | false | Force regenerate fixtures |
 | `--warm` | false | Include warm (incremental) builds |
 | `--gc` | false | Force GC before each iteration |
+| `--extended` | false | Collect extended memory metrics (phase-based) |
+| `--analyzer <type>` | ts | Analyzer to use: ts, swc, or both |
 
 **Output Metrics:**
 
@@ -199,6 +212,10 @@ bun run perf:builder --fixture custom --total-files 300 --gql-ratio 0.1 --object
 - Heap total (start, peak, end, delta)
 - RSS (start, peak, end, delta)
 - External (start, peak, end, delta)
+
+*Extended Memory (with `--extended` flag):*
+- Memory by Phase: heap usage after discovery, intermediate gen, evaluation
+- Phase deltas: memory consumed between phases
 
 *Discovery:*
 - Hits (cache hits)
@@ -220,6 +237,9 @@ Builder benchmarks simulate realistic applications with noise files (non-gql fil
 | medium | 200 | 30 | 15% | 30 | 15 | 15 | 15 |
 | large | 500 | 60 | 12% | 60 | 30 | 30 | 30 |
 | xlarge | 1000 | 100 | 10% | 100 | 50 | 50 | 50 |
+| xxlarge | 2000 | 160 | 8% | 150 | 80 | 80 | 80 |
+| xxxlarge | 5000 | 300 | 6% | 250 | 150 | 150 | 150 |
+| stress | 20000 | 800 | 4% | 500 | 400 | 400 | 400 |
 
 **Noise Files Generated:**
 - `src/components/*.ts` - React component-like files
