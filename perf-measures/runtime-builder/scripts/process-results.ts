@@ -212,6 +212,11 @@ export function computeStatistics(iterations: IterationResult[]): {
   const min = structuredClone(firstMetrics);
   const max = structuredClone(firstMetrics);
 
+  // Clear extendedMemory from min/max - per-iteration phase data is not meaningful
+  // for aggregate statistics (we'd need to track which iteration had min/max)
+  delete min.extendedMemory;
+  delete max.extendedMemory;
+
   for (const m of metrics) {
     // Timing
     average.wallTimeMs += m.wallTimeMs;
