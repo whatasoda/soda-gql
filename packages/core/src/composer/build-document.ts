@@ -20,6 +20,7 @@ import {
   type NamedTypeNode,
   type ObjectFieldNode,
   OperationTypeNode,
+  type SelectionNode,
   type TypeNode,
   type ValueNode,
   type VariableDefinitionNode,
@@ -31,7 +32,7 @@ import {
   type AnyFieldSelection,
   type AnyFieldsExtended,
   type AnyFieldValue,
-  type AnyNestedUnion,
+  type AnyUnionSelection,
   type InferFieldsExtended,
   type ScalarShorthand,
   VarRef,
@@ -297,24 +298,39 @@ const expandShorthand = (schema: AnyGraphqlSchema, typeName: string, fieldName: 
   };
 };
 
-const buildUnionSelection = (union: AnyNestedUnion, schema: AnyGraphqlSchema): InlineFragmentNode[] =>
-  Object.entries(union)
+const buildUnionSelection = (union: AnyUnionSelection, schema: AnyGraphqlSchema): SelectionNode[] => {
+  const { selections, __typename: hasTypenameFlag } = union;
+
+  const inlineFragments: InlineFragmentNode[] = Object.entries(selections)
     .map(([typeName, object]): InlineFragmentNode | null => {
-      return object
-        ? {
-            kind: Kind.INLINE_FRAGMENT,
-            typeCondition: {
-              kind: Kind.NAMED_TYPE,
-              name: { kind: Kind.NAME, value: typeName },
-            },
-            selectionSet: {
-              kind: Kind.SELECTION_SET,
-              selections: buildField(object, schema, typeName),
-            },
-          }
-        : null;
+      // Skip undefined values and non-object values (shouldn't happen but guard against it)
+      if (!object || typeof object !== "object") {
+        return null;
+      }
+      return {
+        kind: Kind.INLINE_FRAGMENT,
+        typeCondition: {
+          kind: Kind.NAMED_TYPE,
+          name: { kind: Kind.NAME, value: typeName },
+        },
+        selectionSet: {
+          kind: Kind.SELECTION_SET,
+          selections: buildField(object, schema, typeName),
+        },
+      };
     })
     .filter((item) => item !== null);
+
+  if (hasTypenameFlag) {
+    const typenameField: FieldNode = {
+      kind: Kind.FIELD,
+      name: { kind: Kind.NAME, value: "__typename" },
+    };
+    return [typenameField, ...inlineFragments];
+  }
+
+  return inlineFragments;
+};
 
 /**
  * Builds field nodes from extended fields map.

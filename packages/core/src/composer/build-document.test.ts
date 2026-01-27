@@ -1085,3 +1085,197 @@ describe("Directive enum argument handling", () => {
     expect(printed).not.toContain('scope: "PRIVATE"');
   });
 });
+
+describe("Union selection with __typename flag", () => {
+  /**
+   * Schema with union type for testing union field output.
+   */
+  const schemaWithUnion = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {},
+    enum: {},
+    input: {},
+    object: {
+      Query: { name: "Query", fields: {} },
+      User: { name: "User", fields: {} },
+      Post: { name: "Post", fields: {} },
+    },
+    union: {
+      SearchResult: {
+        name: "SearchResult",
+        types: { User: true, Post: true },
+      },
+    },
+  } as unknown as AnyGraphqlSchema;
+
+  it("includes __typename field when __typename: true is set", () => {
+    const fields = {
+      search: {
+        parent: "Query",
+        field: "search",
+        type: { spec: "u|SearchResult|![]!", arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: {
+          selections: {
+            User: {
+              id: {
+                parent: "User",
+                field: "id",
+                type: { spec: "s|ID|!", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+            },
+          },
+          __typename: true,
+        },
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "Search",
+      operationType: "query",
+      operationTypeName: "Query",
+      variables: {},
+      fields: fields as AnyFields,
+      schema: schemaWithUnion,
+    });
+
+    const printed = print(doc);
+
+    // __typename should appear at the union field level
+    expect(printed).toContain("__typename");
+    // Inline fragment should still be present
+    expect(printed).toContain("... on User");
+    expect(printed).toContain("id");
+  });
+
+  it("does not include __typename field when __typename: false", () => {
+    const fields = {
+      search: {
+        parent: "Query",
+        field: "search",
+        type: { spec: "u|SearchResult|![]!", arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: {
+          selections: {
+            User: {
+              id: {
+                parent: "User",
+                field: "id",
+                type: { spec: "s|ID|!", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+            },
+          },
+          __typename: false,
+        },
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "Search",
+      operationType: "query",
+      operationTypeName: "Query",
+      variables: {},
+      fields: fields as AnyFields,
+      schema: schemaWithUnion,
+    });
+
+    const printed = print(doc);
+
+    // __typename should NOT appear
+    expect(printed).not.toContain("__typename");
+    // Inline fragment should still be present
+    expect(printed).toContain("... on User");
+    expect(printed).toContain("id");
+  });
+
+  it("includes __typename field with multiple union members", () => {
+    const fields = {
+      search: {
+        parent: "Query",
+        field: "search",
+        type: { spec: "u|SearchResult|![]!", arguments: {} },
+        args: {},
+        directives: [],
+        object: null,
+        union: {
+          selections: {
+            User: {
+              id: {
+                parent: "User",
+                field: "id",
+                type: { spec: "s|ID|!", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+              name: {
+                parent: "User",
+                field: "name",
+                type: { spec: "s|String|?", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+            },
+            Post: {
+              id: {
+                parent: "Post",
+                field: "id",
+                type: { spec: "s|ID|!", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+              title: {
+                parent: "Post",
+                field: "title",
+                type: { spec: "s|String|!", arguments: {} },
+                args: {},
+                directives: [],
+                object: null,
+                union: null,
+              },
+            },
+          },
+          __typename: true,
+        },
+      },
+    };
+
+    const doc = buildDocument({
+      operationName: "Search",
+      operationType: "query",
+      operationTypeName: "Query",
+      variables: {},
+      fields: fields as AnyFields,
+      schema: schemaWithUnion,
+    });
+
+    const printed = print(doc);
+
+    // __typename should appear at the union field level (before inline fragments)
+    expect(printed).toContain("__typename");
+    // Both inline fragments should be present
+    expect(printed).toContain("... on User");
+    expect(printed).toContain("... on Post");
+    // Fields should be present
+    expect(printed).toContain("name");
+    expect(printed).toContain("title");
+  });
+});

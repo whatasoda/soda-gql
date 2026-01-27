@@ -28,7 +28,7 @@ export type AnyFieldSelection = {
   readonly args: AnyAssignableInput;
   readonly directives: AnyDirectiveAttachments;
   readonly object: AnyNestedObjectExtended | null;
-  readonly union: AnyNestedUnion | null;
+  readonly union: AnyUnionSelection | null;
 };
 
 /** Nested selection produced when resolving an object field (factory syntax only). */
@@ -36,8 +36,25 @@ export type AnyNestedObject = { readonly [alias: string]: AnyFieldSelection };
 
 /** Nested selection supporting shorthand syntax. */
 export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
-/** Nested selection produced when resolving a union field. Supports shorthand syntax. */
-export type AnyNestedUnion = { readonly [typeName: string]: AnyNestedObjectExtended | undefined };
+/**
+ * Nested selection produced when resolving a union field. Supports shorthand syntax.
+ * Maps union member type names to their field selections.
+ */
+export type AnyNestedUnion = {
+  readonly [typeName: string]: AnyNestedObjectExtended | undefined;
+};
+
+/**
+ * Structured union selection with explicit __typename flag.
+ * Separates member selections from the __typename discriminator flag for reliable type inference.
+ */
+export type UnionSelection<TSelections extends AnyNestedUnion, TTypename extends boolean> = {
+  readonly selections: TSelections;
+  readonly __typename: TTypename;
+};
+
+/** Type-erased union selection */
+export type AnyUnionSelection = UnionSelection<AnyNestedUnion, boolean>;
 
 /** Map of alias → field reference used by builders and inference. */
 export type AnyFields = {
@@ -56,7 +73,8 @@ export type AbstractFieldSelection<
   TArgs extends AnyAssignableInput,
   TDirectives extends AnyDirectiveAttachments,
   TObject extends AnyNestedObjectExtended | null,
-  TUnion extends AnyNestedUnion | null,
+  TUnionSelections extends AnyNestedUnion | null,
+  TUnionTypename extends boolean,
 > = {
   readonly parent: TTypeName;
   readonly field: TFieldName;
@@ -64,7 +82,9 @@ export type AbstractFieldSelection<
   readonly args: TArgs;
   readonly directives: TDirectives;
   readonly object: TObject;
-  readonly union: TUnion;
+  readonly union: TUnionSelections extends AnyNestedUnion
+    ? UnionSelection<TUnionSelections, TUnionTypename>
+    : null;
 };
 
 /** Convenience alias to obtain a typed field reference from the schema. */
@@ -80,7 +100,8 @@ export type FieldSelectionTemplateOf<
   AssignableInputByFieldName<TSchema, TTypeName, TFieldName>,
   AnyDirectiveAttachments,
   GetSpecKind<TRef["spec"]> extends "object" ? AnyNestedObjectExtended : null,
-  GetSpecKind<TRef["spec"]> extends "union" ? AnyNestedUnion : null
+  GetSpecKind<TRef["spec"]> extends "union" ? AnyNestedUnion : null,
+  boolean // TUnionTypename - will be refined by factory return type
 >;
 
 /** Resolve the data shape produced by a set of field selections. */
@@ -89,6 +110,47 @@ export type InferFields<TSchema extends AnyGraphqlSchema, TFields extends AnyFie
     [TAliasName in keyof TFields]: InferField<TSchema, TFields[TAliasName]>;
   } & {};
 }[TSchema["label"]];
+
+/**
+ * Remove index signature from a type, keeping only literal string keys.
+ * This is needed for inferring union selections where we want to iterate over explicit member keys.
+ */
+type RemoveIndexSignature<T> = {
+  [K in keyof T as string extends K ? never : K]: T[K];
+};
+
+/**
+ * Infer union type with __typename for all members when __typename: true is set.
+ * Selected members get their fields + __typename, unselected members get only __typename.
+ */
+type InferUnionWithTypename<
+  TSchema extends AnyGraphqlSchema,
+  TUnionName extends keyof TSchema["union"] & string,
+  TSelections extends AnyNestedUnion,
+  TSelectionsClean = RemoveIndexSignature<TSelections>,
+> = {
+  [TTypename in keyof TSchema["union"][TUnionName]["types"] & string]: TTypename extends keyof TSelectionsClean
+    ? TSelectionsClean[TTypename] extends infer TFields extends AnyNestedObjectExtended
+      ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), TFields> & {
+          readonly __typename: TTypename;
+        }
+      : { readonly __typename: TTypename }
+    : { readonly __typename: TTypename };
+}[keyof TSchema["union"][TUnionName]["types"] & string];
+
+/**
+ * Infer union type without __typename catch-all (original behavior).
+ * Only includes members that have explicit selections.
+ */
+type InferUnionWithoutTypename<
+  TSchema extends AnyGraphqlSchema,
+  TSelections extends AnyNestedUnion,
+  TSelectionsClean = RemoveIndexSignature<TSelections>,
+> = {
+  [TTypename in keyof TSelectionsClean]: TSelectionsClean[TTypename] extends infer TFields extends AnyNestedObjectExtended
+    ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), TFields>
+    : never;
+}[keyof TSelectionsClean];
 
 /** Resolve the data shape for a single field reference, including nested objects/unions. */
 export type InferField<
@@ -101,18 +163,12 @@ export type InferField<
             ? ApplyTypeModifier<InferFieldsExtended<TSchema, TName, TNested>, GetSpecModifier<TSpec>>
             : never
           : never)
-      | (TSpec extends `u|${string}|${string}`
-          ? TSelection extends { union: infer TNested extends AnyNestedUnion }
+      | (TSpec extends `u|${infer TUnionName extends keyof TSchema["union"] & string}|${string}`
+          ? TSelection extends { union: infer TUnion extends AnyUnionSelection }
             ? ApplyTypeModifier<
-                {
-                  [TTypename in keyof TNested]: undefined extends TNested[TTypename]
-                    ? never
-                    : InferFieldsExtended<
-                        TSchema,
-                        TTypename & (keyof TSchema["object"] & string),
-                        NonNullable<TNested[TTypename]> & AnyFieldsExtended
-                      >;
-                }[keyof TNested],
+                TUnion["__typename"] extends true
+                  ? InferUnionWithTypename<TSchema, TUnionName, TUnion["selections"]>
+                  : InferUnionWithoutTypename<TSchema, TUnion["selections"]>,
                 GetSpecModifier<TSpec>
               >
             : never

@@ -8,7 +8,7 @@
  */
 
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
-import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyNestedUnion } from "../types/fragment";
+import type { AnyFieldSelection, AnyFieldsExtended, AnyFieldValue, AnyUnionSelection } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type {
   DeferredOutputField,
@@ -296,7 +296,7 @@ export const calculateFieldType = (
 
   // Handle union types
   if (parsedType.kind === "union" && selection.union) {
-    const unionType = calculateUnionType(schema, selection.union, formatters);
+    const unionType = calculateUnionType(schema, selection.union, formatters, parsedType.name);
     return applyTypeModifier(unionType, parsedType.modifier as TypeModifier);
   }
 
@@ -318,14 +318,44 @@ export const calculateFieldType = (
 
 /**
  * Calculate the TypeScript type string for a union type selection.
+ *
+ * When `__typename: true` is set, generates types for ALL union members with __typename,
+ * even those not explicitly selected (they get only __typename).
  */
-const calculateUnionType = (schema: AnyGraphqlSchema, union: AnyNestedUnion, formatters?: TypeFormatters): string => {
+const calculateUnionType = (
+  schema: AnyGraphqlSchema,
+  union: AnyUnionSelection,
+  formatters?: TypeFormatters,
+  unionTypeName?: string,
+): string => {
+  const { selections, __typename: hasTypenameFlag } = union;
   const memberTypes: string[] = [];
 
-  for (const [typeName, fields] of Object.entries(union)) {
-    if (fields) {
-      const memberType = calculateFieldsType(schema, fields, formatters, typeName);
-      memberTypes.push(memberType);
+  if (hasTypenameFlag && unionTypeName) {
+    // Get all union member names from schema
+    const unionDef = schema.union[unionTypeName];
+    if (unionDef) {
+      const allMemberNames = Object.keys(unionDef.types);
+
+      for (const typeName of allMemberNames) {
+        const fields = selections[typeName];
+        if (fields && typeof fields === "object") {
+          // Selected member: include fields + __typename
+          const fieldsType = calculateFieldsType(schema, fields, formatters, typeName);
+          memberTypes.push(`${fieldsType} & { readonly __typename: "${typeName}" }`);
+        } else {
+          // Unselected member: only __typename
+          memberTypes.push(`{ readonly __typename: "${typeName}" }`);
+        }
+      }
+    }
+  } else {
+    // Original behavior without __typename flag
+    for (const [typeName, fields] of Object.entries(selections)) {
+      if (fields && typeof fields === "object") {
+        const memberType = calculateFieldsType(schema, fields, formatters, typeName);
+        memberTypes.push(memberType);
+      }
     }
   }
 
