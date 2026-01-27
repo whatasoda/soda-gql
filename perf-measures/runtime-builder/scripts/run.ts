@@ -40,6 +40,7 @@ interface RunOptions {
   generate: boolean;
   warm: boolean;
   gc: boolean;
+  extended: boolean;
   analyzer: AnalyzerType | "both";
 }
 
@@ -52,6 +53,7 @@ function parseArgs(): RunOptions {
     generate: false,
     warm: false,
     gc: false,
+    extended: false,
     analyzer: "ts",
   };
 
@@ -93,6 +95,9 @@ function parseArgs(): RunOptions {
         break;
       case "--gc":
         options.gc = true;
+        break;
+      case "--extended":
+        options.extended = true;
         break;
       case "--analyzer": {
         const val = args[++i];
