@@ -17,7 +17,10 @@ import {
   type BenchmarkResult,
   type BuilderMetrics,
   type IterationResult,
+  type MemoryBreakdown,
   type MemoryMetrics,
+  type PhaseMemoryMetrics,
+  type PhaseMemorySnapshot,
 } from "./process-results";
 
 const PERF_DIR = path.join(import.meta.dirname, "..");
@@ -230,6 +233,58 @@ class MemoryCollector {
       },
     };
   }
+}
+
+/**
+ * Estimate memory size of an object using JSON serialization.
+ * This is an approximation but provides consistent relative measurements.
+ */
+function estimateObjectSize(obj: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(obj), "utf8");
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Collect detailed memory breakdown from session state.
+ * Must be called while session data structures are still in memory.
+ */
+function collectMemoryBreakdown(
+  snapshots: Map<string, unknown>,
+  intermediateModules: Map<string, unknown>,
+  analyses: Map<string, unknown>,
+): MemoryBreakdown {
+  let snapshotsBytes = 0;
+  let intermediateModulesBytes = 0;
+  let analysesBytes = 0;
+
+  for (const snapshot of snapshots.values()) {
+    snapshotsBytes += estimateObjectSize(snapshot);
+  }
+
+  for (const module of intermediateModules.values()) {
+    intermediateModulesBytes += estimateObjectSize(module);
+  }
+
+  for (const analysis of analyses.values()) {
+    analysesBytes += estimateObjectSize(analysis);
+  }
+
+  const totalEstimated = snapshotsBytes + intermediateModulesBytes + analysesBytes;
+  const currentHeap = process.memoryUsage().heapUsed;
+  const overheadBytes = Math.max(0, currentHeap - totalEstimated);
+
+  return {
+    snapshotsBytes,
+    snapshotsCount: snapshots.size,
+    intermediateModulesBytes,
+    intermediateModulesCount: intermediateModules.size,
+    analysesBytes,
+    analysesCount: analyses.size,
+    overheadBytes,
+  };
 }
 
 /**
