@@ -9,8 +9,8 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { type UnionSchema, unionInputTypeMethods, unionSchema } from "./_fixtures";
 import type { Expect, Extends } from "./_helpers";
-import { unionInputTypeMethods, unionSchema, type UnionSchema } from "./_fixtures";
 
 const gql = createGqlElementComposer<UnionSchema, FragmentBuildersAll<UnionSchema>, StandardDirectives>(unionSchema, {
   inputTypeMethods: unionInputTypeMethods,
@@ -71,9 +71,7 @@ describe("Union field selection type inference", () => {
       type SearchResult = Output["search"][number];
 
       // User member should have name field
-      type _TestUnion = Expect<
-        Extends<SearchResult, { id: string; name: string } | { id: string; title: string }>
-      >;
+      type _TestUnion = Expect<Extends<SearchResult, { id: string; name: string } | { id: string; title: string }>>;
       expect(true).toBe(true);
     });
   });

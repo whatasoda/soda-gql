@@ -9,8 +9,8 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { type NestedSchema, nestedInputTypeMethods, nestedSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
-import { nestedInputTypeMethods, nestedSchema, type NestedSchema } from "./_fixtures";
 
 const gql = createGqlElementComposer<NestedSchema, FragmentBuildersAll<NestedSchema>, StandardDirectives>(nestedSchema, {
   inputTypeMethods: nestedInputTypeMethods,
@@ -158,9 +158,7 @@ describe("Nested object selection type inference", () => {
 
       type Output = typeof GetUserPosts.$infer.output;
       // posts: [Post!]! -> Array<{ id: string; title: string }>
-      type _TestList = Expect<
-        Extends<{ user: { posts: Array<{ id: string; title: string }> } | null | undefined }, Output>
-      >;
+      type _TestList = Expect<Extends<{ user: { posts: Array<{ id: string; title: string }> } | null | undefined }, Output>>;
       expect(true).toBe(true);
     });
   });

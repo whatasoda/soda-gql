@@ -7,9 +7,9 @@
  * @module
  */
 
+import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
-import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 // =============================================================================

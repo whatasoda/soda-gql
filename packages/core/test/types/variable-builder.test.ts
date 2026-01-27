@@ -9,15 +9,15 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
-import type { Equal, Expect, Extends } from "./_helpers";
 import {
+  type EnumSchema,
   enumInputTypeMethods,
   enumSchema,
-  type EnumSchema,
+  type InputObjectSchema,
   inputObjectInputTypeMethods,
   inputObjectSchema,
-  type InputObjectSchema,
 } from "./_fixtures";
+import type { Equal, Expect, Extends } from "./_helpers";
 
 const enumGql = createGqlElementComposer<EnumSchema, FragmentBuildersAll<EnumSchema>, StandardDirectives>(enumSchema, {
   inputTypeMethods: enumInputTypeMethods,

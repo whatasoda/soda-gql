@@ -17,7 +17,10 @@ import {
   type BenchmarkResult,
   type BuilderMetrics,
   type IterationResult,
+  type MemoryBreakdown,
   type MemoryMetrics,
+  type PhaseMemoryMetrics,
+  type PhaseMemorySnapshot,
 } from "./process-results";
 
 const PERF_DIR = path.join(import.meta.dirname, "..");
@@ -37,6 +40,7 @@ interface RunOptions {
   generate: boolean;
   warm: boolean;
   gc: boolean;
+  extended: boolean;
   analyzer: AnalyzerType | "both";
 }
 
@@ -49,6 +53,7 @@ function parseArgs(): RunOptions {
     generate: false,
     warm: false,
     gc: false,
+    extended: false,
     analyzer: "ts",
   };
 
@@ -90,6 +95,9 @@ function parseArgs(): RunOptions {
         break;
       case "--gc":
         options.gc = true;
+        break;
+      case "--extended":
+        options.extended = true;
         break;
       case "--analyzer": {
         const val = args[++i];
@@ -172,15 +180,20 @@ async function runCodegen(fixtureDir: string): Promise<void> {
 
 /**
  * Collect memory metrics during build.
+ * Supports both overall metrics and phase-based snapshots for extended profiling.
  */
 class MemoryCollector {
   private startMemory: NodeJS.MemoryUsage | null = null;
   private peakMemory: NodeJS.MemoryUsage | null = null;
   private intervalId: Timer | null = null;
+  private phaseSnapshots: Map<string, PhaseMemorySnapshot> = new Map();
+  private startTime: number = 0;
 
   start(): void {
     this.startMemory = process.memoryUsage();
     this.peakMemory = { ...this.startMemory };
+    this.startTime = performance.now();
+    this.phaseSnapshots.clear();
 
     this.intervalId = setInterval(() => {
       const current = process.memoryUsage();
@@ -191,6 +204,45 @@ class MemoryCollector {
         this.peakMemory.external = Math.max(this.peakMemory.external, current.external);
       }
     }, 10);
+  }
+
+  /**
+   * Record a memory snapshot at a specific build phase.
+   * Call this at phase boundaries when extended profiling is enabled.
+   */
+  recordPhase(phaseName: string): void {
+    const mem = process.memoryUsage();
+    this.phaseSnapshots.set(phaseName, {
+      heapUsed: mem.heapUsed,
+      heapTotal: mem.heapTotal,
+      rss: mem.rss,
+      external: mem.external,
+      timestamp: performance.now() - this.startTime,
+    });
+  }
+
+  /**
+   * Get phase-based memory metrics if phase snapshots were recorded.
+   * Returns undefined if phases were not recorded.
+   */
+  getPhaseMetrics(): PhaseMemoryMetrics | undefined {
+    const discovery = this.phaseSnapshots.get("discovery");
+    const intermediate = this.phaseSnapshots.get("intermediate");
+    const evaluation = this.phaseSnapshots.get("evaluation");
+
+    if (!discovery || !intermediate || !evaluation) {
+      return undefined;
+    }
+
+    return {
+      afterDiscovery: discovery,
+      afterIntermediateGen: intermediate,
+      afterEvaluation: evaluation,
+      phaseDelta: {
+        discoveryToIntermediate: intermediate.heapUsed - discovery.heapUsed,
+        intermediateToEvaluation: evaluation.heapUsed - intermediate.heapUsed,
+      },
+    };
   }
 
   stop(): MemoryMetrics {
@@ -233,11 +285,63 @@ class MemoryCollector {
 }
 
 /**
+ * Estimate memory size of an object using JSON serialization.
+ * This is an approximation but provides consistent relative measurements.
+ */
+function estimateObjectSize(obj: unknown): number {
+  try {
+    return Buffer.byteLength(JSON.stringify(obj), "utf8");
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Collect detailed memory breakdown from session state.
+ * Must be called while session data structures are still in memory.
+ */
+function collectMemoryBreakdown(
+  snapshots: Map<string, unknown>,
+  intermediateModules: Map<string, unknown>,
+  analyses: Map<string, unknown>,
+): MemoryBreakdown {
+  let snapshotsBytes = 0;
+  let intermediateModulesBytes = 0;
+  let analysesBytes = 0;
+
+  for (const snapshot of snapshots.values()) {
+    snapshotsBytes += estimateObjectSize(snapshot);
+  }
+
+  for (const module of intermediateModules.values()) {
+    intermediateModulesBytes += estimateObjectSize(module);
+  }
+
+  for (const analysis of analyses.values()) {
+    analysesBytes += estimateObjectSize(analysis);
+  }
+
+  const totalEstimated = snapshotsBytes + intermediateModulesBytes + analysesBytes;
+  const currentHeap = process.memoryUsage().heapUsed;
+  const overheadBytes = Math.max(0, currentHeap - totalEstimated);
+
+  return {
+    snapshotsBytes,
+    snapshotsCount: snapshots.size,
+    intermediateModulesBytes,
+    intermediateModulesCount: intermediateModules.size,
+    analysesBytes,
+    analysesCount: analyses.size,
+    overheadBytes,
+  };
+}
+
+/**
  * Run a single build and collect metrics.
  */
 async function measureBuild(
   fixtureDir: string,
-  options: { force: boolean; gc: boolean; analyzer: AnalyzerType }
+  options: { force: boolean; gc: boolean; analyzer: AnalyzerType; extended: boolean }
 ): Promise<BuilderMetrics> {
   // Force GC if requested (Bun supports global.gc when run with --smol or similar)
   if (options.gc && typeof global.gc === "function") {
@@ -266,13 +370,30 @@ async function measureBuild(
   const startTime = performance.now();
   const startCpu = process.cpuUsage();
 
-  // Run build
-  const buildResult = session.build({ force: options.force });
+  // Run build with optional phase callbacks for extended profiling
+  const buildResult = options.extended
+    ? session.build({
+        force: options.force,
+        onPhase: {
+          afterDiscovery: () => memoryCollector.recordPhase("discovery"),
+          afterIntermediateGen: () => memoryCollector.recordPhase("intermediate"),
+          afterEvaluation: () => memoryCollector.recordPhase("evaluation"),
+        },
+      })
+    : session.build({ force: options.force });
 
   // Stop measurements
   const endTime = performance.now();
   const endCpu = process.cpuUsage(startCpu);
   const memory = memoryCollector.stop();
+
+  // Collect extended memory metrics if requested
+  const extendedMemory = options.extended
+    ? {
+        ...memory,
+        phases: memoryCollector.getPhaseMetrics(),
+      }
+    : undefined;
 
   // Dispose session
   session.dispose();
@@ -296,6 +417,7 @@ async function measureBuild(
     cpuTimeMs: (endCpu.user + endCpu.system) / 1000,
     builderDurationMs: artifact.report.durationMs,
     memory,
+    extendedMemory,
     discoveryHits: artifact.report.stats.hits,
     discoveryMisses: artifact.report.stats.misses,
     discoverySkips: artifact.report.stats.skips,
@@ -326,7 +448,7 @@ async function runSingleAnalyzer(
       process.stdout.write(`  Cold build ${i + 1}/${options.iterations}...`);
     }
 
-    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc, analyzer });
+    const metrics = await measureBuild(fixtureDir, { force: true, gc: options.gc, analyzer, extended: options.extended });
     coldIterations.push({ iteration: i + 1, metrics });
 
     if (!options.json) {

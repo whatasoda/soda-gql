@@ -47,6 +47,33 @@ export const FIXTURE_PRESETS: Record<string, FixtureConfig> = {
     slices: 50,
     operations: 50,
   },
+  xxlarge: {
+    name: "xxlarge",
+    totalFiles: 2000,
+    gqlRatio: 0.08,
+    objectTypes: 150,
+    models: 80,
+    slices: 80,
+    operations: 80,
+  },
+  xxxlarge: {
+    name: "xxxlarge",
+    totalFiles: 5000,
+    gqlRatio: 0.06,
+    objectTypes: 250,
+    models: 150,
+    slices: 150,
+    operations: 150,
+  },
+  stress: {
+    name: "stress",
+    totalFiles: 20000,
+    gqlRatio: 0.04,
+    objectTypes: 500,
+    models: 400,
+    slices: 400,
+    operations: 400,
+  },
 };
 
 /**

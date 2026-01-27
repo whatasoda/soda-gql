@@ -18,6 +18,65 @@ export interface MemoryMetrics {
   external: MemorySnapshot;
 }
 
+/**
+ * Memory breakdown by data structure category.
+ * Provides estimated memory usage for key builder data structures.
+ */
+export interface MemoryBreakdown {
+  /** Total bytes for all DiscoverySnapshot objects */
+  snapshotsBytes: number;
+  /** Count of DiscoverySnapshot objects */
+  snapshotsCount: number;
+  /** Total bytes for IntermediateModule objects */
+  intermediateModulesBytes: number;
+  /** Count of IntermediateModule objects */
+  intermediateModulesCount: number;
+  /** Total bytes for ModuleAnalysis objects */
+  analysesBytes: number;
+  /** Count of ModuleAnalysis objects */
+  analysesCount: number;
+  /** Estimated overhead (Maps, Sets, other internal structures) */
+  overheadBytes: number;
+}
+
+/**
+ * Memory snapshot at a specific build phase.
+ */
+export interface PhaseMemorySnapshot {
+  heapUsed: number;
+  heapTotal: number;
+  rss: number;
+  external: number;
+  timestamp: number;
+}
+
+/**
+ * Phase-based memory measurements.
+ * Captures memory state at key build phase boundaries.
+ */
+export interface PhaseMemoryMetrics {
+  /** Memory after file scanning/discovery phase */
+  afterDiscovery: PhaseMemorySnapshot;
+  /** Memory after intermediate module generation */
+  afterIntermediateGen: PhaseMemorySnapshot;
+  /** Memory after evaluation phase */
+  afterEvaluation: PhaseMemorySnapshot;
+  /** Memory delta between phases */
+  phaseDelta: {
+    discoveryToIntermediate: number;
+    intermediateToEvaluation: number;
+  };
+}
+
+/**
+ * Extended memory metrics with breakdown and phase information.
+ * Only collected when --extended flag is used.
+ */
+export interface ExtendedMemoryMetrics extends MemoryMetrics {
+  breakdown?: MemoryBreakdown;
+  phases?: PhaseMemoryMetrics;
+}
+
 export interface BuilderMetrics {
   // Timing
   wallTimeMs: number;
@@ -26,6 +85,9 @@ export interface BuilderMetrics {
 
   // Memory
   memory: MemoryMetrics;
+
+  // Extended memory (only with --extended flag)
+  extendedMemory?: ExtendedMemoryMetrics;
 
   // Discovery statistics
   discoveryHits: number;
@@ -150,6 +212,11 @@ export function computeStatistics(iterations: IterationResult[]): {
   const min = structuredClone(firstMetrics);
   const max = structuredClone(firstMetrics);
 
+  // Clear extendedMemory from min/max - per-iteration phase data is not meaningful
+  // for aggregate statistics (we'd need to track which iteration had min/max)
+  delete min.extendedMemory;
+  delete max.extendedMemory;
+
   for (const m of metrics) {
     // Timing
     average.wallTimeMs += m.wallTimeMs;
@@ -247,7 +314,7 @@ function formatMs(ms: number): string {
  * Format a single metrics object for console output.
  */
 function formatSingleMetrics(metrics: BuilderMetrics, label: string): string {
-  return `
+  let output = `
 ${label}:
   Timing:
     Wall time:      ${formatMs(metrics.wallTimeMs)}
@@ -263,7 +330,33 @@ ${label}:
   Memory (delta):
     Heap used:      ${formatBytes(metrics.memory.heapUsed.delta)}
     Heap total:     ${formatBytes(metrics.memory.heapTotal.delta)}
-    RSS:            ${formatBytes(metrics.memory.rss.delta)}
+    RSS:            ${formatBytes(metrics.memory.rss.delta)}`;
+
+  // Add extended memory metrics if available
+  if (metrics.extendedMemory?.phases) {
+    const phases = metrics.extendedMemory.phases;
+    output += `
+
+  Memory by Phase:
+    After discovery:      ${formatBytes(phases.afterDiscovery.heapUsed)}
+    After intermediate:   ${formatBytes(phases.afterIntermediateGen.heapUsed)}
+    After evaluation:     ${formatBytes(phases.afterEvaluation.heapUsed)}
+    Delta (disc->inter):  ${formatBytes(phases.phaseDelta.discoveryToIntermediate)}
+    Delta (inter->eval):  ${formatBytes(phases.phaseDelta.intermediateToEvaluation)}`;
+  }
+
+  if (metrics.extendedMemory?.breakdown) {
+    const bd = metrics.extendedMemory.breakdown;
+    output += `
+
+  Memory Breakdown:
+    Snapshots:            ${formatBytes(bd.snapshotsBytes)} (${bd.snapshotsCount} items)
+    Intermediate modules: ${formatBytes(bd.intermediateModulesBytes)} (${bd.intermediateModulesCount} items)
+    Analyses:             ${formatBytes(bd.analysesBytes)} (${bd.analysesCount} items)
+    Overhead:             ${formatBytes(bd.overheadBytes)}`;
+  }
+
+  output += `
 
   Discovery:
     Hits:           ${metrics.discoveryHits}
@@ -273,8 +366,9 @@ ${label}:
   Files:
     Total scanned:  ${metrics.totalFilesScanned}
     GQL files:      ${metrics.gqlFilesFound}
-    Elements:       ${metrics.elementCount}
-`.trim();
+    Elements:       ${metrics.elementCount}`;
+
+  return output.trim();
 }
 
 /**
