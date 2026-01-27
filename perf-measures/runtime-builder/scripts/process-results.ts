@@ -309,7 +309,7 @@ function formatMs(ms: number): string {
  * Format a single metrics object for console output.
  */
 function formatSingleMetrics(metrics: BuilderMetrics, label: string): string {
-  return `
+  let output = `
 ${label}:
   Timing:
     Wall time:      ${formatMs(metrics.wallTimeMs)}
@@ -325,7 +325,33 @@ ${label}:
   Memory (delta):
     Heap used:      ${formatBytes(metrics.memory.heapUsed.delta)}
     Heap total:     ${formatBytes(metrics.memory.heapTotal.delta)}
-    RSS:            ${formatBytes(metrics.memory.rss.delta)}
+    RSS:            ${formatBytes(metrics.memory.rss.delta)}`;
+
+  // Add extended memory metrics if available
+  if (metrics.extendedMemory?.phases) {
+    const phases = metrics.extendedMemory.phases;
+    output += `
+
+  Memory by Phase:
+    After discovery:      ${formatBytes(phases.afterDiscovery.heapUsed)}
+    After intermediate:   ${formatBytes(phases.afterIntermediateGen.heapUsed)}
+    After evaluation:     ${formatBytes(phases.afterEvaluation.heapUsed)}
+    Delta (disc->inter):  ${formatBytes(phases.phaseDelta.discoveryToIntermediate)}
+    Delta (inter->eval):  ${formatBytes(phases.phaseDelta.intermediateToEvaluation)}`;
+  }
+
+  if (metrics.extendedMemory?.breakdown) {
+    const bd = metrics.extendedMemory.breakdown;
+    output += `
+
+  Memory Breakdown:
+    Snapshots:            ${formatBytes(bd.snapshotsBytes)} (${bd.snapshotsCount} items)
+    Intermediate modules: ${formatBytes(bd.intermediateModulesBytes)} (${bd.intermediateModulesCount} items)
+    Analyses:             ${formatBytes(bd.analysesBytes)} (${bd.analysesCount} items)
+    Overhead:             ${formatBytes(bd.overheadBytes)}`;
+  }
+
+  output += `
 
   Discovery:
     Hits:           ${metrics.discoveryHits}
@@ -335,8 +361,9 @@ ${label}:
   Files:
     Total scanned:  ${metrics.totalFilesScanned}
     GQL files:      ${metrics.gqlFilesFound}
-    Elements:       ${metrics.elementCount}
-`.trim();
+    Elements:       ${metrics.elementCount}`;
+
+  return output.trim();
 }
 
 /**
