@@ -390,11 +390,9 @@ const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNod
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
-    // Excluded types still use structured format for now (they're filtered out)
-    if (defaultValue) {
-      return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", defaultValue: { default: ${renderConstValue(defaultValue)} } }`;
-    }
-    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}" }`;
+    // Use string format for consistency with other specifiers
+    const defaultSuffix = defaultValue ? "|D" : "";
+    return `"x|${name}|${modifier}${defaultSuffix}"`;
   }
 
   let kind: "scalar" | "enum" | "input";
@@ -484,8 +482,9 @@ const renderOutputRef = (
 
   // Check if referenced type is excluded
   if (excluded.has(name)) {
+    // Use string format wrapped in DeferredOutputFieldWithArgs object
     const argumentMap = renderArgumentMap(schema, args, excluded);
-    return `{ kind: "excluded", name: "${name}", modifier: "${modifier}", arguments: ${argumentMap} }`;
+    return `{ spec: "x|${name}|${modifier}", arguments: ${argumentMap} }`;
   }
 
   let kind: "scalar" | "enum" | "union" | "object";

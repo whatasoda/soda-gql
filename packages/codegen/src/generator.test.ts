@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { parse } from "graphql";
 import { createSchemaIndex, generateMultiSchemaModule } from "./generator";
+import { formatValidationErrors, validateGeneratedSpecifiers } from "./specifier-validator";
 
 describe("createSchemaIndex", () => {
   test("indexes object types", () => {
@@ -738,10 +739,9 @@ describe("generateMultiSchemaModule", () => {
     );
     expect(orderByInput).toBeDefined();
 
-    // Reference to excluded type should have kind: "excluded"
+    // Reference to excluded type should use string format with "x" prefix
     const orderByCode = orderByInput?.code ?? "";
-    expect(orderByCode).toContain('kind: "excluded"');
-    expect(orderByCode).toContain('name: "users_stddev_order_by"');
+    expect(orderByCode).toContain('"x|users_stddev_order_by|');
   });
 
   test("excludes types using function-based filter", () => {
@@ -841,5 +841,145 @@ describe("generateMultiSchemaModule", () => {
     // Variable methods should not include excluded type
     expect(result.code).toContain("users_order_by:");
     expect(result.code).not.toContain("users_stddev_order_by:");
+  });
+});
+
+describe("specifier format validation", () => {
+  test("all generated specifiers are valid deferred format", () => {
+    const document = parse(`
+      type Query { user(id: ID!): User }
+      type User { id: ID!, name: String!, email: String }
+      input CreateUserInput {
+        name: String!
+        email: String
+        role: Role = USER
+      }
+      enum Role { ADMIN USER }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Validate main generated code
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
+    if (!validation.valid) {
+      throw new Error(`Invalid specifiers found:\n${formatValidationErrors(validation.errors)}`);
+    }
+    expect(validation.valid).toBe(true);
+
+    // Also validate category vars (where individual type definitions are stored)
+    let totalInputCount = validation.inputCount;
+    let totalOutputCount = validation.outputCount;
+
+    if (result.categoryVars?.default) {
+      for (const input of result.categoryVars.default.inputs) {
+        const v = validateGeneratedSpecifiers(input.code)._unsafeUnwrap();
+        expect(v.valid).toBe(true);
+        totalInputCount += v.inputCount;
+      }
+      for (const obj of result.categoryVars.default.objects) {
+        const v = validateGeneratedSpecifiers(obj.code)._unsafeUnwrap();
+        expect(v.valid).toBe(true);
+        totalOutputCount += v.outputCount;
+      }
+    }
+
+    expect(totalInputCount).toBeGreaterThan(0);
+    expect(totalOutputCount).toBeGreaterThan(0);
+  });
+
+  test("excluded type references use string format with x prefix", () => {
+    const document = parse(`
+      type Query { user: User }
+      type User { id: ID! }
+      input users_stddev_order_by { id: order_by }
+      input users_order_by {
+        id: order_by
+        stddev: users_stddev_order_by
+      }
+      enum order_by { asc desc }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas, {
+      typeFilters: new Map([["default", { exclude: [{ pattern: "*_stddev_*", category: "input" }] }]]),
+    });
+
+    // Validate that all specifiers (including excluded type references) use valid string format
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
+    if (!validation.valid) {
+      throw new Error(`Invalid specifiers found:\n${formatValidationErrors(validation.errors)}`);
+    }
+    expect(validation.valid).toBe(true);
+
+    // Also validate individual input definitions if present
+    const orderByInput = result.categoryVars?.default?.inputs.find(
+      (i) => i.name.includes("users_order_by") && !i.name.includes("stddev"),
+    );
+    if (orderByInput) {
+      const inputValidation = validateGeneratedSpecifiers(orderByInput.code)._unsafeUnwrap();
+      expect(inputValidation.valid).toBe(true);
+    }
+  });
+
+  test("output field specifiers have valid format", () => {
+    const document = parse(`
+      type Query {
+        users(limit: Int, offset: Int = 0): [User!]!
+        user(id: ID!): User
+      }
+      type User {
+        id: ID!
+        posts(status: Status): [Post!]!
+      }
+      type Post { id: ID!, title: String! }
+      enum Status { DRAFT PUBLISHED }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    // Validate main code
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
+    expect(validation.valid).toBe(true);
+
+    // Validate all object definitions
+    if (result.categoryVars?.default?.objects) {
+      for (const obj of result.categoryVars.default.objects) {
+        const objValidation = validateGeneratedSpecifiers(obj.code)._unsafeUnwrap();
+        if (!objValidation.valid) {
+          throw new Error(`Invalid specifiers in ${obj.name}:\n${formatValidationErrors(objValidation.errors)}`);
+        }
+      }
+    }
+  });
+
+  test("input field specifiers with various modifiers are valid", () => {
+    const document = parse(`
+      type Query { search(filter: SearchFilter!): [Result!]! }
+      type Result { id: ID! }
+      input SearchFilter {
+        ids: [ID!]!
+        names: [String!]
+        limit: Int = 10
+        tags: [String]
+      }
+    `);
+
+    const schemas = new Map([["default", document]]);
+    const result = generateMultiSchemaModule(schemas);
+
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
+    expect(validation.valid).toBe(true);
+
+    // Validate input definitions
+    if (result.categoryVars?.default?.inputs) {
+      for (const input of result.categoryVars.default.inputs) {
+        const inputValidation = validateGeneratedSpecifiers(input.code)._unsafeUnwrap();
+        if (!inputValidation.valid) {
+          throw new Error(`Invalid specifiers in ${input.name}:\n${formatValidationErrors(inputValidation.errors)}`);
+        }
+      }
+    }
   });
 });

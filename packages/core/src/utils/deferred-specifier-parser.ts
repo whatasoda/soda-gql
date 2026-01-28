@@ -31,6 +31,7 @@ const INPUT_KIND_MAP: Record<string, InputTypeKind> = {
   s: "scalar",
   e: "enum",
   i: "input",
+  x: "excluded",
 };
 
 const OUTPUT_KIND_MAP: Record<string, OutputTypeKind> = {
@@ -38,6 +39,7 @@ const OUTPUT_KIND_MAP: Record<string, OutputTypeKind> = {
   e: "enum",
   o: "object",
   u: "union",
+  x: "excluded",
 };
 
 /**

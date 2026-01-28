@@ -83,17 +83,17 @@ export type OutputExcludedSpecifier = AbstractOutputTypeSpecifier<"excluded">;
 
 /**
  * Deferred input specifier string format: "{kind}|{name}|{modifier}[|D]"
- * - s=scalar, e=enum, i=input
+ * - s=scalar, e=enum, i=input, x=excluded
  * - Trailing |D indicates default value present
  */
-export type DeferredInputSpecifier = `${"s" | "e" | "i"}|${string}|${TypeModifier}${string}`;
+export type DeferredInputSpecifier = `${"s" | "e" | "i" | "x"}|${string}|${TypeModifier}${string}`;
 
 /**
  * Deferred output specifier string format: "{kind}|{name}|{modifier}"
- * - s=scalar, e=enum, o=object, u=union
+ * - s=scalar, e=enum, o=object, u=union, x=excluded
  * - No inline arguments - use DeferredOutputFieldWithArgs for fields with arguments
  */
-export type DeferredOutputSpecifier = `${"s" | "e" | "o" | "u"}|${string}|${TypeModifier}`;
+export type DeferredOutputSpecifier = `${"s" | "e" | "o" | "u" | "x"}|${string}|${TypeModifier}`;
 
 /**
  * Output field specifier with arguments extracted to a separate object.

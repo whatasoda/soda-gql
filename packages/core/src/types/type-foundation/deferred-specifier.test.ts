@@ -85,6 +85,32 @@ describe("ParseDeferredInputSpec", () => {
     type _Test = Expect<Equal<Result, Expected>>;
     expect(true).toBe(true);
   });
+
+  it("parses excluded specifier", () => {
+    type Result = ParseDeferredInputSpec<"x|internal_type|!">;
+    type Expected = {
+      readonly kind: "excluded";
+      readonly name: "internal_type";
+      readonly modifier: "!";
+      readonly defaultValue: null;
+    };
+
+    type _Test = Expect<Equal<Result, Expected>>;
+    expect(true).toBe(true);
+  });
+
+  it("parses excluded specifier with default value", () => {
+    type Result = ParseDeferredInputSpec<"x|internal_type|?|D">;
+    type Expected = {
+      readonly kind: "excluded";
+      readonly name: "internal_type";
+      readonly modifier: "?";
+      readonly defaultValue: { default: unknown };
+    };
+
+    type _Test = Expect<Equal<Result, Expected>>;
+    expect(true).toBe(true);
+  });
 });
 
 describe("ParseDeferredOutputSpec", () => {
@@ -135,6 +161,18 @@ describe("ParseDeferredOutputSpec", () => {
     type _Test = Expect<Equal<Result, Expected>>;
     expect(true).toBe(true);
   });
+
+  it("parses excluded specifier", () => {
+    type Result = ParseDeferredOutputSpec<"x|internal_type|?">;
+    type Expected = {
+      readonly kind: "excluded";
+      readonly name: "internal_type";
+      readonly modifier: "?";
+    };
+
+    type _Test = Expect<Equal<Result, Expected>>;
+    expect(true).toBe(true);
+  });
 });
 
 describe("Resolution utilities", () => {
@@ -164,10 +202,12 @@ describe("Resolution utilities", () => {
     type Result1 = GetSpecKind<"s|uuid|!">;
     type Result2 = GetSpecKind<"o|users|![]!">;
     type Result3 = GetSpecKind<"e|order_by|?">;
+    type Result4 = GetSpecKind<"x|internal|!">;
 
     type _Test1 = Expect<Equal<Result1, "scalar">>;
     type _Test2 = Expect<Equal<Result2, "object">>;
     type _Test3 = Expect<Equal<Result3, "enum">>;
+    type _Test4 = Expect<Equal<Result4, "excluded">>;
     expect(true).toBe(true);
   });
 

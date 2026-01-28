@@ -21,13 +21,13 @@ import type { AnyDefaultValue } from "./type-specifier";
 
 /**
  * Parse input kind character to full kind name
- * s=scalar, e=enum, i=input
+ * s=scalar, e=enum, i=input, x=excluded
  */
-type ParseInputKind<K extends string> = K extends "s" ? "scalar" : K extends "e" ? "enum" : K extends "i" ? "input" : never;
+type ParseInputKind<K extends string> = K extends "s" ? "scalar" : K extends "e" ? "enum" : K extends "i" ? "input" : K extends "x" ? "excluded" : never;
 
 /**
  * Parse output kind character to full kind name
- * s=scalar, e=enum, o=object, u=union
+ * s=scalar, e=enum, o=object, u=union, x=excluded
  */
 type ParseOutputKind<K extends string> = K extends "s"
   ? "scalar"
@@ -37,7 +37,9 @@ type ParseOutputKind<K extends string> = K extends "s"
       ? "object"
       : K extends "u"
         ? "union"
-        : never;
+        : K extends "x"
+          ? "excluded"
+          : never;
 
 // ============================================================
 // Basic Specifier Parser
@@ -141,7 +143,9 @@ export type GetSpecKind<T extends string> = ParseBasicSpec<T> extends { kind: in
           ? "union"
           : K extends "i"
             ? "input"
-            : never
+            : K extends "x"
+              ? "excluded"
+              : never
   : never;
 
 /**

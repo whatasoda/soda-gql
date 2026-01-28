@@ -54,7 +54,7 @@ describe("Schema Edge Cases", () => {
         const factories = createFieldFactories(schema, "Query");
         // Trigger the factory to execute by accessing the invalid field
         (factories as any).weirdField();
-      }).toThrow("Invalid output specifier kind: x");
+      }).toThrow("Unsupported field type kind: excluded");
     });
   });
 
