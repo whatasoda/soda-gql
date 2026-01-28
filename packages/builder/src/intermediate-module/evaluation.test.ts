@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { Script } from "node:vm";
 import { createCanonicalId } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition } from "../ast";
 import { generateIntermediateModules } from "./evaluation";
+
+// Enable sourceCode preservation for testing
+process.env.DEBUG_INTERMEDIATE_MODULE = "true";
 
 // Test graphql-system path that won't match any test module paths
 const TEST_GRAPHQL_SYSTEM_PATH = "/test/graphql-system/index.ts";
@@ -58,7 +60,6 @@ describe("generateIntermediateModules", () => {
     expect(module?.canonicalIds).toHaveLength(1);
     expect(module?.sourceCode).toContain("gql.default({ name: 'Foo' })");
     expect(module?.script).toBeDefined();
-    expect(module?.transpiledCode).toBeDefined();
   });
 
   test("should create multiple modules for multiple files", () => {
@@ -140,25 +141,5 @@ describe("generateIntermediateModules", () => {
     if (module1?.contentHash && module2?.contentHash) {
       expect(module1.contentHash).toBe(module2.contentHash);
     }
-  });
-
-  test("should generate valid transpiled code", () => {
-    const analyses = new Map([
-      ["/src/a.ts", createTestAnalysis("/src/a.ts", [{ localPath: "foo", expression: "gql.default({ name: 'Foo' })" }])],
-    ]);
-
-    const result = new Map();
-    for (const module of generateIntermediateModules({
-      analyses,
-      targetFiles: new Set(["/src/a.ts"]),
-      graphqlSystemPath: TEST_GRAPHQL_SYSTEM_PATH,
-    })) {
-      result.set(module.filePath, module);
-    }
-
-    const module = result.get("/src/a.ts");
-    expect(module?.transpiledCode).toBeDefined();
-    expect(module?.transpiledCode).not.toContain(": string"); // TypeScript types should be stripped
-    expect(module?.script).toBeInstanceOf(Script);
   });
 });

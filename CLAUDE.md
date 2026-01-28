@@ -82,6 +82,7 @@ bun typecheck
 | [Troubleshooting](./docs/troubleshooting.md) | Common issues and solutions |
 | [Performance Profiling](./docs/guides/performance-profiling.md) | Performance measurement and optimization |
 | [Performance Reference](./docs/reference/perf-measures.md) | Benchmark command quick reference |
+| [Memory Optimization Lessons](./docs/guides/memory-optimization-lessons.md) | V8 memory optimization patterns and anti-patterns |
 
 ### Documentation Standards
 
