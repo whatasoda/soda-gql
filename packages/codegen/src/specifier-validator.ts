@@ -4,6 +4,7 @@
  */
 
 import { parseInputSpecifier, parseOutputSpecifier } from "@soda-gql/core";
+import { ok, type Result } from "neverthrow";
 import { extractSpecifiersFromCode } from "./specifier-extractor";
 
 export type ValidationError = {
@@ -22,15 +23,63 @@ export type ValidationResult = {
 };
 
 /**
+ * Safely wraps the throwing input specifier parser.
+ * Returns the error as ValidationError if parsing fails.
+ */
+const safeParseInputSpecifier = (
+  spec: string,
+): { success: true } | { success: false; error: ValidationError } => {
+  try {
+    parseInputSpecifier(spec);
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      error: {
+        specifier: spec,
+        type: "input",
+        error: e instanceof Error ? e.message : String(e),
+      },
+    };
+  }
+};
+
+/**
+ * Safely wraps the throwing output specifier parser.
+ * Returns the error as ValidationError if parsing fails.
+ */
+const safeParseOutputSpecifier = (
+  spec: string,
+): { success: true } | { success: false; error: ValidationError } => {
+  try {
+    parseOutputSpecifier(spec);
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      error: {
+        specifier: spec,
+        type: "output",
+        error: e instanceof Error ? e.message : String(e),
+      },
+    };
+  }
+};
+
+/**
  * Validates that all specifiers in generated code match expected formats.
  * Uses the core runtime parsers to ensure type compatibility.
  *
  * @example
  * const code = generateMultiSchemaModule(schemas).code;
  * const result = validateGeneratedSpecifiers(code);
- * expect(result.valid).toBe(true);
+ * if (result.isOk()) {
+ *   expect(result.value.valid).toBe(true);
+ * }
  */
-export const validateGeneratedSpecifiers = (code: string): ValidationResult => {
+export const validateGeneratedSpecifiers = (
+  code: string,
+): Result<ValidationResult, never> => {
   const extracted = extractSpecifiersFromCode(code);
   const errors: ValidationError[] = [];
 
@@ -39,38 +88,30 @@ export const validateGeneratedSpecifiers = (code: string): ValidationResult => {
 
   // Validate input specifiers
   for (const spec of extracted.inputSpecifiers) {
-    try {
-      parseInputSpecifier(spec);
+    const result = safeParseInputSpecifier(spec);
+    if (result.success) {
       inputCount++;
-    } catch (e) {
-      errors.push({
-        specifier: spec,
-        type: "input",
-        error: e instanceof Error ? e.message : String(e),
-      });
+    } else {
+      errors.push(result.error);
     }
   }
 
   // Validate output specifiers
   for (const spec of extracted.outputSpecifiers) {
-    try {
-      parseOutputSpecifier(spec);
+    const result = safeParseOutputSpecifier(spec);
+    if (result.success) {
       outputCount++;
-    } catch (e) {
-      errors.push({
-        specifier: spec,
-        type: "output",
-        error: e instanceof Error ? e.message : String(e),
-      });
+    } else {
+      errors.push(result.error);
     }
   }
 
-  return {
+  return ok({
     valid: errors.length === 0,
     errors,
     inputCount,
     outputCount,
-  };
+  });
 };
 
 /**

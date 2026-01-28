@@ -861,7 +861,7 @@ describe("specifier format validation", () => {
     const result = generateMultiSchemaModule(schemas);
 
     // Validate main generated code
-    const validation = validateGeneratedSpecifiers(result.code);
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
     if (!validation.valid) {
       throw new Error(`Invalid specifiers found:\n${formatValidationErrors(validation.errors)}`);
     }
@@ -873,12 +873,12 @@ describe("specifier format validation", () => {
 
     if (result.categoryVars?.default) {
       for (const input of result.categoryVars.default.inputs) {
-        const v = validateGeneratedSpecifiers(input.code);
+        const v = validateGeneratedSpecifiers(input.code)._unsafeUnwrap();
         expect(v.valid).toBe(true);
         totalInputCount += v.inputCount;
       }
       for (const obj of result.categoryVars.default.objects) {
-        const v = validateGeneratedSpecifiers(obj.code);
+        const v = validateGeneratedSpecifiers(obj.code)._unsafeUnwrap();
         expect(v.valid).toBe(true);
         totalOutputCount += v.outputCount;
       }
@@ -906,7 +906,7 @@ describe("specifier format validation", () => {
     });
 
     // Validate that all specifiers (including excluded type references) use valid string format
-    const validation = validateGeneratedSpecifiers(result.code);
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
     if (!validation.valid) {
       throw new Error(`Invalid specifiers found:\n${formatValidationErrors(validation.errors)}`);
     }
@@ -917,7 +917,7 @@ describe("specifier format validation", () => {
       (i) => i.name.includes("users_order_by") && !i.name.includes("stddev"),
     );
     if (orderByInput) {
-      const inputValidation = validateGeneratedSpecifiers(orderByInput.code);
+      const inputValidation = validateGeneratedSpecifiers(orderByInput.code)._unsafeUnwrap();
       expect(inputValidation.valid).toBe(true);
     }
   });
@@ -940,13 +940,13 @@ describe("specifier format validation", () => {
     const result = generateMultiSchemaModule(schemas);
 
     // Validate main code
-    const validation = validateGeneratedSpecifiers(result.code);
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
     expect(validation.valid).toBe(true);
 
     // Validate all object definitions
     if (result.categoryVars?.default?.objects) {
       for (const obj of result.categoryVars.default.objects) {
-        const objValidation = validateGeneratedSpecifiers(obj.code);
+        const objValidation = validateGeneratedSpecifiers(obj.code)._unsafeUnwrap();
         if (!objValidation.valid) {
           throw new Error(`Invalid specifiers in ${obj.name}:\n${formatValidationErrors(objValidation.errors)}`);
         }
@@ -969,13 +969,13 @@ describe("specifier format validation", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    const validation = validateGeneratedSpecifiers(result.code);
+    const validation = validateGeneratedSpecifiers(result.code)._unsafeUnwrap();
     expect(validation.valid).toBe(true);
 
     // Validate input definitions
     if (result.categoryVars?.default?.inputs) {
       for (const input of result.categoryVars.default.inputs) {
-        const inputValidation = validateGeneratedSpecifiers(input.code);
+        const inputValidation = validateGeneratedSpecifiers(input.code)._unsafeUnwrap();
         if (!inputValidation.valid) {
           throw new Error(`Invalid specifiers in ${input.name}:\n${formatValidationErrors(inputValidation.errors)}`);
         }

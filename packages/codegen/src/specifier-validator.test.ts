@@ -12,7 +12,7 @@ describe("validateGeneratedSpecifiers", () => {
       };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -26,7 +26,7 @@ describe("validateGeneratedSpecifiers", () => {
       const scalar = { spec: "s|String|!", arguments: {} };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -41,7 +41,7 @@ describe("validateGeneratedSpecifiers", () => {
       const field = { spec: "x|ExcludedField|!", arguments: {} };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -57,7 +57,7 @@ describe("validateGeneratedSpecifiers", () => {
       };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -72,7 +72,7 @@ describe("validateGeneratedSpecifiers", () => {
       const field = { spec: "o|User|![]!", arguments: {} };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -85,7 +85,7 @@ describe("validateGeneratedSpecifiers", () => {
       };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(1);
@@ -100,7 +100,7 @@ describe("validateGeneratedSpecifiers", () => {
       const field = { spec: "z|Unknown|!", arguments: {} };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(1);
@@ -116,7 +116,7 @@ describe("validateGeneratedSpecifiers", () => {
       const wrongFormat = { kind: "excluded", name: "TypeName", modifier: "?" };
     `;
 
-    const result = validateGeneratedSpecifiers(code);
+    const result = validateGeneratedSpecifiers(code)._unsafeUnwrap();
 
     // Should not find any specifiers (object format is not valid)
     expect(result.inputCount).toBe(0);
@@ -125,7 +125,7 @@ describe("validateGeneratedSpecifiers", () => {
   });
 
   it("handles empty code", () => {
-    const result = validateGeneratedSpecifiers("");
+    const result = validateGeneratedSpecifiers("")._unsafeUnwrap();
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);

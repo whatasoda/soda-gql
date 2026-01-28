@@ -24,13 +24,7 @@ export const extractSpecifiersFromCode = (code: string): ExtractedSpecifiers => 
   // Use broader pattern to catch invalid prefixes for validation
   const outputPattern = /spec:\s*"([a-z])\|([^"|]+)\|([^"]+)"/g;
 
-  // Track output specifier positions to exclude them from input matching
-  const outputPositions = new Set<number>();
-
   for (const m of code.matchAll(outputPattern)) {
-    if (m.index !== undefined) {
-      outputPositions.add(m.index);
-    }
     const match = m[0].match(/"([^"]+)"/);
     if (match?.[1]) {
       outputSpecifiers.push(match[1]);
