@@ -738,10 +738,9 @@ describe("generateMultiSchemaModule", () => {
     );
     expect(orderByInput).toBeDefined();
 
-    // Reference to excluded type should have kind: "excluded"
+    // Reference to excluded type should use string format with "x" prefix
     const orderByCode = orderByInput?.code ?? "";
-    expect(orderByCode).toContain('kind: "excluded"');
-    expect(orderByCode).toContain('name: "users_stddev_order_by"');
+    expect(orderByCode).toContain('"x|users_stddev_order_by|');
   });
 
   test("excludes types using function-based filter", () => {
