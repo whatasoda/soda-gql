@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/swc-darwin-arm64",
-  "version": "0.11.25",
+  "version": "0.11.26",
   "os": [
     "darwin"
   ],

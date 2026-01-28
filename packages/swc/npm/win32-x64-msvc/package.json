@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/swc-win32-x64-msvc",
-  "version": "0.11.25",
+  "version": "0.11.26",
   "os": [
     "win32"
   ],
