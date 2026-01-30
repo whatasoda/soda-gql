@@ -5,6 +5,7 @@ import { type ConfigError, configError } from "./errors";
 import type {
   ArtifactConfig,
   CodegenConfig,
+  GraphqlCompatConfig,
   InjectConfig,
   SchemaConfig,
   SchemaInput,
@@ -124,6 +125,12 @@ const CodegenConfigSchema = defineSchemaFor<CodegenConfig>()({
   chunkSize: z.number().int().positive().optional(),
 });
 
+const GraphqlCompatConfigSchema = defineSchemaFor<GraphqlCompatConfig>()({
+  input: z.array(z.string().min(1)),
+  schema: z.string().min(1).optional(),
+  suffix: z.string().min(1).optional(),
+});
+
 const ArtifactConfigSchema = defineSchemaFor<ArtifactConfig>()({
   path: z.string().min(1).optional(),
 });
@@ -139,6 +146,7 @@ const SodaGqlConfigSchema = defineSchemaFor<SodaGqlConfig>()({
   styles: StylesConfigSchema.optional(),
   codegen: CodegenConfigSchema.optional(),
   plugins: z.record(z.string(), z.unknown()).optional(),
+  graphqlCompat: GraphqlCompatConfigSchema.optional(),
   artifact: ArtifactConfigSchema.optional(),
 });
 
