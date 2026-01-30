@@ -16,7 +16,10 @@ import { CodegenGraphqlArgsSchema } from "../../schemas/args";
 import type { CommandResult, CommandSuccess } from "../../types";
 import { parseArgs } from "../../utils/parse-args";
 
-type ParsedGraphqlArgs = {
+/** Schema document type inferred from transformParsedGraphql to avoid graphql version mismatch. */
+type SchemaDocument = Parameters<typeof transformParsedGraphql>[1]["schemaDocument"];
+
+export type ParsedGraphqlArgs = {
   schemaName: string;
   schemaFiles: readonly string[];
   inputPatterns: readonly string[];
@@ -24,6 +27,8 @@ type ParsedGraphqlArgs = {
   suffix: string;
   /** Resolved absolute path to graphql-system directory (config.outdir) */
   graphqlSystemDir: string;
+  /** Pre-loaded schema document. If provided, skips loadSchema. */
+  schemaDocument?: SchemaDocument;
 };
 
 const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs> => {
@@ -98,19 +103,24 @@ type GeneratedFile = {
   content: string;
 };
 
-type GraphqlGenerationResult = {
+export type GraphqlGenerationResult = {
   files: GeneratedFile[];
   operationCount: number;
   fragmentCount: number;
 };
 
-const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
-  // Load schema
-  const schemaResult = loadSchema(args.schemaFiles.map((s) => resolve(s)));
-  if (schemaResult.isErr()) {
-    return err(cliErrors.fromCodegen(schemaResult.error));
+export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
+  // Load schema (use pre-loaded if available)
+  let schemaDocument: SchemaDocument;
+  if (args.schemaDocument) {
+    schemaDocument = args.schemaDocument;
+  } else {
+    const schemaResult = loadSchema(args.schemaFiles.map((s) => resolve(s)));
+    if (schemaResult.isErr()) {
+      return err(cliErrors.fromCodegen(schemaResult.error));
+    }
+    schemaDocument = schemaResult.value;
   }
-  const schemaDocument = schemaResult.value;
 
   // Find all .graphql files matching input patterns
   const graphqlFiles: string[] = [];
@@ -265,7 +275,7 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
   return ok({ files, operationCount, fragmentCount });
 };
 
-const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {
+export const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {
   for (const file of files) {
     // Ensure directory exists
     const dir = dirname(file.outputPath);
