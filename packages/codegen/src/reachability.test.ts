@@ -234,6 +234,36 @@ describe("computeReachabilityFilter", () => {
     expect(filter({ name: "Query", category: "object" })).toBe(false);
   });
 
+  test("union member scalars/enums: collected from members on the path", () => {
+    const schema = parse(`
+      type Query {
+        search: SearchResult
+      }
+      union SearchResult = User | Post
+      type User {
+        name: String
+        role: Role
+        createdAt: DateTime
+      }
+      type Post {
+        title: String
+      }
+      enum Role {
+        ADMIN
+        USER
+      }
+      scalar DateTime
+    `);
+
+    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+
+    expect(filter({ name: "SearchResult", category: "union" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
+    expect(filter({ name: "Role", category: "enum" })).toBe(true);
+    expect(filter({ name: "DateTime", category: "scalar" })).toBe(true);
+    expect(filter({ name: "String", category: "scalar" })).toBe(true);
+  });
+
   test("deep chain: only types on the path are included", () => {
     const schema = parse(`
       type Query {
