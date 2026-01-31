@@ -328,4 +328,31 @@ describe("computeReachabilityFilter", () => {
     // X is reachable from Query→A but not on path to C
     expect(filter({ name: "X", category: "object" })).toBe(false);
   });
+
+  test("shared input type: does not contaminate unrelated branches", () => {
+    const schema = parse(`
+      type Query {
+        users(filter: SharedInput): User
+        admins(filter: SharedInput): Admin
+      }
+      type User {
+        name: String
+      }
+      type Admin {
+        level: Int
+      }
+      input SharedInput {
+        value: String
+      }
+    `);
+
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
+
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
+    expect(filter({ name: "SharedInput", category: "input" })).toBe(true);
+    // Admin is NOT on the path from Query to User
+    expect(filter({ name: "Admin", category: "object" })).toBe(false);
+    expect(filter({ name: "Int", category: "scalar" })).toBe(false);
+  });
 });
