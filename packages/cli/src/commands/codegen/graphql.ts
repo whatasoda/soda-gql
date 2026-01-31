@@ -107,6 +107,8 @@ export type GraphqlGenerationResult = {
   files: GeneratedFile[];
   operationCount: number;
   fragmentCount: number;
+  /** Fragment target type names (onType values from parsed fragments). */
+  targetTypes: ReadonlySet<string>;
 };
 
 export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
@@ -141,6 +143,8 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
 
   // Track all fragments for cross-file imports
   const fragmentsByName = new Map<string, { file: string; outputPath: string }>();
+  // Collect fragment target types for reachability analysis
+  const targetTypes = new Set<string>();
   // Cache parsed results to avoid re-reading and re-parsing files
   const parseCache = new Map<string, ParseResult>();
 
@@ -159,6 +163,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     const outputPath = join(dirname(file), outputBase);
 
     for (const frag of parsed.fragments) {
+      targetTypes.add(frag.onType);
       const existing = fragmentsByName.get(frag.name);
       if (existing && existing.file !== file) {
         return err(cliErrors.duplicateFragment(frag.name, existing.file, file));
@@ -272,7 +277,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
   }
 
-  return ok({ files, operationCount, fragmentCount });
+  return ok({ files, operationCount, fragmentCount, targetTypes });
 };
 
 export const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {

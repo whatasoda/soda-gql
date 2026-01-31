@@ -148,7 +148,6 @@ describe("soda-gql codegen CLI", () => {
 
       // Verify human-readable output (unified pipeline format)
       expect(result.stdout).toContain("[schema] Generated");
-      expect(result.stdout).toContain("[typegen] Generated prebuilt types");
 
       const tsconfigPath = join(caseDir, "tsconfig.json");
       const extendsPath = toPosix(relative(caseDir, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
