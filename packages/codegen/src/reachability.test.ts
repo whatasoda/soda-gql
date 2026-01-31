@@ -356,7 +356,56 @@ describe("computeReachabilityFilter", () => {
     expect(filter({ name: "Int", category: "scalar" })).toBe(false);
   });
 
-  test("usedInputTypes: excludes unused argument input types", () => {
+  test("usedArgumentTypes: includes enum variable types directly used as arguments", () => {
+    const schema = parse(`
+      type Query {
+        users(status: Status): User
+      }
+      type User {
+        name: String
+      }
+      enum Status {
+        ACTIVE
+        INACTIVE
+      }
+    `);
+
+    // Status is an enum used directly as a variable type
+    const { filter } = computeReachabilityFilter(
+      schema,
+      new Set(["User"]),
+      new Set(["Status"]),
+    );
+
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
+    expect(filter({ name: "Status", category: "enum" })).toBe(true);
+  });
+
+  test("usedArgumentTypes: includes scalar variable types directly used as arguments", () => {
+    const schema = parse(`
+      type Query {
+        events(after: DateTime): Event
+      }
+      type Event {
+        title: String
+      }
+      scalar DateTime
+    `);
+
+    // DateTime is a custom scalar used directly as a variable type
+    const { filter } = computeReachabilityFilter(
+      schema,
+      new Set(["Event"]),
+      new Set(["DateTime"]),
+    );
+
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "Event", category: "object" })).toBe(true);
+    expect(filter({ name: "DateTime", category: "scalar" })).toBe(true);
+  });
+
+  test("usedArgumentTypes: excludes unused argument input types", () => {
     const schema = parse(`
       type Query {
         users(filter: UserFilter): User
@@ -403,7 +452,7 @@ describe("computeReachabilityFilter", () => {
     expect(filter({ name: "String", category: "scalar" })).toBe(true);
   });
 
-  test("usedInputTypes: transitive input dependencies are included", () => {
+  test("usedArgumentTypes: transitive input dependencies are included", () => {
     const schema = parse(`
       type Query {
         items(filter: FilterA): [Item]
@@ -429,7 +478,29 @@ describe("computeReachabilityFilter", () => {
     expect(filter({ name: "FilterB", category: "input" })).toBe(true);
   });
 
-  test("usedInputTypes: undefined falls back to collecting all arguments", () => {
+  test("warns and returns pass-all when reachable set is empty", () => {
+    const schema = parse(`
+      type Query {
+        hello: String
+      }
+      type Orphan {
+        value: String
+      }
+    `);
+
+    // Orphan exists in schema but is unreachable from Query
+    const { filter, warnings } = computeReachabilityFilter(schema, new Set(["Orphan"]));
+
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("No types reachable from root operations to target types");
+    expect(warnings[0]).toContain("Orphan");
+    // Pass-all filter
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "Orphan", category: "object" })).toBe(true);
+    expect(filter({ name: "String", category: "scalar" })).toBe(true);
+  });
+
+  test("usedArgumentTypes: undefined falls back to collecting all arguments", () => {
     const schema = parse(`
       type Query {
         users(filter: UserFilter): User
@@ -442,7 +513,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    // No usedInputTypes → current behavior (all arguments collected)
+    // No usedArgumentTypes → current behavior (all arguments collected)
     const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "UserFilter", category: "input" })).toBe(true);

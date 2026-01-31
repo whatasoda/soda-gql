@@ -81,7 +81,7 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
   // Step 1: codegen graphql (optional, before schema to get targetTypes for reachability)
   // Collect target types per schema for reachability filtering
   const targetTypesBySchema = new Map<string, ReadonlySet<string>>();
-  const usedInputTypesBySchema = new Map<string, ReadonlySet<string>>();
+  const usedArgumentTypesBySchema = new Map<string, ReadonlySet<string>>();
   let compatFiles: Awaited<ReturnType<typeof generateCompatFiles>> | undefined;
 
   if (config.graphqlCompat) {
@@ -106,7 +106,7 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
     }
 
     targetTypesBySchema.set(graphqlCompat.schema, compatFiles.value.targetTypes);
-    usedInputTypesBySchema.set(graphqlCompat.schema, compatFiles.value.usedInputTypes);
+    usedArgumentTypesBySchema.set(graphqlCompat.schema, compatFiles.value.usedArgumentTypes);
 
     messages.push(
       `[graphql] Generated ${compatFiles.value.operationCount} operation(s) and ${compatFiles.value.fragmentCount} fragment(s) from ${compatFiles.value.files.length} file(s)`,
@@ -118,12 +118,12 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
   for (const [name, schemaConfig] of Object.entries(config.schemas)) {
     // Compose reachability filter with user-defined typeFilter
     const targetTypes = targetTypesBySchema.get(name);
-    const usedInputTypes = usedInputTypesBySchema.get(name);
+    const usedArgumentTypes = usedArgumentTypesBySchema.get(name);
     const document = schemaDocuments.get(name);
     let typeFilter: TypeFilterConfig | undefined = schemaConfig.typeFilter;
 
     if (targetTypes && targetTypes.size > 0 && document) {
-      const { filter: reachFilter, warnings: reachWarnings } = computeReachabilityFilter(document, targetTypes, usedInputTypes);
+      const { filter: reachFilter, warnings: reachWarnings } = computeReachabilityFilter(document, targetTypes, usedArgumentTypes);
       for (const w of reachWarnings) {
         messages.push(`  warning: ${w}`);
       }

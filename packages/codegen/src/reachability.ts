@@ -127,7 +127,7 @@ const computeReachableTypes = (
   graph: TypeGraph,
   schema: ReturnType<typeof createSchemaIndex>,
   targetTypes: ReadonlySet<string>,
-  usedInputTypes?: ReadonlySet<string>,
+  usedArgumentTypes?: ReadonlySet<string>,
 ): Set<string> => {
   // Step 1: Backward BFS from targets
   const upstream = bfs(graph.reverse, targetTypes);
@@ -162,8 +162,8 @@ const computeReachableTypes = (
         }
       }
 
-      // Collect argument types (only when usedInputTypes is not provided)
-      if (!usedInputTypes && field.arguments) {
+      // Collect argument types (only when usedArgumentTypes is not provided)
+      if (!usedArgumentTypes && field.arguments) {
         for (const arg of field.arguments) {
           const argType = extractNamedType(arg.type);
           if (!reachable.has(argType)) {
@@ -177,9 +177,9 @@ const computeReachableTypes = (
     }
   }
 
-  // When usedInputTypes is provided, seed from it instead of field arguments
-  if (usedInputTypes) {
-    for (const inputName of usedInputTypes) {
+  // When usedArgumentTypes is provided, seed from it instead of field arguments
+  if (usedArgumentTypes) {
+    for (const inputName of usedArgumentTypes) {
       if (!reachable.has(inputName)) {
         reachable.add(inputName);
         inputQueue.push(inputName);
@@ -227,7 +227,7 @@ export type ReachabilityResult = {
 export const computeReachabilityFilter = (
   document: DocumentNode,
   targetTypes: ReadonlySet<string>,
-  usedInputTypes?: ReadonlySet<string>,
+  usedArgumentTypes?: ReadonlySet<string>,
 ): ReachabilityResult => {
   if (targetTypes.size === 0) {
     return { filter: () => true, warnings: [] };
@@ -257,7 +257,13 @@ export const computeReachabilityFilter = (
     return { filter: () => true, warnings };
   }
 
-  const reachable = computeReachableTypes(graph, schema, validTargets, usedInputTypes);
+  const reachable = computeReachableTypes(graph, schema, validTargets, usedArgumentTypes);
+
+  if (reachable.size === 0) {
+    warnings.push(`No types reachable from root operations to target types: ${[...validTargets].join(", ")}; skipping reachability filter`);
+    return { filter: () => true, warnings };
+  }
+
   return {
     filter: (context: FilterContext) => reachable.has(context.name),
     warnings,

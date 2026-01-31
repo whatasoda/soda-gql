@@ -110,7 +110,7 @@ export type GraphqlGenerationResult = {
   /** Fragment target type names (onType values from parsed fragments). */
   targetTypes: ReadonlySet<string>;
   /** Input type names actually used as argument types by fragments and operations. */
-  usedInputTypes: ReadonlySet<string>;
+  usedArgumentTypes: ReadonlySet<string>;
 };
 
 export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
@@ -176,7 +176,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
 
   // Second pass: generate code (using cached parse results)
   const files: GeneratedFile[] = [];
-  const usedInputTypes = new Set<string>();
+  const usedArgumentTypes = new Set<string>();
   let operationCount = 0;
   let fragmentCount = 0;
 
@@ -230,15 +230,15 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
       }
     }
 
-    // Collect input types used as argument types
+    // Collect all types used as argument types (input, enum, scalar)
     for (const frag of fragments) {
       for (const v of (frag as EnrichedFragment).variables) {
-        if (v.typeKind === "input") usedInputTypes.add(v.typeName);
+        usedArgumentTypes.add(v.typeName);
       }
     }
     for (const op of operations) {
       for (const v of (op as EnrichedOperation).variables) {
-        if (v.typeKind === "input") usedInputTypes.add(v.typeName);
+        usedArgumentTypes.add(v.typeName);
       }
     }
 
@@ -292,7 +292,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
   }
 
-  return ok({ files, operationCount, fragmentCount, targetTypes, usedInputTypes });
+  return ok({ files, operationCount, fragmentCount, targetTypes, usedArgumentTypes });
 };
 
 export const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {
