@@ -98,8 +98,9 @@ const bfs = (adjacency: ReadonlyMap<string, ReadonlySet<string>>, seeds: Iterabl
     }
   }
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++]!;
     const neighbors = adjacency.get(current);
     if (!neighbors) continue;
 
@@ -176,8 +177,9 @@ const computeReachableTypes = (
   }
 
   // Transitively resolve input types
-  while (inputQueue.length > 0) {
-    const inputName = inputQueue.shift()!;
+  let inputHead = 0;
+  while (inputHead < inputQueue.length) {
+    const inputName = inputQueue[inputHead++]!;
     const inputRecord = schema.inputs.get(inputName);
     if (!inputRecord) continue;
 
