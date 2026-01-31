@@ -2,11 +2,16 @@
 
 ## Status
 
-**Draft** - Design in progress
+**Draft** - Direction finalized
 
 ## Summary
 
-This RFC proposes building an independent GraphQL Language Server Protocol (LSP) implementation for soda-gql that provides IDE features (autocomplete, diagnostics, hover) for GraphQL operations written as tagged template literals in TypeScript files. Unlike traditional `.graphqlrc.yaml` path-based schema routing, this approach uses explicit schema association through import paths or tag names, solving multi-schema conflicts while maintaining soda-gql's zero-runtime philosophy.
+This RFC defines the design for an independent GraphQL Language Server Protocol (LSP) implementation for soda-gql. The LSP provides IDE features (autocomplete, diagnostics, hover, go-to-definition) for GraphQL operations written as tagged template literals in TypeScript files.
+
+The design commits to two key decisions:
+
+1. **Tagged Template API (Pattern C)**: Extend the existing `gql.{schemaName}` interface with tagged template support, so that `` gql.default`query { ... }` `` coexists naturally alongside `gql.default(callback)`.
+2. **Hybrid LSP Architecture**: Build a custom LSP server using `vscode-languageserver` for protocol handling and `graphql-language-service` (interface layer only) for completion/diagnostics/hover algorithms, while managing config, file parsing, and multi-schema routing independently.
 
 ## Motivation
 
@@ -83,61 +88,12 @@ Two main approaches exist for providing GraphQL IDE features:
 
 ### Why tagged template literals
 
-Tagged template literals provide a natural syntax for embedding GraphQL in TypeScript:
-
-```typescript
-import { graphql } from "@/graphql-system/default";
-
-const GetUser = graphql`
-  query GetUser($id: ID!) {
-    user(id: $id) {
-      id
-      name
-      email
-    }
-  }
-`;
-```
-
-Advantages:
-- **Import path encodes the schema**: `@/graphql-system/default` vs `@/graphql-system/admin`
-- **Industry-standard pattern**: Used by Apollo Client, urql, Relay, gql.tada
-- **Parser-friendly**: LSP can extract GraphQL content from tagged templates via AST analysis
-- **Syntax highlighting**: Editor extensions (e.g., vscode-graphql-syntax) already support GraphQL in tagged templates via TextMate grammar injection
-
-## Design Decisions
-
-### 4.1 Tagged Template API
-
-The tagged template API coexists with the existing `gql.{schemaName}(callback)` composer API. Both styles produce the same build-time artifacts and runtime behavior.
-
-#### API pattern candidates
-
-**Pattern A: Schema-specific subpath imports**
-
-```typescript
-import { graphql } from "@/graphql-system/default";
-import { graphql as adminGraphql } from "@/graphql-system/admin";
-
-const GetUser = graphql`query GetUser($id: ID!) { user(id: $id) { id name } }`;
-const GetAdmin = adminGraphql`query GetAdmin { admins { id } }`;
-```
-
-**Pattern B: Single import with member access**
-
-```typescript
-import { graphql } from "@/graphql-system";
-
-const GetUser = graphql.default`query GetUser($id: ID!) { user(id: $id) { id name } }`;
-const GetAdmin = graphql.admin`query GetAdmin { admins { id } }`;
-```
-
-**Pattern C: Extend existing `gql` with tagged template support**
+Tagged template literals provide a natural syntax for embedding GraphQL in TypeScript. By extending the existing `gql` interface, tagged templates integrate seamlessly with the current composer API:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Existing: callback style (unchanged)
+// Existing: callback composer (unchanged)
 const GetUser1 = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
@@ -159,35 +115,64 @@ const GetUser2 = gql.default`
 `;
 ```
 
-#### Comparison
+Advantages:
+- **Tag name encodes the schema**: `gql.default` vs `gql.admin` — explicit and unambiguous
+- **Unified import**: Both callback and tagged template styles use the same `gql` import
+- **Industry-standard pattern**: Tagged template literals for GraphQL are used by Apollo Client, urql, Relay, gql.tada
+- **Parser-friendly**: LSP can extract GraphQL content from tagged templates via AST analysis
+- **Syntax highlighting**: Editor extensions (e.g., vscode-graphql-syntax) already support GraphQL in tagged templates via TextMate grammar injection
 
-| Aspect | Pattern A (subpath) | Pattern B (member) | Pattern C (gql extension) |
-|--------|---------------------|--------------------|---------------------------|
-| Tag recognition by `graphql-tag-pluck` | ✅ Supported via `modules` config (path + identifier) | ❌ `graphql.default` not supported. Custom parser required | ❌ `gql.default` not supported. Custom parser required |
-| External tool compatibility | High (`graphql` is a standard identifier) | Low | Low |
-| Integration with existing API | Clear separation (different import paths) | Two usage patterns from same import | Most natural, but ambiguity between `gql.default(callback)` and `` gql.default`tag` `` |
-| Multi-schema explicitness | Explicit via import statement | Explicit via member name | Explicit via member name |
+## Design Decisions
 
-#### Decision criteria
+### 4.1 Tagged Template API (Pattern C)
 
-- **If relying on external tools** (graphql-eslint, existing graphql-config ecosystem): **Pattern A** is the safest choice, as `graphql` is a universally recognized tag identifier.
-- **If building a custom LSP** (which this RFC proposes): **Pattern C** provides the best DX by unifying the import and allowing both callback and tagged template styles through the same `gql.{schemaName}` interface. The custom LSP can recognize `gql.{schemaName}` as a tagged template tag regardless of external tool support.
+The tagged template API extends the existing `gql.{schemaName}` interface. The same `gql.{schemaName}` expression works as both a function call (existing callback API) and a tagged template literal (new). Both styles produce the same build-time artifacts and runtime behavior.
 
-The RFC presents both options. The final choice depends on how much weight is given to external tool compatibility vs. internal API cohesion.
+#### API design
+
+```typescript
+import { gql } from "@/graphql-system";
+
+// Callback style (existing, unchanged)
+const GetUser1 = gql.default(({ query }) => query.operation({ ... }));
+
+// Tagged template style (new)
+const GetUser2 = gql.default`
+  query GetUser($id: ID!) {
+    user(id: $id) { id name }
+  }
+`;
+
+// Multi-schema: same pattern, different schema name
+const GetAdmin = gql.admin`
+  query GetAdmin {
+    admins { id role }
+  }
+`;
+```
+
+This design was chosen because:
+- **Natural coexistence**: `gql.default(callback)` and `` gql.default`tag` `` share the same import and schema namespace. Developers choose the style that fits each use case.
+- **No import proliferation**: Unlike subpath imports (`import { graphql } from "@/graphql-system/default"`), Pattern C uses a single import for all schemas.
+- **Custom LSP eliminates external tool constraints**: Since this RFC proposes building a custom LSP, there is no need for `graphql-tag-pluck` compatibility. The LSP's parser recognizes `gql.{schemaName}` as a tagged template tag directly.
 
 #### Runtime behavior
 
 ```typescript
 // Generated by codegen (in graphql-system output)
+// The gql.{schemaName} object acts as both a function and a tagged template tag:
+//   gql.default(callback)     → existing callback API
+//   gql.default`query { ... }` → new tagged template API
+//
 // Tagged template function signature:
-export function graphql(
+export function taggedTemplate(
   strings: TemplateStringsArray,
   ...values: never[]  // Interpolation is prohibited
 ): TypedDocumentNode<unknown, unknown>;
 ```
 
 Key constraints:
-- **No interpolation**: `` graphql`...${expr}...` `` is a type error (`never[]` enforces this). Interpolation would break static analysis and LSP autocomplete.
+- **No interpolation**: `` gql.default`...${expr}...` `` is a type error (`never[]` enforces this). Interpolation would break static analysis and LSP autocomplete.
 - **Build-time extraction**: The builder plugin detects tagged templates via AST analysis and transforms them into the same artifact format as `gql.{schemaName}(callback)` calls.
 - **Runtime transformation**: At build time, tagged templates are replaced with `createRuntimeOperation` / `createRuntimeFragment` calls (same codepath as existing API).
 
@@ -197,7 +182,7 @@ Two approaches for type-safe results from tagged templates:
 
 **Approach 1: Codegen-generated TypedDocumentNode** (graphql-codegen pattern)
 ```typescript
-const GetUser = graphql`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+const GetUser = gql.default`query GetUser($id: ID!) { user(id: $id) { id name } }`;
 // Type: TypedDocumentNode<GetUserQuery, GetUserQueryVariables>
 // Types generated by a separate codegen step
 ```
@@ -214,79 +199,27 @@ This decision is deferred to implementation phase. See [Open Questions](#open-qu
 
 ### 4.2 Schema association mechanism
 
-Schema association is resolved through import paths:
+Schema association is resolved through the tag name (`gql.{schemaName}`) and its import path:
 
-1. **Codegen generates per-schema subpaths**: `graphql-system/default/`, `graphql-system/admin/`
-2. **LSP resolves imports to schema names**: When the LSP encounters a tagged template, it traces the tag function's import path back to a schema subpath
+1. **Codegen generates per-schema entries**: The `gql` object exposes schema-specific members (`gql.default`, `gql.admin`)
+2. **LSP resolves tag to schema name**: When the LSP encounters `` gql.{name}`...` ``, it extracts `{name}` as the schema identifier
 3. **Config provides the mapping**: The existing `schemas: Record<string, SchemaConfig>` in `soda-gql.config.ts` defines available schemas. The existing `graphqlSystemAliases` config (e.g., `["@/graphql-system"]`) provides alias resolution.
 
 Resolution algorithm:
 ```
 1. Find tagged template at cursor position
-2. Trace tag identifier to its import declaration
-3. Resolve import path (handle tsconfig paths aliases)
-4. Match against config:
-   - outdir + "/" + schemaName (e.g., "./graphql-system/default")
-   - graphqlSystemAliases[i] + "/" + schemaName (e.g., "@/graphql-system/default")
-5. Return matched schemaName, or report diagnostic if unresolved
+2. Extract schema name from tag expression (e.g., gql.default → "default", gql.admin → "admin")
+3. Validate that the tag's import path resolves to the graphql-system output:
+   - outdir (e.g., "./graphql-system")
+   - graphqlSystemAliases[i] (e.g., "@/graphql-system")
+   - Handle tsconfig paths aliases if tsconfigPath is configured
+4. Match schema name against config schemas: Record<string, SchemaConfig>
+5. Return matched schema, or report diagnostic if unresolved
 ```
 
-### 4.3 LSP base: build vs. buy analysis
+### 4.3 LSP architecture: Hybrid approach
 
-Three approaches were evaluated for the LSP server implementation:
-
-#### Option 1: Wrap graphql-language-service-server
-
-```
-soda-gql LSP Server
-├── startServer() from graphql-language-service-server
-├── Custom parseDocument (tagged template extraction)
-├── graphql-config integration (auto-generated .graphqlrc)
-└── Multi-schema resolver (soda-gql.config.ts → project mapping)
-```
-
-**Extension points available**:
-- `parseDocument`: Injectable custom parser for extracting GraphQL from `.ts` files
-- `startServer({ method, loadConfigOptions, parser })`: Customizable parser and config loading
-- `graphql-config` projects: Per-schema project isolation
-- Babel-based parser (`src/parsers/babel.ts`) handles tag recognition with configurable tag names
-
-**Pros**:
-- Autocomplete (`getAutocompleteSuggestions`), diagnostics (`getDiagnostics`), hover, go-to-definition already implemented
-- GraphQL spec-compliant validation
-- Built-in `.graphql` file support
-- Compatible with `graphql-config` ecosystem (graphql-eslint, etc.)
-
-**Cons**:
-- Forces dependency on `graphql-config` (soda-gql has its own config system)
-- Multi-schema resolution depends on `graphql-config` projects mechanism — import path analysis still needs custom implementation
-- Large dependency footprint (part of graphiql monorepo)
-- Offset mapping (cursor position in TS file → position in GraphQL document) needs custom implementation regardless
-
-#### Option 2: Full from-scratch (vscode-languageserver + graphql-js)
-
-```
-soda-gql LSP Server
-├── vscode-languageserver (LSP protocol handling)
-├── Custom TS parser (tagged template extraction)
-├── graphql-js (parse, validate, buildSchema)
-└── soda-gql config loader (reads soda-gql.config.ts directly)
-```
-
-**Pros**:
-- Reads `soda-gql.config.ts` directly (no config duplication)
-- Full control over multi-schema resolution
-- Minimal dependency footprint
-- Complete freedom in tagged template parsing (supports Pattern A/B/C)
-- Can reuse soda-gql's existing TypeScript AST / SWC parsers
-
-**Cons**:
-- Must implement all LSP handlers (completion, hover, diagnostics, definition)
-- Must implement GraphQL position calculation, error recovery
-- Must implement `.graphql` file support from scratch
-- Higher testing and maintenance burden
-
-#### Option 3: Hybrid (recommended candidate)
+The LSP server uses a hybrid architecture that combines existing battle-tested algorithms from `graphql-language-service` with custom infrastructure for soda-gql's specific needs.
 
 ```
 soda-gql LSP Server
@@ -295,36 +228,35 @@ soda-gql LSP Server
 │   └── getAutocompleteSuggestions(), getDiagnostics(), getHoverInformation()
 ├── Custom TS parser (tagged template extraction, import analysis)
 ├── soda-gql config loader (reads soda-gql.config.ts directly)
-└── Schema resolver (import path → schema mapping)
+└── Schema resolver (tag name → schema mapping)
 ```
 
-Uses `graphql-language-service` (the **interface package**, not the server package) for the core GraphQL intelligence algorithms, but handles LSP protocol, config management, and file parsing independently.
+#### Why Hybrid
 
-**Pros**:
-- Battle-tested completion and diagnostics algorithms (from interface layer)
-- Reads `soda-gql.config.ts` directly (no `graphql-config` dependency)
-- Full control over multi-schema resolution
-- Freedom in tagged template parsing design
-- Moderate dependency footprint (interface package only, not the full server)
+The hybrid approach strikes the right balance between implementation effort and architectural control:
 
-**Cons**:
-- Must implement LSP handlers (but simpler than from-scratch since core logic is borrowed)
-- Must implement `.graphql` file support
-- Depends on `graphql-language-service` interface package for updates
+- **graphql-language-service interface layer** provides stateless, schema-aware completion/diagnostics/hover functions that are proven across thousands of projects. Reimplementing these algorithms from scratch would add significant effort with no benefit.
+- **Custom LSP server** (not wrapping `graphql-language-service-server`) avoids the forced dependency on `graphql-config`, which would create config duplication with `soda-gql.config.ts`. Reading soda-gql config directly ensures a single source of truth.
+- **Custom TS parser** is required regardless of approach, since no existing parser recognizes the `gql.{schemaName}` member expression pattern. soda-gql's existing builder already has TypeScript AST analysis for `gql.{schemaName}()` calls, which can be extended for tagged templates.
 
-#### Comparison matrix
+#### Characteristics
 
-| Aspect | Option 1: Wrap server | Option 2: From scratch | Option 3: Hybrid |
-|--------|-----------------------|------------------------|------------------|
-| Initial implementation cost | Low | High | Medium |
-| Completion/diagnostics quality | High (proven) | Needs implementation | High (interface layer) |
-| Multi-schema control | Constrained by graphql-config | Full freedom | Full freedom |
-| Config management | Requires graphql-config | soda-gql.config direct | soda-gql.config direct |
-| Tagged template support | parseDocument customization | Custom parser | Custom parser |
-| `.graphql` file support | Built-in | Custom implementation | Custom implementation |
-| Dependency count | High | Minimal | Moderate |
-| Long-term maintenance | Depends on upstream | Fully self-managed | Interface layer only |
-| soda-gql-specific features | Constrained | Full freedom | Full freedom |
+**What graphql-language-service provides** (stateless functions, no server lifecycle):
+- `getAutocompleteSuggestions()`: Field, argument, type, directive autocomplete
+- `getDiagnostics()`: Syntax and validation errors with custom rule injection
+- `getHoverInformation()`: Type information, field descriptions, deprecation notices
+- `getOutline()`: Document symbols (operations, fragments)
+- `getDefinitionQueryResultFor*()`: Go-to-definition helpers
+
+**What we build ourselves**:
+- LSP server lifecycle and protocol handling (`vscode-languageserver`)
+- TypeScript file parsing and tagged template extraction
+- Position mapping (TS file coordinates ↔ GraphQL document coordinates)
+- Multi-schema resolution (`gql.{schemaName}` → schema lookup)
+- Config loading from `soda-gql.config.ts`
+- Schema caching and reload
+- Cross-file fragment resolution
+- `.graphql` file support
 
 ### 4.4 Configuration integration
 
@@ -366,7 +298,7 @@ packages/lsp/
 ├── src/
 │   ├── server.ts              # LSP server entry point
 │   ├── document-manager.ts    # TS file parsing, tagged template extraction
-│   ├── schema-resolver.ts     # Import path → schema name resolution
+│   ├── schema-resolver.ts     # Tag name → schema resolution
 │   ├── handlers/
 │   │   ├── completion.ts      # textDocument/completion
 │   │   ├── diagnostics.ts     # textDocument/publishDiagnostics
@@ -378,7 +310,7 @@ packages/lsp/
 └── package.json
 ```
 
-Dependencies (for hybrid approach):
+Dependencies:
 - `vscode-languageserver` / `vscode-languageserver-textdocument`: LSP protocol
 - `graphql-language-service`: Completion, diagnostics, hover algorithms
 - `graphql`: Parsing and validation
@@ -395,7 +327,7 @@ Parses TypeScript files to extract tagged templates and their schema association
 type ExtractedTemplate = {
   /** Range within the TS file (for offset mapping) */
   range: { start: number; end: number };
-  /** Resolved schema name */
+  /** Resolved schema name (extracted from gql.{schemaName} tag) */
   schemaName: string;
   /** Raw GraphQL content (without template tag) */
   content: string;
@@ -410,27 +342,28 @@ type DocumentState = {
 
 The document manager:
 1. Parses the TypeScript file into an AST
-2. Finds all tagged template expressions matching `gql.{name}` or `graphql` identifiers
-3. Resolves the tag's import to a schema name via the schema resolver
-4. Extracts the GraphQL string content
-5. Caches results per document (invalidated on change)
+2. Finds all tagged template expressions matching `gql.{name}` member expressions
+3. Extracts the schema name from the member expression
+4. Validates the `gql` import resolves to the graphql-system output
+5. Extracts the GraphQL string content
+6. Caches results per document (invalidated on change)
 
 #### Schema Resolver
 
-Maps import paths to schema names using the soda-gql config:
+Maps schema names to `GraphQLSchema` objects using the soda-gql config:
 
 ```typescript
 type SchemaEntry = {
   name: string;
   schema: GraphQLSchema;
   documentNode: DocumentNode;
-  matchPaths: string[];  // All paths that resolve to this schema
+  matchPaths: string[];  // All import paths that resolve to this schema's gql object
 };
 ```
 
 Builds `matchPaths` from config:
-- `{outdir}/{schemaName}` (e.g., `./graphql-system/default`)
-- `{alias}/{schemaName}` for each `graphqlSystemAliases` entry (e.g., `@/graphql-system/default`)
+- `{outdir}` (e.g., `./graphql-system`) — the `gql` import source
+- `{alias}` for each `graphqlSystemAliases` entry (e.g., `@/graphql-system`)
 - Handles tsconfig `paths` resolution if `tsconfigPath` is configured
 
 #### Position Mapping
@@ -512,7 +445,7 @@ require('lspconfig').soda_gql.setup{}
 
 ### Phase 0: Schema resolver and config extension
 
-- Implement `schema-resolver.ts`: import path → schema name resolution
+- Implement `schema-resolver.ts`: tag name → schema resolution using soda-gql config
 - Extend config types if needed (e.g., per-schema `importPaths` overrides)
 - Add `codegen lsp-config` CLI command to generate `.graphqlrc.generated.json`
 - Unit tests for schema resolution with aliases and tsconfig paths
@@ -520,7 +453,7 @@ require('lspconfig').soda_gql.setup{}
 ### Phase 1: LSP server core
 
 - Set up `@soda-gql/lsp` package
-- Implement document manager (TS AST → tagged template extraction)
+- Implement document manager (TS AST → `gql.{schemaName}` tagged template extraction)
 - Implement position mapping (TS offset ↔ GraphQL offset)
 - Wire up LSP handlers using `graphql-language-service` interface functions:
   - `textDocument/completion` → `getAutocompleteSuggestions()`
@@ -570,6 +503,41 @@ const q2 = gql.default`query GetUser { user { id } }`;
 ```
 
 ## Alternatives Considered
+
+### Tagged template: Pattern A (schema-specific subpath imports)
+
+```typescript
+import { graphql } from "@/graphql-system/default";
+import { graphql as adminGraphql } from "@/graphql-system/admin";
+
+const GetUser = graphql`query GetUser { user { id } }`;
+const GetAdmin = adminGraphql`query GetAdmin { admins { id } }`;
+```
+
+**Rejected**: Pattern A uses `graphql` as the tag identifier, which is compatible with `graphql-tag-pluck` and external tools. However, since this RFC builds a custom LSP, `graphql-tag-pluck` compatibility is unnecessary. Pattern A requires separate imports per schema, leading to import proliferation and aliasing (`graphql as adminGraphql`), which is less ergonomic than Pattern C's unified `gql` import.
+
+### Tagged template: Pattern B (single import with member access)
+
+```typescript
+import { graphql } from "@/graphql-system";
+
+const GetUser = graphql.default`query GetUser { user { id } }`;
+const GetAdmin = graphql.admin`query GetAdmin { admins { id } }`;
+```
+
+**Rejected**: Pattern B provides the same member-access ergonomics as Pattern C but introduces a separate `graphql` identifier that doesn't integrate with the existing `gql.{schemaName}(callback)` API. Pattern C's advantage is that both callback and tagged template styles share the same `gql.{schemaName}` interface, making the mental model simpler.
+
+### LSP: Wrap graphql-language-service-server
+
+Use `graphql-language-service-server`'s `startServer()` with custom `parseDocument` for tagged template extraction.
+
+**Rejected**: This approach forces a dependency on `graphql-config` for schema management, creating config duplication with `soda-gql.config.ts`. Multi-schema resolution would still depend on `graphql-config`'s projects mechanism, limiting control. The server package also carries a large dependency footprint (part of the graphiql monorepo). The hybrid approach gets the same completion/diagnostics quality by using the interface layer directly, without the server-layer constraints.
+
+### LSP: Full from-scratch implementation
+
+Use only `vscode-languageserver` + `graphql-js`, implementing all completion/diagnostics/hover logic from scratch.
+
+**Rejected**: The `graphql-language-service` interface layer provides stateless, battle-tested algorithms for autocomplete suggestions, diagnostics, and hover information. Reimplementing these from scratch would be significant effort with no architectural benefit, since the interface functions have no server lifecycle or config dependencies — they take a schema + query + position and return results.
 
 ### TypeScript Language Service Plugin
 

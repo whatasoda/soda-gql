@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document supplements the [GraphQL LSP Multi-Schema RFC](./graphql-lsp-multi-schema.md) with deeper technical analysis of what building an LSP from scratch entails, what existing libraries provide, and what opportunities exist for soda-gql-specific extensions beyond standard GraphQL LSP features.
+This document supplements the [GraphQL LSP Multi-Schema RFC](./graphql-lsp-multi-schema.md) with deeper technical analysis of the hybrid LSP architecture. It covers what the `graphql-language-service` interface layer provides, what must be built from scratch for the `gql.{schemaName}` tagged template pattern (Pattern C), and what opportunities exist for soda-gql-specific extensions beyond standard GraphQL LSP features.
 
 ## Table of Contents
 
@@ -244,8 +244,8 @@ function getVariablesJSONSchema(variableToType: Record<string, GraphQLInputType>
 The most critical custom component. It must:
 
 1. **Parse TypeScript AST** to find tagged template expressions
-2. **Identify the tag**: Match against known patterns (`gql.{schemaName}`, `graphql`, etc.)
-3. **Trace imports**: Follow the tag identifier back to its import declaration
+2. **Identify the tag**: Match `gql.{schemaName}` member expression patterns (the chosen Pattern C)
+3. **Trace imports**: Follow the `gql` identifier back to its import declaration, validate it resolves to the graphql-system output
 4. **Extract content**: Get the raw GraphQL string from the template
 5. **Compute offset map**: Map between TS file positions and GraphQL content positions
 
@@ -255,7 +255,7 @@ Complexity factors:
 - Must handle re-exports and aliased imports (`import { graphql as gql } from ...`)
 - Must handle TypeScript path aliases (`@/graphql-system/...` → actual file path)
 
-**Reuse opportunity**: soda-gql's `@soda-gql/builder` already has a TypeScript AST analyzer (`packages/builder/src/discovery/`) that finds `gql.{schemaName}()` calls. The tagged template extractor can follow the same pattern.
+**Reuse opportunity**: soda-gql's `@soda-gql/builder` already has a TypeScript AST analyzer (`packages/builder/src/discovery/`) that finds `gql.{schemaName}()` calls. The tagged template extractor extends this to also recognize `` gql.{schemaName}`...` `` tagged template expressions — the same member expression pattern, different call syntax.
 
 ### 3.2 Position mapping
 
@@ -497,7 +497,7 @@ query GetUser($id: ID!) {
   user(id: $id) { id name }
 }
 
-// Code action: "Convert to soda-gql tagged template"
+// Code action: "Convert to soda-gql tagged template (Pattern C)"
 
 // After (in .ts file):
 import { gql } from "@/graphql-system";
