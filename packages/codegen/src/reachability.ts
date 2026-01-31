@@ -197,26 +197,57 @@ const computeReachableTypes = (
   return reachable;
 };
 
+export type ReachabilityResult = {
+  readonly filter: (context: FilterContext) => boolean;
+  readonly warnings: readonly string[];
+};
+
 /**
  * Compute a filter function that includes only types reachable from root types
  * to the specified target types.
  *
  * When targetTypes is empty, returns a pass-all filter (no filtering).
+ * Warns when target types are not found in the schema.
  *
  * @param document - The parsed GraphQL schema document
  * @param targetTypes - Set of type names that fragments target (e.g., from ParsedFragment.onType)
- * @returns A CompiledFilter-compatible function
+ * @returns Filter function and any warnings
  */
 export const computeReachabilityFilter = (
   document: DocumentNode,
   targetTypes: ReadonlySet<string>,
-): ((context: FilterContext) => boolean) => {
+): ReachabilityResult => {
   if (targetTypes.size === 0) {
-    return () => true;
+    return { filter: () => true, warnings: [] };
   }
 
   const { graph, schema } = buildTypeGraph(document);
-  const reachable = computeReachableTypes(graph, schema, targetTypes);
 
-  return (context: FilterContext) => reachable.has(context.name);
+  // Validate target types exist in schema
+  const allTypeNames = new Set([
+    ...schema.objects.keys(),
+    ...schema.inputs.keys(),
+    ...schema.enums.keys(),
+    ...schema.unions.keys(),
+    ...schema.scalars.keys(),
+  ]);
+  const warnings: string[] = [];
+  const validTargets = new Set<string>();
+  for (const target of targetTypes) {
+    if (allTypeNames.has(target)) {
+      validTargets.add(target);
+    } else {
+      warnings.push(`Target type "${target}" not found in schema`);
+    }
+  }
+
+  if (validTargets.size === 0) {
+    return { filter: () => true, warnings };
+  }
+
+  const reachable = computeReachableTypes(graph, schema, validTargets);
+  return {
+    filter: (context: FilterContext) => reachable.has(context.name),
+    warnings,
+  };
 };

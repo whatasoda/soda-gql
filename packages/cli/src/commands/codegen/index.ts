@@ -120,7 +120,10 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
     let typeFilter: TypeFilterConfig | undefined = schemaConfig.typeFilter;
 
     if (targetTypes && targetTypes.size > 0 && document) {
-      const reachFilter = computeReachabilityFilter(document, targetTypes);
+      const { filter: reachFilter, warnings: reachWarnings } = computeReachabilityFilter(document, targetTypes);
+      for (const w of reachWarnings) {
+        messages.push(`  warning: ${w}`);
+      }
       if (typeFilter) {
         const compiledUserFilter = compileTypeFilter(typeFilter);
         typeFilter = (ctx) => compiledUserFilter(ctx) && reachFilter(ctx);

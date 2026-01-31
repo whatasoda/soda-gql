@@ -17,7 +17,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["Post"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["Post"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -40,7 +40,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -63,7 +63,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "SearchResult", category: "union" })).toBe(true);
@@ -97,7 +97,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -122,7 +122,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["Item"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["Item"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "Item", category: "object" })).toBe(true);
@@ -148,7 +148,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User", "Post"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User", "Post"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -166,11 +166,46 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set());
+    const { filter, warnings } = computeReachabilityFilter(schema, new Set());
 
+    expect(warnings).toEqual([]);
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
     expect(filter({ name: "String", category: "scalar" })).toBe(true);
+  });
+
+  test("non-existent targetType: warns and filters correctly", () => {
+    const schema = parse(`
+      type Query {
+        user: User
+      }
+      type User {
+        name: String
+      }
+    `);
+
+    const { filter, warnings } = computeReachabilityFilter(schema, new Set(["NonExistent", "User"]));
+
+    expect(warnings).toEqual(["Target type \"NonExistent\" not found in schema"]);
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
+  });
+
+  test("all targets non-existent: pass-all filter with warnings", () => {
+    const schema = parse(`
+      type Query {
+        user: User
+      }
+      type User {
+        name: String
+      }
+    `);
+
+    const { filter, warnings } = computeReachabilityFilter(schema, new Set(["Foo", "Bar"]));
+
+    expect(warnings).toHaveLength(2);
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
   });
 
   test("enum and custom scalar collection: included when referenced by reachable types", () => {
@@ -196,7 +231,7 @@ describe("computeReachabilityFilter", () => {
       scalar DateTime
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "Role", category: "enum" })).toBe(true);
     expect(filter({ name: "DateTime", category: "scalar" })).toBe(true);
@@ -223,7 +258,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "Mutation", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -255,7 +290,7 @@ describe("computeReachabilityFilter", () => {
       scalar DateTime
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["User"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
 
     expect(filter({ name: "SearchResult", category: "union" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -284,7 +319,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const filter = computeReachabilityFilter(schema, new Set(["C"]));
+    const { filter } = computeReachabilityFilter(schema, new Set(["C"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "A", category: "object" })).toBe(true);
