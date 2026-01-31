@@ -109,6 +109,8 @@ export type GraphqlGenerationResult = {
   fragmentCount: number;
   /** Fragment target type names (onType values from parsed fragments). */
   targetTypes: ReadonlySet<string>;
+  /** Input type names actually used as argument types by fragments and operations. */
+  usedInputTypes: ReadonlySet<string>;
 };
 
 export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
@@ -174,6 +176,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
 
   // Second pass: generate code (using cached parse results)
   const files: GeneratedFile[] = [];
+  const usedInputTypes = new Set<string>();
   let operationCount = 0;
   let fragmentCount = 0;
 
@@ -227,6 +230,18 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
       }
     }
 
+    // Collect input types used as argument types
+    for (const frag of fragments) {
+      for (const v of (frag as EnrichedFragment).variables) {
+        if (v.typeKind === "input") usedInputTypes.add(v.typeName);
+      }
+    }
+    for (const op of operations) {
+      for (const v of (op as EnrichedOperation).variables) {
+        if (v.typeKind === "input") usedInputTypes.add(v.typeName);
+      }
+    }
+
     // Calculate graphqlSystemPath as relative path from output file (normalize for cross-platform compatibility)
     const graphqlSystemRelative = normalizePath(relative(dirname(outputPath), args.graphqlSystemDir));
     const graphqlSystemPath = graphqlSystemRelative.startsWith(".") ? graphqlSystemRelative : `./${graphqlSystemRelative}`;
@@ -277,7 +292,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
   }
 
-  return ok({ files, operationCount, fragmentCount, targetTypes });
+  return ok({ files, operationCount, fragmentCount, targetTypes, usedInputTypes });
 };
 
 export const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {

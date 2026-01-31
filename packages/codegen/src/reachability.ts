@@ -127,6 +127,7 @@ const computeReachableTypes = (
   graph: TypeGraph,
   schema: ReturnType<typeof createSchemaIndex>,
   targetTypes: ReadonlySet<string>,
+  usedInputTypes?: ReadonlySet<string>,
 ): Set<string> => {
   // Step 1: Backward BFS from targets
   const upstream = bfs(graph.reverse, targetTypes);
@@ -161,8 +162,8 @@ const computeReachableTypes = (
         }
       }
 
-      // Collect argument types
-      if (field.arguments) {
+      // Collect argument types (only when usedInputTypes is not provided)
+      if (!usedInputTypes && field.arguments) {
         for (const arg of field.arguments) {
           const argType = extractNamedType(arg.type);
           if (!reachable.has(argType)) {
@@ -172,6 +173,16 @@ const computeReachableTypes = (
             }
           }
         }
+      }
+    }
+  }
+
+  // When usedInputTypes is provided, seed from it instead of field arguments
+  if (usedInputTypes) {
+    for (const inputName of usedInputTypes) {
+      if (!reachable.has(inputName)) {
+        reachable.add(inputName);
+        inputQueue.push(inputName);
       }
     }
   }
@@ -216,6 +227,7 @@ export type ReachabilityResult = {
 export const computeReachabilityFilter = (
   document: DocumentNode,
   targetTypes: ReadonlySet<string>,
+  usedInputTypes?: ReadonlySet<string>,
 ): ReachabilityResult => {
   if (targetTypes.size === 0) {
     return { filter: () => true, warnings: [] };
@@ -245,7 +257,7 @@ export const computeReachabilityFilter = (
     return { filter: () => true, warnings };
   }
 
-  const reachable = computeReachableTypes(graph, schema, validTargets);
+  const reachable = computeReachableTypes(graph, schema, validTargets, usedInputTypes);
   return {
     filter: (context: FilterContext) => reachable.has(context.name),
     warnings,

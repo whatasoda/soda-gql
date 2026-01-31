@@ -355,4 +355,96 @@ describe("computeReachabilityFilter", () => {
     expect(filter({ name: "Admin", category: "object" })).toBe(false);
     expect(filter({ name: "Int", category: "scalar" })).toBe(false);
   });
+
+  test("usedInputTypes: excludes unused argument input types", () => {
+    const schema = parse(`
+      type Query {
+        users(filter: UserFilter): User
+      }
+      type User {
+        name: String
+        posts(sort: SortInput): [Post]
+      }
+      type Post {
+        title: String
+      }
+      input UserFilter {
+        status: Status
+      }
+      input SortInput {
+        field: String
+        order: SortOrder
+      }
+      enum Status {
+        ACTIVE
+        INACTIVE
+      }
+      enum SortOrder {
+        ASC
+        DESC
+      }
+    `);
+
+    // Fragment only uses UserFilter, not SortInput
+    const { filter } = computeReachabilityFilter(
+      schema,
+      new Set(["User"]),
+      new Set(["UserFilter"]),
+    );
+
+    expect(filter({ name: "Query", category: "object" })).toBe(true);
+    expect(filter({ name: "User", category: "object" })).toBe(true);
+    expect(filter({ name: "UserFilter", category: "input" })).toBe(true);
+    expect(filter({ name: "Status", category: "enum" })).toBe(true);
+    // SortInput and SortOrder are NOT used by any fragment
+    expect(filter({ name: "SortInput", category: "input" })).toBe(false);
+    expect(filter({ name: "SortOrder", category: "enum" })).toBe(false);
+    // Return type scalars are still collected
+    expect(filter({ name: "String", category: "scalar" })).toBe(true);
+  });
+
+  test("usedInputTypes: transitive input dependencies are included", () => {
+    const schema = parse(`
+      type Query {
+        items(filter: FilterA): [Item]
+      }
+      type Item {
+        value: String
+      }
+      input FilterA {
+        nested: FilterB
+      }
+      input FilterB {
+        value: String
+      }
+    `);
+
+    const { filter } = computeReachabilityFilter(
+      schema,
+      new Set(["Item"]),
+      new Set(["FilterA"]),
+    );
+
+    expect(filter({ name: "FilterA", category: "input" })).toBe(true);
+    expect(filter({ name: "FilterB", category: "input" })).toBe(true);
+  });
+
+  test("usedInputTypes: undefined falls back to collecting all arguments", () => {
+    const schema = parse(`
+      type Query {
+        users(filter: UserFilter): User
+      }
+      type User {
+        name: String
+      }
+      input UserFilter {
+        status: String
+      }
+    `);
+
+    // No usedInputTypes → current behavior (all arguments collected)
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]));
+
+    expect(filter({ name: "UserFilter", category: "input" })).toBe(true);
+  });
 });
