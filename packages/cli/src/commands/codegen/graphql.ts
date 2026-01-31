@@ -16,7 +16,10 @@ import { CodegenGraphqlArgsSchema } from "../../schemas/args";
 import type { CommandResult, CommandSuccess } from "../../types";
 import { parseArgs } from "../../utils/parse-args";
 
-type ParsedGraphqlArgs = {
+/** Schema document type inferred from transformParsedGraphql to avoid graphql version mismatch. */
+type SchemaDocument = Parameters<typeof transformParsedGraphql>[1]["schemaDocument"];
+
+export type ParsedGraphqlArgs = {
   schemaName: string;
   schemaFiles: readonly string[];
   inputPatterns: readonly string[];
@@ -24,6 +27,8 @@ type ParsedGraphqlArgs = {
   suffix: string;
   /** Resolved absolute path to graphql-system directory (config.outdir) */
   graphqlSystemDir: string;
+  /** Pre-loaded schema document. If provided, skips loadSchema. */
+  schemaDocument?: SchemaDocument;
 };
 
 const parseGraphqlArgs = (argv: readonly string[]): CliResult<ParsedGraphqlArgs> => {
@@ -98,19 +103,28 @@ type GeneratedFile = {
   content: string;
 };
 
-type GraphqlGenerationResult = {
+export type GraphqlGenerationResult = {
   files: GeneratedFile[];
   operationCount: number;
   fragmentCount: number;
+  /** Fragment target type names (onType values from parsed fragments). */
+  targetTypes: ReadonlySet<string>;
+  /** Input type names actually used as argument types by fragments and operations. */
+  usedArgumentTypes: ReadonlySet<string>;
 };
 
-const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
-  // Load schema
-  const schemaResult = loadSchema(args.schemaFiles.map((s) => resolve(s)));
-  if (schemaResult.isErr()) {
-    return err(cliErrors.fromCodegen(schemaResult.error));
+export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<GraphqlGenerationResult>> => {
+  // Load schema (use pre-loaded if available)
+  let schemaDocument: SchemaDocument;
+  if (args.schemaDocument) {
+    schemaDocument = args.schemaDocument;
+  } else {
+    const schemaResult = loadSchema(args.schemaFiles.map((s) => resolve(s)));
+    if (schemaResult.isErr()) {
+      return err(cliErrors.fromCodegen(schemaResult.error));
+    }
+    schemaDocument = schemaResult.value;
   }
-  const schemaDocument = schemaResult.value;
 
   // Find all .graphql files matching input patterns
   const graphqlFiles: string[] = [];
@@ -131,6 +145,8 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
   // Track all fragments for cross-file imports
   const fragmentsByName = new Map<string, { file: string; outputPath: string }>();
+  // Collect fragment target types for reachability analysis
+  const targetTypes = new Set<string>();
   // Cache parsed results to avoid re-reading and re-parsing files
   const parseCache = new Map<string, ParseResult>();
 
@@ -149,6 +165,7 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     const outputPath = join(dirname(file), outputBase);
 
     for (const frag of parsed.fragments) {
+      targetTypes.add(frag.onType);
       const existing = fragmentsByName.get(frag.name);
       if (existing && existing.file !== file) {
         return err(cliErrors.duplicateFragment(frag.name, existing.file, file));
@@ -159,6 +176,7 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
 
   // Second pass: generate code (using cached parse results)
   const files: GeneratedFile[] = [];
+  const usedArgumentTypes = new Set<string>();
   let operationCount = 0;
   let fragmentCount = 0;
 
@@ -212,6 +230,18 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
       }
     }
 
+    // Collect all types used as argument types (input, enum, scalar)
+    for (const frag of fragments) {
+      for (const v of (frag as EnrichedFragment).variables) {
+        usedArgumentTypes.add(v.typeName);
+      }
+    }
+    for (const op of operations) {
+      for (const v of (op as EnrichedOperation).variables) {
+        usedArgumentTypes.add(v.typeName);
+      }
+    }
+
     // Calculate graphqlSystemPath as relative path from output file (normalize for cross-platform compatibility)
     const graphqlSystemRelative = normalizePath(relative(dirname(outputPath), args.graphqlSystemDir));
     const graphqlSystemPath = graphqlSystemRelative.startsWith(".") ? graphqlSystemRelative : `./${graphqlSystemRelative}`;
@@ -262,10 +292,10 @@ const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliResult<G
     }
   }
 
-  return ok({ files, operationCount, fragmentCount });
+  return ok({ files, operationCount, fragmentCount, targetTypes, usedArgumentTypes });
 };
 
-const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {
+export const writeGeneratedFiles = async (files: GeneratedFile[]): Promise<CliResult<void>> => {
   for (const file of files) {
     // Ensure directory exists
     const dir = dirname(file.outputPath);

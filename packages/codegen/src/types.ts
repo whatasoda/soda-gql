@@ -24,6 +24,8 @@ export type CodegenOptions = {
   readonly format: CodegenFormat;
   readonly importExtension?: boolean;
   readonly chunkSize?: number;
+  /** Pre-loaded schema documents. Skips file loading when provided. */
+  readonly preloadedSchemas?: ReadonlyMap<string, import("graphql").DocumentNode>;
 };
 
 export type CodegenCliCommand =

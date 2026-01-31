@@ -9,8 +9,10 @@ export { findConfigFile, loadConfig, loadConfigFrom } from "./loader";
 export { normalizeConfig } from "./normalize";
 export type {
   ArtifactConfig,
+  GraphqlCompatConfig,
   PluginConfig,
   ResolvedArtifactConfig,
+  ResolvedGraphqlCompatConfig,
   ResolvedSodaGqlConfig,
   ResolvedTsconfigPaths,
   SchemaConfig,

@@ -39,6 +39,11 @@ export type RunTypegenOptions = {
    * Resolved soda-gql configuration.
    */
   readonly config: ResolvedSodaGqlConfig;
+  /**
+   * Pre-loaded schema documents. When provided, skips re-parsing from files.
+   * Keys are schema names, values are parsed DocumentNode instances.
+   */
+  readonly schemaDocuments?: ReadonlyMap<string, DocumentNode>;
 };
 
 const extensionMap: Record<string, string> = {
@@ -178,7 +183,9 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const schemas = schemasResult.value;
 
   // Step 3: Load schema documents and generate index.prebuilt.ts
-  const schemaDocuments = loadSchemaDocuments(config.schemas);
+  const schemaDocuments = options.schemaDocuments
+    ? new Map(options.schemaDocuments)
+    : loadSchemaDocuments(config.schemas);
   const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
 
   // Calculate import paths from index.prebuilt.ts to internal modules

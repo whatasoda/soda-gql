@@ -3,9 +3,11 @@ import { readTsconfigPaths } from "@soda-gql/common";
 import { err, ok, Result } from "neverthrow";
 import { type ConfigError, configError } from "./errors";
 import type {
+  GraphqlCompatConfig,
   InjectConfig,
   ResolvedArtifactConfig,
   ResolvedCodegenConfig,
+  ResolvedGraphqlCompatConfig,
   ResolvedInjectConfig,
   ResolvedSodaGqlConfig,
   ResolvedTsconfigPaths,
@@ -115,6 +117,48 @@ function normalizeTsconfigPaths(
 }
 
 /**
+ * Normalize graphql-compat config to resolved form.
+ * Resolves glob patterns and validates schema name.
+ */
+function normalizeGraphqlCompat(
+  graphqlCompat: GraphqlCompatConfig | undefined,
+  schemaNames: readonly string[],
+  configDir: string,
+): Result<ResolvedGraphqlCompatConfig | undefined, ConfigError> {
+  if (!graphqlCompat) {
+    return ok(undefined);
+  }
+
+  let schemaName = graphqlCompat.schema;
+  if (!schemaName) {
+    if (schemaNames.length !== 1 || !schemaNames[0]) {
+      return err(
+        configError({
+          code: "CONFIG_VALIDATION_FAILED",
+          message: "graphqlCompat.schema is required when multiple schemas are configured",
+        }),
+      );
+    }
+    schemaName = schemaNames[0];
+  }
+
+  if (!schemaNames.includes(schemaName)) {
+    return err(
+      configError({
+        code: "CONFIG_VALIDATION_FAILED",
+        message: `graphqlCompat.schema "${schemaName}" not found in schemas config`,
+      }),
+    );
+  }
+
+  return ok({
+    input: graphqlCompat.input.map((p) => resolvePattern(p, configDir)),
+    schema: schemaName,
+    suffix: graphqlCompat.suffix ?? ".compat.ts",
+  });
+}
+
+/**
  * Normalize codegen config to resolved form with defaults.
  */
 function normalizeCodegen(codegen: SodaGqlConfig["codegen"]): ResolvedCodegenConfig {
@@ -171,6 +215,14 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
   }
   const normalizedSchemas = Object.fromEntries(combinedResult.value);
 
+  // Normalize graphql-compat config
+  const schemaNames = Object.keys(config.schemas);
+  const graphqlCompatResult = normalizeGraphqlCompat(config.graphqlCompat, schemaNames, configDir);
+  if (graphqlCompatResult.isErr()) {
+    return err(graphqlCompatResult.error);
+  }
+  const graphqlCompat = graphqlCompatResult.value;
+
   const resolved: ResolvedSodaGqlConfig = {
     analyzer,
     baseDir: configDir,
@@ -184,6 +236,7 @@ export function normalizeConfig(config: SodaGqlConfig, configPath: string): Resu
     },
     codegen: normalizeCodegen(config.codegen),
     plugins: config.plugins ?? {},
+    ...(graphqlCompat ? { graphqlCompat } : {}),
     ...(artifact ? { artifact } : {}),
     ...(tsconfigPaths ? { tsconfigPaths } : {}),
   };

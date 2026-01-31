@@ -87,6 +87,19 @@ export type TypeFilterConfig =
   | ((context: { name: string; category: TypeCategory }) => boolean)
   | { readonly exclude: readonly TypeFilterRule[] };
 
+/**
+ * Configuration for graphql-compat code generation.
+ * When specified, `codegen` will generate `.compat.ts` files from `.graphql` files.
+ */
+export type GraphqlCompatConfig = {
+  /** Glob patterns for .graphql/.gql files */
+  readonly input: readonly string[];
+  /** Schema name to use (required if multiple schemas configured) */
+  readonly schema?: string;
+  /** Output file suffix (default: ".compat.ts") */
+  readonly suffix?: string;
+};
+
 // Output styles configuration for codegen
 export type StylesConfig = {
   /**
@@ -211,6 +224,16 @@ export type SodaGqlConfig = {
    */
   readonly plugins?: PluginConfig;
   /**
+   * Configuration for graphql-compat code generation.
+   * When specified, `codegen` will generate `.compat.ts` files from `.graphql` files.
+   *
+   * @example
+   * ```ts
+   * graphqlCompat: { input: ["src/∗∗/∗.graphql"] }
+   * ```
+   */
+  readonly graphqlCompat?: GraphqlCompatConfig;
+  /**
    * Configuration for pre-built artifact loading.
    * When specified, plugins will load the artifact from the file instead of building dynamically.
    *
@@ -240,6 +263,13 @@ export type ResolvedSchemaConfig = {
   readonly typeFilter?: TypeFilterConfig;
 };
 
+// Resolved graphql-compat config with absolute paths
+export type ResolvedGraphqlCompatConfig = {
+  readonly input: readonly string[];
+  readonly schema: string;
+  readonly suffix: string;
+};
+
 // Resolved config (normalized and validated)
 export type ResolvedSodaGqlConfig = {
   readonly analyzer: "ts" | "swc";
@@ -257,6 +287,11 @@ export type ResolvedSodaGqlConfig = {
   readonly styles: ResolvedStylesConfig;
   readonly codegen: ResolvedCodegenConfig;
   readonly plugins: PluginConfig;
+  /**
+   * Resolved graphql-compat configuration.
+   * Only present when graphqlCompat is specified in the config.
+   */
+  readonly graphqlCompat?: ResolvedGraphqlCompatConfig;
   /**
    * Resolved artifact configuration.
    * Only present when artifact.path is specified in the config.

@@ -146,9 +146,8 @@ describe("soda-gql codegen CLI", () => {
       const cjsExists = await Bun.file(cjsPath).exists();
       expect(cjsExists).toBe(true);
 
-      // Verify human-readable output
-      expect(result.stdout).toContain("Generated");
-      expect(result.stdout).toContain("TypeScript:");
+      // Verify human-readable output (unified pipeline format)
+      expect(result.stdout).toContain("[schema] Generated");
 
       const tsconfigPath = join(caseDir, "tsconfig.json");
       const extendsPath = toPosix(relative(caseDir, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
