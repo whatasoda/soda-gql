@@ -86,21 +86,26 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
   }
 
-  // Load all schemas
+  // Load all schemas (use preloaded when available)
   const schemas = new Map<string, import("graphql").DocumentNode>();
   const schemaHashes: Record<string, { schemaHash: string; objects: number; enums: number; inputs: number; unions: number }> = {};
 
   for (const [name, schemaConfig] of Object.entries(options.schemas)) {
-    const result = await loadSchema(schemaConfig.schema).match(
-      (doc) => Promise.resolve(ok(doc)),
-      (error) => Promise.resolve(err(error)),
-    );
+    const preloaded = options.preloadedSchemas?.get(name);
+    if (preloaded) {
+      schemas.set(name, preloaded);
+    } else {
+      const result = await loadSchema(schemaConfig.schema).match(
+        (doc) => Promise.resolve(ok(doc)),
+        (error) => Promise.resolve(err(error)),
+      );
 
-    if (result.isErr()) {
-      return err(result.error);
+      if (result.isErr()) {
+        return err(result.error);
+      }
+
+      schemas.set(name, result.value);
     }
-
-    schemas.set(name, result.value);
   }
 
   // Build injection config for each schema

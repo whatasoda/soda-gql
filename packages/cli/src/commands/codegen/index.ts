@@ -149,6 +149,7 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
     outPath: resolve(config.outdir, "index.ts"),
     format: "human",
     importExtension: config.styles.importExtension,
+    preloadedSchemas: schemaDocuments as ReadonlyMap<string, import("graphql").DocumentNode>,
   });
 
   if (codegenResult.isErr()) {
