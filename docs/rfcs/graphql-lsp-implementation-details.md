@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document supplements the [GraphQL LSP Multi-Schema RFC](./graphql-lsp-multi-schema.md) with deeper technical analysis of the hybrid LSP architecture. It covers what the `graphql-language-service` interface layer provides, what must be built from scratch for the `gql.{schemaName}` tagged template pattern (Pattern C), and what opportunities exist for soda-gql-specific extensions beyond standard GraphQL LSP features.
+This document supplements the [GraphQL LSP Multi-Schema RFC](./graphql-lsp-multi-schema.md) with deeper technical analysis of the hybrid LSP architecture. It covers what the `graphql-language-service` interface layer provides, what must be built from scratch for the callback + tagged template API (`gql.{schemaName}(({ query, fragment }) => query`...`)`) with Fragment Arguments RFC syntax, and what opportunities exist for soda-gql-specific extensions beyond standard GraphQL LSP features.
 
 ## Table of Contents
 
@@ -243,19 +243,24 @@ function getVariablesJSONSchema(variableToType: Record<string, GraphQLInputType>
 
 The most critical custom component. It must:
 
-1. **Parse TypeScript AST** to find tagged template expressions
-2. **Identify the tag**: Match `gql.{schemaName}` member expression patterns (the chosen Pattern C)
-3. **Trace imports**: Follow the `gql` identifier back to its import declaration, validate it resolves to the graphql-system output
-4. **Extract content**: Get the raw GraphQL string from the template
-5. **Compute offset map**: Map between TS file positions and GraphQL content positions
+1. **Parse TypeScript AST via SWC** to find `gql.{schemaName}(callback)` call expressions
+2. **Identify the callback**: Extract the arrow function or function expression argument
+3. **Find tagged templates inside the callback body**: Match `query`/`mutation`/`subscription`/`fragment` tagged template expressions
+4. **Trace imports**: Follow the `gql` identifier back to its import declaration, validate it resolves to the graphql-system output
+5. **Extract content**: Get the raw GraphQL string from the template
+6. **Preprocess Fragment Arguments**: Strip fragment argument declarations for `graphql-js` compatibility
+7. **Compute offset map**: Map between TS file positions and GraphQL content positions
 
 Complexity factors:
+- Two-level AST traversal: first find `gql.{name}(callback)`, then find tagged templates inside the callback
 - Template literals can span multiple lines with varying indentation
 - The GraphQL content starts after the opening backtick, possibly with leading whitespace
-- Must handle re-exports and aliased imports (`import { graphql as gql } from ...`)
-- Must handle TypeScript path aliases (`@/graphql-system/...` → actual file path)
+- Must handle re-exports and aliased imports (`import { gql } from ...` with path aliases)
+- Must handle TypeScript path aliases (`@/graphql-system` → actual file path)
+- Fragment Arguments RFC syntax (`fragment Foo($var: Type) on Bar`) must be stripped before `graphql-js` parsing
+- Metadata chaining (`fragment`...`({ metadata })`) — the tagged template result may be called
 
-**Reuse opportunity**: soda-gql's `@soda-gql/builder` already has a TypeScript AST analyzer (`packages/builder/src/discovery/`) that finds `gql.{schemaName}()` calls. The tagged template extractor extends this to also recognize `` gql.{schemaName}`...` `` tagged template expressions — the same member expression pattern, different call syntax.
+**Reuse opportunity**: soda-gql's `@soda-gql/builder` already has a SWC-based AST analyzer (`packages/builder/src/discovery/`) that finds `gql.{schemaName}()` calls. The tagged template extractor extends this to also find tagged templates inside callback bodies — the same `gql.{schemaName}(callback)` pattern, with additional inspection of the callback's body.
 
 ### 3.2 Position mapping
 
@@ -421,6 +426,7 @@ Possible code lens items:
 | `NoExcludedTypes` | Warn when querying types excluded by `typeFilter` in config | Warning |
 | `InputDepthLimit` | Warn when input nesting exceeds `defaultInputDepth` or overrides | Warning |
 | `FragmentSchemaMatch` | Error when spreading a fragment from a different schema | Error |
+| `FragmentArgumentsValidation` | Validate Fragment Arguments RFC syntax (variable types, default values, usage at spread sites) | Error |
 | `OperationNaming` | Enforce naming conventions for operations | Info |
 | `DeprecatedFieldUsage` | Enhanced deprecation warnings with migration hints | Warning |
 | `UnusedFragment` | Warn about fragments defined but not spread anywhere | Warning |
@@ -497,16 +503,16 @@ query GetUser($id: ID!) {
   user(id: $id) { id name }
 }
 
-// Code action: "Convert to soda-gql tagged template (Pattern C)"
+// Code action: "Convert to soda-gql tagged template"
 
 // After (in .ts file):
 import { gql } from "@/graphql-system";
 
-export const GetUserCompat = gql.default`
+export const GetUserCompat = gql.default(({ query }) => query`
   query GetUser($id: ID!) {
     user(id: $id) { id name }
   }
-`;
+`);
 ```
 
 This leverages the existing graphql-compat parser (`packages/codegen/src/graphql-compat/parser.ts`) but runs it interactively via LSP code actions instead of CLI codegen.
