@@ -207,6 +207,8 @@ export const createLspServer = (options?: LspServerOptions) => {
       const result = schemaResolver.reloadAll();
       if (result.isOk()) {
         publishDiagnosticsForAllOpen();
+      } else {
+        connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${result.error.message}`);
       }
     }
   });
