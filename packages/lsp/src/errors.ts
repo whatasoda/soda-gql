@@ -15,14 +15,35 @@ export type LspErrorCode =
   | "INTERNAL_INVARIANT";
 
 type ConfigLoadFailed = { readonly code: "CONFIG_LOAD_FAILED"; readonly message: string; readonly cause?: unknown };
-type SchemaLoadFailed = { readonly code: "SCHEMA_LOAD_FAILED"; readonly message: string; readonly schemaName: string; readonly cause?: unknown };
-type SchemaBuildFailed = { readonly code: "SCHEMA_BUILD_FAILED"; readonly message: string; readonly schemaName: string; readonly cause?: unknown };
+type SchemaLoadFailed = {
+  readonly code: "SCHEMA_LOAD_FAILED";
+  readonly message: string;
+  readonly schemaName: string;
+  readonly cause?: unknown;
+};
+type SchemaBuildFailed = {
+  readonly code: "SCHEMA_BUILD_FAILED";
+  readonly message: string;
+  readonly schemaName: string;
+  readonly cause?: unknown;
+};
 type SchemaNotConfigured = { readonly code: "SCHEMA_NOT_CONFIGURED"; readonly message: string; readonly schemaName: string };
 type ParseFailed = { readonly code: "PARSE_FAILED"; readonly message: string; readonly uri: string; readonly cause?: unknown };
-type InternalInvariant = { readonly code: "INTERNAL_INVARIANT"; readonly message: string; readonly context?: string; readonly cause?: unknown };
+type InternalInvariant = {
+  readonly code: "INTERNAL_INVARIANT";
+  readonly message: string;
+  readonly context?: string;
+  readonly cause?: unknown;
+};
 
 /** Structured error type for all LSP operations. */
-export type LspError = ConfigLoadFailed | SchemaLoadFailed | SchemaBuildFailed | SchemaNotConfigured | ParseFailed | InternalInvariant;
+export type LspError =
+  | ConfigLoadFailed
+  | SchemaLoadFailed
+  | SchemaBuildFailed
+  | SchemaNotConfigured
+  | ParseFailed
+  | InternalInvariant;
 
 /** Helper type for LSP operation results. */
 export type LspResult<T> = Result<T, LspError>;

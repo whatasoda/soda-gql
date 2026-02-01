@@ -85,7 +85,7 @@ fragment B($y: String = "hi") on Bar {
   });
 
   test("handles fragment with multiple arguments", () => {
-    const content = "fragment F($a: Int!, $b: String = \"default\") on T {\n  f\n}";
+    const content = 'fragment F($a: Int!, $b: String = "default") on T {\n  f\n}';
     const result = preprocessFragmentArgs(content);
     expect(result.modified).toBe(true);
     expect(result.preprocessed).toContain("on T");

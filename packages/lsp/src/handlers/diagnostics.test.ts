@@ -1,10 +1,10 @@
-import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { buildASTSchema } from "graphql";
+import { resolve } from "node:path";
 import { loadSchema } from "@soda-gql/codegen";
 import type { DocumentNode } from "graphql";
-import { computeTemplateDiagnostics } from "./diagnostics";
+import { buildASTSchema } from "graphql";
 import type { ExtractedTemplate } from "../types";
+import { computeTemplateDiagnostics } from "./diagnostics";
 
 const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
 
@@ -41,7 +41,8 @@ describe("computeTemplateDiagnostics", () => {
   });
 
   test("reports validation error for unknown field", () => {
-    const tsSource = 'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
+    const tsSource =
+      'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
     const content = "query { users { id unknownField } }";
     const contentStart = tsSource.indexOf(content);
 
@@ -66,7 +67,8 @@ describe("computeTemplateDiagnostics", () => {
 
   test("diagnostic positions are in TS file coordinates", () => {
     // Put the template on line 2 (0-indexed) so we can verify position mapping
-    const tsSource = 'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
+    const tsSource =
+      'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
     const content = "query { users { id unknownField } }";
     const contentStart = tsSource.indexOf(content);
 

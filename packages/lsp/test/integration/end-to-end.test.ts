@@ -3,16 +3,16 @@
  * diagnostics, completion, and hover using real schemas and TypeScript sources.
  */
 
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, test } from "bun:test";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createDocumentManager } from "../../src/document-manager";
-import { createSchemaResolver } from "../../src/schema-resolver";
-import { computeTemplateDiagnostics } from "../../src/handlers/diagnostics";
 import { handleCompletion } from "../../src/handlers/completion";
+import { computeTemplateDiagnostics } from "../../src/handlers/diagnostics";
 import { handleHover } from "../../src/handlers/hover";
+import { createSchemaResolver } from "../../src/schema-resolver";
 
 const fixturesDir = resolve(import.meta.dir, "../fixtures");
 

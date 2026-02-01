@@ -3,27 +3,27 @@
  * @module
  */
 
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import { loadConfigFrom } from "@soda-gql/config";
 import {
   type Connection,
-  type InitializeResult,
-  TextDocumentSyncKind,
   createConnection,
-  ProposedFeatures,
   DidChangeWatchedFilesNotification,
   FileChangeType,
+  type InitializeResult,
+  ProposedFeatures,
   type TextDocumentChangeEvent,
+  TextDocumentSyncKind,
+  TextDocuments,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { TextDocuments } from "vscode-languageserver/node";
-import { loadConfigFrom } from "@soda-gql/config";
-import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { createSchemaResolver } from "./schema-resolver";
+import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
-import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleCompletion } from "./handlers/completion";
+import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleHover } from "./handlers/hover";
 import type { SchemaResolver } from "./schema-resolver";
-import type { DocumentManager } from "./document-manager";
+import { createSchemaResolver } from "./schema-resolver";
 
 export type LspServerOptions = {
   readonly connection?: Connection;
@@ -198,7 +198,8 @@ export const createLspServer = (options?: LspServerOptions) => {
 
     // Check if any .graphql files changed
     const graphqlChanged = _params.changes.some(
-      (change) => change.uri.endsWith(".graphql") && (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
+      (change) =>
+        change.uri.endsWith(".graphql") && (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
     );
 
     if (graphqlChanged) {

@@ -60,8 +60,26 @@ export const offsetToPosition = (lineOffsets: readonly number[], offset: number)
 };
 
 /** Convert a Position to an IPosition compatible with graphql-language-service. */
-export const toIPosition = (pos: Position): { line: number; character: number; setLine: (l: number) => void; setCharacter: (c: number) => void; lessThanOrEqualTo: (other: Position) => boolean } => {
-  const p = { line: pos.line, character: pos.character, setLine: (l: number) => { p.line = l; }, setCharacter: (c: number) => { p.character = c; }, lessThanOrEqualTo: (other: Position) => p.line < other.line || (p.line === other.line && p.character <= other.character) };
+export const toIPosition = (
+  pos: Position,
+): {
+  line: number;
+  character: number;
+  setLine: (l: number) => void;
+  setCharacter: (c: number) => void;
+  lessThanOrEqualTo: (other: Position) => boolean;
+} => {
+  const p = {
+    line: pos.line,
+    character: pos.character,
+    setLine: (l: number) => {
+      p.line = l;
+    },
+    setCharacter: (c: number) => {
+      p.character = c;
+    },
+    lessThanOrEqualTo: (other: Position) => p.line < other.line || (p.line === other.line && p.character <= other.character),
+  };
   return p;
 };
 

@@ -1,6 +1,6 @@
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, test } from "bun:test";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createDocumentManager } from "./document-manager";

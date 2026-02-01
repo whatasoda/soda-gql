@@ -7,7 +7,7 @@ import type { GraphQLSchema } from "graphql";
 import { getAutocompleteSuggestions } from "graphql-language-service";
 import type { CompletionItem } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper, toIPosition, type Position } from "../position-mapping";
+import { createPositionMapper, type Position, toIPosition } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type HandleCompletionInput = {

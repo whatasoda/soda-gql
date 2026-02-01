@@ -1,13 +1,11 @@
-import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
+import { resolve } from "node:path";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createSchemaResolver } from "./schema-resolver";
 
 const fixturesDir = resolve(import.meta.dir, "../test/fixtures/schemas");
 
-const createTestConfig = (
-  schemas: Record<string, { schema: readonly string[] }>,
-): ResolvedSodaGqlConfig =>
+const createTestConfig = (schemas: Record<string, { schema: readonly string[] }>): ResolvedSodaGqlConfig =>
   ({
     analyzer: "swc" as const,
     baseDir: fixturesDir,

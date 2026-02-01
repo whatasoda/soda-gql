@@ -1,10 +1,10 @@
-import { resolve } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { buildASTSchema } from "graphql";
+import { resolve } from "node:path";
 import { loadSchema } from "@soda-gql/codegen";
 import type { DocumentNode } from "graphql";
-import { handleCompletion } from "./completion";
+import { buildASTSchema } from "graphql";
 import type { ExtractedTemplate } from "../types";
+import { handleCompletion } from "./completion";
 
 const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
 
