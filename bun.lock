@@ -93,6 +93,7 @@
       },
       "optionalDependencies": {
         "@soda-gql/formatter": "workspace:*",
+        "@soda-gql/lsp": "workspace:*",
       },
     },
     "packages/codegen": {
