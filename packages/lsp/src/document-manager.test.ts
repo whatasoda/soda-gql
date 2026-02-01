@@ -147,6 +147,32 @@ describe("createDocumentManager", () => {
     expect(extracted).toBe(t.content);
   });
 
+  test("contentRange correctly maps back to source with non-ASCII content", () => {
+    const dm = createDocumentManager(helper);
+    const source = readFixture("unicode-comments.ts");
+    const uri = resolve(fixturesDir, "unicode-comments.ts");
+    const state = dm.update(uri, 1, source);
+
+    expect(state.templates).toHaveLength(1);
+    const t = state.templates[0]!;
+    const extracted = source.slice(t.contentRange.start, t.contentRange.end);
+    expect(extracted).toBe(t.content);
+  });
+
+  test("findTemplateAtOffset works with non-ASCII content before template", () => {
+    const dm = createDocumentManager(helper);
+    const source = readFixture("unicode-comments.ts");
+    const uri = resolve(fixturesDir, "unicode-comments.ts");
+    dm.update(uri, 1, source);
+
+    const state = dm.get(uri)!;
+    const t = state.templates[0]!;
+    const midOffset = Math.floor((t.contentRange.start + t.contentRange.end) / 2);
+    const found = dm.findTemplateAtOffset(uri, midOffset);
+    expect(found).toBeDefined();
+    expect(found!.content).toBe(t.content);
+  });
+
   test("remove clears document state", () => {
     const dm = createDocumentManager(helper);
     const source = readFixture("simple-query.ts");

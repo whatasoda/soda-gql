@@ -3,7 +3,7 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
-import { createCanonicalId, createCanonicalTracker, type ScopeHandle } from "@soda-gql/common";
+import { createCanonicalId, createCanonicalTracker, createSwcSpanConverter, type ScopeHandle, type SwcSpanConverter } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
@@ -17,6 +17,8 @@ type SwcModule = Module & {
   __filePath: string;
   /** Offset to subtract from spans to normalize to 0-based source indices */
   __spanOffset: number;
+  /** Converter for UTF-8 byte offsets to UTF-16 char indices */
+  __spanConverter: SwcSpanConverter;
 };
 
 import { createStandardDiagnostic } from "../common/detection";
@@ -362,10 +364,11 @@ const collectAllDefinitions = ({
   };
 
   const expressionFromCall = (call: CallExpression): string => {
-    // Normalize span by subtracting the module's span offset
+    // Normalize span by subtracting the module's span offset, then convert byte→char
     const spanOffset = module.__spanOffset;
-    let start = call.span.start - spanOffset;
-    const end = call.span.end - spanOffset;
+    const converter = module.__spanConverter;
+    let start = converter.byteOffsetToCharIndex(call.span.start - spanOffset);
+    const end = converter.byteOffsetToCharIndex(call.span.end - spanOffset);
 
     // Adjust when span starts one character after the leading "g"
     if (start > 0 && source[start] === "q" && source[start - 1] === "g" && source.slice(start, start + 3) === "ql.") {
@@ -587,8 +590,9 @@ const collectAllDefinitions = ({
  * Get location from an SWC node span
  */
 const getLocation = (module: SwcModule, span: { start: number; end: number }): DiagnosticLocation => {
-  const start = span.start - module.__spanOffset;
-  const end = span.end - module.__spanOffset;
+  const converter = module.__spanConverter;
+  const start = converter.byteOffsetToCharIndex(span.start - module.__spanOffset);
+  const end = converter.byteOffsetToCharIndex(span.end - module.__spanOffset);
   return { start, end };
 };
 
@@ -916,15 +920,15 @@ export const swcAdapter: AnalyzerAdapter = {
     }
 
     // SWC's BytePos counter accumulates across parseSync calls within the same process.
-    // To convert span positions to 0-indexed source positions, we compute the accumulated
-    // offset from previous parses: (program.span.end - source.length) gives us the total
-    // bytes from previously parsed files, and we add 1 because spans are 1-indexed.
-    const spanOffset = program.span.end - input.source.length + 1;
+    // Use UTF-8 byte length (not source.length which is UTF-16 code units) for correct offset.
+    const converter = createSwcSpanConverter(input.source);
+    const spanOffset = program.span.end - converter.byteLength + 1;
 
     // Attach filePath to module (similar to ts.SourceFile.fileName)
     const swcModule = program as SwcModule;
     swcModule.__filePath = input.filePath;
     swcModule.__spanOffset = spanOffset;
+    swcModule.__spanConverter = converter;
 
     // Collect all data in one pass
     const gqlIdentifiers = collectGqlIdentifiers(swcModule, helper);

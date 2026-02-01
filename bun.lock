@@ -163,6 +163,7 @@
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",

@@ -5,6 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import { type SwcSpanConverter, createSwcSpanConverter } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type {
   ArrowFunctionExpression,
@@ -119,8 +120,8 @@ const getGqlCallSchemaName = (identifiers: ReadonlySet<string>, call: CallExpres
 const extractTemplatesFromCallback = (
   arrow: ArrowFunctionExpression,
   schemaName: string,
-  source: string,
   spanOffset: number,
+  converter: SwcSpanConverter,
 ): ExtractedTemplate[] => {
   const templates: ExtractedTemplate[] = [];
 
@@ -128,7 +129,7 @@ const extractTemplatesFromCallback = (
     // Direct tagged template: query`...`
     if (expr.type === "TaggedTemplateExpression") {
       const tagged = expr as TaggedTemplateExpression;
-      extractFromTaggedTemplate(tagged, schemaName, source, spanOffset, templates);
+      extractFromTaggedTemplate(tagged, schemaName, spanOffset, converter, templates);
       return;
     }
 
@@ -136,7 +137,7 @@ const extractTemplatesFromCallback = (
     if (expr.type === "CallExpression") {
       const call = expr as CallExpression;
       if (call.callee.type === "TaggedTemplateExpression") {
-        extractFromTaggedTemplate(call.callee as TaggedTemplateExpression, schemaName, source, spanOffset, templates);
+        extractFromTaggedTemplate(call.callee as TaggedTemplateExpression, schemaName, spanOffset, converter, templates);
       }
     }
   };
@@ -160,8 +161,8 @@ const extractTemplatesFromCallback = (
 const extractFromTaggedTemplate = (
   tagged: TaggedTemplateExpression,
   schemaName: string,
-  source: string,
   spanOffset: number,
+  converter: SwcSpanConverter,
   templates: ExtractedTemplate[],
 ): void => {
   // Tag must be an identifier matching an operation kind
@@ -186,15 +187,9 @@ const extractFromTaggedTemplate = (
 
   const content = quasi.cooked ?? quasi.raw;
 
-  // Compute content range from quasi span
-  // The quasi span includes the backticks, so we need the inner content offset
-  const quasiStart = quasi.span.start - spanOffset;
-  const quasiEnd = quasi.span.end - spanOffset;
-
-  // The quasi span in SWC points to the content between backticks
-  // Verify by checking source alignment
-  const contentStart = quasiStart;
-  const contentEnd = quasiEnd;
+  // Convert SWC byte offsets to UTF-16 char indices via the converter
+  const contentStart = converter.byteOffsetToCharIndex(quasi.span.start - spanOffset);
+  const contentEnd = converter.byteOffsetToCharIndex(quasi.span.end - spanOffset);
 
   templates.push({
     contentRange: { start: contentStart, end: contentEnd },
@@ -211,8 +206,8 @@ const extractFromTaggedTemplate = (
 const walkAndExtract = (
   node: Node,
   identifiers: ReadonlySet<string>,
-  source: string,
   spanOffset: number,
+  converter: SwcSpanConverter,
 ): ExtractedTemplate[] => {
   const templates: ExtractedTemplate[] = [];
 
@@ -228,7 +223,7 @@ const walkAndExtract = (
         const schemaName = getGqlCallSchemaName(identifiers, gqlCall);
         if (schemaName) {
           const arrow = gqlCall.arguments[0]?.expression as ArrowFunctionExpression;
-          templates.push(...extractTemplatesFromCallback(arrow, schemaName, source, spanOffset));
+          templates.push(...extractTemplatesFromCallback(arrow, schemaName, spanOffset, converter));
         }
         return; // Don't recurse into gql calls
       }
@@ -291,7 +286,9 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
     }
 
     // SWC's BytePos counter accumulates across parseSync calls within the same process.
-    const spanOffset = program.span.end - source.length + 1;
+    // Use UTF-8 byte length (not source.length which is UTF-16 code units) for correct offset.
+    const converter = createSwcSpanConverter(source);
+    const spanOffset = program.span.end - converter.byteLength + 1;
 
     // Convert URI to a file path for the helper
     const filePath = uri.startsWith("file://") ? fileURLToPath(uri) : uri;
@@ -301,7 +298,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
       return [];
     }
 
-    return walkAndExtract(program, gqlIdentifiers, source, spanOffset);
+    return walkAndExtract(program, gqlIdentifiers, spanOffset, converter);
   };
 
   return {
