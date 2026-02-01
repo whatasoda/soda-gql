@@ -1,4 +1,5 @@
 // @soda-gql/lsp - GraphQL LSP server for soda-gql
-// Public API exports will be added as components are implemented.
 
-export {};
+export type { LspError, LspErrorCode, LspResult } from "./errors";
+export { lspErrors } from "./errors";
+export type { DocumentState, ExtractedTemplate, OperationKind } from "./types";
