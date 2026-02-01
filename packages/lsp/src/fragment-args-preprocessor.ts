@@ -28,8 +28,14 @@ const findMatchingParen = (content: string, openIndex: number): number => {
     const ch = content[i]!;
 
     if (inString) {
-      if (ch === inString && content[i - 1] !== "\\") {
-        inString = false;
+      if (ch === inString) {
+        let backslashes = 0;
+        for (let j = i - 1; j >= 0 && content[j] === "\\"; j--) {
+          backslashes++;
+        }
+        if (backslashes % 2 === 0) {
+          inString = false;
+        }
       }
       continue;
     }
