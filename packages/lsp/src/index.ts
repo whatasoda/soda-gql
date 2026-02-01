@@ -10,3 +10,5 @@ export { createSchemaResolver } from "./schema-resolver";
 export { preprocessFragmentArgs } from "./fragment-args-preprocessor";
 export type { PositionMapper } from "./position-mapping";
 export { createPositionMapper } from "./position-mapping";
+export { createLspServer } from "./server";
+export type { LspServerOptions } from "./server";

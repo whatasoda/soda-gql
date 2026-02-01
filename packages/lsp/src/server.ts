@@ -1,0 +1,232 @@
+/**
+ * LSP server: wires all components together via vscode-languageserver.
+ * @module
+ */
+
+import {
+  type Connection,
+  type InitializeResult,
+  TextDocumentSyncKind,
+  createConnection,
+  ProposedFeatures,
+  DidChangeWatchedFilesNotification,
+  FileChangeType,
+  type TextDocumentChangeEvent,
+} from "vscode-languageserver/node";
+import { TextDocument } from "vscode-languageserver-textdocument";
+import { TextDocuments } from "vscode-languageserver/node";
+import { loadConfigFrom } from "@soda-gql/config";
+import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
+import { createSchemaResolver } from "./schema-resolver";
+import { createDocumentManager } from "./document-manager";
+import { computeTemplateDiagnostics } from "./handlers/diagnostics";
+import { handleCompletion } from "./handlers/completion";
+import { handleHover } from "./handlers/hover";
+import type { SchemaResolver } from "./schema-resolver";
+import type { DocumentManager } from "./document-manager";
+
+export type LspServerOptions = {
+  readonly connection?: Connection;
+};
+
+export const createLspServer = (options?: LspServerOptions) => {
+  const connection = options?.connection ?? createConnection(ProposedFeatures.all);
+  const documents = new TextDocuments(TextDocument);
+
+  let schemaResolver: SchemaResolver | undefined;
+  let documentManager: DocumentManager | undefined;
+
+  const publishDiagnosticsForDocument = (uri: string) => {
+    if (!schemaResolver || !documentManager) {
+      return;
+    }
+
+    const state = documentManager.get(uri);
+    if (!state) {
+      connection.sendDiagnostics({ uri, diagnostics: [] });
+      return;
+    }
+
+    const allDiagnostics = state.templates.flatMap((template) => {
+      const entry = schemaResolver!.getSchema(template.schemaName);
+      if (!entry) {
+        return [];
+      }
+      return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source })];
+    });
+
+    connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
+  };
+
+  const publishDiagnosticsForAllOpen = () => {
+    for (const doc of documents.all()) {
+      publishDiagnosticsForDocument(doc.uri);
+    }
+  };
+
+  connection.onInitialize((params): InitializeResult => {
+    const rootUri = params.rootUri ?? params.rootPath;
+    if (!rootUri) {
+      connection.window.showErrorMessage("soda-gql LSP: no workspace root provided");
+      return { capabilities: {} };
+    }
+
+    // Convert URI to path
+    const rootPath = rootUri.startsWith("file://") ? decodeURIComponent(rootUri.slice(7)) : rootUri;
+
+    const configResult = loadConfigFrom(rootPath);
+    if (configResult.isErr()) {
+      connection.window.showErrorMessage(`soda-gql LSP: failed to load config: ${configResult.error.message}`);
+      return { capabilities: {} };
+    }
+
+    const config = configResult.value;
+    const helper = createGraphqlSystemIdentifyHelper(config);
+
+    const resolverResult = createSchemaResolver(config);
+    if (resolverResult.isErr()) {
+      connection.window.showErrorMessage(`soda-gql LSP: ${resolverResult.error.message}`);
+      return { capabilities: {} };
+    }
+
+    schemaResolver = resolverResult.value;
+    documentManager = createDocumentManager(helper);
+
+    return {
+      capabilities: {
+        textDocumentSync: TextDocumentSyncKind.Full,
+        completionProvider: {
+          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
+        },
+        hoverProvider: true,
+      },
+    };
+  });
+
+  connection.onInitialized(() => {
+    // Register for file watcher on .graphql files
+    connection.client.register(DidChangeWatchedFilesNotification.type, {
+      watchers: [{ globPattern: "**/*.graphql" }],
+    });
+  });
+
+  documents.onDidChangeContent((change: TextDocumentChangeEvent<TextDocument>) => {
+    if (!documentManager) {
+      return;
+    }
+    documentManager.update(change.document.uri, change.document.version, change.document.getText());
+    publishDiagnosticsForDocument(change.document.uri);
+  });
+
+  documents.onDidClose((change: TextDocumentChangeEvent<TextDocument>) => {
+    if (!documentManager) {
+      return;
+    }
+    documentManager.remove(change.document.uri);
+    connection.sendDiagnostics({ uri: change.document.uri, diagnostics: [] });
+  });
+
+  connection.onCompletion((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      // We need to convert LSP position to offset
+      positionToOffset(documents.get(params.textDocument.uri)?.getText() ?? "", params.position),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    const entry = schemaResolver.getSchema(template.schemaName);
+    if (!entry) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    return handleCompletion({
+      template,
+      schema: entry.schema,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onHover((params) => {
+    if (!documentManager || !schemaResolver) {
+      return null;
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return null;
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return null;
+    }
+
+    const entry = schemaResolver.getSchema(template.schemaName);
+    if (!entry) {
+      return null;
+    }
+
+    return handleHover({
+      template,
+      schema: entry.schema,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onDidChangeWatchedFiles((_params) => {
+    if (!schemaResolver) {
+      return;
+    }
+
+    // Check if any .graphql files changed
+    const graphqlChanged = _params.changes.some(
+      (change) => change.uri.endsWith(".graphql") && (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
+    );
+
+    if (graphqlChanged) {
+      const result = schemaResolver.reloadAll();
+      if (result.isOk()) {
+        publishDiagnosticsForAllOpen();
+      }
+    }
+  });
+
+  documents.listen(connection);
+
+  return {
+    start: () => {
+      connection.listen();
+    },
+  };
+};
+
+/** Convert LSP Position to byte offset in source text. */
+const positionToOffset = (source: string, position: { line: number; character: number }): number => {
+  let line = 0;
+  let offset = 0;
+  while (line < position.line && offset < source.length) {
+    if (source.charCodeAt(offset) === 10) {
+      line++;
+    }
+    offset++;
+  }
+  return offset + position.character;
+};
