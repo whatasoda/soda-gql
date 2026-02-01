@@ -220,6 +220,23 @@ export default defineConfig([
     clean: true,
   },
 
+  // LSP package
+  {
+    ...configure("@soda-gql/lsp", {
+      externals: [
+        "vscode-languageserver",
+        "vscode-languageserver/node",
+        "vscode-languageserver-textdocument",
+        "graphql-language-service",
+      ],
+    }),
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: true,
+  },
+
   // Transformer packages
   {
     ...configure("@soda-gql/babel"),

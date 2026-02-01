@@ -1,0 +1,17 @@
+type Query {
+  auditLogs(limit: Int): [AuditLog!]!
+  adminUser(id: ID!): AdminUser
+}
+
+type AdminUser {
+  id: ID!
+  username: String!
+  role: String!
+}
+
+type AuditLog {
+  id: ID!
+  action: String!
+  timestamp: String!
+  actor: AdminUser!
+}

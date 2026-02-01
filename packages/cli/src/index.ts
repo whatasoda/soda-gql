@@ -4,6 +4,7 @@ import { codegenCommand } from "./commands/codegen/index";
 import { doctorCommand } from "./commands/doctor";
 import { formatCommand } from "./commands/format";
 import { initCommand } from "./commands/init";
+import { lspCommand } from "./commands/lsp";
 import { typegenCommand } from "./commands/typegen";
 import { cliErrors } from "./errors";
 import type { CommandResult, CommandSuccess, OutputFormat } from "./types";
@@ -18,6 +19,7 @@ Commands:
   format     Format soda-gql field selections
   artifact   Manage soda-gql artifacts
   doctor     Run diagnostic checks
+  lsp        Start the GraphQL language server
 
 Run 'soda-gql <command> --help' for more information on a specific command.
 `;
@@ -71,6 +73,11 @@ const dispatch = async (argv: readonly string[]): Promise<DispatchResult> => {
 
   if (command === "artifact") {
     return artifactCommand(rest);
+  }
+
+  if (command === "lsp") {
+    await lspCommand(rest);
+    return ok({ message: "" }); // unreachable, lsp runs forever
   }
 
   if (command === "doctor") {
