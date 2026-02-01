@@ -77,14 +77,14 @@ describe("createPositionMapper", () => {
 
   test("round-trip: tsToGraphql -> graphqlToTs preserves position", () => {
     const tsSource = "const q = gql.default(({ query }) => query`\n  query GetUser {\n    user { id }\n  }\n`);";
-    const contentStartOffset = 44;
+    const contentStartOffset = 43;
     const graphqlContent = "\n  query GetUser {\n    user { id }\n  }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
     const original = { line: 2, character: 4 };
     const gql = mapper.tsToGraphql(original);
-    expect(gql).not.toBeNull();
+    expect(gql).toEqual({ line: 2, character: 4 });
     const roundTrip = mapper.graphqlToTs(gql!);
     expect(roundTrip).toEqual(original);
   });
