@@ -6,7 +6,7 @@
 import { resolve } from "node:path";
 import { hashSchema, loadSchema } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { buildASTSchema, type DocumentNode } from "graphql";
+import { buildASTSchema, type DocumentNode, type GraphQLSchema } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import type { LspError } from "./errors";
 import { lspErrors } from "./errors";
@@ -26,6 +26,15 @@ export type SchemaResolver = {
   readonly reloadAll: () => Result<void, LspError>;
 };
 
+/** Wrap buildASTSchema (which throws) in a Result. */
+const safeBuildASTSchema = (schemaName: string, documentNode: DocumentNode): Result<GraphQLSchema, LspError> => {
+  try {
+    return ok(buildASTSchema(documentNode));
+  } catch (e) {
+    return err(lspErrors.schemaBuildFailed(schemaName, e instanceof Error ? e.message : String(e), e));
+  }
+};
+
 const loadAndBuildSchema = (schemaName: string, schemaPaths: readonly string[]): Result<SchemaEntry, LspError> => {
   const resolvedPaths = schemaPaths.map((s) => resolve(s));
   const loadResult = loadSchema(resolvedPaths);
@@ -37,12 +46,12 @@ const loadAndBuildSchema = (schemaName: string, schemaPaths: readonly string[]):
   const documentNode = loadResult.value as unknown as DocumentNode;
   const hash = hashSchema(loadResult.value);
 
-  try {
-    const schema = buildASTSchema(documentNode);
-    return ok({ name: schemaName, schema, documentNode, hash });
-  } catch (e) {
-    return err(lspErrors.schemaBuildFailed(schemaName, e instanceof Error ? e.message : String(e), e));
+  const buildResult = safeBuildASTSchema(schemaName, documentNode);
+  if (buildResult.isErr()) {
+    return err(buildResult.error);
   }
+
+  return ok({ name: schemaName, schema: buildResult.value, documentNode, hash });
 };
 
 /** Create a schema resolver from config. Loads all schemas eagerly. */

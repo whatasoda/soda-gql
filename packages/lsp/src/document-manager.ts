@@ -3,6 +3,7 @@
  * @module
  */
 
+import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { parseSync } from "@swc/core";
 import type {
@@ -12,6 +13,7 @@ import type {
   ImportDeclaration,
   MemberExpression,
   Module,
+  Node,
   TaggedTemplateExpression,
 } from "@swc/types";
 import type { DocumentState, ExtractedTemplate, OperationKind } from "./types";
@@ -21,6 +23,20 @@ export type DocumentManager = {
   readonly get: (uri: string) => DocumentState | undefined;
   readonly remove: (uri: string) => void;
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
+};
+
+/** Wrap SWC parseSync (which throws) to return null on failure. */
+const safeParseSync = (source: string, tsx: boolean): ReturnType<typeof parseSync> | null => {
+  try {
+    return parseSync(source, {
+      syntax: "typescript",
+      tsx,
+      decorators: false,
+      dynamicImport: true,
+    });
+  } catch {
+    return null;
+  }
 };
 
 const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
@@ -192,19 +208,22 @@ const extractFromTaggedTemplate = (
  * Walk AST to find gql calls and extract templates.
  * Adapted from builder's unwrapMethodChains + visit pattern.
  */
-// biome-ignore lint/suspicious/noExplicitAny: SWC AST traversal
-const walkAndExtract = (node: any, identifiers: ReadonlySet<string>, source: string, spanOffset: number): ExtractedTemplate[] => {
+const walkAndExtract = (
+  node: Node,
+  identifiers: ReadonlySet<string>,
+  source: string,
+  spanOffset: number,
+): ExtractedTemplate[] => {
   const templates: ExtractedTemplate[] = [];
 
-  // biome-ignore lint/suspicious/noExplicitAny: SWC AST traversal
-  const visit = (n: any): void => {
+  const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): void => {
     if (!n || typeof n !== "object") {
       return;
     }
 
-    if (n.type === "CallExpression") {
+    if ("type" in n && n.type === "CallExpression") {
       // Check if this is a gql call (possibly wrapped in method chains)
-      const gqlCall = findGqlCall(identifiers, n);
+      const gqlCall = findGqlCall(identifiers, n as Node);
       if (gqlCall) {
         const schemaName = getGqlCallSchemaName(identifiers, gqlCall);
         if (schemaName) {
@@ -218,7 +237,7 @@ const walkAndExtract = (node: any, identifiers: ReadonlySet<string>, source: str
     // Recurse into all array and object properties
     if (Array.isArray(n)) {
       for (const item of n) {
-        visit(item);
+        visit(item as Node);
       }
       return;
     }
@@ -227,9 +246,9 @@ const walkAndExtract = (node: any, identifiers: ReadonlySet<string>, source: str
       if (key === "span" || key === "type") {
         continue;
       }
-      const value = n[key];
+      const value = (n as Record<string, unknown>)[key];
       if (value && typeof value === "object") {
-        visit(value);
+        visit(value as Node);
       }
     }
   };
@@ -241,22 +260,22 @@ const walkAndExtract = (node: any, identifiers: ReadonlySet<string>, source: str
 /**
  * Find the innermost gql call, unwrapping method chains like .attach().
  */
-// biome-ignore lint/suspicious/noExplicitAny: SWC AST type
-const findGqlCall = (identifiers: ReadonlySet<string>, node: any): CallExpression | null => {
+const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpression | null => {
   if (!node || node.type !== "CallExpression") {
     return null;
   }
 
-  if (getGqlCallSchemaName(identifiers, node) !== null) {
-    return node;
+  const call = node as unknown as CallExpression;
+  if (getGqlCallSchemaName(identifiers, call) !== null) {
+    return call;
   }
 
-  const callee = node.callee;
+  const callee = call.callee;
   if (callee.type !== "MemberExpression") {
     return null;
   }
 
-  return findGqlCall(identifiers, callee.object);
+  return findGqlCall(identifiers, callee.object as unknown as Node);
 };
 
 /** Create a document manager that tracks open documents and extracts templates. */
@@ -266,20 +285,8 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
   const extractTemplates = (uri: string, source: string): readonly ExtractedTemplate[] => {
     const isTsx = uri.endsWith(".tsx");
 
-    let program: ReturnType<typeof parseSync>;
-    try {
-      program = parseSync(source, {
-        syntax: "typescript",
-        tsx: isTsx,
-        decorators: false,
-        dynamicImport: true,
-      });
-    } catch {
-      // Parse failure — return no templates
-      return [];
-    }
-
-    if (program.type !== "Module") {
+    const program = safeParseSync(source, isTsx);
+    if (!program || program.type !== "Module") {
       return [];
     }
 
@@ -287,7 +294,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
     const spanOffset = program.span.end - source.length + 1;
 
     // Convert URI to a file path for the helper
-    const filePath = uri.startsWith("file://") ? decodeURIComponent(uri.slice(7)) : uri;
+    const filePath = uri.startsWith("file://") ? fileURLToPath(uri) : uri;
 
     const gqlIdentifiers = collectGqlIdentifiers(program, filePath, helper);
     if (gqlIdentifiers.size === 0) {

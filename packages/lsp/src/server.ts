@@ -3,6 +3,7 @@
  * @module
  */
 
+import { fileURLToPath } from "node:url";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { loadConfigFrom } from "@soda-gql/config";
 import {
@@ -72,7 +73,7 @@ export const createLspServer = (options?: LspServerOptions) => {
     }
 
     // Convert URI to path
-    const rootPath = rootUri.startsWith("file://") ? decodeURIComponent(rootUri.slice(7)) : rootUri;
+    const rootPath = rootUri.startsWith("file://") ? fileURLToPath(rootUri) : rootUri;
 
     const configResult = loadConfigFrom(rootPath);
     if (configResult.isErr()) {
