@@ -38,3 +38,13 @@ export type IndexedFragment = {
   readonly contentRange: { readonly start: number; readonly end: number };
   readonly tsSource: string;
 };
+
+/** A located fragment spread reference within a template. */
+export type FragmentSpreadLocation = {
+  readonly uri: string;
+  readonly tsSource: string;
+  readonly template: ExtractedTemplate;
+  /** Offset of the fragment name (after "...") within GraphQL content. */
+  readonly nameOffset: number;
+  readonly nameLength: number;
+};

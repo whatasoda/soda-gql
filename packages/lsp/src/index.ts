@@ -11,4 +11,4 @@ export type { SchemaEntry, SchemaResolver } from "./schema-resolver";
 export { createSchemaResolver } from "./schema-resolver";
 export type { LspServerOptions } from "./server";
 export { createLspServer } from "./server";
-export type { DocumentState, ExtractedTemplate, IndexedFragment, OperationKind } from "./types";
+export type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment, OperationKind } from "./types";
