@@ -125,14 +125,30 @@ export const handleDefinition = async (
 
     return result.definitions.map((def): Location => {
       const defPosition = toIPosition(def.position);
+      const endLine = def.range?.end?.line ?? defPosition.line;
+      const endChar = def.range?.end?.character ?? defPosition.character;
+
+      // Map GraphQL-relative positions to TS file positions for the target document
+      const targetFragment = externalFragments.find((f) => f.uri === def.path);
+      if (targetFragment) {
+        const targetMapper = createPositionMapper({
+          tsSource: targetFragment.tsSource,
+          contentStartOffset: targetFragment.contentRange.start,
+          graphqlContent: targetFragment.content,
+        });
+        const tsStart = targetMapper.graphqlToTs({ line: defPosition.line, character: defPosition.character });
+        const tsEnd = targetMapper.graphqlToTs({ line: endLine, character: endChar });
+        return {
+          uri: def.path,
+          range: { start: tsStart, end: tsEnd },
+        };
+      }
+
       return {
         uri: def.path,
         range: {
           start: { line: defPosition.line, character: defPosition.character },
-          end: {
-            line: def.range?.end?.line ?? defPosition.line,
-            character: def.range?.end?.character ?? defPosition.character,
-          },
+          end: { line: endLine, character: endChar },
         },
       };
     });

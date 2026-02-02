@@ -35,4 +35,6 @@ export type IndexedFragment = {
   readonly fragmentName: string;
   readonly definition: FragmentDefinitionNode;
   readonly content: string;
+  readonly contentRange: { readonly start: number; readonly end: number };
+  readonly tsSource: string;
 };

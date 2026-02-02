@@ -281,7 +281,7 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
  * Index fragment definitions from extracted templates.
  * Parses each fragment template to extract FragmentDefinitionNode for cross-file resolution.
  */
-const indexFragments = (uri: string, templates: readonly ExtractedTemplate[]): readonly IndexedFragment[] => {
+const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], source: string): readonly IndexedFragment[] => {
   const fragments: IndexedFragment[] = [];
 
   for (const template of templates) {
@@ -301,6 +301,8 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[]): r
             fragmentName: def.name.value,
             definition: def as FragmentDefinitionNode,
             content: preprocessed,
+            contentRange: template.contentRange,
+            tsSource: source,
           });
         }
       }
@@ -346,7 +348,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
       const templates = extractTemplates(uri, source);
       const state: DocumentState = { uri, version, source, templates };
       cache.set(uri, state);
-      fragmentIndex.set(uri, indexFragments(uri, templates));
+      fragmentIndex.set(uri, indexFragments(uri, templates, source));
       return state;
     },
 
