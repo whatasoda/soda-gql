@@ -5,9 +5,10 @@
 
 import type { Location } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, type Position, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "../types";
-import { gqlPositionToOffset, resolveFragmentNameAtOffset } from "./_utils";
+
+import { computeFragmentDefinitionRanges, computeSpreadLocationRanges, resolveFragmentNameAtOffset } from "./_utils";
 
 export type HandleReferencesInput = {
   readonly template: ExtractedTemplate;
@@ -34,7 +35,7 @@ export const handleReferences = (input: HandleReferencesInput): Location[] => {
     return [];
   }
 
-  const offset = gqlPositionToOffset(preprocessed, gqlPosition);
+  const offset = positionToOffset(computeLineOffsets(preprocessed), gqlPosition);
 
   // Determine the fragment name at cursor
   const fragmentName = resolveFragmentNameAtOffset(preprocessed, offset);
@@ -45,53 +46,13 @@ export const handleReferences = (input: HandleReferencesInput): Location[] => {
   const locations: Location[] = [];
 
   // Collect fragment definition locations
-  for (const frag of allFragments) {
-    if (frag.fragmentName !== fragmentName) {
-      continue;
-    }
-    if (!frag.definition.name.loc) {
-      continue;
-    }
-
-    const defMapper = createPositionMapper({
-      tsSource: frag.tsSource,
-      contentStartOffset: frag.contentRange.start,
-      graphqlContent: frag.content,
-    });
-
-    const defGqlLineOffsets = computeLineOffsets(frag.content);
-    const nameStart = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.start);
-    const nameEnd = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.end);
-
-    locations.push({
-      uri: frag.uri,
-      range: {
-        start: defMapper.graphqlToTs(nameStart),
-        end: defMapper.graphqlToTs(nameEnd),
-      },
-    });
+  for (const r of computeFragmentDefinitionRanges(fragmentName, allFragments)) {
+    locations.push({ uri: r.uri, range: r.range });
   }
 
   // Collect fragment spread locations
-  const spreadLocations = findSpreadLocations(fragmentName);
-  for (const loc of spreadLocations) {
-    const spreadMapper = createPositionMapper({
-      tsSource: loc.tsSource,
-      contentStartOffset: loc.template.contentRange.start,
-      graphqlContent: loc.template.content,
-    });
-
-    const spreadGqlLineOffsets = computeLineOffsets(loc.template.content);
-    const spreadStart = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset);
-    const spreadEnd = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset + loc.nameLength);
-
-    locations.push({
-      uri: loc.uri,
-      range: {
-        start: spreadMapper.graphqlToTs(spreadStart),
-        end: spreadMapper.graphqlToTs(spreadEnd),
-      },
-    });
+  for (const r of computeSpreadLocationRanges(findSpreadLocations(fragmentName))) {
+    locations.push({ uri: r.uri, range: r.range });
   }
 
   return locations;

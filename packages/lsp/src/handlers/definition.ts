@@ -6,9 +6,9 @@
 import { getDefinitionQueryResultForFragmentSpread } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper, type Position, toIPosition } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, type Position, positionToOffset, toIPosition } from "../position-mapping";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { findFragmentSpreadAtOffset, gqlPositionToOffset } from "./_utils";
+import { findFragmentSpreadAtOffset } from "./_utils";
 
 export type HandleDefinitionInput = {
   readonly template: ExtractedTemplate;
@@ -35,7 +35,7 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
     return [];
   }
 
-  const offset = gqlPositionToOffset(preprocessed, gqlPosition);
+  const offset = positionToOffset(computeLineOffsets(preprocessed), gqlPosition);
 
   const fragmentSpread = findFragmentSpreadAtOffset(preprocessed, offset);
   if (!fragmentSpread) {

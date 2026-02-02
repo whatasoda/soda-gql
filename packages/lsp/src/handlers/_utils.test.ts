@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  findFragmentDefinitionAtOffset,
-  findFragmentSpreadAtOffset,
-  findFragmentSpreadByText,
-  gqlPositionToOffset,
-} from "./_utils";
+import { findFragmentDefinitionAtOffset, findFragmentSpreadAtOffset, findFragmentSpreadByText } from "./_utils";
 
 describe("findFragmentSpreadAtOffset", () => {
   test("returns node when cursor is on a fragment spread", () => {
@@ -91,26 +86,5 @@ describe("findFragmentDefinitionAtOffset", () => {
     const gql = "fragment { invalid";
     const result = findFragmentDefinitionAtOffset(gql, 0);
     expect(result).toBeNull();
-  });
-});
-
-describe("gqlPositionToOffset", () => {
-  test("converts single-line position", () => {
-    const content = "query Q { id }";
-    const offset = gqlPositionToOffset(content, { line: 0, character: 6 });
-    expect(offset).toBe(6);
-  });
-
-  test("converts multi-line position", () => {
-    const content = "query Q {\n  id\n  name\n}";
-    // line 1, char 2 = "id"
-    const offset = gqlPositionToOffset(content, { line: 1, character: 2 });
-    expect(content[offset]).toBe("i");
-  });
-
-  test("handles position at start of line", () => {
-    const content = "line0\nline1\nline2";
-    const offset = gqlPositionToOffset(content, { line: 2, character: 0 });
-    expect(offset).toBe("line0\nline1\n".length);
   });
 });

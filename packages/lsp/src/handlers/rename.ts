@@ -5,12 +5,13 @@
 
 import type { Range, TextEdit, WorkspaceEdit } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "../types";
 import {
+  computeFragmentDefinitionRanges,
+  computeSpreadLocationRanges,
   findFragmentDefinitionAtOffset,
   findFragmentSpreadAtOffset,
-  gqlPositionToOffset,
   resolveFragmentNameAtOffset,
 } from "./_utils";
 
@@ -46,7 +47,7 @@ export const handlePrepareRename = (input: HandlePrepareRenameInput): { range: R
     return null;
   }
 
-  const offset = gqlPositionToOffset(preprocessed, gqlPosition);
+  const offset = positionToOffset(computeLineOffsets(preprocessed), gqlPosition);
 
   // Check fragment definition name
   const defResult = findFragmentDefinitionAtOffset(preprocessed, offset);
@@ -85,7 +86,7 @@ export const handleRename = (input: HandleRenameInput): WorkspaceEdit | null => 
     return null;
   }
 
-  const offset = gqlPositionToOffset(preprocessed, gqlPosition);
+  const offset = positionToOffset(computeLineOffsets(preprocessed), gqlPosition);
 
   // Determine the fragment name at cursor
   const fragmentName = resolveFragmentNameAtOffset(preprocessed, offset);
@@ -103,55 +104,13 @@ export const handleRename = (input: HandleRenameInput): WorkspaceEdit | null => 
   };
 
   // Rename fragment definitions
-  for (const frag of allFragments) {
-    if (frag.fragmentName !== fragmentName) {
-      continue;
-    }
-    if (!frag.definition.name.loc) {
-      continue;
-    }
-
-    const defMapper = createPositionMapper({
-      tsSource: frag.tsSource,
-      contentStartOffset: frag.contentRange.start,
-      graphqlContent: frag.content,
-    });
-
-    const defGqlLineOffsets = computeLineOffsets(frag.content);
-    const nameStart = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.start);
-    const nameEnd = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.end);
-
-    addEdit(
-      frag.uri,
-      {
-        start: defMapper.graphqlToTs(nameStart),
-        end: defMapper.graphqlToTs(nameEnd),
-      },
-      newName,
-    );
+  for (const r of computeFragmentDefinitionRanges(fragmentName, allFragments)) {
+    addEdit(r.uri, r.range, newName);
   }
 
   // Rename fragment spreads
-  const spreadLocations = findSpreadLocations(fragmentName);
-  for (const loc of spreadLocations) {
-    const spreadMapper = createPositionMapper({
-      tsSource: loc.tsSource,
-      contentStartOffset: loc.template.contentRange.start,
-      graphqlContent: loc.template.content,
-    });
-
-    const spreadGqlLineOffsets = computeLineOffsets(loc.template.content);
-    const spreadStart = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset);
-    const spreadEnd = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset + loc.nameLength);
-
-    addEdit(
-      loc.uri,
-      {
-        start: spreadMapper.graphqlToTs(spreadStart),
-        end: spreadMapper.graphqlToTs(spreadEnd),
-      },
-      newName,
-    );
+  for (const r of computeSpreadLocationRanges(findSpreadLocations(fragmentName))) {
+    addEdit(r.uri, r.range, newName);
   }
 
   if (Object.keys(changes).length === 0) {

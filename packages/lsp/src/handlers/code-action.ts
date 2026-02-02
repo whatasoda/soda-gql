@@ -7,9 +7,8 @@ import type { SelectionNode } from "graphql";
 import { type GraphQLSchema, parse, TypeInfo, visit, visitWithTypeInfo } from "graphql";
 import { type CodeAction, CodeActionKind, type TextEdit } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
-import { gqlPositionToOffset } from "./_utils";
 
 export type HandleCodeActionInput = {
   readonly template: ExtractedTemplate;
@@ -43,8 +42,9 @@ export const handleCodeAction = (input: HandleCodeActionInput): CodeAction[] => 
     return [];
   }
 
-  const startOffset = gqlPositionToOffset(preprocessed, gqlStart);
-  const endOffset = gqlPositionToOffset(preprocessed, gqlEnd);
+  const preprocessedLineOffsets = computeLineOffsets(preprocessed);
+  const startOffset = positionToOffset(preprocessedLineOffsets, gqlStart);
+  const endOffset = positionToOffset(preprocessedLineOffsets, gqlEnd);
 
   // Parse the GraphQL
   let ast: ReturnType<typeof parse>;

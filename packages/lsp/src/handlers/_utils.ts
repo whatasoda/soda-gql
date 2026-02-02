@@ -5,7 +5,8 @@
 
 import type { FragmentSpreadNode } from "graphql";
 import { parse, visit } from "graphql";
-import type { Position } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
+import type { FragmentSpreadLocation, IndexedFragment } from "../types";
 
 /**
  * Find the fragment spread node at the given GraphQL offset using AST.
@@ -97,14 +98,72 @@ export const resolveFragmentNameAtOffset = (preprocessed: string, offset: number
   return null;
 };
 
-/**
- * Convert a GraphQL Position to a byte offset within GraphQL content.
- */
-export const gqlPositionToOffset = (content: string, position: Position): number => {
-  const lines = content.split("\n");
-  let offset = 0;
-  for (let i = 0; i < position.line && i < lines.length; i++) {
-    offset += lines[i]!.length + 1;
+/** Range result from fragment location computation. */
+export type FragmentRange = {
+  readonly uri: string;
+  readonly range: { readonly start: Position; readonly end: Position };
+};
+
+/** Compute TS ranges for all definitions of a named fragment. */
+export const computeFragmentDefinitionRanges = (
+  fragmentName: string,
+  allFragments: readonly IndexedFragment[],
+): FragmentRange[] => {
+  const ranges: FragmentRange[] = [];
+
+  for (const frag of allFragments) {
+    if (frag.fragmentName !== fragmentName) {
+      continue;
+    }
+    if (!frag.definition.name.loc) {
+      continue;
+    }
+
+    const defMapper = createPositionMapper({
+      tsSource: frag.tsSource,
+      contentStartOffset: frag.contentRange.start,
+      graphqlContent: frag.content,
+    });
+
+    const defGqlLineOffsets = computeLineOffsets(frag.content);
+    const nameStart = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.start);
+    const nameEnd = offsetToPosition(defGqlLineOffsets, frag.definition.name.loc.end);
+
+    ranges.push({
+      uri: frag.uri,
+      range: {
+        start: defMapper.graphqlToTs(nameStart),
+        end: defMapper.graphqlToTs(nameEnd),
+      },
+    });
   }
-  return offset + position.character;
+
+  return ranges;
+};
+
+/** Compute TS ranges for all fragment spread locations. */
+export const computeSpreadLocationRanges = (spreadLocations: readonly FragmentSpreadLocation[]): FragmentRange[] => {
+  const ranges: FragmentRange[] = [];
+
+  for (const loc of spreadLocations) {
+    const spreadMapper = createPositionMapper({
+      tsSource: loc.tsSource,
+      contentStartOffset: loc.template.contentRange.start,
+      graphqlContent: loc.template.content,
+    });
+
+    const spreadGqlLineOffsets = computeLineOffsets(loc.template.content);
+    const spreadStart = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset);
+    const spreadEnd = offsetToPosition(spreadGqlLineOffsets, loc.nameOffset + loc.nameLength);
+
+    ranges.push({
+      uri: loc.uri,
+      range: {
+        start: spreadMapper.graphqlToTs(spreadStart),
+        end: spreadMapper.graphqlToTs(spreadEnd),
+      },
+    });
+  }
+
+  return ranges;
 };
