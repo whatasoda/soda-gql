@@ -21,6 +21,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
+import { handleCodeAction } from "./handlers/code-action";
 import { handleDefinition } from "./handlers/definition";
 import { handleFormatting } from "./handlers/formatting";
 import { handleReferences } from "./handlers/references";
@@ -115,6 +116,9 @@ export const createLspServer = (options?: LspServerOptions) => {
         referencesProvider: true,
         renameProvider: { prepareProvider: true },
         documentFormattingProvider: true,
+        codeActionProvider: {
+          codeActionKinds: ["refactor.extract"],
+        },
       },
     };
   });
@@ -358,6 +362,42 @@ export const createLspServer = (options?: LspServerOptions) => {
     return handleFormatting({
       templates: state.templates,
       tsSource: state.source,
+    });
+  });
+
+  connection.onCodeAction((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.range.start),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    const entry = schemaResolver.getSchema(template.schemaName);
+    if (!entry) {
+      return [];
+    }
+
+    return handleCodeAction({
+      template,
+      schema: entry.schema,
+      tsSource: doc.getText(),
+      uri: params.textDocument.uri,
+      selectionRange: {
+        start: { line: params.range.start.line, character: params.range.start.character },
+        end: { line: params.range.end.line, character: params.range.end.character },
+      },
     });
   });
 
