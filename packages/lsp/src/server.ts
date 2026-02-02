@@ -21,6 +21,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
+import { handleDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleHover } from "./handlers/hover";
@@ -107,6 +108,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         },
         hoverProvider: true,
         documentSymbolProvider: true,
+        definitionProvider: true,
       },
     };
   });
@@ -201,6 +203,38 @@ export const createLspServer = (options?: LspServerOptions) => {
       schema: entry.schema,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onDefinition(async (params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    const externalFragments = documentManager.getExternalFragments(
+      params.textDocument.uri,
+      template.schemaName,
+    );
+
+    return handleDefinition({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+      externalFragments,
     });
   });
 
