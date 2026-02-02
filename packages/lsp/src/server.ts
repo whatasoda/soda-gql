@@ -22,6 +22,7 @@ import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
+import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleHover } from "./handlers/hover";
 import type { SchemaResolver } from "./schema-resolver";
 import { createSchemaResolver } from "./schema-resolver";
@@ -105,6 +106,7 @@ export const createLspServer = (options?: LspServerOptions) => {
           triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
         },
         hoverProvider: true,
+        documentSymbolProvider: true,
       },
     };
   });
@@ -199,6 +201,22 @@ export const createLspServer = (options?: LspServerOptions) => {
       schema: entry.schema,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onDocumentSymbol((params) => {
+    if (!documentManager) {
+      return [];
+    }
+
+    const state = documentManager.get(params.textDocument.uri);
+    if (!state) {
+      return [];
+    }
+
+    return handleDocumentSymbol({
+      templates: state.templates,
+      tsSource: state.source,
     });
   });
 
