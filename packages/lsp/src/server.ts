@@ -23,6 +23,7 @@ import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
 import { handleReferences } from "./handlers/references";
+import { handlePrepareRename, handleRename } from "./handlers/rename";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleHover } from "./handlers/hover";
@@ -111,6 +112,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         documentSymbolProvider: true,
         definitionProvider: true,
         referencesProvider: true,
+        renameProvider: { prepareProvider: true },
       },
     };
   });
@@ -263,6 +265,62 @@ export const createLspServer = (options?: LspServerOptions) => {
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
+      uri: params.textDocument.uri,
+      allFragments: documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
+    });
+  });
+
+  connection.onPrepareRename((params) => {
+    if (!documentManager) {
+      return null;
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return null;
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return null;
+    }
+
+    return handlePrepareRename({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onRenameRequest((params) => {
+    if (!documentManager || !schemaResolver) {
+      return null;
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return null;
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return null;
+    }
+
+    return handleRename({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+      newName: params.newName,
       uri: params.textDocument.uri,
       allFragments: documentManager.getAllFragments(template.schemaName),
       findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
