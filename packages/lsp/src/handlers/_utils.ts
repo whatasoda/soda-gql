@@ -61,26 +61,48 @@ export const findFragmentSpreadByText = (
 	return null;
 };
 
+export type FragmentDefinitionMatch = {
+	readonly name: string;
+	readonly loc: { readonly start: number; readonly end: number };
+};
+
 /**
- * Find a FragmentDefinition name at a given offset.
- * Returns the name string or null.
+ * Find a FragmentDefinition at a given offset.
+ * Returns the name and location, or null.
  */
-export const findFragmentDefinitionNameAtOffset = (
+export const findFragmentDefinitionAtOffset = (
 	preprocessed: string,
 	offset: number,
-): string | null => {
+): FragmentDefinitionMatch | null => {
 	try {
 		const ast = parse(preprocessed, { noLocation: false });
 		for (const def of ast.definitions) {
 			if (def.kind === "FragmentDefinition" && def.name.loc) {
 				if (offset >= def.name.loc.start && offset < def.name.loc.end) {
-					return def.name.value;
+					return { name: def.name.value, loc: { start: def.name.loc.start, end: def.name.loc.end } };
 				}
 			}
 		}
 	} catch {
 		// ignore parse errors
 	}
+	return null;
+};
+
+/**
+ * Resolve the fragment name at a given offset, checking both definitions and spreads.
+ */
+export const resolveFragmentNameAtOffset = (preprocessed: string, offset: number): string | null => {
+	const def = findFragmentDefinitionAtOffset(preprocessed, offset);
+	if (def) {
+		return def.name;
+	}
+
+	const spread = findFragmentSpreadAtOffset(preprocessed, offset);
+	if (spread) {
+		return spread.name.value;
+	}
+
 	return null;
 };
 

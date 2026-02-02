@@ -7,7 +7,7 @@ import type { Range, TextEdit, WorkspaceEdit } from "vscode-languageserver-types
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
 import type { ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "../types";
-import { findFragmentDefinitionNameAtOffset, findFragmentSpreadAtOffset, gqlPositionToOffset } from "./_utils";
+import { findFragmentDefinitionAtOffset, findFragmentSpreadAtOffset, gqlPositionToOffset, resolveFragmentNameAtOffset } from "./_utils";
 
 export type HandlePrepareRenameInput = {
 	readonly template: ExtractedTemplate;
@@ -46,31 +46,21 @@ export const handlePrepareRename = (
 	const offset = gqlPositionToOffset(preprocessed, gqlPosition);
 
 	// Check fragment definition name
-	const defName = findFragmentDefinitionNameAtOffset(preprocessed, offset);
-	if (defName) {
+	const defResult = findFragmentDefinitionAtOffset(preprocessed, offset);
+	if (defResult) {
 		const gqlLineOffsets = computeLineOffsets(preprocessed);
-		// Find the definition name location by searching for it after "fragment "
-		const defIdx = preprocessed.indexOf(defName, preprocessed.indexOf("fragment "));
-		if (defIdx >= 0) {
-			const start = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, defIdx));
-			const end = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, defIdx + defName.length));
-			return { range: { start, end }, placeholder: defName };
-		}
+		const start = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, defResult.loc.start));
+		const end = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, defResult.loc.end));
+		return { range: { start, end }, placeholder: defResult.name };
 	}
 
 	// Check fragment spread
 	const spread = findFragmentSpreadAtOffset(preprocessed, offset);
-	if (spread && spread.name.value) {
+	if (spread && spread.name.value && spread.name.loc) {
 		const gqlLineOffsets = computeLineOffsets(preprocessed);
-		// Find the name portion within the spread (after "...")
-		const spreadPattern = new RegExp(`\\.\\.\\.${spread.name.value}\\b`);
-		const match = spreadPattern.exec(preprocessed);
-		if (match) {
-			const nameStart = match.index + 3; // skip "..."
-			const start = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, nameStart));
-			const end = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, nameStart + spread.name.value.length));
-			return { range: { start, end }, placeholder: spread.name.value };
-		}
+		const start = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, spread.name.loc.start));
+		const end = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, spread.name.loc.end));
+		return { range: { start, end }, placeholder: spread.name.value };
 	}
 
 	return null;
@@ -95,7 +85,7 @@ export const handleRename = (input: HandleRenameInput): WorkspaceEdit | null => 
 	const offset = gqlPositionToOffset(preprocessed, gqlPosition);
 
 	// Determine the fragment name at cursor
-	const fragmentName = resolveFragmentName(preprocessed, offset);
+	const fragmentName = resolveFragmentNameAtOffset(preprocessed, offset);
 	if (!fragmentName) {
 		return null;
 	}
@@ -160,16 +150,3 @@ export const handleRename = (input: HandleRenameInput): WorkspaceEdit | null => 
 	return { changes };
 };
 
-const resolveFragmentName = (preprocessed: string, offset: number): string | null => {
-	const defName = findFragmentDefinitionNameAtOffset(preprocessed, offset);
-	if (defName) {
-		return defName;
-	}
-
-	const spread = findFragmentSpreadAtOffset(preprocessed, offset);
-	if (spread) {
-		return spread.name.value;
-	}
-
-	return null;
-};

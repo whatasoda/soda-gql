@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-	findFragmentDefinitionNameAtOffset,
+	findFragmentDefinitionAtOffset,
 	findFragmentSpreadAtOffset,
 	findFragmentSpreadByText,
 	gqlPositionToOffset,
@@ -54,38 +54,42 @@ describe("findFragmentSpreadByText", () => {
 	});
 });
 
-describe("findFragmentDefinitionNameAtOffset", () => {
-	test("returns fragment name when cursor is on definition name", () => {
+describe("findFragmentDefinitionAtOffset", () => {
+	test("returns name and loc when cursor is on definition name", () => {
 		const gql = "fragment UserFields on User { id name }";
 		const nameIdx = gql.indexOf("UserFields");
-		const result = findFragmentDefinitionNameAtOffset(gql, nameIdx);
-		expect(result).toBe("UserFields");
+		const result = findFragmentDefinitionAtOffset(gql, nameIdx);
+		expect(result).not.toBeNull();
+		expect(result!.name).toBe("UserFields");
+		expect(result!.loc.start).toBe(nameIdx);
+		expect(result!.loc.end).toBe(nameIdx + "UserFields".length);
 	});
 
-	test("returns fragment name at end of name range", () => {
+	test("returns result at end of name range", () => {
 		const gql = "fragment UserFields on User { id name }";
 		const nameIdx = gql.indexOf("UserFields");
 		// cursor at last char of name (exclusive end, so nameIdx + length - 1)
-		const result = findFragmentDefinitionNameAtOffset(gql, nameIdx + "UserFields".length - 1);
-		expect(result).toBe("UserFields");
+		const result = findFragmentDefinitionAtOffset(gql, nameIdx + "UserFields".length - 1);
+		expect(result).not.toBeNull();
+		expect(result!.name).toBe("UserFields");
 	});
 
 	test("returns null when cursor is outside fragment name", () => {
 		const gql = "fragment UserFields on User { id name }";
-		const result = findFragmentDefinitionNameAtOffset(gql, 0);
+		const result = findFragmentDefinitionAtOffset(gql, 0);
 		expect(result).toBeNull();
 	});
 
 	test("returns null for query definitions", () => {
 		const gql = "query GetUser { user { id } }";
 		const nameIdx = gql.indexOf("GetUser");
-		const result = findFragmentDefinitionNameAtOffset(gql, nameIdx);
+		const result = findFragmentDefinitionAtOffset(gql, nameIdx);
 		expect(result).toBeNull();
 	});
 
 	test("returns null on parse error", () => {
 		const gql = "fragment { invalid";
-		const result = findFragmentDefinitionNameAtOffset(gql, 0);
+		const result = findFragmentDefinitionAtOffset(gql, 0);
 		expect(result).toBeNull();
 	});
 });

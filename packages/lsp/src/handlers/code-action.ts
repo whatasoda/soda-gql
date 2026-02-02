@@ -72,10 +72,11 @@ export const handleCodeAction = (input: HandleCodeActionInput): CodeAction[] => 
 	}
 
 	const selectedText = preprocessed.slice(firstSel.loc.start, lastSel.loc.end);
+	const escapedText = selectedText.replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
 	const fragmentName = "ExtractedFragment";
 
 	// Build the fragment definition
-	const fragmentDef = `fragment ${fragmentName} on ${parentTypeName} {\n  ${selectedText.trim()}\n}`;
+	const fragmentDef = `fragment ${fragmentName} on ${parentTypeName} {\n  ${escapedText.trim()}\n}`;
 
 	// Build the new gql expression to insert
 	const newGqlExpr = `export const ${fragmentName} = gql.${template.schemaName}(({ fragment }) => fragment\`\n  ${fragmentDef}\n\`);\n\n`;

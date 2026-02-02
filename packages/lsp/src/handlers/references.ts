@@ -7,7 +7,7 @@ import type { Location } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
 import type { ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "../types";
-import { findFragmentDefinitionNameAtOffset, findFragmentSpreadAtOffset, gqlPositionToOffset } from "./_utils";
+import { gqlPositionToOffset, resolveFragmentNameAtOffset } from "./_utils";
 
 export type HandleReferencesInput = {
 	readonly template: ExtractedTemplate;
@@ -97,19 +97,3 @@ export const handleReferences = (input: HandleReferencesInput): Location[] => {
 	return locations;
 };
 
-/** Resolve the fragment name at a given offset, checking both definitions and spreads. */
-const resolveFragmentNameAtOffset = (preprocessed: string, offset: number): string | null => {
-	// Check fragment definition name first
-	const defName = findFragmentDefinitionNameAtOffset(preprocessed, offset);
-	if (defName) {
-		return defName;
-	}
-
-	// Check fragment spread
-	const spread = findFragmentSpreadAtOffset(preprocessed, offset);
-	if (spread) {
-		return spread.name.value;
-	}
-
-	return null;
-};
