@@ -57,7 +57,7 @@ describe("handleCompletion", () => {
 
   test("includes external fragment names in spread completion", () => {
     // Cursor after "..." inside a selection set — should suggest fragment names
-    const content = "query { user(id: \"1\") { ... } }";
+    const content = 'query { user(id: "1") { ... } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

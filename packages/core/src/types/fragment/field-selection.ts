@@ -82,9 +82,7 @@ export type AbstractFieldSelection<
   readonly args: TArgs;
   readonly directives: TDirectives;
   readonly object: TObject;
-  readonly union: TUnionSelections extends AnyNestedUnion
-    ? UnionSelection<TUnionSelections, TUnionTypename>
-    : null;
+  readonly union: TUnionSelections extends AnyNestedUnion ? UnionSelection<TUnionSelections, TUnionTypename> : null;
 };
 
 /** Convenience alias to obtain a typed field reference from the schema. */

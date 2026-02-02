@@ -183,9 +183,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const schemas = schemasResult.value;
 
   // Step 3: Load schema documents and generate index.prebuilt.ts
-  const schemaDocuments = options.schemaDocuments
-    ? new Map(options.schemaDocuments)
-    : loadSchemaDocuments(config.schemas);
+  const schemaDocuments = options.schemaDocuments ? new Map(options.schemaDocuments) : loadSchemaDocuments(config.schemas);
   const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
 
   // Calculate import paths from index.prebuilt.ts to internal modules

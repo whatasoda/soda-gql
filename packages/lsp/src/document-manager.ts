@@ -5,7 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { type SwcSpanConverter, createSwcSpanConverter } from "@soda-gql/common";
+import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type {
   ArrowFunctionExpression,
@@ -17,7 +17,7 @@ import type {
   Node,
   TaggedTemplateExpression,
 } from "@swc/types";
-import { parse, visit, type FragmentDefinitionNode } from "graphql";
+import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
 import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment, OperationKind } from "./types";
 

@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { parse, type FragmentDefinitionNode } from "graphql";
-import type { IndexedFragment } from "../types";
+import { type FragmentDefinitionNode, parse } from "graphql";
+import type { ExtractedTemplate, IndexedFragment } from "../types";
 import { handleDefinition } from "./definition";
-import type { ExtractedTemplate } from "../types";
 
 const makeFragment = (uri: string, schemaName: string, fragmentText: string, tsSource?: string): IndexedFragment => {
   const ast = parse(fragmentText);
@@ -22,7 +21,7 @@ const makeFragment = (uri: string, schemaName: string, fragmentText: string, tsS
 
 describe("handleDefinition", () => {
   test("resolves fragment spread to definition in external file", async () => {
-    const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
@@ -37,9 +36,7 @@ describe("handleDefinition", () => {
     const fragmentText = "fragment UserFields on User { id name }";
     const fragmentGraphqlContent = `\n  ${fragmentText}\n`;
     const fragmentTsSource = `import { gql } from "@/graphql-system";\n\nexport const UserFields = gql.default(({ fragment }) => fragment\`${fragmentGraphqlContent}\`);`;
-    const externalFragments = [
-      makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource),
-    ];
+    const externalFragments = [makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource)];
 
     // Position cursor on "UserFields" in "...UserFields"
     const spreadIdx = content.indexOf("...UserFields") + 3; // After "..."
@@ -65,7 +62,7 @@ describe("handleDefinition", () => {
   });
 
   test("maps definition positions to TypeScript file coordinates", async () => {
-    const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
@@ -89,9 +86,7 @@ describe("handleDefinition", () => {
     ].join("\n");
     const fragmentGraphqlContent = `\n  ${fragmentText}\n`;
     const fragmentUri = "/test/fragments.ts";
-    const externalFragments = [
-      makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource),
-    ];
+    const externalFragments = [makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource)];
 
     const spreadIdx = content.indexOf("...UserFields") + 3;
     const cursorInTs = contentStart + spreadIdx;
@@ -115,7 +110,7 @@ describe("handleDefinition", () => {
   });
 
   test("returns empty for positions not on fragment spread", async () => {
-    const content = "query GetUser { user(id: \"1\") { id name } }";
+    const content = 'query GetUser { user(id: "1") { id name } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
@@ -143,7 +138,7 @@ describe("handleDefinition", () => {
   });
 
   test("returns empty when fragment is not found", async () => {
-    const content = "query GetUser { user(id: \"1\") { ...UnknownFragment } }";
+    const content = 'query GetUser { user(id: "1") { ...UnknownFragment } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
@@ -171,7 +166,7 @@ describe("handleDefinition", () => {
   });
 
   test("returns empty for position outside template", async () => {
-    const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

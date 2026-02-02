@@ -1,7 +1,6 @@
 import type { TypeCategory, TypeFilterConfig } from "@soda-gql/config";
 import {
   type ConstDirectiveNode,
-  type ConstValueNode,
   type DocumentNode,
   type EnumValueDefinitionNode,
   type FieldDefinitionNode,
@@ -343,30 +342,6 @@ const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.
 const _isInputName = (schema: SchemaIndex, name: string): boolean => schema.inputs.has(name);
 const isUnionName = (schema: SchemaIndex, name: string): boolean => schema.unions.has(name);
 const isObjectName = (schema: SchemaIndex, name: string): boolean => schema.objects.has(name);
-
-const renderConstValue = (value: ConstValueNode): string => {
-  switch (value.kind) {
-    case Kind.NULL:
-      return "null";
-    case Kind.INT:
-    case Kind.FLOAT:
-      return value.value;
-    case Kind.STRING:
-    case Kind.ENUM:
-      return JSON.stringify(value.value);
-    case Kind.BOOLEAN:
-      return value.value ? "true" : "false";
-    case Kind.LIST:
-      return `[${value.values.map((item) => renderConstValue(item)).join(", ")}]`;
-    case Kind.OBJECT: {
-      if (value.fields.length === 0) {
-        return "{}";
-      }
-      const entries = value.fields.map((field) => `${field.name.value}: ${renderConstValue(field.value)}`);
-      return `{ ${entries.join(", ")} }`;
-    }
-  }
-};
 
 /**
  * Maps type kind to deferred specifier prefix character.

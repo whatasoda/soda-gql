@@ -9,14 +9,19 @@
 
 import { resolve } from "node:path";
 import type { CodegenSchemaConfig } from "@soda-gql/codegen";
-import { compileTypeFilter, computeReachabilityFilter, loadSchema, runCodegen, transformParsedGraphql } from "@soda-gql/codegen";
+import {
+  compileTypeFilter,
+  computeReachabilityFilter,
+  loadSchema,
+  runCodegen,
+  type transformParsedGraphql,
+} from "@soda-gql/codegen";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";
-import { type ParsedGraphqlArgs, generateCompatFiles, writeGeneratedFiles } from "./graphql";
-import { graphqlCommand } from "./graphql";
+import { generateCompatFiles, graphqlCommand, type ParsedGraphqlArgs, writeGeneratedFiles } from "./graphql";
 import { schemaCommand } from "./schema";
 
 /** Schema document type inferred from transformParsedGraphql to avoid graphql version mismatch. */
@@ -42,9 +47,7 @@ type CodegenCommandResult = CommandResult<CommandSuccess>;
  * Check if argv contains legacy schema-specific flags.
  */
 const isLegacySchemaArgs = (argv: readonly string[]): boolean => {
-  return argv.some(
-    (arg) => arg === "--emit-inject-template" || arg.startsWith("--emit-inject-template="),
-  );
+  return argv.some((arg) => arg === "--emit-inject-template" || arg.startsWith("--emit-inject-template="));
 };
 
 /**
@@ -123,7 +126,11 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
     let typeFilter: TypeFilterConfig | undefined = schemaConfig.typeFilter;
 
     if (targetTypes && targetTypes.size > 0 && document) {
-      const { filter: reachFilter, warnings: reachWarnings } = computeReachabilityFilter(document, targetTypes, usedArgumentTypes);
+      const { filter: reachFilter, warnings: reachWarnings } = computeReachabilityFilter(
+        document,
+        targetTypes,
+        usedArgumentTypes,
+      );
       for (const w of reachWarnings) {
         messages.push(`  warning: ${w}`);
       }

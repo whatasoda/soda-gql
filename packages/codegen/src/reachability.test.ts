@@ -186,7 +186,7 @@ describe("computeReachabilityFilter", () => {
 
     const { filter, warnings } = computeReachabilityFilter(schema, new Set(["NonExistent", "User"]));
 
-    expect(warnings).toEqual(["Target type \"NonExistent\" not found in schema"]);
+    expect(warnings).toEqual(['Target type "NonExistent" not found in schema']);
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
   });
@@ -371,11 +371,7 @@ describe("computeReachabilityFilter", () => {
     `);
 
     // Status is an enum used directly as a variable type
-    const { filter } = computeReachabilityFilter(
-      schema,
-      new Set(["User"]),
-      new Set(["Status"]),
-    );
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]), new Set(["Status"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -394,11 +390,7 @@ describe("computeReachabilityFilter", () => {
     `);
 
     // DateTime is a custom scalar used directly as a variable type
-    const { filter } = computeReachabilityFilter(
-      schema,
-      new Set(["Event"]),
-      new Set(["DateTime"]),
-    );
+    const { filter } = computeReachabilityFilter(schema, new Set(["Event"]), new Set(["DateTime"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "Event", category: "object" })).toBe(true);
@@ -435,11 +427,7 @@ describe("computeReachabilityFilter", () => {
     `);
 
     // Fragment only uses UserFilter, not SortInput
-    const { filter } = computeReachabilityFilter(
-      schema,
-      new Set(["User"]),
-      new Set(["UserFilter"]),
-    );
+    const { filter } = computeReachabilityFilter(schema, new Set(["User"]), new Set(["UserFilter"]));
 
     expect(filter({ name: "Query", category: "object" })).toBe(true);
     expect(filter({ name: "User", category: "object" })).toBe(true);
@@ -468,11 +456,7 @@ describe("computeReachabilityFilter", () => {
       }
     `);
 
-    const { filter } = computeReachabilityFilter(
-      schema,
-      new Set(["Item"]),
-      new Set(["FilterA"]),
-    );
+    const { filter } = computeReachabilityFilter(schema, new Set(["Item"]), new Set(["FilterA"]));
 
     expect(filter({ name: "FilterA", category: "input" })).toBe(true);
     expect(filter({ name: "FilterB", category: "input" })).toBe(true);

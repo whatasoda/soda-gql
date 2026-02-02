@@ -20,9 +20,7 @@ export type HandleDefinitionInput = {
 };
 
 /** Handle a definition request for a GraphQL template. */
-export const handleDefinition = async (
-  input: HandleDefinitionInput,
-): Promise<Location[]> => {
+export const handleDefinition = async (input: HandleDefinitionInput): Promise<Location[]> => {
   const { template, tsSource, tsPosition, externalFragments } = input;
   const { preprocessed } = preprocessFragmentArgs(template.content);
 
@@ -52,11 +50,7 @@ export const handleDefinition = async (
   }));
 
   try {
-    const result = await getDefinitionQueryResultForFragmentSpread(
-      preprocessed,
-      fragmentSpread,
-      fragmentInfos,
-    );
+    const result = await getDefinitionQueryResultForFragmentSpread(preprocessed, fragmentSpread, fragmentInfos);
 
     return result.definitions.map((def): Location => {
       const defPosition = toIPosition(def.position);

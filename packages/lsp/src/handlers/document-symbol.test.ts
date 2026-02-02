@@ -5,7 +5,7 @@ import { handleDocumentSymbol } from "./document-symbol";
 
 describe("handleDocumentSymbol", () => {
   test("returns operation symbols for query templates", () => {
-    const content = "query GetUser { user(id: \"1\") { id name } }";
+    const content = 'query GetUser { user(id: "1") { id name } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
@@ -46,7 +46,7 @@ describe("handleDocumentSymbol", () => {
   });
 
   test("maps positions to TS file coordinates", () => {
-    const content = "query GetUser { user(id: \"1\") { id } }";
+    const content = 'query GetUser { user(id: "1") { id } }';
     // Put the template on line 2 (0-indexed)
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
@@ -66,7 +66,7 @@ describe("handleDocumentSymbol", () => {
   });
 
   test("handles multiple templates in one file", () => {
-    const content1 = "query GetUser { user(id: \"1\") { id } }";
+    const content1 = 'query GetUser { user(id: "1") { id } }';
     const content2 = "query GetUsers { users { id } }";
     const tsSource = `import { gql } from "@/graphql-system";\n\nconst A = gql.default(({ query }) => query\`${content1}\`);\nconst B = gql.default(({ query }) => query\`${content2}\`);`;
 

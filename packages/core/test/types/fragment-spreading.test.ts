@@ -33,7 +33,7 @@ describe("Fragment spreading type inference", () => {
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
+            ...f.user({ id: $.id })(() => ({
               ...userFragment.spread(),
             })),
           }),
@@ -100,7 +100,7 @@ describe("Fragment spreading type inference", () => {
           name: "GetUser",
           variables: { ...$var("id").ID("!") },
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
+            ...f.user({ id: $.id })(() => ({
               // Optional fragment variable - can be omitted or passed
               ...userFragment.spread(),
             })),

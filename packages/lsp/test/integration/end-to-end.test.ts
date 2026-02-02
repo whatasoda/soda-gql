@@ -177,9 +177,9 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       const entry = schemaResolver.getSchema("default")!;
       const externalFragments = dm.getExternalFragments(queryUri, "default").map((f) => f.definition);
 
-      const diagnostics = queryState.templates.flatMap((template) =>
-        [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: querySource, externalFragments })],
-      );
+      const diagnostics = queryState.templates.flatMap((template) => [
+        ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: querySource, externalFragments }),
+      ]);
 
       const unknownFragmentErrors = diagnostics.filter((d) => d.message.includes("Unknown fragment"));
       expect(unknownFragmentErrors).toHaveLength(0);
@@ -194,7 +194,7 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       dm.update(fragmentUri, 1, fragmentSource);
 
       // Register a query document with "..." at cursor position
-      const content = "query GetUser { user(id: \"1\") { ... } }";
+      const content = 'query GetUser { user(id: "1") { ... } }';
       const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
       const queryUri = resolve(fixturesDir, "query-spread.ts");
       dm.update(queryUri, 1, querySource);
@@ -232,7 +232,7 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       dm.update(fragmentUri, 1, fragmentSource);
 
       // Register a query document that uses the fragment
-      const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+      const content = 'query GetUser { user(id: "1") { ...UserFields } }';
       const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
       const queryUri = resolve(fixturesDir, "query-definition.ts");
       dm.update(queryUri, 1, querySource);

@@ -20,15 +20,15 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
-import { handleCompletion } from "./handlers/completion";
 import { handleCodeAction } from "./handlers/code-action";
+import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
-import { handleFormatting } from "./handlers/formatting";
-import { handleReferences } from "./handlers/references";
-import { handlePrepareRename, handleRename } from "./handlers/rename";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
+import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
+import { handleReferences } from "./handlers/references";
+import { handlePrepareRename, handleRename } from "./handlers/rename";
 import type { SchemaResolver } from "./schema-resolver";
 import { createSchemaResolver } from "./schema-resolver";
 
@@ -59,12 +59,8 @@ export const createLspServer = (options?: LspServerOptions) => {
       if (!entry) {
         return [];
       }
-      const externalFragments = documentManager!
-        .getExternalFragments(uri, template.schemaName)
-        .map((f) => f.definition);
-      return [
-        ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments }),
-      ];
+      const externalFragments = documentManager!.getExternalFragments(uri, template.schemaName).map((f) => f.definition);
+      return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
     });
 
     connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
@@ -235,10 +231,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const externalFragments = documentManager.getExternalFragments(
-      params.textDocument.uri,
-      template.schemaName,
-    );
+    const externalFragments = documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
 
     return handleDefinition({
       template,

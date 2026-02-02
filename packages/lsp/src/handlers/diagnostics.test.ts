@@ -93,7 +93,7 @@ describe("computeTemplateDiagnostics", () => {
   });
 
   test("no unknown-fragment error when externalFragments provided", () => {
-    const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

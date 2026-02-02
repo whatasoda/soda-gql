@@ -109,7 +109,7 @@ describe("Shorthand Field Selection", () => {
     it("accepts shorthand for scalar fields", () => {
       const userFragment = gql(({ fragment }) =>
         fragment.User({
-          fields: ({ f }) => ({
+          fields: () => ({
             id: true,
             name: true,
           }),
@@ -125,7 +125,7 @@ describe("Shorthand Field Selection", () => {
     it("accepts shorthand for enum fields", () => {
       const userFragment = gql(({ fragment }) =>
         fragment.User({
-          fields: ({ f }) => ({
+          fields: () => ({
             status: true,
             role: true,
           }),
@@ -232,7 +232,7 @@ describe("Shorthand Field Selection", () => {
             ...f.user({ id: $.userId })(({ f }) => ({
               id: true,
               name: true,
-              ...f.profile()(({ f }) => ({
+              ...f.profile()(() => ({
                 bio: true,
                 website: true,
               })),
@@ -257,7 +257,7 @@ describe("Shorthand Field Selection", () => {
               id: true,
               ...f.profile()(({ f }) => ({
                 bio: true,
-                ...f.avatar()(({ f }) => ({
+                ...f.avatar()(() => ({
                   url: true,
                   width: true,
                   height: true,
@@ -323,7 +323,7 @@ describe("Shorthand Field Selection", () => {
         query.operation({
           name: "GetUsers",
           fields: ({ f }) => ({
-            ...f.users()(({ f }) => ({
+            ...f.users()(() => ({
               id: true,
               name: true,
               status: true,
@@ -347,7 +347,7 @@ describe("Shorthand Field Selection", () => {
           name: "CreateUser",
           variables: { ...$var("name").String("!") },
           fields: ({ f, $ }) => ({
-            ...f.createUser({ name: $.name })(({ f }) => ({
+            ...f.createUser({ name: $.name })(() => ({
               id: true,
               name: true,
               isActive: true,
