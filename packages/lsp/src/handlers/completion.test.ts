@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
 import { loadSchema } from "@soda-gql/codegen";
 import type { DocumentNode } from "graphql";
-import { buildASTSchema } from "graphql";
+import { buildASTSchema, parse } from "graphql";
 import type { ExtractedTemplate } from "../types";
 import { handleCompletion } from "./completion";
 
@@ -53,6 +53,40 @@ describe("handleCompletion", () => {
     const labels = items.map((item) => item.label);
     expect(labels).toContain("id");
     expect(labels).toContain("name");
+  });
+
+  test("includes external fragment names in spread completion", () => {
+    // Cursor after "..." inside a selection set — should suggest fragment names
+    const content = "query { user(id: \"1\") { ... } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor after "..." (index of "..." + 3)
+    const spreadIdx = content.indexOf("...");
+    const cursorInTs = contentStart + spreadIdx + 3;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const fragmentAst = parse("fragment UserFields on User { id name }");
+    const fragmentDef = fragmentAst.definitions[0]!;
+
+    const items = handleCompletion({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      tsPosition,
+      externalFragments: [fragmentDef as import("graphql").FragmentDefinitionNode],
+    });
+
+    const labels = items.map((item) => item.label);
+    expect(labels).toContain("UserFields");
   });
 
   test("returns empty for position outside template", () => {

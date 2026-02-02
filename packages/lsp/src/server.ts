@@ -53,7 +53,12 @@ export const createLspServer = (options?: LspServerOptions) => {
       if (!entry) {
         return [];
       }
-      return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source })];
+      const externalFragments = documentManager!
+        .getExternalFragments(uri, template.schemaName)
+        .map((f) => f.definition);
+      return [
+        ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments }),
+      ];
     });
 
     connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
@@ -152,11 +157,16 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
+    const externalFragments = documentManager
+      .getExternalFragments(params.textDocument.uri, template.schemaName)
+      .map((f) => f.definition);
+
     return handleCompletion({
       template,
       schema: entry.schema,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
+      externalFragments,
     });
   });
 

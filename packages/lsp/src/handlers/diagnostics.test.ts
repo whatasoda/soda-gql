@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
 import { loadSchema } from "@soda-gql/codegen";
 import type { DocumentNode } from "graphql";
-import { buildASTSchema } from "graphql";
+import { buildASTSchema, parse } from "graphql";
 import type { ExtractedTemplate } from "../types";
 import { computeTemplateDiagnostics } from "./diagnostics";
 
@@ -90,6 +90,33 @@ describe("computeTemplateDiagnostics", () => {
     const diag = diagnostics.find((d) => d.message.includes("unknownField"));
     expect(diag).toBeDefined();
     expect(diag!.range.start.line).toBe(2);
+  });
+
+  test("no unknown-fragment error when externalFragments provided", () => {
+    const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const fragmentAst = parse("fragment UserFields on User { id name }");
+    const fragmentDef = fragmentAst.definitions[0]!;
+
+    const diagnostics = computeTemplateDiagnostics({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      externalFragments: [fragmentDef as import("graphql").FragmentDefinitionNode],
+    });
+
+    // Should not report "Unknown fragment" with external fragments provided
+    const unknownFragmentErrors = diagnostics.filter((d) => d.message.includes("Unknown fragment"));
+    expect(unknownFragmentErrors).toHaveLength(0);
   });
 
   test("handles Fragment Arguments without false positives", () => {
