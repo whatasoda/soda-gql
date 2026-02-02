@@ -22,6 +22,7 @@ import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
+import { handleFormatting } from "./handlers/formatting";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
@@ -113,6 +114,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         definitionProvider: true,
         referencesProvider: true,
         renameProvider: { prepareProvider: true },
+        documentFormattingProvider: true,
       },
     };
   });
@@ -338,6 +340,22 @@ export const createLspServer = (options?: LspServerOptions) => {
     }
 
     return handleDocumentSymbol({
+      templates: state.templates,
+      tsSource: state.source,
+    });
+  });
+
+  connection.onDocumentFormatting((params) => {
+    if (!documentManager) {
+      return [];
+    }
+
+    const state = documentManager.get(params.textDocument.uri);
+    if (!state) {
+      return [];
+    }
+
+    return handleFormatting({
       templates: state.templates,
       tsSource: state.source,
     });
