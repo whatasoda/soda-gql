@@ -10,7 +10,9 @@ import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { createDocumentManager } from "../../src/document-manager";
 import { handleCompletion } from "../../src/handlers/completion";
+import { handleDefinition } from "../../src/handlers/definition";
 import { computeTemplateDiagnostics } from "../../src/handlers/diagnostics";
+import { handleDocumentSymbol } from "../../src/handlers/document-symbol";
 import { handleHover } from "../../src/handlers/hover";
 import { createSchemaResolver } from "../../src/schema-resolver";
 
@@ -153,5 +155,129 @@ export const Bad = gql.default(({ query }) => query\`query { users { id badField
     const adminEntry = schemaResolver.getSchema("admin");
     expect(adminEntry).toBeDefined();
     expect(adminEntry!.name).toBe("admin");
+  });
+
+  describe("cross-file fragment resolution", () => {
+    test("no unknown-fragment diagnostics when fragment is registered in another document", () => {
+      const dm = createDocumentManager(helper);
+
+      // Register the fragment definition document
+      const fragmentSource = readFileSync(resolve(fixturesDir, "fragment-definition.ts"), "utf-8");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      // Register a query document that uses the fragment
+      const querySource = `import { gql } from "@/graphql-system";
+import { UserFields } from "./fragment-definition";
+
+export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id: "1") { ...UserFields } }\`);`;
+      const queryUri = resolve(fixturesDir, "query-with-fragment.ts");
+      const queryState = dm.update(queryUri, 1, querySource);
+
+      const entry = schemaResolver.getSchema("default")!;
+      const externalFragments = dm.getExternalFragments(queryUri, "default").map((f) => f.definition);
+
+      const diagnostics = queryState.templates.flatMap((template) =>
+        [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: querySource, externalFragments })],
+      );
+
+      const unknownFragmentErrors = diagnostics.filter((d) => d.message.includes("Unknown fragment"));
+      expect(unknownFragmentErrors).toHaveLength(0);
+    });
+
+    test("completion includes fragment names for spread completion", () => {
+      const dm = createDocumentManager(helper);
+
+      // Register the fragment definition document
+      const fragmentSource = readFileSync(resolve(fixturesDir, "fragment-definition.ts"), "utf-8");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      // Register a query document with "..." at cursor position
+      const content = "query GetUser { user(id: \"1\") { ... } }";
+      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+      const queryUri = resolve(fixturesDir, "query-spread.ts");
+      dm.update(queryUri, 1, querySource);
+
+      const queryState = dm.get(queryUri)!;
+      const template = queryState.templates[0]!;
+      const entry = schemaResolver.getSchema("default")!;
+
+      // Position cursor after "..."
+      const spreadIdx = content.indexOf("...");
+      const cursorInTs = template.contentRange.start + spreadIdx + 3;
+      const lines = querySource.slice(0, cursorInTs).split("\n");
+      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+      const externalFragments = dm.getExternalFragments(queryUri, "default").map((f) => f.definition);
+
+      const items = handleCompletion({
+        template,
+        schema: entry.schema,
+        tsSource: querySource,
+        tsPosition,
+        externalFragments,
+      });
+
+      const labels = items.map((i) => i.label);
+      expect(labels).toContain("UserFields");
+    });
+
+    test("definition resolves fragment spread to defining file", async () => {
+      const dm = createDocumentManager(helper);
+
+      // Register the fragment definition document
+      const fragmentSource = readFileSync(resolve(fixturesDir, "fragment-definition.ts"), "utf-8");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      // Register a query document that uses the fragment
+      const content = "query GetUser { user(id: \"1\") { ...UserFields } }";
+      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+      const queryUri = resolve(fixturesDir, "query-definition.ts");
+      dm.update(queryUri, 1, querySource);
+
+      const queryState = dm.get(queryUri)!;
+      const template = queryState.templates[0]!;
+
+      // Position cursor on "UserFields" in "...UserFields"
+      const spreadIdx = content.indexOf("...UserFields") + 3;
+      const cursorInTs = template.contentRange.start + spreadIdx;
+      const lines = querySource.slice(0, cursorInTs).split("\n");
+      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+      const externalFragments = dm.getExternalFragments(queryUri, "default");
+
+      const locations = await handleDefinition({
+        template,
+        tsSource: querySource,
+        tsPosition,
+        externalFragments,
+      });
+
+      expect(locations.length).toBeGreaterThan(0);
+      expect(locations[0]!.uri).toBe(fragmentUri);
+      // Fragment "fragment UserFields..." is on line 3 (0-indexed) in the TS fixture file
+      // The position should be mapped from GraphQL coordinates to TS file coordinates
+      expect(locations[0]!.range.start.line).toBe(3);
+      expect(locations[0]!.range.start.character).toBe(2);
+    });
+
+    test("documentSymbol returns operations and fragments", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFileSync(resolve(fixturesDir, "multi-schema.ts"), "utf-8");
+      const uri = resolve(fixturesDir, "multi-schema.ts");
+      const state = dm.update(uri, 1, source);
+
+      const symbols = handleDocumentSymbol({
+        templates: state.templates,
+        tsSource: source,
+      });
+
+      expect(symbols.length).toBe(2);
+      // Both should be query operations
+      expect(symbols[0]!.name).toContain("GetUser");
+      expect(symbols[1]!.name).toContain("GetAuditLogs");
+    });
   });
 });

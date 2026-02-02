@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { GraphQLSchema } from "graphql";
+import type { FragmentDefinitionNode, GraphQLSchema } from "graphql";
 import { getDiagnostics } from "graphql-language-service";
 import type { Diagnostic } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
@@ -14,6 +14,8 @@ export type ComputeDiagnosticsInput = {
   readonly template: ExtractedTemplate;
   readonly schema: GraphQLSchema;
   readonly tsSource: string;
+  /** External fragment definitions for cross-file resolution. */
+  readonly externalFragments?: readonly FragmentDefinitionNode[];
 };
 
 /** Compute LSP diagnostics for a single GraphQL template. */
@@ -28,7 +30,13 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
   });
 
   // getDiagnostics returns Diagnostic[] with graphql-content-relative positions
-  const gqlDiagnostics = getDiagnostics(preprocessed, schema);
+  const gqlDiagnostics = getDiagnostics(
+    preprocessed,
+    schema,
+    undefined,
+    undefined,
+    input.externalFragments as FragmentDefinitionNode[] | undefined,
+  );
 
   return gqlDiagnostics.map((diag): Diagnostic => {
     // Map GraphQL positions to TS file positions

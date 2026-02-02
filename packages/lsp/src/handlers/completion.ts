@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { GraphQLSchema } from "graphql";
+import type { FragmentDefinitionNode, GraphQLSchema } from "graphql";
 import { getAutocompleteSuggestions } from "graphql-language-service";
 import type { CompletionItem } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
@@ -16,6 +16,8 @@ export type HandleCompletionInput = {
   readonly tsSource: string;
   /** LSP Position (0-indexed line, 0-indexed character) in the TS file. */
   readonly tsPosition: Position;
+  /** External fragment definitions for cross-file resolution. */
+  readonly externalFragments?: readonly FragmentDefinitionNode[];
 };
 
 /** Handle a completion request for a GraphQL template. */
@@ -35,7 +37,13 @@ export const handleCompletion = (input: HandleCompletionInput): CompletionItem[]
   }
 
   // graphql-language-service expects IPosition with line/character (0-indexed)
-  const suggestions = getAutocompleteSuggestions(schema, preprocessed, toIPosition(gqlPosition));
+  const suggestions = getAutocompleteSuggestions(
+    schema,
+    preprocessed,
+    toIPosition(gqlPosition),
+    undefined,
+    input.externalFragments as FragmentDefinitionNode[] | undefined,
+  );
 
   return suggestions as CompletionItem[];
 };

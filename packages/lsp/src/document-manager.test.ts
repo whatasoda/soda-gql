@@ -183,4 +183,80 @@ describe("createDocumentManager", () => {
     dm.remove(uri);
     expect(dm.get(uri)).toBeUndefined();
   });
+
+  describe("fragment index", () => {
+    test("getExternalFragments returns fragments from other documents", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const querySource = readFixture("simple-query.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      const queryUri = resolve(fixturesDir, "simple-query.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+      dm.update(queryUri, 1, querySource);
+
+      const external = dm.getExternalFragments(queryUri, "default");
+      expect(external).toHaveLength(1);
+      expect(external[0]!.fragmentName).toBe("UserFields");
+      expect(external[0]!.uri).toBe(fragmentUri);
+      expect(external[0]!.schemaName).toBe("default");
+    });
+
+    test("getExternalFragments excludes fragments from specified URI", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      const external = dm.getExternalFragments(fragmentUri, "default");
+      expect(external).toHaveLength(0);
+    });
+
+    test("getExternalFragments filters by schema name", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      const queryUri = resolve(fixturesDir, "simple-query.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+      dm.update(queryUri, 1, readFixture("simple-query.ts"));
+
+      // fragment-definition.ts defines a fragment on "default" schema
+      const adminFragments = dm.getExternalFragments(queryUri, "admin");
+      expect(adminFragments).toHaveLength(0);
+    });
+
+    test("getExternalFragments handles invalid GraphQL gracefully", () => {
+      const dm = createDocumentManager(helper);
+      const queryUri = resolve(fixturesDir, "simple-query.ts");
+
+      // Register a document with invalid fragment content
+      const badFragmentSource = `import { gql } from "@/graphql-system";
+export const Bad = gql.default(({ fragment }) => fragment\`fragment { invalid\`);`;
+      const badUri = "/test/bad-fragment.ts";
+      dm.update(badUri, 1, badFragmentSource);
+      dm.update(queryUri, 1, readFixture("simple-query.ts"));
+
+      // Should not crash, just return empty
+      const external = dm.getExternalFragments(queryUri, "default");
+      expect(external).toHaveLength(0);
+    });
+
+    test("removing a document clears its fragments from the index", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      const queryUri = resolve(fixturesDir, "simple-query.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+      dm.update(queryUri, 1, readFixture("simple-query.ts"));
+
+      expect(dm.getExternalFragments(queryUri, "default")).toHaveLength(1);
+
+      dm.remove(fragmentUri);
+
+      expect(dm.getExternalFragments(queryUri, "default")).toHaveLength(0);
+    });
+  });
 });

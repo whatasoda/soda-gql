@@ -17,13 +17,17 @@ import type {
   Node,
   TaggedTemplateExpression,
 } from "@swc/types";
-import type { DocumentState, ExtractedTemplate, OperationKind } from "./types";
+import { parse, type FragmentDefinitionNode } from "graphql";
+import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
+import type { DocumentState, ExtractedTemplate, IndexedFragment, OperationKind } from "./types";
 
 export type DocumentManager = {
   readonly update: (uri: string, version: number, source: string) => DocumentState;
   readonly get: (uri: string) => DocumentState | undefined;
   readonly remove: (uri: string) => void;
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
+  /** Get fragments from other documents for a given schema, excluding the specified URI. */
+  readonly getExternalFragments: (uri: string, schemaName: string) => readonly IndexedFragment[];
 };
 
 /** Wrap SWC parseSync (which throws) to return null on failure. */
@@ -273,9 +277,47 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
   return findGqlCall(identifiers, callee.object as unknown as Node);
 };
 
+/**
+ * Index fragment definitions from extracted templates.
+ * Parses each fragment template to extract FragmentDefinitionNode for cross-file resolution.
+ */
+const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], source: string): readonly IndexedFragment[] => {
+  const fragments: IndexedFragment[] = [];
+
+  for (const template of templates) {
+    if (template.kind !== "fragment") {
+      continue;
+    }
+
+    const { preprocessed } = preprocessFragmentArgs(template.content);
+
+    try {
+      const ast = parse(preprocessed, { noLocation: false });
+      for (const def of ast.definitions) {
+        if (def.kind === "FragmentDefinition") {
+          fragments.push({
+            uri,
+            schemaName: template.schemaName,
+            fragmentName: def.name.value,
+            definition: def as FragmentDefinitionNode,
+            content: preprocessed,
+            contentRange: template.contentRange,
+            tsSource: source,
+          });
+        }
+      }
+    } catch {
+      // Invalid GraphQL — skip indexing this template
+    }
+  }
+
+  return fragments;
+};
+
 /** Create a document manager that tracks open documents and extracts templates. */
 export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): DocumentManager => {
   const cache = new Map<string, DocumentState>();
+  const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
   const extractTemplates = (uri: string, source: string): readonly ExtractedTemplate[] => {
     const isTsx = uri.endsWith(".tsx");
@@ -306,6 +348,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
       const templates = extractTemplates(uri, source);
       const state: DocumentState = { uri, version, source, templates };
       cache.set(uri, state);
+      fragmentIndex.set(uri, indexFragments(uri, templates, source));
       return state;
     },
 
@@ -313,6 +356,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
 
     remove: (uri) => {
       cache.delete(uri);
+      fragmentIndex.delete(uri);
     },
 
     findTemplateAtOffset: (uri, offset) => {
@@ -321,6 +365,21 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
         return undefined;
       }
       return state.templates.find((t) => offset >= t.contentRange.start && offset <= t.contentRange.end);
+    },
+
+    getExternalFragments: (uri, schemaName) => {
+      const result: IndexedFragment[] = [];
+      for (const [fragmentUri, fragments] of fragmentIndex) {
+        if (fragmentUri === uri) {
+          continue;
+        }
+        for (const fragment of fragments) {
+          if (fragment.schemaName === schemaName) {
+            result.push(fragment);
+          }
+        }
+      }
+      return result;
     },
   };
 };

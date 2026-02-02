@@ -2,7 +2,7 @@
 
 ## Status
 
-**Draft** - Direction finalized
+**Accepted**
 
 ## Summary
 
@@ -736,9 +736,9 @@ query GetAdmin { ... }
 
 **Rejected**: Comments are not first-class constructs. Easy to forget, no compile-time validation.
 
-## Open Questions
+## Open Questions (Resolved)
 
-### Type inference strategy
+### Type inference strategy → Option C: No type inference
 
 How should tagged templates provide TypeScript types?
 
@@ -746,7 +746,9 @@ How should tagged templates provide TypeScript types?
 - **Option B**: Build-time type inference via the builder plugin (preserving soda-gql's `$infer` pattern)
 - **Option C**: No type inference from tagged templates (users choose callback API for type safety)
 
-### Fragment cross-file resolution
+**Decision**: Option C. soda-gql already provides type safety through the callback API with `$infer`. Tagged templates serve IDE ergonomics (completion, diagnostics, hover), not type inference. Adding a second type inference path adds complexity with no clear payoff at the pre-release stage. This can be revisited post-1.0 if users request it.
+
+### Fragment cross-file resolution → Option A: Import tracking
 
 When a tagged template references a fragment defined in another file:
 
@@ -768,12 +770,16 @@ How should the LSP resolve `...UserFields`?
 - **Option B**: Workspace-wide scan for all fragment definitions
 - **Option C**: Hybrid (follow imports first, fall back to workspace scan)
 
-### Schema reload strategy
+**Decision**: Option A. The LSP follows TypeScript import declarations to find fragment definitions. SWC parses import statements and resolves relative paths to locate imported files. This approach is explicit and predictable — fragments are resolved through the same dependency graph that TypeScript uses. The MVP supports relative path imports; tsconfig paths and barrel re-exports are deferred to future enhancements.
+
+### Schema reload strategy → Option A: File watcher with auto-reload
 
 When schema files change during development:
 - **Option A**: File watcher with auto-reload
 - **Option B**: Manual reload via editor command
 - **Option C**: Both (auto-reload with manual override)
+
+**Decision**: Option A. Already implemented in the MVP via `onDidChangeWatchedFiles` in `server.ts`. The LSP watches `.graphql` files for changes and automatically reloads schemas, then re-publishes diagnostics for all open documents.
 
 ## References
 
