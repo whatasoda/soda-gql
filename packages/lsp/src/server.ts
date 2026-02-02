@@ -22,6 +22,7 @@ import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
+import { handleReferences } from "./handlers/references";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleHover } from "./handlers/hover";
@@ -109,6 +110,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         hoverProvider: true,
         documentSymbolProvider: true,
         definitionProvider: true,
+        referencesProvider: true,
       },
     };
   });
@@ -235,6 +237,35 @@ export const createLspServer = (options?: LspServerOptions) => {
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
+    });
+  });
+
+  connection.onReferences((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    return handleReferences({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+      uri: params.textDocument.uri,
+      allFragments: documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
     });
   });
 
