@@ -3,6 +3,8 @@
  * @module
  */
 
+import type { FragmentDefinitionNode } from "graphql";
+
 /** Operation kind extracted from tagged template tag name. */
 export type OperationKind = "query" | "mutation" | "subscription" | "fragment";
 
@@ -24,4 +26,13 @@ export type DocumentState = {
   readonly version: number;
   readonly source: string;
   readonly templates: readonly ExtractedTemplate[];
+};
+
+/** A fragment definition indexed from a workspace document. */
+export type IndexedFragment = {
+  readonly uri: string;
+  readonly schemaName: string;
+  readonly fragmentName: string;
+  readonly definition: FragmentDefinitionNode;
+  readonly content: string;
 };
