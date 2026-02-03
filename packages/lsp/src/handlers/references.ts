@@ -14,7 +14,6 @@ export type HandleReferencesInput = {
   readonly template: ExtractedTemplate;
   readonly tsSource: string;
   readonly tsPosition: Position;
-  readonly uri: string;
   readonly allFragments: readonly IndexedFragment[];
   readonly findSpreadLocations: (fragmentName: string) => readonly FragmentSpreadLocation[];
 };

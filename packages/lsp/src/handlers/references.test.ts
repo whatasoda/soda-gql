@@ -76,7 +76,6 @@ describe("handleReferences", () => {
       template,
       tsSource,
       tsPosition,
-      uri: fragmentUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc],
     });
@@ -109,7 +108,6 @@ describe("handleReferences", () => {
       template,
       tsSource: queryTsSource,
       tsPosition,
-      uri: queryUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc],
     });
@@ -140,7 +138,6 @@ describe("handleReferences", () => {
       template,
       tsSource: queryTsSource,
       tsPosition,
-      uri: queryUri,
       allFragments: [],
       findSpreadLocations: () => [],
     });
@@ -173,7 +170,6 @@ describe("handleReferences", () => {
       template,
       tsSource,
       tsPosition,
-      uri: fragmentUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc1, spreadLoc2],
     });
@@ -202,7 +198,6 @@ describe("handleReferences", () => {
       template,
       tsSource: queryTsSource,
       tsPosition: { line: 0, character: 0 },
-      uri: queryUri,
       allFragments: [fragment],
       findSpreadLocations: () => [],
     });

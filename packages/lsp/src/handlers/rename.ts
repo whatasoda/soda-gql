@@ -26,7 +26,6 @@ export type HandleRenameInput = {
   readonly tsSource: string;
   readonly tsPosition: Position;
   readonly newName: string;
-  readonly uri: string;
   readonly allFragments: readonly IndexedFragment[];
   readonly findSpreadLocations: (fragmentName: string) => readonly FragmentSpreadLocation[];
 };

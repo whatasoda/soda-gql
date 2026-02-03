@@ -130,7 +130,6 @@ describe("handleRename", () => {
       tsSource: fragment.tsSource,
       tsPosition,
       newName: "UserBasicFields",
-      uri: fragmentUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc],
     });
@@ -165,7 +164,6 @@ describe("handleRename", () => {
       tsSource: queryTsSource,
       tsPosition,
       newName: "UserBasicFields",
-      uri: queryUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc],
     });
@@ -196,7 +194,6 @@ describe("handleRename", () => {
       tsSource: fragment.tsSource,
       tsPosition,
       newName: "NewName",
-      uri: fragmentUri,
       allFragments: [fragment],
       findSpreadLocations: () => [spreadLoc1, spreadLoc2],
     });
@@ -226,7 +223,6 @@ describe("handleRename", () => {
       tsSource: queryTsSource,
       tsPosition,
       newName: "X",
-      uri: "/test/query.ts",
       allFragments: [],
       findSpreadLocations: () => [],
     });
@@ -254,7 +250,6 @@ describe("handleRename", () => {
       tsSource: frag.tsSource,
       tsPosition,
       newName: "NewFields",
-      uri: "/test/frag-args.ts",
       allFragments: [frag],
       findSpreadLocations: () => [],
     });

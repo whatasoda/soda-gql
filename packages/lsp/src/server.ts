@@ -264,7 +264,6 @@ export const createLspServer = (options?: LspServerOptions) => {
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
-      uri: params.textDocument.uri,
       allFragments: documentManager.getAllFragments(template.schemaName),
       findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
     });
@@ -320,7 +319,6 @@ export const createLspServer = (options?: LspServerOptions) => {
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       newName: params.newName,
-      uri: params.textDocument.uri,
       allFragments: documentManager.getAllFragments(template.schemaName),
       findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
     });
