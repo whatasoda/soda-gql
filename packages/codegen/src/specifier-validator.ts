@@ -26,9 +26,7 @@ export type ValidationResult = {
  * Safely wraps the throwing input specifier parser.
  * Returns the error as ValidationError if parsing fails.
  */
-const safeParseInputSpecifier = (
-  spec: string,
-): { success: true } | { success: false; error: ValidationError } => {
+const safeParseInputSpecifier = (spec: string): { success: true } | { success: false; error: ValidationError } => {
   try {
     parseInputSpecifier(spec);
     return { success: true };
@@ -48,9 +46,7 @@ const safeParseInputSpecifier = (
  * Safely wraps the throwing output specifier parser.
  * Returns the error as ValidationError if parsing fails.
  */
-const safeParseOutputSpecifier = (
-  spec: string,
-): { success: true } | { success: false; error: ValidationError } => {
+const safeParseOutputSpecifier = (spec: string): { success: true } | { success: false; error: ValidationError } => {
   try {
     parseOutputSpecifier(spec);
     return { success: true };
@@ -77,9 +73,7 @@ const safeParseOutputSpecifier = (
  *   expect(result.value.valid).toBe(true);
  * }
  */
-export const validateGeneratedSpecifiers = (
-  code: string,
-): Result<ValidationResult, never> => {
+export const validateGeneratedSpecifiers = (code: string): Result<ValidationResult, never> => {
   const extracted = extractSpecifiersFromCode(code);
   const errors: ValidationError[] = [];
 

@@ -4,7 +4,7 @@
  */
 
 import { getOutline } from "graphql-language-service";
-import { SymbolKind, type DocumentSymbol } from "vscode-languageserver-types";
+import { type DocumentSymbol, SymbolKind } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { createPositionMapper } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
@@ -48,10 +48,7 @@ const getSymbolName = (tree: OutlineTree): string => {
   return tree.kind;
 };
 
-const convertTree = (
-  tree: OutlineTree,
-  mapper: ReturnType<typeof createPositionMapper>,
-): DocumentSymbol | null => {
+const convertTree = (tree: OutlineTree, mapper: ReturnType<typeof createPositionMapper>): DocumentSymbol | null => {
   const name = getSymbolName(tree);
   const kind = KIND_MAP[tree.kind] ?? SymbolKind.Variable;
 

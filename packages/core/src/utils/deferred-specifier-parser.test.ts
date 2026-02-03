@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { parseInputSpecifier, parseOutputSpecifier, parseOutputField } from "./deferred-specifier-parser";
+import { parseInputSpecifier, parseOutputField, parseOutputSpecifier } from "./deferred-specifier-parser";
 
 describe("parseInputSpecifier", () => {
   it("parses scalar specifier", () => {

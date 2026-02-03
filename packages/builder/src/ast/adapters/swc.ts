@@ -3,7 +3,13 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
-import { createCanonicalId, createCanonicalTracker, createSwcSpanConverter, type ScopeHandle, type SwcSpanConverter } from "@soda-gql/common";
+import {
+  createCanonicalId,
+  createCanonicalTracker,
+  createSwcSpanConverter,
+  type ScopeHandle,
+  type SwcSpanConverter,
+} from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";

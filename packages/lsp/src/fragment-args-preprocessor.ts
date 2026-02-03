@@ -91,7 +91,6 @@ export const preprocessFragmentArgs = (content: string): PreprocessResult => {
   // Match "fragment Name(" and find the matching ")" to strip
   let match: RegExpExecArray | null;
   FRAGMENT_DEF_PATTERN.lastIndex = 0;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
   while ((match = FRAGMENT_DEF_PATTERN.exec(result)) !== null) {
     const openParenIndex = match.index + match[0].length - 1;
 
@@ -115,7 +114,6 @@ export const preprocessFragmentArgs = (content: string): PreprocessResult => {
 
   // Pass 2: Fragment spread arguments
   FRAGMENT_SPREAD_PATTERN.lastIndex = 0;
-  // biome-ignore lint/suspicious/noAssignInExpressions: standard regex exec loop
   while ((match = FRAGMENT_SPREAD_PATTERN.exec(result)) !== null) {
     const openParenIndex = match.index + match[0].length - 1;
     const closeParenIndex = findMatchingParen(result, openParenIndex);

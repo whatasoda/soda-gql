@@ -20,11 +20,15 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { DocumentManager } from "./document-manager";
 import { createDocumentManager } from "./document-manager";
+import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
+import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
+import { handleReferences } from "./handlers/references";
+import { handlePrepareRename, handleRename } from "./handlers/rename";
 import type { SchemaResolver } from "./schema-resolver";
 import { createSchemaResolver } from "./schema-resolver";
 
@@ -55,12 +59,8 @@ export const createLspServer = (options?: LspServerOptions) => {
       if (!entry) {
         return [];
       }
-      const externalFragments = documentManager!
-        .getExternalFragments(uri, template.schemaName)
-        .map((f) => f.definition);
-      return [
-        ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments }),
-      ];
+      const externalFragments = documentManager!.getExternalFragments(uri, template.schemaName).map((f) => f.definition);
+      return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
     });
 
     connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
@@ -109,6 +109,12 @@ export const createLspServer = (options?: LspServerOptions) => {
         hoverProvider: true,
         documentSymbolProvider: true,
         definitionProvider: true,
+        referencesProvider: true,
+        renameProvider: { prepareProvider: true },
+        documentFormattingProvider: true,
+        codeActionProvider: {
+          codeActionKinds: ["refactor.extract"],
+        },
       },
     };
   });
@@ -225,16 +231,96 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const externalFragments = documentManager.getExternalFragments(
-      params.textDocument.uri,
-      template.schemaName,
-    );
+    const externalFragments = documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
 
     return handleDefinition({
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
+    });
+  });
+
+  connection.onReferences((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    return handleReferences({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+      allFragments: documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
+    });
+  });
+
+  connection.onPrepareRename((params) => {
+    if (!documentManager) {
+      return null;
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return null;
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return null;
+    }
+
+    return handlePrepareRename({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+    });
+  });
+
+  connection.onRenameRequest((params) => {
+    if (!documentManager || !schemaResolver) {
+      return null;
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return null;
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.position),
+    );
+
+    if (!template) {
+      return null;
+    }
+
+    return handleRename({
+      template,
+      tsSource: doc.getText(),
+      tsPosition: { line: params.position.line, character: params.position.character },
+      newName: params.newName,
+      allFragments: documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
     });
   });
 
@@ -251,6 +337,58 @@ export const createLspServer = (options?: LspServerOptions) => {
     return handleDocumentSymbol({
       templates: state.templates,
       tsSource: state.source,
+    });
+  });
+
+  connection.onDocumentFormatting((params) => {
+    if (!documentManager) {
+      return [];
+    }
+
+    const state = documentManager.get(params.textDocument.uri);
+    if (!state) {
+      return [];
+    }
+
+    return handleFormatting({
+      templates: state.templates,
+      tsSource: state.source,
+    });
+  });
+
+  connection.onCodeAction((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const template = documentManager.findTemplateAtOffset(
+      params.textDocument.uri,
+      positionToOffset(doc.getText(), params.range.start),
+    );
+
+    if (!template) {
+      return [];
+    }
+
+    const entry = schemaResolver.getSchema(template.schemaName);
+    if (!entry) {
+      return [];
+    }
+
+    return handleCodeAction({
+      template,
+      schema: entry.schema,
+      tsSource: doc.getText(),
+      uri: params.textDocument.uri,
+      selectionRange: {
+        start: { line: params.range.start.line, character: params.range.start.character },
+        end: { line: params.range.end.line, character: params.range.end.character },
+      },
     });
   });
 

@@ -23,7 +23,15 @@ import type { AnyDefaultValue } from "./type-specifier";
  * Parse input kind character to full kind name
  * s=scalar, e=enum, i=input, x=excluded
  */
-type ParseInputKind<K extends string> = K extends "s" ? "scalar" : K extends "e" ? "enum" : K extends "i" ? "input" : K extends "x" ? "excluded" : never;
+type ParseInputKind<K extends string> = K extends "s"
+  ? "scalar"
+  : K extends "e"
+    ? "enum"
+    : K extends "i"
+      ? "input"
+      : K extends "x"
+        ? "excluded"
+        : never;
 
 /**
  * Parse output kind character to full kind name

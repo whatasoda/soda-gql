@@ -181,7 +181,7 @@ describe("Nested object selection type inference", () => {
           fields: ({ f, $ }) => ({
             ...f.user({ id: $.id })(({ f }) => ({
               ...f.id(),
-              ...f.posts({})(({ f }) => ({
+              ...f.posts({})(() => ({
                 ...postFragment.spread(),
               })),
             })),

@@ -172,7 +172,9 @@ describe("Union field selection type inference", () => {
 
       // Selected members should have their fields + __typename
       type _TestUser = Expect<Extends<{ readonly __typename: "User"; readonly id: string; readonly name: string }, SearchResult>>;
-      type _TestPost = Expect<Extends<{ readonly __typename: "Post"; readonly id: string; readonly title: string }, SearchResult>>;
+      type _TestPost = Expect<
+        Extends<{ readonly __typename: "Post"; readonly id: string; readonly title: string }, SearchResult>
+      >;
       // Unselected member should have only __typename
       type _TestComment = Expect<Extends<{ readonly __typename: "Comment" }, SearchResult>>;
       expect(true).toBe(true);

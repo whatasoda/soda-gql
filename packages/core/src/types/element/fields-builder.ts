@@ -175,19 +175,12 @@ type OmitTypename<T> = { [K in keyof T as K extends "__typename" ? never : K]: T
  * Detect if T has __typename: true (not optional or missing).
  * Uses a pattern that checks if the property is exactly `true` after removing index signatures.
  */
-type InferTypenameFlag<T> = "__typename" extends keyof T
-  ? T["__typename"] extends true
-    ? true
-    : false
-  : false;
+type InferTypenameFlag<T> = "__typename" extends keyof T ? (T["__typename"] extends true ? true : false) : false;
 
 /**
  * Constraint for union builder input that allows member builders and optional __typename.
  */
-type UnionBuilderInputConstraint<
-  TSchema extends AnyGraphqlSchema,
-  TMemberName extends string,
-> = {
+type UnionBuilderInputConstraint<TSchema extends AnyGraphqlSchema, TMemberName extends string> = {
   [K in TMemberName]?: NestedObjectFieldsBuilder<TSchema, K, AnyFieldsExtended>;
 } & {
   __typename?: true;

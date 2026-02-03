@@ -5,7 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { type SwcSpanConverter, createSwcSpanConverter } from "@soda-gql/common";
+import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
 import { parseSync } from "@swc/core";
 import type {
   ArrowFunctionExpression,
@@ -17,9 +17,9 @@ import type {
   Node,
   TaggedTemplateExpression,
 } from "@swc/types";
-import { parse, type FragmentDefinitionNode } from "graphql";
+import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
-import type { DocumentState, ExtractedTemplate, IndexedFragment, OperationKind } from "./types";
+import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment, OperationKind } from "./types";
 
 export type DocumentManager = {
   readonly update: (uri: string, version: number, source: string) => DocumentState;
@@ -28,6 +28,10 @@ export type DocumentManager = {
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
   /** Get fragments from other documents for a given schema, excluding the specified URI. */
   readonly getExternalFragments: (uri: string, schemaName: string) => readonly IndexedFragment[];
+  /** Get ALL indexed fragments (including self) for a given schema. */
+  readonly getAllFragments: (schemaName: string) => readonly IndexedFragment[];
+  /** Find all fragment spread locations across all documents for a given fragment name and schema. */
+  readonly findFragmentSpreadLocations: (fragmentName: string, schemaName: string) => readonly FragmentSpreadLocation[];
 };
 
 /** Wrap SWC parseSync (which throws) to return null on failure. */
@@ -380,6 +384,64 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
         }
       }
       return result;
+    },
+
+    getAllFragments: (schemaName) => {
+      const result: IndexedFragment[] = [];
+      for (const [, fragments] of fragmentIndex) {
+        for (const fragment of fragments) {
+          if (fragment.schemaName === schemaName) {
+            result.push(fragment);
+          }
+        }
+      }
+      return result;
+    },
+
+    findFragmentSpreadLocations: (fragmentName, schemaName) => {
+      const locations: FragmentSpreadLocation[] = [];
+
+      for (const [uri, state] of cache) {
+        for (const template of state.templates) {
+          if (template.schemaName !== schemaName) {
+            continue;
+          }
+
+          const { preprocessed } = preprocessFragmentArgs(template.content);
+
+          try {
+            const ast = parse(preprocessed, { noLocation: false });
+            visit(ast, {
+              FragmentSpread(node) {
+                if (node.name.value === fragmentName && node.name.loc) {
+                  locations.push({
+                    uri,
+                    tsSource: state.source,
+                    template,
+                    nameOffset: node.name.loc.start,
+                    nameLength: fragmentName.length,
+                  });
+                }
+              },
+            });
+          } catch {
+            // Parse error — fall back to regex
+            const pattern = new RegExp(`\\.\\.\\.${fragmentName}\\b`, "g");
+            let match: RegExpExecArray | null = null;
+            while ((match = pattern.exec(preprocessed)) !== null) {
+              locations.push({
+                uri,
+                tsSource: state.source,
+                template,
+                nameOffset: match.index + 3, // skip "..."
+                nameLength: fragmentName.length,
+              });
+            }
+          }
+        }
+      }
+
+      return locations;
     },
   };
 };

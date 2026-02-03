@@ -258,5 +258,89 @@ export const Bad = gql.default(({ fragment }) => fragment\`fragment { invalid\`)
 
       expect(dm.getExternalFragments(queryUri, "default")).toHaveLength(0);
     });
+
+    test("getAllFragments returns fragments from all URIs including self", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      // getAllFragments includes self (unlike getExternalFragments)
+      const all = dm.getAllFragments("default");
+      expect(all).toHaveLength(1);
+      expect(all[0]!.fragmentName).toBe("UserFields");
+      expect(all[0]!.uri).toBe(fragmentUri);
+    });
+
+    test("getAllFragments filters by schema name", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      const adminFragments = dm.getAllFragments("admin");
+      expect(adminFragments).toHaveLength(0);
+    });
+
+    test("findFragmentSpreadLocations finds spreads across documents", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      // Add a document that uses the fragment
+      const querySource = `import { gql } from "@/graphql-system";
+import { UserFields } from "./fragment-definition";
+
+export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id: "1") { ...UserFields } }\`);`;
+      const queryUri = "/test/query-with-fragment.ts";
+      dm.update(queryUri, 1, querySource);
+
+      const locations = dm.findFragmentSpreadLocations("UserFields", "default");
+      expect(locations).toHaveLength(1);
+      expect(locations[0]!.uri).toBe(queryUri);
+      expect(locations[0]!.nameLength).toBe("UserFields".length);
+    });
+
+    test("findFragmentSpreadLocations returns empty for non-existent fragment", () => {
+      const dm = createDocumentManager(helper);
+      const querySource = readFixture("simple-query.ts");
+      const queryUri = resolve(fixturesDir, "simple-query.ts");
+      dm.update(queryUri, 1, querySource);
+
+      const locations = dm.findFragmentSpreadLocations("NonExistent", "default");
+      expect(locations).toHaveLength(0);
+    });
+
+    test("findFragmentSpreadLocations finds spreads in multiple documents", () => {
+      const dm = createDocumentManager(helper);
+
+      const querySource1 = `import { gql } from "@/graphql-system";
+export const Q1 = gql.default(({ query }) => query\`query Q1 { user(id: "1") { ...UserFields } }\`);`;
+      const querySource2 = `import { gql } from "@/graphql-system";
+export const Q2 = gql.default(({ query }) => query\`query Q2 { users { ...UserFields } }\`);`;
+
+      dm.update("/test/q1.ts", 1, querySource1);
+      dm.update("/test/q2.ts", 1, querySource2);
+
+      const locations = dm.findFragmentSpreadLocations("UserFields", "default");
+      expect(locations).toHaveLength(2);
+      const uris = locations.map((l) => l.uri);
+      expect(uris).toContain("/test/q1.ts");
+      expect(uris).toContain("/test/q2.ts");
+    });
+
+    test("findFragmentSpreadLocations filters by schema name", () => {
+      const dm = createDocumentManager(helper);
+
+      const querySource = `import { gql } from "@/graphql-system";
+export const Q1 = gql.default(({ query }) => query\`query Q1 { user(id: "1") { ...UserFields } }\`);`;
+      dm.update("/test/q1.ts", 1, querySource);
+
+      const locations = dm.findFragmentSpreadLocations("UserFields", "admin");
+      expect(locations).toHaveLength(0);
+    });
   });
 });

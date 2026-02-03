@@ -87,7 +87,11 @@ const buildTypeGraph = (document: DocumentNode): { graph: TypeGraph; schema: Ret
 /**
  * BFS traversal collecting all reachable nodes from seeds.
  */
-const bfs = (adjacency: ReadonlyMap<string, ReadonlySet<string>>, seeds: Iterable<string>, constraint?: ReadonlySet<string>): Set<string> => {
+const bfs = (
+  adjacency: ReadonlyMap<string, ReadonlySet<string>>,
+  seeds: Iterable<string>,
+  constraint?: ReadonlySet<string>,
+): Set<string> => {
   const visited = new Set<string>();
   const queue: string[] = [];
 
@@ -260,7 +264,9 @@ export const computeReachabilityFilter = (
   const reachable = computeReachableTypes(graph, schema, validTargets, usedArgumentTypes);
 
   if (reachable.size === 0) {
-    warnings.push(`No types reachable from root operations to target types: ${[...validTargets].join(", ")}; skipping reachability filter`);
+    warnings.push(
+      `No types reachable from root operations to target types: ${[...validTargets].join(", ")}; skipping reachability filter`,
+    );
     return { filter: () => true, warnings };
   }
 
