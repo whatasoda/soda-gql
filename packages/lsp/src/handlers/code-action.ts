@@ -71,7 +71,7 @@ export const handleCodeAction = (input: HandleCodeActionInput): CodeAction[] => 
     return [];
   }
 
-  const selectedText = preprocessed.slice(firstSel.loc.start, lastSel.loc.end);
+  const selectedText = template.content.slice(firstSel.loc.start, lastSel.loc.end);
   const escapedText = selectedText.replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
   const fragmentName = "ExtractedFragment";
 
