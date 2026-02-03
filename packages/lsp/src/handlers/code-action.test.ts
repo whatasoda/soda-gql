@@ -242,4 +242,153 @@ describe("handleCodeAction", () => {
     // not inside the function body
     expect(insertEdit!.range.start.line).toBe(2); // "function getData()" line
   });
+
+  test("gql inside function with string containing braces finds correct insertion", () => {
+    const content = 'query Q { user(id: "1") { id name } }';
+    const tsSource = `import { gql } from "@/graphql-system";
+
+function getData() {
+  const msg = "Use { and } carefully";
+  const query = gql.default(({ query }) => query\`${content}\`);
+  return query;
+}`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const nameIdx = content.indexOf("name");
+    const selStart = cursorPositionAt(tsSource, contentStart + nameIdx);
+    const selEnd = cursorPositionAt(tsSource, contentStart + nameIdx + "name".length);
+
+    const actions = handleCodeAction({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      uri: "/test/query.ts",
+      selectionRange: { start: selStart, end: selEnd },
+    });
+
+    expect(actions).toHaveLength(1);
+    const changes = actions[0]!.edit!.changes!["/test/query.ts"]!;
+    const insertEdit = changes.find((e) => e.newText.includes("export const ExtractedFragment"));
+    expect(insertEdit).toBeDefined();
+    // Should insert at function declaration (line 2), not confused by string braces
+    expect(insertEdit!.range.start.line).toBe(2);
+  });
+
+  test("gql inside function with template literal containing braces finds correct insertion", () => {
+    const content = 'query Q { user(id: "1") { id name } }';
+    const tsSource = `import { gql } from "@/graphql-system";
+
+function getData() {
+  const msg = \`Template with { and } braces\`;
+  const query = gql.default(({ query }) => query\`${content}\`);
+  return query;
+}`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const nameIdx = content.indexOf("name");
+    const selStart = cursorPositionAt(tsSource, contentStart + nameIdx);
+    const selEnd = cursorPositionAt(tsSource, contentStart + nameIdx + "name".length);
+
+    const actions = handleCodeAction({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      uri: "/test/query.ts",
+      selectionRange: { start: selStart, end: selEnd },
+    });
+
+    expect(actions).toHaveLength(1);
+    const changes = actions[0]!.edit!.changes!["/test/query.ts"]!;
+    const insertEdit = changes.find((e) => e.newText.includes("export const ExtractedFragment"));
+    expect(insertEdit).toBeDefined();
+    expect(insertEdit!.range.start.line).toBe(2);
+  });
+
+  test("gql inside function with comment containing braces finds correct insertion", () => {
+    const content = 'query Q { user(id: "1") { id name } }';
+    const tsSource = `import { gql } from "@/graphql-system";
+
+function getData() {
+  // This comment has { braces }
+  const query = gql.default(({ query }) => query\`${content}\`);
+  return query;
+}`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const nameIdx = content.indexOf("name");
+    const selStart = cursorPositionAt(tsSource, contentStart + nameIdx);
+    const selEnd = cursorPositionAt(tsSource, contentStart + nameIdx + "name".length);
+
+    const actions = handleCodeAction({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      uri: "/test/query.ts",
+      selectionRange: { start: selStart, end: selEnd },
+    });
+
+    expect(actions).toHaveLength(1);
+    const changes = actions[0]!.edit!.changes!["/test/query.ts"]!;
+    const insertEdit = changes.find((e) => e.newText.includes("export const ExtractedFragment"));
+    expect(insertEdit).toBeDefined();
+    expect(insertEdit!.range.start.line).toBe(2);
+  });
+
+  test("gql inside function with regex containing braces finds correct insertion", () => {
+    const content = 'query Q { user(id: "1") { id name } }';
+    const tsSource = `import { gql } from "@/graphql-system";
+
+function getData() {
+  const re = /{[^}]+}/g;
+  const query = gql.default(({ query }) => query\`${content}\`);
+  return query;
+}`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const nameIdx = content.indexOf("name");
+    const selStart = cursorPositionAt(tsSource, contentStart + nameIdx);
+    const selEnd = cursorPositionAt(tsSource, contentStart + nameIdx + "name".length);
+
+    const actions = handleCodeAction({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      uri: "/test/query.ts",
+      selectionRange: { start: selStart, end: selEnd },
+    });
+
+    expect(actions).toHaveLength(1);
+    const changes = actions[0]!.edit!.changes!["/test/query.ts"]!;
+    const insertEdit = changes.find((e) => e.newText.includes("export const ExtractedFragment"));
+    expect(insertEdit).toBeDefined();
+    expect(insertEdit!.range.start.line).toBe(2);
+  });
 });

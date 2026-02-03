@@ -5,6 +5,7 @@
 
 import type { SelectionNode } from "graphql";
 import { type GraphQLSchema, parse, TypeInfo, visit, visitWithTypeInfo } from "graphql";
+import ts from "typescript";
 import { type CodeAction, CodeActionKind, type TextEdit } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position, positionToOffset } from "../position-mapping";
@@ -159,20 +160,70 @@ const findExtractableSelections = (
   return result;
 };
 
-/** Compute brace depth at a given offset by scanning from the start. */
+/**
+ * Compute brace depth at a given offset using TypeScript scanner.
+ * Correctly handles strings, comments, regex, and template literals.
+ */
 const braceDepthAt = (source: string, offset: number): number => {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, source);
   let depth = 0;
-  for (let i = 0; i < offset; i++) {
-    const ch = source.charCodeAt(i);
-    if (ch === 123 /* { */) depth++;
-    else if (ch === 125 /* } */) depth--;
+  let lastToken: ts.SyntaxKind = ts.SyntaxKind.Unknown;
+
+  while (true) {
+    let token = scanner.scan();
+    if (token === ts.SyntaxKind.EndOfFileToken) break;
+
+    // Re-scan / as regex literal when it follows certain tokens
+    if (token === ts.SyntaxKind.SlashToken || token === ts.SyntaxKind.SlashEqualsToken) {
+      if (
+        lastToken === ts.SyntaxKind.FirstAssignment ||
+        lastToken === ts.SyntaxKind.EqualsEqualsToken ||
+        lastToken === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+        lastToken === ts.SyntaxKind.ExclamationEqualsToken ||
+        lastToken === ts.SyntaxKind.ExclamationEqualsEqualsToken ||
+        lastToken === ts.SyntaxKind.OpenParenToken ||
+        lastToken === ts.SyntaxKind.CommaToken ||
+        lastToken === ts.SyntaxKind.OpenBracketToken ||
+        lastToken === ts.SyntaxKind.ColonToken ||
+        lastToken === ts.SyntaxKind.SemicolonToken ||
+        lastToken === ts.SyntaxKind.OpenBraceToken ||
+        lastToken === ts.SyntaxKind.QuestionToken ||
+        lastToken === ts.SyntaxKind.BarBarToken ||
+        lastToken === ts.SyntaxKind.AmpersandAmpersandToken ||
+        lastToken === ts.SyntaxKind.ExclamationToken ||
+        lastToken === ts.SyntaxKind.ReturnKeyword ||
+        lastToken === ts.SyntaxKind.CaseKeyword ||
+        lastToken === ts.SyntaxKind.NewKeyword
+      ) {
+        token = scanner.reScanSlashToken();
+      }
+    }
+
+    const tokenStart = scanner.getTokenStart();
+    if (tokenStart >= offset) break;
+
+    if (token === ts.SyntaxKind.OpenBraceToken) {
+      depth++;
+    } else if (token === ts.SyntaxKind.CloseBraceToken) {
+      depth--;
+    }
+
+    // Track last non-trivia token for regex detection
+    if (
+      token !== ts.SyntaxKind.WhitespaceTrivia &&
+      token !== ts.SyntaxKind.NewLineTrivia &&
+      token !== ts.SyntaxKind.SingleLineCommentTrivia &&
+      token !== ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
+      lastToken = token;
+    }
   }
+
   return depth;
 };
 
 /** Find the start of the top-level statement containing the given offset. */
 const findStatementStart = (source: string, offset: number): number => {
-  let depth = braceDepthAt(source, offset);
   let pos = offset;
 
   // Find the start of the current line
@@ -184,6 +235,7 @@ const findStatementStart = (source: string, offset: number): number => {
   while (pos > 0) {
     const lineStart = pos;
     const lineText = source.slice(lineStart, source.indexOf("\n", lineStart)).trimStart();
+    const depth = braceDepthAt(source, lineStart);
 
     if (
       depth === 0 &&
@@ -197,19 +249,10 @@ const findStatementStart = (source: string, offset: number): number => {
       return lineStart;
     }
 
-    // Go to previous line, tracking brace depth
+    // Go to previous line
     pos--;
     while (pos > 0 && source.charCodeAt(pos - 1) !== 10) {
       pos--;
-    }
-
-    // Update depth for braces on the line we just passed over
-    const skippedLine = source.slice(pos, lineStart);
-    for (let i = 0; i < skippedLine.length; i++) {
-      const ch = skippedLine.charCodeAt(i);
-      // Walking backward: reverse the counting
-      if (ch === 123 /* { */) depth--;
-      else if (ch === 125 /* } */) depth++;
     }
 
     // At top level, if we hit a statement boundary, the statement starts at lineStart
