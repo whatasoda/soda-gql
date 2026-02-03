@@ -30,13 +30,6 @@ export const handleFormatting = (input: HandleFormattingInput): TextEdit[] => {
   const edits: TextEdit[] = [];
 
   for (const template of templates) {
-    // Skip templates that can't be parsed
-    try {
-      parseGraphql(template.content, { noLocation: false });
-    } catch {
-      continue;
-    }
-
     let formatted: string;
     try {
       formatted = format(template.content);
