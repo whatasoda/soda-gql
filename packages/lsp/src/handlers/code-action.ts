@@ -159,42 +159,65 @@ const findExtractableSelections = (
   return result;
 };
 
-/** Find the start of the statement containing the given offset. */
+/** Compute brace depth at a given offset by scanning from the start. */
+const braceDepthAt = (source: string, offset: number): number => {
+  let depth = 0;
+  for (let i = 0; i < offset; i++) {
+    const ch = source.charCodeAt(i);
+    if (ch === 123 /* { */) depth++;
+    else if (ch === 125 /* } */) depth--;
+  }
+  return depth;
+};
+
+/** Find the start of the top-level statement containing the given offset. */
 const findStatementStart = (source: string, offset: number): number => {
-  // Walk back to find the start of the line, then keep going to find
-  // the start of the statement (look for export/const/let/var keywords)
+  let depth = braceDepthAt(source, offset);
   let pos = offset;
 
-  // First, find the start of the current line
+  // Find the start of the current line
   while (pos > 0 && source.charCodeAt(pos - 1) !== 10) {
     pos--;
   }
 
-  // Keep walking back through lines to find the statement start
-  // (handles multi-line expressions)
+  // Walk back through lines to find the top-level statement start
   while (pos > 0) {
     const lineStart = pos;
     const lineText = source.slice(lineStart, source.indexOf("\n", lineStart)).trimStart();
 
     if (
-      lineText.startsWith("export ") ||
-      lineText.startsWith("const ") ||
-      lineText.startsWith("let ") ||
-      lineText.startsWith("var ")
+      depth === 0 &&
+      (lineText.startsWith("export ") ||
+        lineText.startsWith("const ") ||
+        lineText.startsWith("let ") ||
+        lineText.startsWith("var ") ||
+        lineText.startsWith("function ") ||
+        lineText.startsWith("async "))
     ) {
       return lineStart;
     }
 
-    // Go to previous line
+    // Go to previous line, tracking brace depth
     pos--;
     while (pos > 0 && source.charCodeAt(pos - 1) !== 10) {
       pos--;
     }
 
-    // If we hit a semicolon or closing brace, the statement starts after it
-    const prevLine = source.slice(pos, lineStart - 1).trim();
-    if (prevLine.endsWith(";") || prevLine.endsWith("}")) {
-      return lineStart;
+    // Update depth for braces on the line we just passed over
+    const skippedLine = source.slice(pos, lineStart);
+    for (let i = 0; i < skippedLine.length; i++) {
+      const ch = skippedLine.charCodeAt(i);
+      // Walking backward: reverse the counting
+      if (ch === 123 /* { */) depth--;
+      else if (ch === 125 /* } */) depth++;
+    }
+
+    // At top level, if we hit a statement boundary, the statement starts at lineStart
+    if (depth === 0) {
+      const prevLine = source.slice(pos, lineStart - 1).trim();
+      if (prevLine.endsWith(";") || prevLine.endsWith("}")) {
+        return lineStart;
+      }
     }
   }
 

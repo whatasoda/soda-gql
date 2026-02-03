@@ -208,4 +208,38 @@ describe("handleCodeAction", () => {
 
     expect(actions).toHaveLength(0);
   });
+
+  test("gql inside function body inserts fragment at top level", () => {
+    const content = 'query GetUser { user(id: "1") { id name email } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\nfunction getData() {\n  const query = gql.default(({ query }) => query\`${content}\`);\n  return query;\n}`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Select "name" field
+    const nameIdx = content.indexOf("name");
+    const selStart = cursorPositionAt(tsSource, contentStart + nameIdx);
+    const selEnd = cursorPositionAt(tsSource, contentStart + nameIdx + "name".length);
+
+    const actions = handleCodeAction({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      uri: "/test/query.ts",
+      selectionRange: { start: selStart, end: selEnd },
+    });
+
+    expect(actions).toHaveLength(1);
+    const changes = actions[0]!.edit!.changes!["/test/query.ts"]!;
+    const insertEdit = changes.find((e) => e.newText.includes("export const ExtractedFragment"));
+    expect(insertEdit).toBeDefined();
+    // Insertion point should be at the start of the function declaration (top level),
+    // not inside the function body
+    expect(insertEdit!.range.start.line).toBe(2); // "function getData()" line
+  });
 });
