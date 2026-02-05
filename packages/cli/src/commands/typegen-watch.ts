@@ -61,6 +61,11 @@ const executeRegenerate = async (
     console.log(`  Changed: ${displayPaths}${overflow}`);
   }
 
+  // NOTE: This try-catch is intentionally used as a defensive boundary for the
+  // long-running watch process. The primary error handling uses Result types from
+  // runTypegen (properly handled via isOk/isErr). This catch is a last-resort
+  // safety net for truly unexpected exceptions (V8 errors, memory issues, etc.)
+  // that would otherwise crash the entire watch mode.
   try {
     const result = await runTypegen({
       config,
@@ -184,6 +189,9 @@ export const runTypegenWatch = async (options: TypegenWatchOptions): Promise<nev
   watcher.on("add", (path) => regenerate([path]));
   watcher.on("change", (path) => regenerate([path]));
   watcher.on("unlink", (path) => regenerate([path]));
+  watcher.on("error", (error) => {
+    console.error("[typegen] Watcher error:", error);
+  });
 
   // Initial run
   console.log("[typegen] Starting watch mode...");
