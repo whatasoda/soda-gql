@@ -1,7 +1,13 @@
 import { err, ok, type Result } from "neverthrow";
 import type { z } from "zod";
 
-export const parseArgs = <T extends z.ZodType>(args: string[], schema: T): Result<z.infer<T>, string> => {
+export type AliasMap = Record<string, string>;
+
+export const parseArgs = <T extends z.ZodType>(
+  args: string[],
+  schema: T,
+  aliases?: AliasMap,
+): Result<z.infer<T>, string> => {
   const parsed: Record<string, unknown> = {};
   const positional: string[] = [];
 
@@ -13,11 +19,19 @@ export const parseArgs = <T extends z.ZodType>(args: string[], schema: T): Resul
       const key = arg.slice(2);
       const nextArg = args[i + 1];
 
-      if (!nextArg || nextArg.startsWith("--")) {
+      if (!nextArg || nextArg.startsWith("--") || nextArg.startsWith("-")) {
         parsed[key] = true;
       } else {
         parsed[key] = nextArg;
         i++;
+      }
+    } else if (arg.startsWith("-") && aliases) {
+      const shortKey = arg.slice(1);
+      const longKey = aliases[shortKey];
+      if (longKey) {
+        parsed[longKey] = true;
+      } else {
+        positional.push(arg);
       }
     } else {
       positional.push(arg);

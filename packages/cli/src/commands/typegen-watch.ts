@@ -30,6 +30,7 @@ export type TypegenWatchOptions = {
 type WatchState = {
   isRunning: boolean;
   pendingRun: boolean;
+  pendingPaths: Set<string>;
   generation: number;
 };
 
@@ -42,9 +43,12 @@ const executeRegenerate = async (
   changedPaths: readonly string[],
   options: { bundle?: boolean },
 ): Promise<void> => {
-  // Prevent concurrent runs
+  // Prevent concurrent runs - accumulate paths for deferred execution
   if (state.isRunning) {
     state.pendingRun = true;
+    for (const path of changedPaths) {
+      state.pendingPaths.add(path);
+    }
     return;
   }
 
@@ -101,10 +105,12 @@ const executeRegenerate = async (
   } finally {
     state.isRunning = false;
 
-    // If changes came in during run, trigger another run
+    // If changes came in during run, trigger another run with accumulated paths
     if (state.pendingRun) {
       state.pendingRun = false;
-      setTimeout(() => executeRegenerate(config, state, [], options), 50);
+      const pathsToReport = [...state.pendingPaths];
+      state.pendingPaths.clear();
+      setTimeout(() => executeRegenerate(config, state, pathsToReport, options), 50);
     }
   }
 
@@ -159,6 +165,7 @@ export const runTypegenWatch = async (options: TypegenWatchOptions): Promise<nev
   const state: WatchState = {
     isRunning: false,
     pendingRun: false,
+    pendingPaths: new Set(),
     generation: 0,
   };
 

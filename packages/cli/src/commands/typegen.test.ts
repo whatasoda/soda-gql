@@ -54,4 +54,38 @@ describe("typegen args parsing", () => {
       expect(result.value.config).toBe("./custom-config.ts");
     }
   });
+
+  it("parses -w shorthand for watch with aliases", () => {
+    const aliases = { w: "watch" };
+    const result = parseArgs(["-w"], TypegenArgsSchema, aliases);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.watch).toBe(true);
+    }
+  });
+
+  it("parses -w shorthand with other flags", () => {
+    const aliases = { w: "watch" };
+    const result = parseArgs(["-w", "--bundle"], TypegenArgsSchema, aliases);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.watch).toBe(true);
+      expect(result.value.bundle).toBe(true);
+    }
+  });
+
+  it("fails when --config is followed by shorthand flag without value", () => {
+    const aliases = { w: "watch" };
+    const result = parseArgs(["--config", "-w"], TypegenArgsSchema, aliases);
+    expect(result.isErr()).toBe(true);
+  });
+
+  it("unknown shorthand flags are added to positional", () => {
+    const aliases = { w: "watch" };
+    const result = parseArgs(["-x"], TypegenArgsSchema, aliases);
+    expect(result.isOk()).toBe(true);
+    if (result.isOk()) {
+      expect(result.value.watch).toBeUndefined();
+    }
+  });
 });

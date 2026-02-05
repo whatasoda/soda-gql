@@ -9,15 +9,16 @@ import { runTypegenWatch } from "./typegen-watch";
 
 type ParsedCommand = { kind: "generate"; configPath?: string } | { kind: "watch"; configPath?: string; bundle?: boolean };
 
+const TYPEGEN_ALIASES = { w: "watch" };
+
 const parseTypegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
-  const parsed = parseArgs([...argv], TypegenArgsSchema);
+  const parsed = parseArgs([...argv], TypegenArgsSchema, TYPEGEN_ALIASES);
 
   if (!parsed.isOk()) {
     return err(cliErrors.argsInvalid("typegen", parsed.error));
   }
 
-  // Check for -w shorthand
-  const isWatch = parsed.value.watch || argv.includes("-w");
+  const isWatch = parsed.value.watch;
 
   if (isWatch) {
     return ok({
