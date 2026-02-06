@@ -5,17 +5,27 @@ import { type CliResult, cliErrors } from "../errors";
 import { TypegenArgsSchema } from "../schemas/args";
 import type { CommandResult, CommandSuccess } from "../types";
 import { parseArgs } from "../utils/parse-args";
+import { runTypegenWatch } from "./typegen-watch";
 
-type ParsedCommand = {
-  kind: "generate";
-  configPath?: string;
-};
+type ParsedCommand = { kind: "generate"; configPath?: string } | { kind: "watch"; configPath?: string; bundle?: boolean };
+
+const TYPEGEN_ALIASES = { w: "watch" };
 
 const parseTypegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
-  const parsed = parseArgs([...argv], TypegenArgsSchema);
+  const parsed = parseArgs([...argv], TypegenArgsSchema, TYPEGEN_ALIASES);
 
   if (!parsed.isOk()) {
     return err(cliErrors.argsInvalid("typegen", parsed.error));
+  }
+
+  const isWatch = parsed.value.watch;
+
+  if (isWatch) {
+    return ok({
+      kind: "watch",
+      configPath: parsed.value.config,
+      bundle: parsed.value.bundle,
+    });
   }
 
   return ok({
@@ -56,10 +66,14 @@ Generate prebuilt types from source code.
 
 Options:
   --config <path>  Path to soda-gql.config.ts
+  --watch, -w      Watch for file changes and regenerate
+  --bundle         Bundle output in watch mode (default: skip)
   --help, -h       Show this help message
 
 Examples:
   soda-gql typegen
+  soda-gql typegen --watch
+  soda-gql typegen --watch --bundle
   soda-gql typegen --config ./soda-gql.config.ts
 
 Note: Run 'soda-gql codegen' first to generate the graphql-system module.
@@ -88,7 +102,13 @@ export const typegenCommand = async (argv: readonly string[]): Promise<TypegenCo
 
   const config = configResult.value;
 
-  // Run typegen
+  // Watch mode - runs indefinitely
+  if (command.kind === "watch") {
+    await runTypegenWatch({ config, bundle: command.bundle });
+    return ok({ message: "" }); // unreachable
+  }
+
+  // Run typegen (single run)
   const result = await runTypegen({
     config,
   });

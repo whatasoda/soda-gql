@@ -44,6 +44,11 @@ export type RunTypegenOptions = {
    * Keys are schema names, values are parsed DocumentNode instances.
    */
   readonly schemaDocuments?: ReadonlyMap<string, DocumentNode>;
+  /**
+   * Skip the esbuild bundling step. Useful in watch mode for faster feedback.
+   * When true, only .ts files are generated; .cjs bundle is not updated.
+   */
+  readonly skipBundle?: boolean;
 };
 
 const extensionMap: Record<string, string> = {
@@ -252,17 +257,19 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   const { path: prebuiltTypesPath, warnings: emitWarnings } = emitResult.value;
 
-  // Step 7: Bundle prebuilt module
-  try {
-    await bundlePrebuiltModule(prebuiltIndexPath);
-  } catch (error) {
-    return err(
-      typegenErrors.bundleFailed(
-        prebuiltIndexPath,
-        `Failed to bundle prebuilt module: ${error instanceof Error ? error.message : String(error)}`,
-        error,
-      ),
-    );
+  // Step 7: Bundle prebuilt module (skip if skipBundle is true)
+  if (!options.skipBundle) {
+    try {
+      await bundlePrebuiltModule(prebuiltIndexPath);
+    } catch (error) {
+      return err(
+        typegenErrors.bundleFailed(
+          prebuiltIndexPath,
+          `Failed to bundle prebuilt module: ${error instanceof Error ? error.message : String(error)}`,
+          error,
+        ),
+      );
+    }
   }
 
   // Count fragments and operations
