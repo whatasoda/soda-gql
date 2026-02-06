@@ -305,7 +305,6 @@ The following components are removed:
 | Type inference utilities | `packages/core/src/types/type-foundation/` | Complex inference for callback patterns |
 | `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | Field builder factory code generation |
 | `compat` composer | `packages/core/src/composer/compat.ts` | Subsumed by tagged template (same GraphQL string approach) |
-| `extend` composer | `packages/core/src/composer/extend.ts` | Replaced by metadata chaining; only used in tests |
 | `compat-spec` types | `packages/core/src/types/element/compat-spec.ts` | No longer needed without compat composer |
 | Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | Test callback-specific behavior |
 
@@ -333,8 +332,7 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 - `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory
 - `src/composer/var-builder.ts` (~280 lines) — variable builder DSL
 - `src/composer/compat.ts` (~63 lines) — subsumed by tagged template
-- `src/composer/extend.ts` (~110 lines) — replaced by metadata chaining
-- `src/types/element/compat-spec.ts` — no longer needed without compat/extend
+- `src/types/element/compat-spec.ts` — no longer needed without compat
 - `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types
 - Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity
 
@@ -558,17 +556,21 @@ The new emitter is dramatically simpler because it only needs to:
 
 The parser (`parser.ts`) and transformer (`transformer.ts`) logic from graphql-compat — which handles schema type resolution, variable inference, and field type lookup — is shared with typegen as a common GraphQL analysis library.
 
-### extend() feature → Removed (replaced by metadata chaining)
+### extend() feature → Redesigned for tagged templates
 
 What happens to the `extend()` composer that converts compat specs to operations with metadata?
 
-**Decision**: `extend()` is removed. Metadata chaining replaces its functionality.
+**Decision**: `extend()` is kept and redesigned. The input type changes from `CompatSpec` to `Operation | Fragment` directly.
 
-**Current usage** (extend + compat):
+**Why extend() is still needed**: Cross-file operation composition. When File A defines an operation and File B needs to add metadata or `transformDocument`, File B must wrap its logic in its own `gql.default(callback)` call (required by the intermediate module system). Metadata chaining (`query\`...\`({ metadata })`) only works within a single `gql.default()` call, so it cannot compose across files.
+
+**Current usage** (extend + compat spec):
 ```typescript
+// File A
 const GetUserCompat = gql.default(({ query, $var }) =>
   query.compat({ name: "GetUser", variables: {...}, fields: ({f, $}) => ({...}) })
 );
+// File B
 const GetUser = gql.default(({ extend }) =>
   extend(GetUserCompat, {
     metadata: ({ $ }) => ({ headers: { "X-User-Id": $var.getName($.userId) } }),
@@ -576,23 +578,33 @@ const GetUser = gql.default(({ extend }) =>
 );
 ```
 
-**Replacement** (tagged template + metadata chaining):
+**New usage** (extend + tagged template operation):
 ```typescript
-const GetUser = gql.default(({ query }) => query`
+// File A
+const GetUserOp = gql.default(({ query }) => query`
   query GetUser($userId: ID!) {
     user(id: $userId) { id name }
   }
-`({
-  metadata: { headers: { "X-User-Id": "..." } },
-}));
+`);
+// File B — adds metadata via extend
+const GetUser = gql.default(({ extend }) =>
+  extend(GetUserOp, {
+    metadata: { headers: { "X-Auth": "token" } },
+    transformDocument: (doc) => addDirectives(doc),
+  })
+);
 ```
 
-**Justification for removal**:
-- `extend()` exists solely to bridge compat specs to operations — a pattern that is no longer needed when tagged templates produce operations directly
-- Zero usage in `fixture-catalog/` (only used in test files)
-- The compat spec type (`CompatSpec`) and its associated types are also removed
+**What changes**:
+- Input type: `GqlDefine<CompatSpec>` → `GqlDefine<Operation | Fragment>` (accepts evaluated gql elements directly)
+- The `compat.ts` and `compat-spec.ts` files are still removed — extend no longer depends on compat specs
+- `extend.ts` is rewritten to accept the new input type (~50 lines, simplified from ~110)
+- Tests updated to use tagged template operations as input
 
-**Removed files**: `extend.ts`, `compat.ts`, `compat-spec.ts`, `extend.test.ts`, `compat.test.ts`, `compat-extend.test.ts`
+**What stays the same**:
+- Purpose: cross-file composition of operations/fragments with metadata and transforms
+- Position in the callback context: `({ extend }) => extend(importedElement, options)`
+- Output: an `Operation` or `Fragment` with merged metadata/transforms
 
 ### Adapter system → Unchanged
 
