@@ -304,8 +304,8 @@ The following components are removed:
 | `fields-builder.ts` (types) | `packages/core/src/types/element/` | Callback-specific type definitions |
 | Type inference utilities | `packages/core/src/types/type-foundation/` | Complex inference for callback patterns |
 | `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | Field builder factory code generation |
-| `compat` composer | `packages/core/src/composer/compat.ts` | Subsumed by tagged template (same GraphQL string approach) |
-| `compat-spec` types | `packages/core/src/types/element/compat-spec.ts` | No longer needed without compat composer |
+| `compat` composer | `packages/core/src/composer/compat.ts` | Callback builder intermediate representation — unnecessary when tagged templates produce `Operation` directly |
+| `compat-spec` types | `packages/core/src/types/element/compat-spec.ts` | Type definitions for `compat` — removed together with compat composer |
 | Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | Test callback-specific behavior |
 
 **Estimated reduction**: ~2,000-2,500 lines of implementation code, plus 60-80% reduction in type inference code.
@@ -331,8 +331,8 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 **Removals:**
 - `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory
 - `src/composer/var-builder.ts` (~280 lines) — variable builder DSL
-- `src/composer/compat.ts` (~63 lines) — subsumed by tagged template
-- `src/types/element/compat-spec.ts` — no longer needed without compat
+- `src/composer/compat.ts` (~63 lines) — callback builder intermediate representation (`CompatSpec`); unnecessary when tagged templates produce `Operation` directly
+- `src/types/element/compat-spec.ts` — type definitions for `CompatSpec`; removed together with compat composer
 - `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types
 - Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity
 
@@ -597,9 +597,10 @@ const GetUser = gql.default(({ extend }) =>
 
 **What changes**:
 - Input type: `GqlDefine<CompatSpec>` → `GqlDefine<Operation | Fragment>` (accepts evaluated gql elements directly)
-- The `compat.ts` and `compat-spec.ts` files are still removed — extend no longer depends on compat specs
 - `extend.ts` is rewritten to accept the new input type (~50 lines, simplified from ~110)
 - Tests updated to use tagged template operations as input
+
+**Relationship to compat removal**: `compat.ts` and `compat-spec.ts` are removed as part of the callback builder removal (Section 5.3), not because of extend()'s redesign. `CompatSpec` was a callback builder intermediate representation — a bridge between the callback builder DSL and `Operation`. With tagged templates producing `Operation` directly, the `CompatSpec` intermediate step is unnecessary. extend() previously consumed `CompatSpec` as input, but the redesigned extend() accepts `Operation | Fragment` directly, so it has no dependency on compat.
 
 **What stays the same**:
 - Purpose: cross-file composition of operations/fragments with metadata and transforms
