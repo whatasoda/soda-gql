@@ -305,6 +305,8 @@ The following components are removed:
 | Type inference utilities | `packages/core/src/types/type-foundation/` | Complex inference for callback patterns |
 | `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | Field builder factory code generation |
 | `compat` composer | `packages/core/src/composer/compat.ts` | Subsumed by tagged template (same GraphQL string approach) |
+| `extend` composer | `packages/core/src/composer/extend.ts` | Replaced by metadata chaining; only used in tests |
+| `compat-spec` types | `packages/core/src/types/element/compat-spec.ts` | No longer needed without compat composer |
 | Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | Test callback-specific behavior |
 
 **Estimated reduction**: ~2,000-2,500 lines of implementation code, plus 60-80% reduction in type inference code.
@@ -331,6 +333,8 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 - `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory
 - `src/composer/var-builder.ts` (~280 lines) — variable builder DSL
 - `src/composer/compat.ts` (~63 lines) — subsumed by tagged template
+- `src/composer/extend.ts` (~110 lines) — replaced by metadata chaining
+- `src/types/element/compat-spec.ts` — no longer needed without compat/extend
 - `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types
 - Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity
 
@@ -445,6 +449,163 @@ Update all tests, fixtures, and documentation to reflect the tagged template-onl
 | Advanced features (attach, define, colocate) interaction with tagged templates | Low | These features operate at the element wrapper level, not the field selection level. API surface is unchanged. Verified in design section. |
 | Test/fixture rewrite volume | Medium | AI-assisted bulk rewriting. Tagged template tests are simpler than callback builder tests. |
 | SWC Rust transformer changes for tagged template support | Medium | SWC adapter already handles member expression patterns. Tagged template detection is a straightforward addition. |
+
+## Open Questions (Resolved)
+
+### Tagged template runtime execution → Build-time replacement
+
+How do the `query`/`mutation`/`subscription`/`fragment` tagged template functions execute?
+
+**Decision**: Tagged templates are **fully replaced at build time**. No GraphQL string parsing happens at runtime.
+
+The execution model has two modes:
+
+**Build mode** (production path):
+1. Builder extracts the GraphQL string from the TypeScript AST (SWC or TS compiler)
+2. Builder parses the string with `graphql-js` `parse()` and generates prebuild data
+3. Transformer replaces the entire `gql.default(({ query }) => query`...`)` call with `gqlRuntime.getOperation(canonicalId)`
+4. Runtime receives pre-computed prebuild data — no parsing, no evaluation
+
+**Development mode** (without build tool):
+The tagged template functions have a thin runtime implementation that:
+1. Receives the `TemplateStringsArray` from the tagged template
+2. Parses the GraphQL string with `graphql-js`
+3. Extracts operation/fragment metadata (name, type, variables) from the AST
+4. Creates `Operation` or `Fragment` elements with the parsed data
+
+This dual-mode approach preserves the zero-runtime goal for production while enabling development without a build step.
+
+**Key difference from callback builder**: The callback builder's `documentSource()` and `spread()` functions are not needed. These existed to lazily evaluate field selections from TypeScript code. Tagged templates provide the complete GraphQL document as a string — field selections are extracted by parsing the GraphQL AST directly, either by the builder (build time) or by typegen (type generation time).
+
+### Fragment dependency resolution → GraphQL AST analysis
+
+How does the builder resolve fragment dependencies (e.g., `...UserFields` inside a query) without VM callback execution?
+
+**Decision**: Parse GraphQL AST and collect `FragmentSpread` nodes.
+
+The builder:
+1. Extracts all tagged templates from source files across the project
+2. Parses each GraphQL string with `graphql-js`
+3. Uses `visit()` to find all `FragmentSpread` nodes (`...FragmentName`)
+4. Builds a global fragment index keyed by `(fragmentName, schemaLabel)` — reusing the same pattern as the LSP's `indexFragments()` in `packages/lsp/src/document-manager.ts`
+5. Resolves spreads by looking up the fragment index
+
+**Collision handling**:
+- Fragments are scoped by `schemaLabel`. A fragment named `UserFields` in schema `default` and another in schema `admin` are distinct entries.
+- Same-name fragments within the same schema produce a builder warning. The first definition wins (consistent with GraphQL spec behavior).
+
+**Cross-file resolution**:
+The builder already scans all files matching `include` patterns. Fragment definitions are indexed during the discovery pass, before dependency resolution. No import tracking is needed at the builder level — the builder has global visibility of all definitions.
+
+### Prebuilt type registry keys → GraphQL definition names
+
+How does the prebuilt type registry (`PrebuiltTypeRegistry`) key work with tagged templates, where names come from GraphQL strings rather than explicit TypeScript parameters?
+
+**Decision**: Use the GraphQL definition name directly as the registry key.
+
+- **Operations**: `query GetUser { ... }` → registry key `"GetUser"`
+- **Fragments**: `fragment UserFields on User { ... }` → registry key `"UserFields"`
+
+This replaces the current system where:
+- Operations use the `name` parameter from `query.operation({ name: "GetUser" })`
+- Fragments use the optional `key` parameter from `fragment.User({ key: "UserFields" })`
+
+**Changes**:
+- The fragment `key` parameter is removed (no longer needed — the GraphQL fragment name is the identifier)
+- Anonymous operations (no name) are not included in prebuilt types and produce a warning
+- The `PrebuiltTypeRegistry` structure itself is unchanged — only the source of keys changes
+
+**Collision handling**: Same as fragment dependency resolution — scoped by schema, warning on same-name collisions within a schema.
+
+### graphql-compat future → Simplified tagged template emitter
+
+What happens to the graphql-compat system (`codegen graphql`) that generates TypeScript from `.graphql` files?
+
+**Decision**: The emitter is rewritten to output tagged template syntax instead of callback builder code.
+
+**Current output** (617 lines of emitter code):
+```typescript
+export const GetUserCompat = gql.mySchema(({ query, $var }) =>
+  query.compat({
+    name: "GetUser",
+    variables: { ...$var("userId").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.userId })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+      })),
+    }),
+  }),
+);
+```
+
+**New output** (~100-150 lines of emitter code):
+```typescript
+export const GetUser = gql.mySchema(({ query }) => query`
+  query GetUser($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+    }
+  }
+`);
+```
+
+The new emitter is dramatically simpler because it only needs to:
+1. Read the `.graphql` file content
+2. Wrap each operation/fragment in the tagged template syntax
+3. Generate import statements and export bindings
+
+The parser (`parser.ts`) and transformer (`transformer.ts`) logic from graphql-compat — which handles schema type resolution, variable inference, and field type lookup — is shared with typegen as a common GraphQL analysis library.
+
+### extend() feature → Removed (replaced by metadata chaining)
+
+What happens to the `extend()` composer that converts compat specs to operations with metadata?
+
+**Decision**: `extend()` is removed. Metadata chaining replaces its functionality.
+
+**Current usage** (extend + compat):
+```typescript
+const GetUserCompat = gql.default(({ query, $var }) =>
+  query.compat({ name: "GetUser", variables: {...}, fields: ({f, $}) => ({...}) })
+);
+const GetUser = gql.default(({ extend }) =>
+  extend(GetUserCompat, {
+    metadata: ({ $ }) => ({ headers: { "X-User-Id": $var.getName($.userId) } }),
+  })
+);
+```
+
+**Replacement** (tagged template + metadata chaining):
+```typescript
+const GetUser = gql.default(({ query }) => query`
+  query GetUser($userId: ID!) {
+    user(id: $userId) { id name }
+  }
+`({
+  metadata: { headers: { "X-User-Id": "..." } },
+}));
+```
+
+**Justification for removal**:
+- `extend()` exists solely to bridge compat specs to operations — a pattern that is no longer needed when tagged templates produce operations directly
+- Zero usage in `fixture-catalog/` (only used in test files)
+- The compat spec type (`CompatSpec`) and its associated types are also removed
+
+**Removed files**: `extend.ts`, `compat.ts`, `compat-spec.ts`, `extend.test.ts`, `compat.test.ts`, `compat-extend.test.ts`
+
+### Adapter system → Unchanged
+
+How do adapters (custom helpers, metadata aggregation, document transforms) interact with tagged templates?
+
+**Decision**: The adapter system is unaffected. It operates at the `gql.default(callback)` context level, which is preserved.
+
+Adapters provide:
+- **Custom helpers** spread into the callback context — still available alongside `query`, `fragment`, etc.
+- **Metadata aggregation** — works with metadata chaining on tagged template results
+- **Document transforms** — applied to the final `TypedDocumentNode`, regardless of how it was produced
+
+No changes to `packages/core/src/types/metadata/adapter.ts` or its integration in `gql-composer.ts`.
 
 ## Rejected Alternatives
 
