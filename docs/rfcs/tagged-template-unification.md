@@ -340,6 +340,9 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 - `src/types/element/compat-spec.ts` — `CompatSpec` adapted to `TemplateCompatSpec`; stores `graphqlSource` instead of `fieldsBuilder`
 - `src/types/fragment/field-selection.ts` — simplify, remove inference helpers
 
+**New:**
+- `src/graphql/` — shared GraphQL analysis utilities moved from codegen's graphql-compat (parser, transformer, fragment-args-preprocessor)
+
 **Retained as-is:**
 - `src/prebuilt/type-calculator.ts` — used by typegen
 - `src/runtime/` — source-agnostic, no changes needed
@@ -361,8 +364,8 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 **Modifications:**
 - `src/generator.ts` — remove `inputTypeMethods` generation; simplify codegen output
 
-**Integration:**
-- `src/graphql-compat/` — parser and transformer logic to be shared with typegen for GraphQL string → type resolution
+**Migration:**
+- `src/graphql-compat/parser.ts`, `transformer.ts` — core analysis logic moves to `packages/core/src/graphql/` for sharing with typegen and tagged template functions. Codegen re-exports or imports from core.
 
 ### Typegen package (`packages/typegen/`)
 
@@ -553,7 +556,7 @@ The new emitter is dramatically simpler because it only needs to:
 2. Wrap each operation/fragment in the tagged template syntax
 3. Generate import statements and export bindings
 
-The parser (`parser.ts`) and transformer (`transformer.ts`) logic from graphql-compat — which handles schema type resolution, variable inference, and field type lookup — is shared with typegen as a common GraphQL analysis library.
+The parser (`parser.ts`) and transformer (`transformer.ts`) logic from graphql-compat — which handles schema type resolution, variable inference, and field type lookup — moves to `packages/core/src/graphql/`. This placement allows both codegen (emitter) and typegen to import shared analysis logic from core. The codegen package re-exports or imports from core.
 
 ### extend() feature → Compat preserved with adapted representation
 
