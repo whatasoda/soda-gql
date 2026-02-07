@@ -14,7 +14,8 @@
 
 **Modifications:**
 - `src/composer/gql-composer.ts` — tagged template support in callback context
-- `src/composer/fragment.ts`, `src/composer/operation.ts` — tagged template element creation
+- `src/composer/fragment.ts` — **replaced**: callback builder fragment composers removed; `fragment` context member becomes a pure tagged template function (see [Fragment decision](../tagged-template-unification/resolved-questions.md#fragment-context-member--tagged-template-only-no-hybrid))
+- `src/composer/operation.ts` — tagged template element creation
 - `src/composer/compat.ts` — internal representation adapted: fieldsBuilder callback → GraphQL source string (`TemplateCompatSpec`)
 - `src/composer/extend.ts` — accept `TemplateCompatSpec` (GraphQL string-based deferred spec) alongside existing `CompatSpec`
 - `src/types/element/compat-spec.ts` — `CompatSpec` adapted to `TemplateCompatSpec`; stores `graphqlSource` instead of `fieldsBuilder`
@@ -83,14 +84,18 @@
 
 ## Implementation Phases
 
-### Phase 1: Builder + Transformer tagged template support
+### Phase 1: Core tagged template implementation
 
-Establish the build pipeline for tagged templates. After this phase, tagged template operations build and run correctly alongside callback builders.
+Establish the core tagged template infrastructure. After this phase, tagged template operations and fragments are fully functional in the composer layer.
 
-- Extend builder AST adapters to detect tagged templates in callback bodies
-- Implement tagged template functions (`query\`...\``, `fragment\`...\``) that parse GraphQL within VM context
-- Update transformers (tsc, swc, babel) to handle tagged template nodes
+- Implement hybrid context shape for `query`/`mutation`/`subscription` (`Object.assign` with tagged template + `.operation` + `.compat`)
+- Implement `fragment` as pure tagged template function (no hybrid, no callback builder — [decision](../tagged-template-unification/resolved-questions.md#fragment-context-member--tagged-template-only-no-hybrid))
+- Implement `TemplateResult` with optional options parameter, no `.resolve()` — [decision](../tagged-template-unification/resolved-questions.md#templateresult-call-signature--optional-options-parameter)
+- Implement accurate `VarSpecifier` construction for fragment arguments (AST + schema resolution)
+- Generate `documentSource`-compatible data from tagged template AST (compatibility bridge — [decision](../tagged-template-unification/resolved-questions.md#documentsource-handling--maintain-with-compatibility-bridge))
 - Integration tests for tagged template build pipeline
+
+Note: Builder AST adapters and transformers require no modifications — they are expression-agnostic and operate on the outer `gql.default(...)` call pattern only.
 
 ### Phase 2: Typegen tagged template support
 

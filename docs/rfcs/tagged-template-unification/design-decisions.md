@@ -53,7 +53,9 @@ const UserProfile = gql.default(({ fragment }) => fragment`
 
 #### Context shape: hybrid tagged template functions
 
-The callback context provides `query`, `mutation`, `subscription`, and `fragment` as **hybrid objects** — each is a tagged template function that also exposes properties:
+The callback context provides `query`, `mutation`, and `subscription` as **hybrid objects** — each is a tagged template function that also exposes properties. `fragment` is a **pure tagged template function** (not hybrid — see [Fragment context member decision](./resolved-questions.md#fragment-context-member--tagged-template-only-no-hybrid)).
+
+**Operations (hybrid):**
 
 ```typescript
 // query is callable as a tagged template:
@@ -77,6 +79,20 @@ const query = Object.assign(queryTaggedTemplate, {
 ```
 
 This preserves backwards compatibility with the callback builder while making tagged templates the primary API.
+
+**Fragment (pure tagged template — not hybrid):**
+
+```typescript
+// fragment is a pure tagged template function:
+gql.default(({ fragment }) => fragment`
+  fragment UserFields on User { id name }
+`());
+
+// fragment does NOT have type-keyed builders (fragment.User is NOT available):
+// gql.default(({ fragment }) => fragment.User({ ... }));  // ← REMOVED
+```
+
+The `fragment` context member is `createFragmentTaggedTemplate(schema)` — a single tagged template function. The `on User` type condition is part of the GraphQL syntax, making type-keyed builders (`fragment.User`, `fragment.Post`) unnecessary.
 
 #### Metadata chaining and always-call pattern
 
@@ -102,10 +118,12 @@ This is an important feature for attaching runtime metadata (HTTP headers, cachi
 
 #### TemplateResult: internal intermediate type
 
-The `TemplateResult` type is the return value of tagged template functions (`query\`...\``, `fragment\`...\``). It is callable:
+The `TemplateResult` type is the return value of tagged template functions (`query\`...\``, `fragment\`...\``). It is callable with an **optional** options parameter (`TemplateResultMetadataOptions?`):
 
 - `()` — resolves to `Operation`/`Fragment` without metadata
 - `({ metadata: { ... } })` — resolves to `Operation`/`Fragment` with metadata
+
+There is no `.resolve()` method — the `()` call serves the same purpose. This avoids API redundancy and keeps the always-call pattern consistent.
 
 **`TemplateResult` never escapes the callback.** The callback always returns a fully resolved `Operation`, `Fragment`, or `GqlDefine`. The `GqlElementComposer` type does not need to accept `TemplateResult` — the always-call pattern ensures resolution happens within the callback body.
 
@@ -202,7 +220,7 @@ When `typegen --watch` regenerates `types.prebuilt.ts`, only TypeScript's type c
 
 ### 5.3 Callback builder API restructuring
 
-The callback builder API is restructured and retained, not removed. The following table summarizes the planned changes:
+The callback builder API for operations is restructured and retained. Fragment callback builders (`fragment.User(...)`) are removed — fragments use tagged template syntax exclusively (see [Fragment decision](./resolved-questions.md#fragment-context-member--tagged-template-only-no-hybrid)). The following table summarizes the planned changes for operation-related components:
 
 | Component | Location | Status |
 |-----------|----------|--------|

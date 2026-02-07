@@ -10,7 +10,7 @@ This RFC defines the plan to unify soda-gql's API around tagged template literal
 
 The design commits to these key decisions:
 
-1. **Tagged Template as the Primary API**: The tagged template syntax becomes the primary method for defining operations and fragments inside `gql.{schemaName}(callback)`. The callback builder API (`query.operation(...)`, `fragment.User(...)`, `$var(...)`) is restructured and retained, not removed.
+1. **Tagged Template as the Primary API**: The tagged template syntax becomes the primary method for defining operations and fragments inside `gql.{schemaName}(callback)`. The callback builder API for operations (`query.operation(...)`, `$var(...)`) is restructured and retained. Fragment callback builders (`fragment.User(...)`) are replaced by tagged template syntax exclusively.
 2. **Type Generation over Type Inference**: Complex TypeScript type inference is replaced by `typegen` (watch mode). Build/runtime code is generated once via `codegen schema`; only type information is regenerated on change.
 3. **Build Pipeline Independence**: Type generation does not trigger rebuilds in build tools that are not type-aware. Build tools (SWC, Babel, etc.) operate on the tagged template output without needing type information.
 

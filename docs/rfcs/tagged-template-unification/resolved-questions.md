@@ -27,7 +27,7 @@ The same tagged template functions execute at import time:
 
 In both modes, the tagged template function parses GraphQL within its execution context. The difference is only in what happens **after**: build mode replaces the call site with a prebuild lookup, while development mode keeps the parsed result directly.
 
-**Key difference from callback builder**: The callback builder's `documentSource()` and `spread()` functions are not needed. These existed to lazily evaluate field selections from TypeScript code. Tagged templates provide the complete GraphQL document as a string — field selections are extracted by parsing the GraphQL AST directly, either by the builder (build time) or by typegen (type generation time).
+**Key difference from callback builder**: The callback builder's `documentSource()` and `spread()` functions are not needed long-term. However, **Phase 1 maintains `documentSource` as a compatibility bridge** — tagged templates generate fields data from the GraphQL AST and provide it via `documentSource()`, so that existing consumers (Prebuilt Extractor) continue to work without changes. See [documentSource handling decision](#documentSource-handling--maintain-with-compatibility-bridge) for details.
 
 ### Fragment dependency resolution → GraphQL AST analysis
 
@@ -225,6 +225,71 @@ Do the builder's AST adapters and transformer packages need modifications for ta
 **Intermediate module codegen**: Expression text is rendered as-is in intermediate modules. Tagged template expressions are valid JavaScript after SWC transpilation, so no codegen changes are needed.
 
 **Transformers (tsc, swc, babel)**: Transformers replace the entire `gql.default(...)` `CallExpression` with `gqlRuntime.getOperation(canonicalId)`. They operate on the outer call expression only and never inspect the callback body. The replacement logic is identical regardless of callback content.
+
+### TemplateResult call signature → optional options parameter
+
+How should the TemplateResult call interface work? What is the relationship between `.resolve()` and the call pattern?
+
+**Decision**: `(options?: TemplateResultMetadataOptions)` — the options parameter is optional.
+
+- `()` — resolves to `Operation`/`Fragment` without metadata
+- `({ metadata: { ... } })` — resolves to `Operation`/`Fragment` with metadata
+- `.resolve()` method is **removed**. The `()` call serves the same purpose.
+
+**Rationale**:
+- Two resolution methods (`.resolve()` and `()`) coexisting makes the API redundant
+- The always-call pattern `query\`...\`()` is consistent whether metadata is provided or not
+- Metadata-less and metadata-bearing calls are syntactically continuous: `()` → `({ metadata })`
+
+### documentSource handling → maintain with compatibility bridge
+
+How should tagged templates handle `documentSource()`, the function that callback builders use to provide evaluated field selections?
+
+**Decision**: Maintain `documentSource` as a compatibility bridge in Phase 1. Tagged templates generate fields data from the GraphQL AST and provide it via `documentSource()`. Optimization (removing this bridge) is deferred to a later phase.
+
+**Rationale**:
+- `documentSource` is consumed by the builder's Prebuilt Extractor — existing infrastructure that should not be disrupted in Phase 1
+- Removing it immediately would require Extractor-side changes, expanding Phase 1 scope
+- "Make it work first, optimize later" approach manages risk incrementally
+
+**What this means for implementation**:
+- Tagged template's `Operation.create` passes `documentSource: () => generatedFields` (replacing the current `() => ({}) as never` stub)
+- A GraphQL AST → fields data conversion layer is needed
+- Fragment's `spread()` similarly generates compatibility data from the AST
+- Long-term, these bridges are unnecessary — but they allow Phase 1 to reuse existing consumers unchanged
+
+### Error handling in composers → throw for validation errors
+
+Should tagged template parse errors use `throw` or neverthrow's `Result` type?
+
+**Decision**: The composer layer uses `throw new Error()` consistently.
+
+**Rationale**:
+- All existing composers (`operation.ts`, `compat.ts`, `fields-builder.ts`, `var-builder`, etc.) use `throw`
+- The builder's VM execution layer catches composer errors via `try/catch` and wraps them appropriately
+- Project conventions recommend neverthrow, but the composer layer executes synchronously within callbacks — `throw` is a natural fit
+- The divergence from convention is acknowledged: **composer-layer exceptions are a distinct error handling tier from build-tool-layer neverthrow errors**
+
+### Fragment context member → tagged template only, no hybrid
+
+Should the `fragment` context member be made hybrid (tagged template function + `fragment.User(...)` callback builder)?
+
+**Decision**: Fragment is **not hybrid**. It is tagged template only. The callback builder pattern `fragment.User(...)` is removed.
+
+**Design**:
+- `fragment` becomes the tagged template function returned by `createFragmentTaggedTemplate(schema)`
+- Type-keyed builders (`fragment.User`, `fragment.Post`, ...) are not provided
+- Fragment definitions use `fragment\`fragment X on User { ... }\`()` exclusively
+
+**Rationale**:
+- Hybridizing fragment is complex — each schema type would need its own hybrid function wrapping
+- Tagged templates include `on User` in the GraphQL syntax, making type-keyed builders redundant
+- Unlike `query`/`mutation`/`subscription` (which retain `.operation()` for callback builder compatibility), fragment has no equivalent need — tagged templates fully replace callback builder fragments
+
+**Impact**:
+- `fragment` in `AnyGqlContext` changes from `Record<string, unknown>` (type-keyed builders) to a tagged template function type
+- `createGqlFragmentComposers` is replaced by `createFragmentTaggedTemplate`
+- Existing fragment callback builder tests are rewritten to tagged template syntax
 
 ## Rejected Alternatives
 
