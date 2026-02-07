@@ -6,11 +6,11 @@
 
 ## Summary
 
-This RFC defines the plan to unify soda-gql's API around tagged template literals as the sole method for defining GraphQL operations and fragments. The callback builder API will be removed entirely, and type information will be generated via `typegen` rather than TypeScript-level inference.
+This RFC defines the plan to unify soda-gql's API around tagged template literals as the primary method for defining GraphQL operations and fragments. The callback builder API will be restructured and retained alongside tagged templates, and type information will be generated via `typegen` rather than TypeScript-level inference.
 
 The design commits to these key decisions:
 
-1. **Tagged Template as the Only API**: The callback builder API (`query.operation(...)`, `fragment.User(...)`, `$var(...)`) is removed. All operations and fragments are defined using tagged template syntax inside `gql.{schemaName}(callback)`.
+1. **Tagged Template as the Primary API**: The tagged template syntax becomes the primary method for defining operations and fragments inside `gql.{schemaName}(callback)`. The callback builder API (`query.operation(...)`, `fragment.User(...)`, `$var(...)`) is restructured and retained, not removed.
 2. **Type Generation over Type Inference**: Complex TypeScript type inference is replaced by `typegen` (watch mode). Build/runtime code is generated once via `codegen schema`; only type information is regenerated on change.
 3. **Build Pipeline Independence**: Type generation does not trigger rebuilds in build tools that are not type-aware. Build tools (SWC, Babel, etc.) operate on the tagged template output without needing type information.
 
@@ -32,7 +32,7 @@ const GetUser = gql.default(({ query }) => query`
   query GetUser($id: ID!) {
     user(id: $id) { id name email }
   }
-`);
+`());
 
 // Callback builder: custom DSL, requires learning soda-gql's API
 const GetUser = gql.default(({ query, $var }) =>
@@ -52,7 +52,7 @@ const GetUser = gql.default(({ query, $var }) =>
 
 ### Dual API complexity
 
-The codebase currently maintains two parallel API paths: the callback builder and the tagged template (introduced for LSP support). This dual structure increases maintenance burden and creates confusion about which API to use. Unifying to a single API simplifies the codebase and the user-facing documentation.
+The codebase currently maintains two parallel API paths: the callback builder and the tagged template (introduced for LSP support). This dual structure increases maintenance burden and creates confusion about which API to use. Establishing tagged template as the primary API and restructuring the callback builder simplifies the codebase and the user-facing documentation.
 
 ### Type inference complexity is not justified
 
@@ -125,7 +125,7 @@ const GetUser = gql.default(({ query }) => query`
   query GetUser($id: ID!) {
     user(id: $id) { id name }
   }
-`);
+`());
 ```
 
 ### Tagged template: current support matrix

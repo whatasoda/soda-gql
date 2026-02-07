@@ -6,11 +6,11 @@
 
 ### Core package (`packages/core/`)
 
-**Removals:**
-- `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory
-- `src/composer/var-builder.ts` (~280 lines) — variable builder DSL
-- `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types
-- Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity
+**Restructured** (callback builder retained, scope TBD):
+- `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory (restructured)
+- `src/composer/var-builder.ts` (~280 lines) — variable builder DSL (retained)
+- `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types (restructured)
+- Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity (restructured)
 
 **Modifications:**
 - `src/composer/gql-composer.ts` — tagged template support in callback context
@@ -31,13 +31,14 @@
 
 ### Builder package (`packages/builder/`)
 
-**Modifications:**
-- `src/ast/adapters/typescript.ts` — detect `TaggedTemplateExpression` in callback bodies
-- `src/ast/adapters/swc.ts` — same detection for SWC adapter
-- `src/intermediate-module/codegen.ts` — tagged template callbacks generate intermediate modules that invoke tagged template functions
-- `src/intermediate-module/evaluation.ts` — tagged template callbacks are evaluated in VM like callback builders; the tagged template function parses GraphQL within the VM context
+**No modifications needed.** The existing builder pipeline handles tagged templates without changes:
 
-**Key insight**: Tagged templates do **not** skip VM evaluation. The tagged template functions (`query\`...\``, `fragment\`...\``) are executed within the builder's VM context, where they parse GraphQL strings with `graphql-js` and produce Operation/Fragment elements. The architectural simplification comes from eliminating the callback builder DSL (field factories, variable builders), not from bypassing VM evaluation.
+- `src/ast/adapters/typescript.ts` — **No changes**. The outer `gql.default(arrowFn)` pattern is unchanged; adapters detect `CallExpression` with `ArrowFunction` argument, which is preserved. The callback body (containing the tagged template) is captured as expression text — the adapters are expression-agnostic.
+- `src/ast/adapters/swc.ts` — **No changes**. Same reasoning as TypeScript adapter.
+- `src/intermediate-module/codegen.ts` — **No changes**. Expression text is rendered as-is in intermediate modules. Tagged template expressions in the callback body are valid JavaScript.
+- `src/intermediate-module/evaluation.ts` — **No changes**. VM executes the callback, which internally calls tagged template functions. `graphql-js` is resolved transitively via `@soda-gql/core` through the sandbox `require()`.
+
+**Key insight**: Tagged templates do **not** skip VM evaluation. The tagged template functions (`query\`...\`()`, `fragment\`...\`()`) are executed within the builder's VM context, where they parse GraphQL strings with `graphql-js` and produce Operation/Fragment elements. The builder pipeline is expression-agnostic — it captures, transpiles, and executes callback expressions regardless of whether they use callback builder DSL or tagged template syntax.
 
 ### Codegen package (`packages/codegen/`)
 
@@ -59,9 +60,7 @@
 
 ### Transformer packages (`packages/tsc/`, `packages/swc/`, `packages/babel/`)
 
-**Modifications:**
-- Add `TaggedTemplateExpression` detection alongside existing `CallExpression` handling
-- Replacement logic is identical: `gql.default(...)` → `gqlRuntime.getOperation(canonicalId)`
+**No modifications needed.** Transformers detect and replace `gql.default(...)` `CallExpression` nodes — this outer pattern is unchanged regardless of whether the callback body uses tagged templates or callback builders. The replacement logic (`gql.default(...)` → `gqlRuntime.getOperation(canonicalId)`) operates on the outer call expression only.
 
 ### LSP package (`packages/lsp/`)
 
@@ -102,14 +101,14 @@ Enable type generation from tagged templates. After this phase, `typegen --watch
 - Update typegen runner to support direct GraphQL string → type calculation
 - Stabilize `typegen --watch` for reliable development feedback
 
-### Phase 3: Callback builder API removal + type inference cleanup
+### Phase 3: Callback builder API restructuring + compat adaptation
 
-Remove the callback builder API and associated type inference code. After this phase, the codebase is simplified.
+Restructure the callback builder API and adapt compat for tagged templates. After this phase, both APIs coexist with tagged template as primary.
 
-- Remove fields-builder, var-builder composers
-- Remove callback-specific type definitions and inference utilities
-- Simplify codegen output (remove inputTypeMethods, field builder factories)
+- Restructure fields-builder, var-builder composers (scope TBD)
+- Simplify type inference where possible
 - Adapt compat composer to `TemplateCompatSpec` (GraphQL source string-based deferred spec)
+- Resolve deferred design decisions (`documentSource` handling, callback builder restructuring scope)
 
 ### Phase 4: Tests, fixtures, and documentation update
 
@@ -125,7 +124,7 @@ Update all tests, fixtures, and documentation to reflect the tagged template-onl
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | `typegen --watch` latency degrades DX | High | Profile and optimize. Incremental rebuilds (only re-process changed files). Leverage builder's fingerprint-based caching. |
-| Tagged template build pipeline has subtle differences from callback builder | Medium | Extensive integration tests comparing artifacts from both pipelines before removing callback API. |
+| Tagged template build pipeline has subtle differences from callback builder | Medium | Extensive integration tests comparing artifacts from both pipelines. Both paths coexist, enabling side-by-side validation. |
 | Advanced features (attach, define, colocate) interaction with tagged templates | Low | These features operate at the element wrapper level, not the field selection level. API surface is unchanged. Verified in design section. |
 | Test/fixture rewrite volume | Medium | AI-assisted bulk rewriting. Tagged template tests are simpler than callback builder tests. |
-| SWC Rust transformer changes for tagged template support | Medium | SWC adapter already handles member expression patterns. Tagged template detection is a straightforward addition. |
+| Callback builder restructuring scope unclear | Medium | Scope is deferred as an open item. Phase 3 addresses this after tagged template pipeline is stable. |

@@ -13,7 +13,7 @@ How do the `query`/`mutation`/`subscription`/`fragment` tagged template function
 The execution model has two modes:
 
 **Build mode** (production path):
-1. Builder evaluates the callback in its VM context. The tagged template function (`query\`...\``) receives the GraphQL string, parses it with `graphql-js`, and produces an Operation/Fragment element
+1. Builder evaluates the callback in its VM context. The tagged template function (`query\`...\`()`) receives the GraphQL string, parses it with `graphql-js`, and produces an Operation/Fragment element
 2. Builder collects the resulting element and generates prebuild data
 3. Transformer replaces the entire `gql.default(({ query }) => query`...`)` call with `gqlRuntime.getOperation(canonicalId)`
 4. Runtime receives pre-computed prebuild data — no parsing, no evaluation
@@ -100,7 +100,7 @@ export const GetUser = gql.mySchema(({ query }) => query`
       name
     }
   }
-`);
+`());
 ```
 
 The new emitter is dramatically simpler because it only needs to:
@@ -128,7 +128,7 @@ const GetUser = gql.default(({ query }) => query`
   query GetUser($userId: ID!) {
     user(id: $userId) { id name }
   }
-`);
+`());
 ```
 
 Compat mode — tagged template produces deferred `GqlDefine<TemplateCompatSpec>` for extend:
@@ -174,6 +174,58 @@ Adapters provide:
 
 No changes to `packages/core/src/types/metadata/adapter.ts` or its integration in `gql-composer.ts`.
 
+### TemplateResult always-call pattern → `query\`...\`()` required
+
+Why must tagged template calls always include `()`, even without metadata?
+
+**Decision**: The call is always required. `query\`...\`` returns an internal `TemplateResult` type; `query\`...\`()` resolves it to `Operation`.
+
+**Rationale**:
+- `TemplateResult` never escapes the callback — the `GqlElementComposer` type only accepts `AnyFragment | AnyOperation | AnyGqlDefine`, not `TemplateResult`
+- No auto-resolution logic needed in the composer — the callback body is responsible for resolution
+- Consistent syntax: with metadata `query\`...\`({ metadata })`, without metadata `query\`...\`()`
+- Simpler implementation — no runtime type checking of callback return values
+
+### Fragment variableDefinitions → Accurate VarSpecifier via AST + schema
+
+How are fragment variable definitions constructed for tagged template fragments?
+
+**Decision**: Parse GraphQL AST and resolve types against the schema at creation time. No placeholders.
+
+The `createFragmentTaggedTemplate(schema)` function receives the schema, enabling accurate `VarSpecifier` construction:
+
+1. Extract variable definitions from the raw GraphQL source (before fragment arguments preprocessing)
+2. For each variable: extract `name` and `modifier` from the `TypeNode`, `defaultValue` from the AST
+3. Resolve `kind` (`"scalar"` / `"enum"` / `"input"`) by looking up the type name in the schema's type definitions
+
+This produces identical `VarSpecifier` objects to what the callback builder's `$var()` creates, ensuring compatibility with typegen's `generateInputTypeFromVarDefs()`.
+
+### VM `graphql-js` dependency → Transitively resolved via `@soda-gql/core`
+
+How does `graphql-js` become available inside the builder's VM sandbox for tagged template parsing?
+
+**Decision**: No special handling needed. The dependency is resolved transitively.
+
+The resolution chain:
+1. `graphql-system.cjs` is executed in the VM sandbox
+2. It calls `require("@soda-gql/core")` — resolved by the sandbox's `createSandboxRequire()` (allows `@soda-gql/*`)
+3. `@soda-gql/core` loads normally, including `tagged-template.ts` which imports from `graphql`
+4. Node.js resolves `graphql` from `node_modules` via standard module resolution
+
+The sandbox restricts direct `require()` calls to `@soda-gql/*` packages, but transitive dependencies of allowed packages (like `graphql`) resolve through the normal Node.js module system.
+
+### Builder AST adapters + Transformers → No changes needed
+
+Do the builder's AST adapters and transformer packages need modifications for tagged template support?
+
+**Decision**: No. Both are expression-agnostic.
+
+**AST adapters**: The adapters detect `gql.default(arrowFn)` — a `CallExpression` with `PropertyAccessExpression` callee and `ArrowFunction` first argument. This outer pattern is unchanged. The callback body (which now contains tagged template syntax) is captured as raw expression text via `getText()`. The adapters do not inspect the callback body's structure.
+
+**Intermediate module codegen**: Expression text is rendered as-is in intermediate modules. Tagged template expressions are valid JavaScript after SWC transpilation, so no codegen changes are needed.
+
+**Transformers (tsc, swc, babel)**: Transformers replace the entire `gql.default(...)` `CallExpression` with `gqlRuntime.getOperation(canonicalId)`. They operate on the outer call expression only and never inspect the callback body. The replacement logic is identical regardless of callback content.
+
 ## Rejected Alternatives
 
 ### Approach A: Gradual migration (Dual API)
@@ -192,7 +244,7 @@ Make tagged template the primary API but re-implement the callback builder as a 
 
 ### GraphQL LSP RFC (graphql-lsp-multi-schema.md)
 
-The LSP RFC introduced tagged templates as a complementary API alongside callback builders. This RFC **supersedes** the "both styles coexist" position (Section "Backward Compatibility" of the LSP RFC). Going forward, only tagged template syntax is supported.
+The LSP RFC introduced tagged templates as a complementary API alongside callback builders. This RFC **supersedes** the "both styles coexist" position (Section "Backward Compatibility" of the LSP RFC). Going forward, tagged template is the primary API; the callback builder is restructured and retained alongside it.
 
 The LSP RFC's technical decisions remain valid:
 - Callback + tagged template structure (`gql.{schemaName}(callback)` with tagged template inside)
@@ -202,7 +254,7 @@ The LSP RFC's technical decisions remain valid:
 
 ### Field Selection Shorthand RFC (field-selection-shorthand.md)
 
-The shorthand syntax RFC (`fields: ({ f }) => ({ id: true, name: true })`) was designed for the callback builder API. With callback builder removal, this RFC becomes **obsolete** — tagged templates use standard GraphQL field selection syntax natively.
+The shorthand syntax RFC (`fields: ({ f }) => ({ id: true, name: true })`) was designed for the callback builder API. With tagged template as the primary API, this RFC becomes **obsolete** — tagged templates use standard GraphQL field selection syntax natively.
 
 ## References
 

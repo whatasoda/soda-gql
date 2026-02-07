@@ -2,9 +2,9 @@
 
 > Part of [Tagged Template API Unification](./index.md)
 
-### 5.1 Tagged template as the only API
+### 5.1 Tagged template as the primary API
 
-The tagged template API becomes the sole method for defining operations and fragments. The `gql.{schemaName}(callback)` pattern is preserved — only the callback body changes.
+The tagged template API becomes the primary method for defining operations and fragments. The `gql.{schemaName}(callback)` pattern is preserved — only the callback body changes. The callback builder API is restructured and retained alongside tagged templates.
 
 #### API design
 
@@ -17,19 +17,19 @@ const GetUser = gql.default(({ query }) => query`
   query GetUser($id: ID!) {
     user(id: $id) { id name email }
   }
-`);
+`());
 
 const UpdateUser = gql.default(({ mutation }) => mutation`
   mutation UpdateUser($id: ID!, $name: String!) {
     updateUser(id: $id, name: $name) { id name }
   }
-`);
+`());
 
 const OnMessage = gql.default(({ subscription }) => subscription`
   subscription OnMessage($roomId: ID!) {
     messageAdded(roomId: $roomId) { id text sender }
   }
-`);
+`());
 
 // --- Fragments ---
 
@@ -39,7 +39,7 @@ const UserFields = gql.default(({ fragment }) => fragment`
     name
     email
   }
-`);
+`());
 
 // Fragment with variables (Fragment Arguments RFC syntax)
 const UserProfile = gql.default(({ fragment }) => fragment`
@@ -48,14 +48,47 @@ const UserProfile = gql.default(({ fragment }) => fragment`
     name
     email @include(if: $showEmail)
   }
-`);
+`());
 ```
 
-#### Metadata chaining
+#### Context shape: hybrid tagged template functions
 
-The tagged template result is callable for metadata attachment:
+The callback context provides `query`, `mutation`, `subscription`, and `fragment` as **hybrid objects** — each is a tagged template function that also exposes properties:
 
 ```typescript
+// query is callable as a tagged template:
+gql.default(({ query }) => query`...`());
+
+// query also has .compat for deferred mode:
+gql.default(({ query }) => query.compat`...`);
+
+// query also retains .operation() for callback builder (restructured):
+gql.default(({ query, $var }) => query.operation({ ... }));
+```
+
+Implementation uses `Object.assign` to create the hybrid:
+
+```typescript
+const queryTaggedTemplate = createOperationTaggedTemplate(schema, "query");
+const query = Object.assign(queryTaggedTemplate, {
+  compat: createCompatTaggedTemplate(schema, "query"),
+  operation: createOperationComposer("query"),  // callback builder (restructured)
+});
+```
+
+This preserves backwards compatibility with the callback builder while making tagged templates the primary API.
+
+#### Metadata chaining and always-call pattern
+
+Tagged template functions return a `TemplateResult` — an internal intermediate type that is callable for metadata attachment. **The call is always required**, even without metadata:
+
+```typescript
+// Without metadata — empty call ()
+const UserFields = gql.default(({ fragment }) => fragment`
+  fragment UserFields on User { id name email }
+`());
+
+// With metadata — call with options
 const PostList = gql.default(({ fragment }) => fragment`
   fragment PostList($first: Int!) on Query {
     posts(first: $first) { id title }
@@ -67,6 +100,15 @@ const PostList = gql.default(({ fragment }) => fragment`
 
 This is an important feature for attaching runtime metadata (HTTP headers, caching hints, etc.) to operations and fragments. The metadata chaining pattern is already specified in the [LSP RFC](../graphql-lsp-multi-schema.md) and supported by the LSP's template extraction.
 
+#### TemplateResult: internal intermediate type
+
+The `TemplateResult` type is the return value of tagged template functions (`query\`...\``, `fragment\`...\``). It is callable:
+
+- `()` — resolves to `Operation`/`Fragment` without metadata
+- `({ metadata: { ... } })` — resolves to `Operation`/`Fragment` with metadata
+
+**`TemplateResult` never escapes the callback.** The callback always returns a fully resolved `Operation`, `Fragment`, or `GqlDefine`. The `GqlElementComposer` type does not need to accept `TemplateResult` — the always-call pattern ensures resolution happens within the callback body.
+
 #### attach, define, and colocate
 
 These advanced features operate at the `gql.default(...)` return level, not inside the tagged template. They remain unchanged:
@@ -75,7 +117,7 @@ These advanced features operate at the `gql.default(...)` return level, not insi
 // attach: extend elements with custom properties
 const userFragment = gql.default(({ fragment }) => fragment`
   fragment UserFields on User { id name email }
-`).attach({
+`()).attach({
   name: "form",
   createValue: (element) => ({ validate: () => true }),
 });
@@ -99,7 +141,7 @@ const UserCard = gql.default(({ fragment, $colocate }) => {
       name
       ...UserAvatar
     }
-  `;
+  `();
 });
 ```
 
@@ -111,10 +153,12 @@ const UserCard = gql.default(({ fragment, $colocate }) => {
 
 `codegen schema` generates the graphql-system module once. The output is simplified compared to the current version:
 
-**Removed** (callback-builder specific):
-- `inputTypeMethods` (the `$var("id").ID("!")` factory methods)
-- Field builder factories (`f.user()`, `f.id()`, etc.)
-- Complex type inference utilities
+**Restructured or simplified** (callback-builder specific):
+- `inputTypeMethods` (the `$var("id").ID("!")` factory methods) — scope of restructuring TBD
+- Field builder factories (`f.user()`, `f.id()`, etc.) — scope of restructuring TBD
+- Complex type inference utilities — scope of restructuring TBD
+
+> **Open item**: The exact scope of callback builder restructuring (including `documentSource` handling) is deferred to a separate design discussion.
 
 **Retained**:
 - Schema type definitions (`_defs/objects.ts`, `_defs/inputs.ts`, `_defs/enums.ts`, `_defs/unions.ts`)
@@ -156,20 +200,20 @@ Type generation produces `.ts` type declaration files that are consumed by the T
 
 When `typegen --watch` regenerates `types.prebuilt.ts`, only TypeScript's type checker refreshes. Build tools do not re-trigger because the runtime code is unchanged.
 
-### 5.3 Callback builder API removal
+### 5.3 Callback builder API restructuring
 
-The following components are removed:
+The callback builder API is restructured and retained, not removed. The following table summarizes the planned changes:
 
-| Component | Location | Reason |
+| Component | Location | Status |
 |-----------|----------|--------|
-| `fields-builder.ts` (composer) | `packages/core/src/composer/` | Callback-specific field factory creation |
-| `var-builder.ts` (composer) | `packages/core/src/composer/` | `$var("id").ID("!")` syntax |
-| `fields-builder.ts` (types) | `packages/core/src/types/element/` | Callback-specific type definitions |
-| Type inference utilities | `packages/core/src/types/type-foundation/` | Complex inference for callback patterns |
-| `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | Field builder factory code generation |
-| Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | Test callback-specific behavior |
+| `fields-builder.ts` (composer) | `packages/core/src/composer/` | **Restructured** — scope TBD |
+| `var-builder.ts` (composer) | `packages/core/src/composer/` | **Retained** — `$var("id").ID("!")` syntax still used by callback builder |
+| `fields-builder.ts` (types) | `packages/core/src/types/element/` | **Restructured** — scope TBD |
+| Type inference utilities | `packages/core/src/types/type-foundation/` | **Restructured** — scope TBD |
+| `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | **Retained** — needed for callback builder |
+| Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | **Updated** — expanded for tagged template coverage |
 
-**Estimated reduction**: ~1,800-2,200 lines of implementation code, plus 60-80% reduction in type inference code. Note: compat and extend are retained (adapted, not removed), so the reduction is smaller than a full callback builder removal.
+> **Open item**: The full scope of callback builder restructuring is deferred. The primary focus of this RFC is establishing tagged template as the primary API and ensuring both paths coexist through the hybrid context shape.
 
 ### 5.4 Fragment Arguments syntax
 
@@ -184,3 +228,33 @@ fragment UserProfile($showEmail: Boolean = false) on User {
 ```
 
 The `graphql-js` parser does not support this syntax natively. Both the LSP and the builder preprocess fragment definitions by stripping argument declarations before parsing.
+
+### 5.5 Fragment variable definitions construction
+
+Tagged template fragments construct accurate `VarSpecifier` objects from the GraphQL AST and schema reference at creation time. No placeholder strategy is used.
+
+#### Construction flow
+
+1. Parse the GraphQL string with `graphql-js` (after fragment arguments preprocessing)
+2. Extract `VariableDefinitionNode` entries from the original source (before preprocessing stripped the argument syntax)
+3. For each variable definition:
+   - **`name`**: Extracted from `VariableDefinitionNode.type` (the GraphQL type name, e.g., `"Boolean"`, `"ID"`, `"UserInput"`)
+   - **`modifier`**: Derived from the `TypeNode` structure (e.g., `"!"`, `"?"`, `"![]!"`)
+   - **`defaultValue`**: Extracted from `VariableDefinitionNode.defaultValue` if present
+   - **`kind`**: Resolved by looking up the type name in the schema — `"scalar"` for scalar types, `"enum"` for enums, `"input"` for input object types
+   - **`directives`**: Extracted from `VariableDefinitionNode.directives`
+
+#### Schema access
+
+The `createFragmentTaggedTemplate(schema)` function already receives the schema as a parameter, providing access to schema type definitions for `kind` resolution:
+
+```typescript
+const resolveInputTypeKind = (schema: AnyGraphqlSchema, typeName: string): CreatableInputTypeKind => {
+  if (typeName in schema.scalar) return "scalar";
+  if (typeName in schema.enum) return "enum";
+  if (typeName in schema.input) return "input";
+  throw new Error(`Unknown input type: ${typeName}`);
+};
+```
+
+This ensures that fragment variable definitions are type-accurate at creation time, enabling correct type generation by typegen without any deferred resolution.
