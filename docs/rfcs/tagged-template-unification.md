@@ -351,10 +351,10 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 **Modifications:**
 - `src/ast/adapters/typescript.ts` — detect `TaggedTemplateExpression` in callback bodies
 - `src/ast/adapters/swc.ts` — same detection for SWC adapter
-- `src/intermediate-module/codegen.ts` — tagged templates bypass VM evaluation; GraphQL string is parsed directly
-- `src/intermediate-module/evaluation.ts` — simplify; skip callback evaluation for tagged template modules
+- `src/intermediate-module/codegen.ts` — tagged template callbacks generate intermediate modules that invoke tagged template functions
+- `src/intermediate-module/evaluation.ts` — tagged template callbacks are evaluated in VM like callback builders; the tagged template function parses GraphQL within the VM context
 
-**Key insight**: For tagged templates, the builder can skip intermediate module transpilation and VM execution. The GraphQL string is extracted from the AST and parsed directly with `graphql-js`, producing prebuild data without runtime evaluation.
+**Key insight**: Tagged templates do **not** skip VM evaluation. The tagged template functions (`query\`...\``, `fragment\`...\``) are executed within the builder's VM context, where they parse GraphQL strings with `graphql-js` and produce Operation/Fragment elements. The architectural simplification comes from eliminating the callback builder DSL (field factories, variable builders), not from bypassing VM evaluation.
 
 ### Codegen package (`packages/codegen/`)
 
@@ -406,7 +406,7 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 Establish the build pipeline for tagged templates. After this phase, tagged template operations build and run correctly alongside callback builders.
 
 - Extend builder AST adapters to detect tagged templates in callback bodies
-- Implement GraphQL string extraction and direct parsing (skip VM evaluation)
+- Implement tagged template functions (`query\`...\``, `fragment\`...\``) that parse GraphQL within VM context
 - Update transformers (tsc, swc, babel) to handle tagged template nodes
 - Integration tests for tagged template build pipeline
 
@@ -458,25 +458,25 @@ How do the `query`/`mutation`/`subscription`/`fragment` tagged template function
 The execution model has two modes:
 
 **Build mode** (production path):
-1. Builder extracts the GraphQL string from the TypeScript AST (SWC or TS compiler)
-2. Builder parses the string with `graphql-js` `parse()` and generates prebuild data
+1. Builder evaluates the callback in its VM context. The tagged template function (`query\`...\``) receives the GraphQL string, parses it with `graphql-js`, and produces an Operation/Fragment element
+2. Builder collects the resulting element and generates prebuild data
 3. Transformer replaces the entire `gql.default(({ query }) => query`...`)` call with `gqlRuntime.getOperation(canonicalId)`
 4. Runtime receives pre-computed prebuild data — no parsing, no evaluation
 
 **Development mode** (without build tool):
-The tagged template functions have a thin runtime implementation that:
+The same tagged template functions execute at import time:
 1. Receives the `TemplateStringsArray` from the tagged template
 2. Parses the GraphQL string with `graphql-js`
 3. Extracts operation/fragment metadata (name, type, variables) from the AST
 4. Creates `Operation` or `Fragment` elements with the parsed data
 
-This dual-mode approach preserves the zero-runtime goal for production while enabling development without a build step.
+In both modes, the tagged template function parses GraphQL within its execution context. The difference is only in what happens **after**: build mode replaces the call site with a prebuild lookup, while development mode keeps the parsed result directly.
 
 **Key difference from callback builder**: The callback builder's `documentSource()` and `spread()` functions are not needed. These existed to lazily evaluate field selections from TypeScript code. Tagged templates provide the complete GraphQL document as a string — field selections are extracted by parsing the GraphQL AST directly, either by the builder (build time) or by typegen (type generation time).
 
 ### Fragment dependency resolution → GraphQL AST analysis
 
-How does the builder resolve fragment dependencies (e.g., `...UserFields` inside a query) without VM callback execution?
+How does the builder resolve fragment dependencies (e.g., `...UserFields` inside a query) in the tagged template model?
 
 **Decision**: Parse GraphQL AST and collect `FragmentSpread` nodes.
 
