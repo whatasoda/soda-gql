@@ -304,11 +304,9 @@ The following components are removed:
 | `fields-builder.ts` (types) | `packages/core/src/types/element/` | Callback-specific type definitions |
 | Type inference utilities | `packages/core/src/types/type-foundation/` | Complex inference for callback patterns |
 | `inputTypeMethods` generation | `packages/codegen/src/generator.ts` | Field builder factory code generation |
-| `compat` composer | `packages/core/src/composer/compat.ts` | Callback builder intermediate representation — unnecessary when tagged templates produce `Operation` directly |
-| `compat-spec` types | `packages/core/src/types/element/compat-spec.ts` | Type definitions for `compat` — removed together with compat composer |
 | Callback-specific tests | `packages/core/test/`, `packages/core/src/**/*.test.ts` | Test callback-specific behavior |
 
-**Estimated reduction**: ~2,000-2,500 lines of implementation code, plus 60-80% reduction in type inference code.
+**Estimated reduction**: ~1,800-2,200 lines of implementation code, plus 60-80% reduction in type inference code. Note: compat and extend are retained (adapted, not removed), so the reduction is smaller than a full callback builder removal.
 
 ### 5.4 Fragment Arguments syntax
 
@@ -331,14 +329,15 @@ The `graphql-js` parser does not support this syntax natively. Both the LSP and 
 **Removals:**
 - `src/composer/fields-builder.ts` (~187 lines) — callback-specific field factory
 - `src/composer/var-builder.ts` (~280 lines) — variable builder DSL
-- `src/composer/compat.ts` (~63 lines) — callback builder intermediate representation (`CompatSpec`); unnecessary when tagged templates produce `Operation` directly
-- `src/types/element/compat-spec.ts` — type definitions for `CompatSpec`; removed together with compat composer
 - `src/types/element/fields-builder.ts` (~235 lines) — callback-specific types
 - Inference utilities in `src/types/type-foundation/` — deferred-specifier, type-modifier complexity
 
 **Modifications:**
 - `src/composer/gql-composer.ts` — tagged template support in callback context
 - `src/composer/fragment.ts`, `src/composer/operation.ts` — tagged template element creation
+- `src/composer/compat.ts` — internal representation adapted: fieldsBuilder callback → GraphQL source string (`TemplateCompatSpec`)
+- `src/composer/extend.ts` — accept `TemplateCompatSpec` (GraphQL string-based deferred spec) alongside existing `CompatSpec`
+- `src/types/element/compat-spec.ts` — `CompatSpec` adapted to `TemplateCompatSpec`; stores `graphqlSource` instead of `fieldsBuilder`
 - `src/types/fragment/field-selection.ts` — simplify, remove inference helpers
 
 **Retained as-is:**
@@ -427,7 +426,7 @@ Remove the callback builder API and associated type inference code. After this p
 - Remove fields-builder, var-builder composers
 - Remove callback-specific type definitions and inference utilities
 - Simplify codegen output (remove inputTypeMethods, field builder factories)
-- Remove compat composer (subsumed by tagged template)
+- Adapt compat composer to `TemplateCompatSpec` (GraphQL source string-based deferred spec)
 
 ### Phase 4: Tests, fixtures, and documentation update
 
@@ -556,39 +555,39 @@ The new emitter is dramatically simpler because it only needs to:
 
 The parser (`parser.ts`) and transformer (`transformer.ts`) logic from graphql-compat — which handles schema type resolution, variable inference, and field type lookup — is shared with typegen as a common GraphQL analysis library.
 
-### extend() feature → Redesigned for tagged templates
+### extend() feature → Compat preserved with adapted representation
 
-What happens to the `extend()` composer that converts compat specs to operations with metadata?
+What happens to the `extend()` composer and compat pattern with tagged templates?
 
-**Decision**: `extend()` is kept and redesigned. The input type changes from `CompatSpec` to `Operation | Fragment` directly.
+**Decision**: `extend()` is kept. **Compat is preserved** with an adapted internal representation — `TemplateCompatSpec` stores a GraphQL source string instead of a `fieldsBuilder` callback.
+
+**Why compat cannot be removed**: `extend()` requires **deferred execution**. It must build the operation with metadata and `transformDocument` at extend-time, not at definition-time. Tagged templates that produce `Operation` directly have already been built — there is no deferred specification to compose with. The compat pattern provides this deferred specification by storing the GraphQL source string without building the operation.
 
 **Why extend() is still needed**: Cross-file operation composition. When File A defines an operation and File B needs to add metadata or `transformDocument`, File B must wrap its logic in its own `gql.default(callback)` call (required by the intermediate module system). Metadata chaining (`query\`...\`({ metadata })`) only works within a single `gql.default()` call, so it cannot compose across files.
 
-**Current usage** (extend + compat spec):
-```typescript
-// File A
-const GetUserCompat = gql.default(({ query, $var }) =>
-  query.compat({ name: "GetUser", variables: {...}, fields: ({f, $}) => ({...}) })
-);
-// File B
-const GetUser = gql.default(({ extend }) =>
-  extend(GetUserCompat, {
-    metadata: ({ $ }) => ({ headers: { "X-User-Id": $var.getName($.userId) } }),
-  })
-);
-```
+**API: explicit two modes**
 
-**New usage** (extend + tagged template operation):
+Direct mode — tagged template produces `Operation` immediately:
 ```typescript
-// File A
-const GetUserOp = gql.default(({ query }) => query`
+const GetUser = gql.default(({ query }) => query`
   query GetUser($userId: ID!) {
     user(id: $userId) { id name }
   }
 `);
-// File B — adds metadata via extend
+```
+
+Compat mode — tagged template produces deferred `GqlDefine<TemplateCompatSpec>` for extend:
+```typescript
+// File A — compat tagged template (deferred, stores GraphQL source string)
+const GetUserCompat = gql.default(({ query }) => query.compat`
+  query GetUser($userId: ID!) {
+    user(id: $userId) { id name }
+  }
+`);
+
+// File B — extends with metadata
 const GetUser = gql.default(({ extend }) =>
-  extend(GetUserOp, {
+  extend(GetUserCompat, {
     metadata: { headers: { "X-Auth": "token" } },
     transformDocument: (doc) => addDirectives(doc),
   })
@@ -596,16 +595,16 @@ const GetUser = gql.default(({ extend }) =>
 ```
 
 **What changes**:
-- Input type: `GqlDefine<CompatSpec>` → `GqlDefine<Operation | Fragment>` (accepts evaluated gql elements directly)
-- `extend.ts` is rewritten to accept the new input type (~50 lines, simplified from ~110)
-- Tests updated to use tagged template operations as input
-
-**Relationship to compat removal**: `compat.ts` and `compat-spec.ts` are removed as part of the callback builder removal (Section 5.3), not because of extend()'s redesign. `CompatSpec` was a callback builder intermediate representation — a bridge between the callback builder DSL and `Operation`. With tagged templates producing `Operation` directly, the `CompatSpec` intermediate step is unnecessary. extend() previously consumed `CompatSpec` as input, but the redesigned extend() accepts `Operation | Fragment` directly, so it has no dependency on compat.
+- Internal representation: `CompatSpec` (fieldsBuilder callback) → `TemplateCompatSpec` (GraphQL source string + schema + operationType)
+- `extend.ts` adds a `TemplateCompatSpec` handling path: parses `graphqlSource`, extracts document/variables/fragment spreads, creates var refs, calls metadata builder, applies transforms
+- `compat.ts` adapted to create `TemplateCompatSpec` from tagged template input
+- The callback builder's `query.compat({ name, variables, fields })` API is removed (replaced by `query.compat\`...\``)
 
 **What stays the same**:
 - Purpose: cross-file composition of operations/fragments with metadata and transforms
 - Position in the callback context: `({ extend }) => extend(importedElement, options)`
 - Output: an `Operation` or `Fragment` with merged metadata/transforms
+- The two-mode pattern: direct use vs compat for extend
 
 ### Adapter system → Unchanged
 
