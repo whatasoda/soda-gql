@@ -98,6 +98,7 @@ See [Code Conventions](./memory/code-conventions.md) for detailed standards with
 **Key Points**:
 - NO `any`/`unknown` - use generic constraints
 - neverthrow for errors (`ok()`, `err()` only, NO `fromPromise`)
+  - **Scope exception**: Composer layer code (executed inside VM sandbox within user callbacks) uses throw/try-catch instead of neverthrow. The VM sandbox boundary catches exceptions and converts them to Result types.
 - NO classes for state - pure functions preferred
 - TDD mandatory - no mocks, use real dependencies
 

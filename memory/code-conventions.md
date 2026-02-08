@@ -55,6 +55,8 @@ const config = ConfigSchema.parse(JSON.parse(fileContent));
 
 **Rule**: Use neverthrow's Result type for all fallible operations.
 
+**Scope Exception — Composer Layer**: Code in the composer layer (executed inside the VM sandbox within user-authored tagged template callbacks) uses `throw` / `try-catch` instead of neverthrow. The VM sandbox boundary catches these exceptions and converts them to `Result` types. This is an intentional two-tier error handling architecture — synchronous throw inside the sandbox, neverthrow `Result` at the builder layer boundary.
+
 **Constraints**:
 - Use only `ok()` and `err()` constructors
 - NEVER use `fromPromise()` (loses error type information)
