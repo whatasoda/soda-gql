@@ -105,7 +105,7 @@ Each phase should be planned in a dedicated session using `/soda-plan`. The sess
 
 | Phase | Plan document | Status |
 |-------|--------------|--------|
-| Phase 1 | `docs/plans/tagged-template-unification-phase1.md` | Not started |
+| Phase 1 | [`docs/plans/tagged-template-unification-phase1.md`](./tagged-template-unification-phase1.md) (overview + [Round 1](./tagged-template-phase1-round1.md), [Round 2](./tagged-template-phase1-round2.md), [Round 3](./tagged-template-phase1-round3.md), [Round 4](./tagged-template-phase1-round4.md)) | Planned |
 | Phase 2 | `docs/plans/tagged-template-unification-phase2.md` | Not started |
 | Phase 3 | `docs/plans/tagged-template-unification-phase3.md` | Not started |
 | Phase 4 | `docs/plans/tagged-template-unification-phase4.md` | Not started |
