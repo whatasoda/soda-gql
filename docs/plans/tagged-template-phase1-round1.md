@@ -72,16 +72,30 @@ The runtime shape (what `var-specifier-builder.ts` in Task 1.4 must produce) is:
 ### Error handling convention
 
 - **Composer layer** (code executed inside VM sandbox within user callbacks): uses `throw new Error()` / try-catch. NOT neverthrow.
-- **Parser utilities** (outside the composer layer): uses neverthrow `Result` types (`ok()`, `err()`).
-- The new `packages/core/src/graphql/` files are parser utilities, so they use **neverthrow** Result types.
+- **Parser utilities** (outside the composer layer): uses a self-contained `Result` type from `packages/core/src/graphql/result.ts` (see [Core Result Type Design](./tagged-template-phase1-core-result.md)). NOT neverthrow -- core does not depend on neverthrow.
+- The new `packages/core/src/graphql/` files are parser utilities, so they use the **self-contained Result** type (`ok()`, `err()`, `.ok` boolean discriminant).
 - Exception: `var-specifier-builder.ts` (Task 1.4) will be called from the composer layer, so it uses **throw** for errors.
 
-### GraphqlCompatError type
+### Self-contained Result type
 
-From `packages/codegen/src/graphql-compat/types.ts` (lines 176-249). This is the error union used by parser and transformer. It must be moved/copied to the new `packages/core/src/graphql/` location:
+Defined in `packages/core/src/graphql/result.ts` (created in Task 1.1):
 
 ```typescript
-export type GraphqlCompatError =
+export type Result<T, E> = OkResult<T> | ErrResult<E>;
+export type OkResult<T> = { readonly ok: true; readonly value: T };
+export type ErrResult<E> = { readonly ok: false; readonly error: E };
+export const ok = <T>(value: T): OkResult<T> => ({ ok: true, value });
+export const err = <E>(error: E): ErrResult<E> => ({ ok: false, error });
+```
+
+Usage: `if (result.ok) { result.value } else { result.error }` (discriminated union narrowing).
+
+### GraphqlAnalysisError type
+
+From `packages/codegen/src/graphql-compat/types.ts` (lines 176-249). This is the error union used by parser and transformer. It must be moved/copied to the new `packages/core/src/graphql/` location. Renamed from `GraphqlCompatError` to `GraphqlAnalysisError`:
+
+```typescript
+export type GraphqlAnalysisError =
   | { readonly code: "GRAPHQL_FILE_NOT_FOUND"; readonly message: string; readonly filePath: string }
   | { readonly code: "GRAPHQL_PARSE_ERROR"; readonly message: string; readonly filePath: string; readonly line?: number; readonly column?: number }
   | { readonly code: "GRAPHQL_INVALID_OPERATION"; readonly message: string; readonly operationName?: string }
@@ -145,8 +159,9 @@ describe("parseGraphqlSource", () => {
   it("parses a simple query", () => {
     const source = `query GetUser { user { id name } }`;
     const result = parseGraphqlSource(source, "test.graphql");
-    expect(result.isOk()).toBe(true);
-    const { operations } = result._unsafeUnwrap();
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("Expected ok");
+    const { operations } = result.value;
     expect(operations).toHaveLength(1);
   });
 });
@@ -166,6 +181,8 @@ Move core parsing logic from `packages/codegen/src/graphql-compat/parser.ts` (30
 
 | File | Action | Rationale |
 |------|--------|-----------|
+| `packages/core/src/graphql/result.ts` | Create | Self-contained Result type (ok/err) -- avoids neverthrow dependency in core |
+| `packages/core/src/graphql/result.test.ts` | Create | Unit tests for Result type |
 | `packages/core/src/graphql/types.ts` | Create | Shared type definitions used by parser, transformer, and var-specifier-builder |
 | `packages/core/src/graphql/parser.ts` | Create | Core GraphQL parsing: `parseGraphqlSource`, `parseTypeNode`, and AST traversal helpers |
 | `packages/core/src/graphql/parser.test.ts` | Create | Colocated unit tests for parser |
@@ -188,7 +205,7 @@ export type ParsedInlineFragment = { readonly kind: "inlineFragment"; readonly o
 export type ParsedArgument = { readonly name: string; readonly value: ParsedValue };
 export type ParsedValue = /* 9-variant union, same as original */;
 export type ParsedObjectField = { readonly name: string; readonly value: ParsedValue };
-export type ParseResult = { readonly operations: readonly ParsedOperation[]; readonly fragments: readonly ParsedFragment[] };
+export type ParseResult = { readonly document: DocumentNode; readonly operations: readonly ParsedOperation[]; readonly fragments: readonly ParsedFragment[] };
 
 // Error type -- same union as codegen, renamed for clarity
 export type GraphqlAnalysisError = /* same 14-variant union as GraphqlCompatError */;
@@ -198,7 +215,7 @@ export type GraphqlAnalysisError = /* same 14-variant union as GraphqlCompatErro
 
 ```typescript
 import type { TypeNode } from "graphql";
-import type { Result } from "neverthrow";
+import type { Result } from "./result";
 import type { GraphqlAnalysisError, ParseResult, TypeInfo } from "./types";
 
 /** Parse GraphQL source string directly. No file I/O. */
@@ -227,7 +244,7 @@ Key code example for `parseGraphqlSource`:
 export const parseGraphqlSource = (source: string, sourceFile: string): Result<ParseResult, GraphqlAnalysisError> => {
   try {
     const document = parse(source);
-    return ok(extractFromDocument(document, sourceFile));
+    return ok({ document, ...extractFromDocument(document, sourceFile) });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return err({
@@ -241,7 +258,7 @@ export const parseGraphqlSource = (source: string, sourceFile: string): Result<P
 
 #### Dependencies
 
-- **Requires**: `graphql` package (already a dependency of `@soda-gql/core`), `neverthrow`
+- **Requires**: `graphql` package (already a dependency of `@soda-gql/core`), self-contained `Result` type from `./result.ts`
 - **Produces**: `parseGraphqlSource`, `parseTypeNode`, and all parsed types consumed by Tasks 1.2, 1.4, and 1.5
 
 #### Validation
@@ -276,6 +293,8 @@ Move schema enrichment logic from `packages/codegen/src/graphql-compat/transform
 | File | Action | Rationale |
 |------|--------|-----------|
 | `packages/core/src/graphql/schema-index.ts` | Create | SchemaIndex type and `createSchemaIndex` factory, extracted from `packages/codegen/src/generator.ts` |
+| `packages/core/src/graphql/schema-adapter.ts` | Create | `createSchemaIndexFromSchema` adapter: converts `AnyGraphqlSchema` to minimal `SchemaIndex` for name-resolution lookups (see [Schema Adapter Design](./tagged-template-phase1-schema-adapter.md)) |
+| `packages/core/src/graphql/schema-adapter.test.ts` | Create | Unit tests for schema adapter |
 | `packages/core/src/graphql/transformer.ts` | Create | Schema enrichment: variable inference, modifier merging, fragment dependency sorting |
 | `packages/core/src/graphql/transformer.test.ts` | Create | Colocated unit tests |
 
@@ -318,7 +337,7 @@ export const createSchemaIndex = (document: DocumentNode): SchemaIndex;
 **`packages/core/src/graphql/transformer.ts`** -- Public API:
 
 ```typescript
-import type { Result } from "neverthrow";
+import type { Result } from "./result";
 import type { SchemaIndex } from "./schema-index";
 import type { GraphqlAnalysisError, InferredVariable, ParsedFragment, ParsedSelection, ParseResult, TypeInfo } from "./types";
 
@@ -674,6 +693,7 @@ Create the barrel export for `packages/core/src/graphql/`.
 
 ```typescript
 // Re-export all public types and functions
+export { ok, err, type Result, type OkResult, type ErrResult } from "./result";
 export { parseGraphqlSource, parseTypeNode } from "./parser";
 export { preprocessFragmentArgs, type PreprocessResult } from "./fragment-args-preprocessor";
 export {
@@ -694,6 +714,7 @@ export {
   type TransformResult,
   type VariableUsage,
 } from "./transformer";
+export { createSchemaIndexFromSchema } from "./schema-adapter";
 export {
   createSchemaIndex,
   type DirectiveRecord,
@@ -802,10 +823,14 @@ After Round 1, `packages/core/src/graphql/` should contain:
 ```
 packages/core/src/graphql/
   index.ts                              (Task 1.5)
+  result.ts                             (Task 1.1)
+  result.test.ts                        (Task 1.1)
   types.ts                              (Task 1.1)
   parser.ts                             (Task 1.1)
   parser.test.ts                        (Task 1.1)
   schema-index.ts                       (Task 1.2)
+  schema-adapter.ts                     (Task 1.2)
+  schema-adapter.test.ts                (Task 1.2)
   transformer.ts                        (Task 1.2)
   transformer.test.ts                   (Task 1.2)
   fragment-args-preprocessor.ts         (Task 1.3)
@@ -814,7 +839,7 @@ packages/core/src/graphql/
   var-specifier-builder.test.ts         (Task 1.4)
 ```
 
-Total: 11 files (5 source + 5 test + 1 index).
+Total: 15 files (7 source + 7 test + 1 index).
 
 ## References
 
