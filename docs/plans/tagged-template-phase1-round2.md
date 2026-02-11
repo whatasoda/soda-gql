@@ -4,7 +4,7 @@
 
 Implement tagged template functions for `query`/`mutation`/`subscription` and `fragment`, then integrate them into the hybrid context in `gql-composer.ts`.
 
-**Prerequisites**: Round 1 complete -- all `packages/core/src/graphql/` utilities available (`parseGraphqlSource`, `preprocessFragmentArguments`, `buildVarSpecifierFromAST`).
+**Prerequisites**: Round 1 complete -- all `packages/core/src/graphql/` utilities available (`parseGraphqlSource`, `preprocessFragmentArgs`, `buildVarSpecifier`).
 
 **Scope**: `packages/core/src/composer/` (new files + modify `gql-composer.ts`)
 
@@ -41,33 +41,40 @@ These functions are provided by Round 1 in `packages/core/src/graphql/`:
 // packages/core/src/graphql/parser.ts
 import { parseGraphqlSource } from "../graphql/parser";
 // Parses a GraphQL source string and extracts operations and fragments.
-// Returns Result<ParseResult, GraphqlCompatError>.
+// Returns Result<ParseResult, GraphqlAnalysisError>.
 function parseGraphqlSource(
   source: string,
   sourceFile: string
-): Result<ParseResult, GraphqlCompatError>;
+): Result<ParseResult, GraphqlAnalysisError>;
 
 // packages/core/src/graphql/fragment-args-preprocessor.ts
-import { preprocessFragmentArguments } from "../graphql/fragment-args-preprocessor";
+import { preprocessFragmentArgs } from "../graphql/fragment-args-preprocessor";
 // Strips Fragment Arguments RFC syntax by replacing argument lists with spaces.
 // Preserves line/column alignment.
-function preprocessFragmentArguments(content: string): PreprocessResult;
+function preprocessFragmentArgs(content: string): PreprocessResult;
 // PreprocessResult = { preprocessed: string; modified: boolean; }
 
 // packages/core/src/graphql/var-specifier-builder.ts
-import { buildVarSpecifierFromAST } from "../graphql/var-specifier-builder";
+import { buildVarSpecifier } from "../graphql/var-specifier-builder";
 // Builds a VarSpecifier from a VariableDefinitionNode and schema.
 // Resolves kind (scalar/enum/input) by looking up the type name in the schema.
-function buildVarSpecifierFromAST(
+function buildVarSpecifier(
   varDefNode: VariableDefinitionNode,
-  schema: AnyGraphqlSchema
+  schema: SchemaIndex
 ): VarSpecifier;
+
+// packages/core/src/graphql/schema-adapter.ts
+import { createSchemaIndexFromSchema } from "../graphql/schema-adapter";
+// Converts AnyGraphqlSchema to a minimal SchemaIndex (name-resolution only).
+// Use before calling buildVarSpecifier from the composer layer.
+function createSchemaIndexFromSchema(schema: AnyGraphqlSchema): SchemaIndex;
 ```
 
 The `ParseResult` type contains:
 
 ```typescript
 type ParseResult = {
+  readonly document: DocumentNode;
   readonly operations: readonly ParsedOperation[];
   readonly fragments: readonly ParsedFragment[];
 };
@@ -133,7 +140,7 @@ Composers use `throw new Error()` (NOT neverthrow). This is consistent with all 
 2. **`fragment` is a pure tagged template function**: No `.User()`, `.Post()` type-keyed builders. The `on User` type condition is part of the GraphQL syntax.
 3. **TemplateResult `()` call always required**: Optional options parameter for metadata. No `.resolve()` method.
 4. **No interpolation in tagged templates**: `values.length` must be 0 -- tagged templates must not contain `${...}` expressions.
-5. **Fragment Arguments syntax**: Preprocessed before parsing via `preprocessFragmentArguments`.
+5. **Fragment Arguments syntax**: Preprocessed before parsing via `preprocessFragmentArgs`.
 6. **VarSpecifier construction**: AST + schema resolution at creation time -- no placeholders.
 
 ---
@@ -185,7 +192,7 @@ type TemplateResultMetadataOptions = {
 3. **Parses GraphQL**: Calls `parseGraphqlSource(source, "<tagged-template>")`. On error, unwraps the `Result` and throws (composer layer uses `throw`).
 4. **Validates operation type**: Checks that the parsed result contains exactly one operation definition. Validates that the operation's `kind` matches the expected `operationType` (e.g., calling `query\`...\`` with a `mutation` definition is an error).
 5. **Validates operation name**: Anonymous operations (no name) throw an error.
-6. **Extracts variable definitions**: Parses `VariableDefinitionNode` entries from the GraphQL AST using `graphql-js`'s `parse` result. For each variable definition node, calls `buildVarSpecifierFromAST(varDefNode, schema)` to build a `VarSpecifier`.
+6. **Extracts variable definitions**: Parses `VariableDefinitionNode` entries from the GraphQL AST using `graphql-js`'s `parse` result. Converts `schema` (AnyGraphqlSchema) to `SchemaIndex` via `createSchemaIndexFromSchema(schema)`. For each variable definition node, calls `buildVarSpecifier(varDefNode, schemaIndex)` to build a `VarSpecifier`.
 7. **Returns TemplateResult**: A callable function that accepts optional `{ metadata }` and returns an `Operation`.
 
 The `TemplateResult` call:
@@ -219,7 +226,7 @@ The implementer should choose between these approaches based on what Round 1 act
 
 ### Dependencies
 
-- Round 1 outputs: `parseGraphqlSource`, `buildVarSpecifierFromAST`
+- Round 1 outputs: `parseGraphqlSource`, `buildVarSpecifier`, `createSchemaIndexFromSchema`
 - Existing: `Operation.create` (`packages/core/src/types/element/operation.ts`)
 - Existing: `buildOperationArtifact` (`packages/core/src/composer/operation-core.ts`)
 - Existing: `AnyGraphqlSchema`, `OperationType` (`packages/core/src/types/schema/`)
@@ -276,8 +283,8 @@ type FragmentTaggedTemplateFunction = (
 
 1. **Validates no interpolation**: Throws if `values.length > 0`.
 2. **Extracts raw source**: Joins `strings` array to get the raw GraphQL string (contains Fragment Arguments syntax).
-3. **Extracts variable definitions from raw source**: Before preprocessing, uses a regex or mini-parser to extract `fragment Name($var: Type, ...)` argument lists. Then parses these argument variable definitions by re-parsing just the variable declaration portion, or by extracting `VariableDefinitionNode` entries from a synthetic operation wrapper. For each variable definition, calls `buildVarSpecifierFromAST(varDefNode, schema)` to produce a `VarSpecifier`.
-4. **Preprocesses Fragment Arguments**: Calls `preprocessFragmentArguments(rawSource)` to strip argument syntax (replace with whitespace, preserving positions).
+3. **Extracts variable definitions from raw source**: Before preprocessing, uses a regex or mini-parser to extract `fragment Name($var: Type, ...)` argument lists. Then parses these argument variable definitions by re-parsing just the variable declaration portion, or by extracting `VariableDefinitionNode` entries from a synthetic operation wrapper. Converts `schema` (AnyGraphqlSchema) to `SchemaIndex` via `createSchemaIndexFromSchema(schema)`. For each variable definition, calls `buildVarSpecifier(varDefNode, schemaIndex)` to produce a `VarSpecifier`.
+4. **Preprocesses Fragment Arguments**: Calls `preprocessFragmentArgs(rawSource)` to strip argument syntax (replace with whitespace, preserving positions).
 5. **Parses GraphQL**: Calls `parseGraphqlSource(preprocessedSource, "<tagged-template>")` on the preprocessed content. On error, unwraps the `Result` and throws.
 6. **Validates fragment**: Checks that the parsed result contains exactly one fragment definition. Validates that the fragment's `onType` exists in `schema.object`.
 7. **Returns TemplateResult**: A callable function that accepts optional `{ metadata }` and returns a `Fragment`.
@@ -316,13 +323,13 @@ Fragment Arguments are not standard GraphQL and are stripped before parsing. To 
 2. Wrap the extracted argument list in a synthetic query: `query _Synthetic(${argListText}) { __typename }`.
 3. Parse the synthetic query with `graphql-js` `parse()`.
 4. Extract `VariableDefinitionNode[]` from the parsed result.
-5. Call `buildVarSpecifierFromAST` on each node.
+5. Call `buildVarSpecifier(node, schemaIndex)` on each node (where `schemaIndex = createSchemaIndexFromSchema(schema)`).
 
 This approach reuses `graphql-js`'s parser for variable type parsing rather than reimplementing it.
 
 ### Dependencies
 
-- Round 1 outputs: `parseGraphqlSource`, `preprocessFragmentArguments`, `buildVarSpecifierFromAST`
+- Round 1 outputs: `parseGraphqlSource`, `preprocessFragmentArgs`, `buildVarSpecifier`, `createSchemaIndexFromSchema`
 - Existing: `Fragment.create` (`packages/core/src/types/element/fragment.ts`)
 - Existing: `createVarAssignments` (`packages/core/src/composer/input.ts`)
 - Existing: `recordFragmentUsage` (`packages/core/src/composer/fragment-usage-context.ts`)
@@ -480,15 +487,74 @@ Modifications to `packages/core/src/composer/gql-composer.ts`:
 - Existing: `createCompatComposer` (unchanged)
 - Existing: All other context members (`define`, `extend`, `$var`, `$dir`, `$colocate`) unchanged
 
+### Test Migration Strategy (GAP-04/06 resolution)
+
+Replacing `fragment` from `Record<TypeName, FragmentBuilder>` to a pure tagged template function breaks all `fragment.User(...)` calls. These 32 calls across 8 test files must be migrated as part of Task 2.3.
+
+#### Migration target list
+
+| File | Calls | Migration approach |
+|------|-------|--------------------|
+| `packages/core/test/types/fragment-definition.test.ts` | 8 | Tagged template. `$infer.output`/`$infer.input` type assertions deferred to Phase 2 typegen |
+| `packages/core/test/types/fragment-spreading.test.ts` | 7 | Tagged template + GraphQL variable syntax |
+| `packages/core/test/integration/metadata-adapter.test.ts` | 6 | Tagged template + `({ metadata })` option |
+| `packages/core/src/composer/shorthand-fields.test.ts` | 5 | Fragment calls only. `query.operation` shorthand tests unchanged |
+| `packages/core/src/composer/gql-composer.test.ts` | 3 | Tagged template |
+| `packages/core/test/integration/compat-extend.test.ts` | 1 | Tagged template |
+| `packages/core/test/integration/document-transform.test.ts` | 1 | Tagged template |
+| `packages/core/test/integration/nested-object-selection.test.ts` | 1 | Tagged template |
+
+#### Migration patterns
+
+**Basic fragment:**
+```typescript
+// BEFORE
+fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+// AFTER
+fragment`fragment UserFields on User { id name }`()
+```
+
+**Fragment with variables (Fragment Arguments syntax):**
+```typescript
+// BEFORE
+fragment.User({
+  variables: { ...$var("userId").ID("!") },
+  fields: ({ f }) => ({ ...f.id() }),
+})
+// AFTER
+fragment`fragment UserFields($userId: ID!) on User { id }`()
+```
+
+**Fragment with metadata:**
+```typescript
+// BEFORE
+fragment.User({
+  metadata: () => ({ headers: { "X-Test": "1" } }),
+  fields: ({ f }) => ({ ...f.id() }),
+})
+// AFTER
+fragment`fragment UserFields on User { id }`({
+  metadata: () => ({ headers: { "X-Test": "1" } }),
+})
+```
+
+#### Type-level test handling
+
+Tests in `fragment-definition.test.ts` and `fragment-spreading.test.ts` that use `$infer.output` / `$infer.input` cannot be directly migrated because tagged template fragments do not carry TypeScript-level field/variable type information (types come from typegen in Phase 2). These tests should:
+- Test runtime behavior (fragment creation, spreading, variable extraction) instead of type inference
+- Type inference tests are deferred to Phase 2 typegen integration tests
+
+**TODO marker**: Add `// TODO(Phase 2): Add type-level tests via typegen integration` comments where type assertions are removed.
+
 ### Validation
 
-- All existing `gql-composer.ts` tests still pass (no regressions)
-- Type check passes (`bun typecheck`)
+- All migrated fragment tests pass with tagged template syntax: `bun run test`
+- Type check passes: `bun typecheck`
 - Hybrid `query` is callable as tagged template: `query\`query Foo { ... }\`()`
 - Hybrid `query.operation` still works: `query.operation({ name: "Foo", ... })`
 - Hybrid `query.compat` still works: `query.compat({ name: "Foo", ... })`
 - `fragment` is callable as tagged template: `fragment\`fragment Bar on User { ... }\`()`
-- `fragment.User` is no longer available (expected: type error, runtime: `undefined` or method-not-found)
+- `fragment.User` is no longer available (expected: type error or `undefined`)
 
 ### Subagent eligibility
 
@@ -521,7 +587,7 @@ After all three tasks are complete, verify:
    - Tagged template: `query\`query GetUser($id: ID!) { user(id: $id) { id name } }\`()` produces an `Operation`
    - Callback builder: `query.operation({ name: "GetUser", variables: {...}, fields: ({f, $}) => ({...}) })` produces an `Operation`
    - Fragment tagged template: `fragment\`fragment UserFields on User { id name }\`()` produces a `Fragment`
-4. **Existing gql-composer tests still pass**: No regressions in the callback builder API path.
+4. **All migrated fragment tests pass**: 32 `fragment.User(...)` calls migrated to tagged template syntax (see Test Migration Strategy in Task 2.3). `fragment.User` is no longer available.
 5. **No regressions in other packages**: `bun quality` passes (lint + type check).
 
 ---

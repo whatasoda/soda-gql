@@ -11,8 +11,9 @@ Implement compat mode for tagged templates (`query.compat\`...\``) and adapt `ex
 ## Prerequisites
 
 - **Round 1 complete**: Shared GraphQL utilities exist in `packages/core/src/graphql/`
-  - `parseGraphqlSource(source, sourceFile)` -- parses a GraphQL string into a `DocumentNode`
-  - `buildVarSpecifierFromAST(varDefNode, schema)` -- constructs a `VarSpecifier` from a `VariableDefinitionNode` and schema
+  - `parseGraphqlSource(source, sourceFile)` -- returns `Result<ParseResult, GraphqlAnalysisError>` where `ParseResult.document` provides raw AST
+  - `buildVarSpecifier(varDefNode, schemaIndex)` -- constructs a `VarSpecifier` from a `VariableDefinitionNode` and `SchemaIndex`
+  - `createSchemaIndexFromSchema(schema)` -- converts `AnyGraphqlSchema` to minimal `SchemaIndex` for name-resolution lookups
 - **Round 2 complete**: Operation and fragment tagged templates exist in `packages/core/src/composer/`
   - `createOperationTaggedTemplate(schema, operationType)` -- returns a tagged template function for operations
   - `createFragmentTaggedTemplate(schema)` -- returns a tagged template function for fragments
@@ -150,13 +151,28 @@ const GetUser = gql.default(({ extend }) =>
 
 ```typescript
 // packages/core/src/graphql/parser.ts (Round 1, Task 1.1)
-export const parseGraphqlSource = (source: string, sourceFile?: string): DocumentNode;
+import type { Result } from "../graphql/result";
+import type { ParseResult, GraphqlAnalysisError } from "../graphql/types";
+export const parseGraphqlSource = (
+  source: string,
+  sourceFile: string,  // required, not optional
+): Result<ParseResult, GraphqlAnalysisError>;
+// ParseResult = { document: DocumentNode, operations: ParsedOperation[], fragments: ParsedFragment[] }
+// Access raw AST via: result.value.document (after checking result.ok)
 
 // packages/core/src/graphql/var-specifier-builder.ts (Round 1, Task 1.4)
-export const buildVarSpecifierFromAST = (
+import type { SchemaIndex } from "../graphql/schema-index";
+export const buildVarSpecifier = (
   varDefNode: VariableDefinitionNode,
+  schema: SchemaIndex,  // SchemaIndex, NOT AnyGraphqlSchema
+): BuiltVarSpecifier;
+
+// packages/core/src/graphql/schema-adapter.ts (Round 1, Task 1.2)
+import type { AnyGraphqlSchema } from "../types/schema/schema";
+export const createSchemaIndexFromSchema = (
   schema: AnyGraphqlSchema,
-): AnyVarSpecifier;
+): SchemaIndex;
+// Use this to convert AnyGraphqlSchema before calling buildVarSpecifier
 ```
 
 ### Error handling
@@ -252,7 +268,7 @@ export const createCompatTaggedTemplate: (
    - Validate that `operationType` exists in `schema.operations` (same pattern as `compat.ts` line 47-49)
    - Return a tagged template function that:
      a. Joins the `TemplateStringsArray` into a single string (no interpolation values allowed -- `...values: never[]`)
-     b. Validates the GraphQL string has valid syntax by calling `parseGraphqlSource(source)` from `core/src/graphql/`
+     b. Validates the GraphQL string has valid syntax by calling `parseGraphqlSource(source, "<compat-tagged-template>")` from `core/src/graphql/`. Unwraps the `Result`: if `!parsed.ok`, throws with the error message.
      c. Extracts the operation name from the parsed `DocumentNode` (first `OperationDefinitionNode`'s `name.value`)
      d. Validates the parsed operation type matches the expected `operationType`
      e. Returns `GqlDefine.create(() => templateCompatSpec)` where `templateCompatSpec` is:
@@ -350,7 +366,7 @@ export const createCompatTaggedTemplate: (
 1. Add imports to `extend.ts`:
    ```typescript
    import { type TemplateCompatSpec, isTemplateCompatSpec } from "../types/element/compat-spec";
-   import { parseGraphqlSource, buildVarSpecifierFromAST } from "../graphql";
+   import { parseGraphqlSource, buildVarSpecifier, createSchemaIndexFromSchema } from "../graphql";
    ```
 
 2. Broaden the `createExtendComposer` return function to accept both spec types. Add a function overload or union parameter type.
@@ -366,19 +382,22 @@ export const createCompatTaggedTemplate: (
 
 4. Implement `buildOperationFromTemplateSpec` (private helper, can be inline or extracted):
    ```typescript
-   // 1. Parse graphqlSource into DocumentNode
-   const document = parseGraphqlSource(spec.graphqlSource);
+   // 1. Parse graphqlSource into ParseResult via Result type
+   const parsed = parseGraphqlSource(spec.graphqlSource, "<compat-tagged-template>");
+   if (!parsed.ok) throw new Error(parsed.error.message);
+   const { document } = parsed.value;
 
    // 2. Extract OperationDefinitionNode
    const opDef = document.definitions.find(
      (d) => d.kind === Kind.OPERATION_DEFINITION
    ) as OperationDefinitionNode;
 
-   // 3. Build VarSpecifiers from variable definitions
-   const variables: Record<string, AnyVarSpecifier> = {};
+   // 3. Build VarSpecifiers from variable definitions (adapter pattern)
+   const schemaIndex = createSchemaIndexFromSchema(spec.schema);
+   const variables: Record<string, BuiltVarSpecifier> = {};
    for (const varDef of opDef.variableDefinitions ?? []) {
      const varName = varDef.variable.name.value;
-     variables[varName] = buildVarSpecifierFromAST(varDef, spec.schema);
+     variables[varName] = buildVarSpecifier(varDef, schemaIndex);
    }
 
    // 4. Get operation type name from schema
@@ -399,10 +418,14 @@ export const createCompatTaggedTemplate: (
    This means we cannot directly reuse `buildOperationArtifact` (which expects a `fieldsFactory` callback). Instead, implement a parallel path that:
    ```typescript
    // a. Parse source
-   const parsedDoc = parseGraphqlSource(spec.graphqlSource);
+   const parsed = parseGraphqlSource(spec.graphqlSource, "<compat-tagged-template>");
+   if (!parsed.ok) throw new Error(parsed.error.message);
+   const parsedDoc = parsed.value.document;
 
-   // b. Build VarSpecifiers
-   const variables = buildVarSpecifiersFromDocument(parsedDoc, spec.schema);
+   // b. Build VarSpecifiers (adapter pattern)
+   const schemaIndex = createSchemaIndexFromSchema(spec.schema);
+   const opDef = parsedDoc.definitions.find(d => d.kind === Kind.OPERATION_DEFINITION) as OperationDefinitionNode;
+   const variables = buildVarSpecifiers(opDef.variableDefinitions ?? [], schemaIndex);
 
    // c. Create var refs for metadata builder
    const $ = createVarRefs(variables);
