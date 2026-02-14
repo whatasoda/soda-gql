@@ -2,12 +2,13 @@
 
 ## Current State
 
-CURRENT_PHASE: 2
+CURRENT_PHASE: 3
 CURRENT_ROUND: 1
 LAST_COMPLETED_TASK: 2.6 (Phase 2 gate)
-LAST_SESSION: 2026-02-14T15
+LAST_SESSION: 2026-02-14T16
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
+PHASE_3_STATUS: in_progress
 
 ## Phase 1: Core Tagged Template Implementation
 
@@ -68,13 +69,29 @@ STATUS: in_progress
 ## Phase 3: Callback Builder API Restructuring
 
 Plan: docs/plans/tagged-template-unification.md (overview only)
-STATUS: not_started
+STATUS: in_progress
 
-Key tasks (from overview):
-- Scoping session to determine exact changes
-- fields-builder.ts restructuring
-- Types updates
-- Codegen generator updates
+Scoping decision: Fragment callback builders already removed from gql-composer.ts (uncommitted Phase 1 changes).
+Phase 3 focuses on: committing those changes, cleaning up dead code, fixing cascading test failures,
+updating codegen output expectations, and fixing fixture-catalog fragments.
+
+### Round 1: Commit & Clean Up
+
+- [x] Task 3.1: Commit uncommitted Phase 1/2 changes (generator.ts, gql-composer.ts, test updates) — STATUS: completed
+- [x] Task 3.2: Remove dead fragment.ts callback builder code, update index.ts re-exports — STATUS: completed
+- [x] Task 3.3: Fix codegen generator.test.ts expectations (no more FragmentBuilderFor) — STATUS: completed
+
+### Round 2: Fix Cascading Test Failures
+
+- [x] Task 3.4: Fix critical fixture-catalog fragments (5 files: basic, multiple-files, inline-imported, add-runtime) — STATUS: completed
+  NOTE: 50+ fixture files still use callback builder fragments; bulk conversion deferred to Phase 4
+- [ ] Task 3.5: Fix remaining builder/transformer/runtime test failures — STATUS: not_started
+- [ ] Task 3.6: Fix typegen/SDK/builder test expectations — STATUS: not_started
+
+### Round 3: Stabilization & Phase Gate
+
+- [ ] Task 3.7: Evaluate inputTypeMethods simplification (may defer if $var still needs it) — STATUS: not_started
+- [ ] Task 3.8: Phase 3 gate verification (bun run test && bun quality) — STATUS: not_started
 
 ## Phase 4: Tests, Fixtures, Documentation
 
@@ -95,3 +112,4 @@ Key tasks (from overview):
 2026-02-14 04:00 | Round 3 complete (3.1-3.4) | TemplateCompatSpec type, compat-tagged-template, extend adaptation. Pre-existing test failures in tsc/typegen/codegen packages (TS2742 from Round 2).
 2026-02-14 14:00 | Phase 2 Round 1 complete (2.1-2.3) | Runner pipeline integration: template-scanner, template-to-selections tests, merged into runner.ts. Pre-existing failures unchanged.
 2026-02-14 15:00 | Phase 2 complete (2.4-2.6) | Watch mode works via full runTypegen() calls; no incremental path needed. 25 unit tests total. Phase 2 gate passed.
+2026-02-14 16:00 | Phase 3 Round 1 complete (3.1-3.4) | Scoped Phase 3, committed Phase 1 changes, removed fragment.ts, fixed codegen tests, converted 5 critical fixtures. 50+ fixtures remain for Phase 4.
