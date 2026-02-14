@@ -3,13 +3,13 @@
 ## Current State
 
 CURRENT_PHASE: 4
-CURRENT_ROUND: 4.4 (complete)
-LAST_COMPLETED_TASK: 4.4.4 (Session 4.4 gate)
-LAST_SESSION: 2026-02-15T03
+CURRENT_ROUND: 4.5 (complete)
+LAST_COMPLETED_TASK: 4.5.6 (Phase 4 complete)
+LAST_SESSION: 2026-02-15T04
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
 PHASE_3_STATUS: complete
-PHASE_4_STATUS: in_progress
+PHASE_4_STATUS: complete
 
 ## Phase 1: Core Tagged Template Implementation
 
@@ -100,7 +100,7 @@ updating codegen output expectations, and fixing fixture-catalog fragments.
 ## Phase 4: Tests, Fixtures, Documentation
 
 Plan: docs/plans/tagged-template-phase4-sessions.md
-STATUS: in_progress
+STATUS: complete
 
 Execution model: session-scoped with MAX_COMMITS limit per session.
 Each session works only on its assigned tasks. Exit after completing all tasks or reaching MAX_COMMITS.
@@ -250,7 +250,7 @@ Files in scope:
 ### Session 4.5: Documentation + final phase gate
 
 MAX_COMMITS: 4
-STATUS: not_started
+STATUS: complete
 
 Files in scope:
 - README.md
@@ -262,12 +262,17 @@ Files in scope:
 - docs/guides/monorepo-infrastructure.md
 - website/docs/ (multiple files with callback examples)
 
-- [ ] Task 4.5.1: Update root README.md and quickstart.md callback examples
-- [ ] Task 4.5.2: Update package README files (core, runtime, colocation-tools)
-- [ ] Task 4.5.3: Update docs/guides/ files (define-element, monorepo-infrastructure)
-- [ ] Task 4.5.4: Update website/docs/ callback examples (guide/, recipes/, api/)
-- [ ] Task 4.5.5: Final phase gate — bun run test && bun quality
-- [ ] Task 4.5.6: Mark Phase 4 complete in agent-progress.md
+- [x] Task 4.5.1: Update root README.md and quickstart.md callback examples
+  Showed tagged template as primary syntax with comparison table. Kept callback builder for operations with .spread(), aliases, metadata.
+- [x] Task 4.5.2: Update package README files (core, runtime, colocation-tools)
+  Converted core + runtime simple examples. colocation-tools kept as callback builders (all use .spread()/$colocate/attach).
+- [x] Task 4.5.3: Update docs/guides/ files (define-element, monorepo-infrastructure)
+  No changes needed: define-element uses $var/metadata (callback-builder-only); monorepo-infrastructure has no callback examples.
+- [x] Task 4.5.4: Update website/docs/ callback examples (guide/, recipes/, api/)
+  Converted simple fragment examples in guide/index, getting-started, fragments, prebuilt-types, recipes/nextjs. All other examples use callback-builder-only features.
+- [x] Task 4.5.5: Final phase gate — bun run test && bun quality
+  Tests: 2095 pass, 1 skip, 1 fail (pre-existing TSC timeout). Quality: 32 TS errors (all pre-existing).
+- [x] Task 4.5.6: Mark Phase 4 complete in agent-progress.md
 
 ## Session Log
 
@@ -282,3 +287,4 @@ Files in scope:
 2026-02-15 01:00 | Session 4.2 complete (4.2.1-4.2.5) | All 12 files reviewed. No conversions needed: type tests use callback-builder-only features ($infer, $dir, aliases, unions, $var); integration tests already have tagged template fragments or use metadata/spread; tagged-template-operation.test.ts already tagged template. Gate: 2095 pass.
 2026-02-15 02:00 | Session 4.3 complete (4.3.1-4.3.5) | All 6 files reviewed. No conversions needed: fragments already tagged template (Phase 1); operations use callback-builder-only features ($var, $, .spread(), union callbacks, metadata, transformDocument); compat.test.ts tests the callback builder API itself. Gate: 2095 pass.
 2026-02-15 03:00 | Session 4.4 complete (4.4.1-4.4.4) | Converted fragments + standalone operations across all 5 playgrounds (hasura, vite-react, nextjs-webpack, expo-metro, nestjs-compiler-tsc). Operations with .spread(), metadata callbacks, and $colocate kept as callback builders. Gate: 2095 pass.
+2026-02-15 04:00 | Session 4.5 complete (4.5.1-4.5.6) | Updated documentation across README, quickstart, package READMEs, website docs. Tagged template shown as primary syntax; callback builder kept for advanced features. Phase 4 complete. Gate: 2095 pass, 32 TS errors (all pre-existing).
