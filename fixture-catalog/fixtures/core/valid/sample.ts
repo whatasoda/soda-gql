@@ -4,10 +4,6 @@ import { gql } from "../../../graphql-system";
 export const userFragment = gql.default(({ fragment }) => fragment`fragment UserFragment on Employee { id email }`());
 
 // Simple operation for testing
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.employee({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.email() })) }),
-  }),
+export const getUserQuery = gql.default(({ query }) =>
+  query`query GetUser($userId: ID!) { employee(id: $userId) { id email } }`(),
 );

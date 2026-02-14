@@ -22,6 +22,6 @@ export const multipleAttach = gql
 // Operation with .attach()
 export const operationAttach = gql
   .default(({ query }) =>
-    query.operation({ name: "GetUser", fields: ({ f }) => ({ ...f.employee({ id: "1" })(({ f }) => ({ ...f.id() })) }) }),
+    query`query GetUser { employee(id: "1") { id } }`(),
   )
   .attach(testAttachment());
