@@ -33,36 +33,37 @@ import { gql } from "@/graphql-system";
 
 ### Writing Fragments
 
-Fragments define reusable field selections for a specific GraphQL type:
+Fragments define reusable field selections for a specific GraphQL type using tagged template syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.email(),
-    }),
-  }),
+  fragment`fragment UserFragment on User {
+    id
+    name
+    email
+  }`(),
 );
 ```
 
 ### Writing Operations
 
-Operations define complete GraphQL queries, mutations, or subscriptions:
+Operations define complete GraphQL queries, mutations, or subscriptions. Use tagged template syntax for standalone operations:
 
 ```typescript
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  }),
+export const getUserQuery = gql.default(({ query }) =>
+  query`query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }`(),
 );
+```
 
-// Operation with spread fragment
+Use callback builders when you need fragment spreads in operations:
+
+```typescript
+// Operation with spread fragment (callback builder required)
 export const getUserWithFragment = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUserWithFragment",
