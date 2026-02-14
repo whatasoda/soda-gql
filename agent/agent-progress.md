@@ -99,17 +99,156 @@ updating codegen output expectations, and fixing fixture-catalog fragments.
 
 ## Phase 4: Tests, Fixtures, Documentation
 
-Plan: docs/plans/tagged-template-unification.md (overview only)
+Plan: docs/plans/tagged-template-phase4-sessions.md
 STATUS: not_started
 
-Key tasks (from overview):
-- LOW rewrite tests (~126): syntax conversion
-- MEDIUM rewrite tests (~102): invocation adaptation
-- HIGH rewrite tests (~52): fundamental restructuring
-- Fixture catalog (~88 files): bulk conversion
-- README and docs updates
-- Prebuilt-generator update for tagged template context types (discovered in Phase 3)
-- Playground code conversion (3 playgrounds still use callback builder syntax)
+Execution model: session-scoped with MAX_COMMITS limit per session.
+Each session works only on its assigned tasks. Exit after completing all tasks or reaching MAX_COMMITS.
+
+### Session 4.1: Fixture-catalog operation & remaining fragment conversion
+
+MAX_COMMITS: 4
+STATUS: not_started
+
+Files in scope (40 files with `.operation(` or callback `fields:`):
+- fixture-catalog/fixtures/core/valid/sample.ts
+- fixture-catalog/fixtures/core/valid/common/top-level.ts
+- fixture-catalog/fixtures/core/valid/common/object-wrapped.ts
+- fixture-catalog/fixtures/core/valid/attach-chaining.ts
+- fixture-catalog/fixtures/core/valid/local-and-imported-deps.ts
+- fixture-catalog/fixtures/core/valid/multiple-schemas.ts
+- fixture-catalog/fixtures/core/valid/top-level-with-metadata.ts
+- fixture-catalog/fixtures/core/valid/top-level-definitions.ts
+- fixture-catalog/fixtures/core/valid/async-metadata-operation.ts
+- fixture-catalog/fixtures/core/valid/anonymous-hasura-destructure.ts
+- fixture-catalog/fixtures/core/valid/subscription-simple.ts
+- fixture-catalog/fixtures/core/valid/subscription-with-variables.ts
+- fixture-catalog/fixtures/core/valid/mutation-simple.ts
+- fixture-catalog/fixtures/core/valid/mutation-with-slice.ts
+- fixture-catalog/fixtures/core/valid/namespace-imports.ts
+- fixture-catalog/fixtures/core/valid/nested-namespace-deps.ts
+- fixture-catalog/fixtures/core/valid/imported-binding-refs.ts
+- fixture-catalog/fixtures/core/valid/imported-slice-refs.ts
+- fixture-catalog/fixtures/core/valid/deep-nesting/company-to-task.ts
+- fixture-catalog/fixtures/core/valid/deep-nesting/recursive-reports.ts
+- fixture-catalog/fixtures/core/valid/inputs/filter-query.ts
+- fixture-catalog/fixtures/core/valid/inputs/nested-create.ts
+- fixture-catalog/fixtures/core/valid/unions/search-result.ts
+- fixture-catalog/fixtures/core/valid/operations/basic/source.ts
+- fixture-catalog/fixtures/core/valid/operations/inline-with-imported-fragments/operations.ts
+- fixture-catalog/fixtures/core/valid/runtime/cross-file-order/operations.ts
+- fixture-catalog/fixtures/core/valid/fragments/spreading/basic-spread.ts
+- fixture-catalog/fixtures/core/valid/fragments/spreading/fragment-in-fragment.ts
+- fixture-catalog/fixtures/core/valid/fragments/spreading/multiple-fragments.ts
+- fixture-catalog/fixtures/formatting/valid/needs-format.ts
+- fixture-catalog/fixtures/formatting/valid/multi-schema.ts
+- fixture-catalog/fixtures/formatting/valid/multi-schema-formatted.ts
+- fixture-catalog/fixtures/formatting/valid/config-arrays.ts
+- fixture-catalog/fixtures/incremental/base/user.ts
+- fixture-catalog/fixtures/incremental/base/nested-definitions.ts
+- fixture-catalog/fixtures/incremental/base/profile-query.ts
+- fixture-catalog/fixtures/incremental/base/user-catalog.ts
+- fixture-catalog/fixtures/incremental/variants/catalog.new.ts
+- fixture-catalog/fixtures/incremental/variants/nested-definitions.updated.ts
+- fixture-catalog/fixtures/core/invalid/nested-non-top-level/source.ts
+
+- [ ] Task 4.1.1: Convert core/valid/ simple operations (sample, common/*, attach-chaining, local-and-imported-deps, multiple-schemas)
+- [ ] Task 4.1.2: Convert core/valid/ metadata & subscription operations (top-level-with-metadata, top-level-definitions, async-metadata-operation, anonymous-hasura-destructure, subscription-*, mutation-*)
+- [ ] Task 4.1.3: Convert core/valid/ import-dependent & namespace operations (namespace-imports, nested-namespace-deps, imported-binding-refs, imported-slice-refs, deep-nesting/*, inputs/*, unions/*, operations/*, runtime/*)
+- [ ] Task 4.1.4: Convert core/valid/fragments/spreading/* operations + core/invalid/nested-non-top-level
+- [ ] Task 4.1.5: Convert formatting/ and incremental/ fixtures
+- [ ] Task 4.1.6: Session gate — bun run test
+
+### Session 4.2: Core type & integration tests (12 files)
+
+MAX_COMMITS: 5
+STATUS: not_started
+
+Files in scope:
+- packages/core/test/types/alias-handling.test.ts
+- packages/core/test/types/directive-application.test.ts
+- packages/core/test/types/union-field-selection.test.ts
+- packages/core/test/types/variable-builder.test.ts
+- packages/core/test/types/operation-definition.test.ts
+- packages/core/test/types/fragment-spreading.test.ts
+- packages/core/test/types/nested-object-selection.test.ts
+- packages/core/test/integration/metadata-adapter.test.ts
+- packages/core/test/integration/document-transform.test.ts
+- packages/core/test/integration/metadata-with-variables.test.ts
+- packages/core/test/integration/nested-var-ref.test.ts
+- packages/core/test/integration/tagged-template-operation.test.ts
+
+- [ ] Task 4.2.1: Convert type tests LOW (alias-handling, union-field-selection)
+- [ ] Task 4.2.2: Convert type tests MEDIUM (directive-application, variable-builder, operation-definition)
+- [ ] Task 4.2.3: Convert type tests MEDIUM (fragment-spreading, nested-object-selection)
+- [ ] Task 4.2.4: Convert integration tests (metadata-adapter, document-transform, metadata-with-variables, nested-var-ref, tagged-template-operation)
+- [ ] Task 4.2.5: Session gate — bun run test
+
+### Session 4.3: Core composer unit tests (6 files, high complexity)
+
+MAX_COMMITS: 5
+STATUS: not_started
+
+Files in scope:
+- packages/core/src/composer/shorthand-fields.test.ts (~437 lines)
+- packages/core/src/composer/gql-composer.test.ts
+- packages/core/src/composer/gql-composer.helpers-injection.test.ts
+- packages/core/src/composer/operation.document-transform.test.ts
+- packages/core/src/composer/extend.test.ts
+- packages/core/src/composer/compat.test.ts
+
+- [ ] Task 4.3.1: Convert shorthand-fields.test.ts
+- [ ] Task 4.3.2: Convert gql-composer.test.ts
+- [ ] Task 4.3.3: Convert gql-composer.helpers-injection.test.ts + operation.document-transform.test.ts
+- [ ] Task 4.3.4: Convert extend.test.ts + compat.test.ts
+- [ ] Task 4.3.5: Session gate — bun run test
+
+### Session 4.4: Playgrounds conversion (~13 files)
+
+MAX_COMMITS: 4
+STATUS: not_started
+
+Files in scope:
+- playgrounds/hasura/src/graphql/fragments.ts (17 defs)
+- playgrounds/hasura/src/graphql/operations.ts (14 defs)
+- playgrounds/vite-react/src/graphql/fragments.ts
+- playgrounds/vite-react/src/graphql/operations.ts
+- playgrounds/vite-react/src/components/EmployeeCard/fragment.ts
+- playgrounds/vite-react/src/components/TaskList/fragment.ts
+- playgrounds/vite-react/src/pages/ProjectPage.tsx
+- playgrounds/nextjs-webpack/src/graphql/fragments.ts
+- playgrounds/nextjs-webpack/src/graphql/operations.ts
+- playgrounds/expo-metro/src/graphql/fragments.ts
+- playgrounds/expo-metro/src/graphql/operations.ts
+- playgrounds/nestjs-compiler-tsc/src/graphql/operations.ts
+- playgrounds/nestjs-compiler-tsc/README.md
+
+- [ ] Task 4.4.1: Convert hasura playground (fragments.ts + operations.ts)
+- [ ] Task 4.4.2: Convert vite-react playground (fragments, operations, component fragments, ProjectPage)
+- [ ] Task 4.4.3: Convert nextjs-webpack, expo-metro, nestjs-compiler-tsc playgrounds
+- [ ] Task 4.4.4: Session gate — bun run test (playground-specific if available)
+
+### Session 4.5: Documentation + final phase gate
+
+MAX_COMMITS: 4
+STATUS: not_started
+
+Files in scope:
+- README.md
+- quickstart.md
+- packages/core/README.md
+- packages/runtime/README.md
+- packages/colocation-tools/README.md
+- docs/guides/define-element.md
+- docs/guides/monorepo-infrastructure.md
+- website/docs/ (multiple files with callback examples)
+
+- [ ] Task 4.5.1: Update root README.md and quickstart.md callback examples
+- [ ] Task 4.5.2: Update package README files (core, runtime, colocation-tools)
+- [ ] Task 4.5.3: Update docs/guides/ files (define-element, monorepo-infrastructure)
+- [ ] Task 4.5.4: Update website/docs/ callback examples (guide/, recipes/, api/)
+- [ ] Task 4.5.5: Final phase gate — bun run test && bun quality
+- [ ] Task 4.5.6: Mark Phase 4 complete in agent-progress.md
 
 ## Session Log
 
