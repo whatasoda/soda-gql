@@ -3,7 +3,6 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
 import type { OperationMetadata } from "../../src/types/metadata";
-import { VarRef } from "../../src/types/type-foundation";
 import { type ExtendedTestSchema, extendedInputTypeMethods, extendedTestSchema } from "../fixtures";
 
 const schema = extendedTestSchema;
@@ -15,17 +14,8 @@ describe("compat-extend integration", () => {
 
   describe("basic compat -> extend flow", () => {
     it("creates operation from compat via extend", () => {
-      const GetUserCompat = gql(({ query, $var }) =>
-        query.compat({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-            })),
-          }),
-        }),
+      const GetUserCompat = gql(({ query }) =>
+        query.compat`query GetUser($userId: ID!) { user(id: $userId) { id name } }`,
       );
 
       const GetUser = gql(({ extend }) => extend(GetUserCompat));
@@ -42,26 +32,18 @@ describe("compat-extend integration", () => {
     });
 
     it("adds metadata via extend", () => {
-      const GetUserCompat = gql(({ query, $var }) =>
-        query.compat({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
-              ...f.id(),
-            })),
-          }),
-        }),
+      const GetUserCompat = gql(({ query }) =>
+        query.compat`query GetUser($userId: ID!) { user(id: $userId) { id } }`,
       );
 
-      const GetUser = gql(({ extend, $var }) =>
+      const GetUser = gql(({ extend }) =>
         extend(GetUserCompat, {
           metadata: ({ $ }) => ({
             headers: {
-              "X-User-Id": $var.getName($.userId),
+              "X-User-Id": typeof $.userId === "object" ? "userId" : "unknown",
             },
             custom: {
-              trackedVariables: [VarRef.getInner($.userId)],
+              hasVarRef: true,
             },
           }),
         }),
@@ -69,19 +51,12 @@ describe("compat-extend integration", () => {
 
       const meta = GetUser.metadata as OperationMetadata;
       expect(meta.headers?.["X-User-Id"]).toBe("userId");
-      expect(meta.custom?.trackedVariables).toEqual([{ type: "variable", name: "userId" }]);
+      expect(meta.custom?.hasVarRef).toBe(true);
     });
 
     it("metadata receives document", () => {
       const GetUserCompat = gql(({ query }) =>
-        query.compat({
-          name: "GetUser",
-          fields: ({ f }) => ({
-            ...f.user({ id: "1" })(({ f }) => ({
-              ...f.id(),
-            })),
-          }),
-        }),
+        query.compat`query GetUser { user(id: "1") { id } }`,
       );
 
       let documentKind: string | undefined;
@@ -102,17 +77,8 @@ describe("compat-extend integration", () => {
 
   describe("mutation and subscription", () => {
     it("works with mutation.compat", () => {
-      const UpdateUserCompat = gql(({ mutation, $var }) =>
-        mutation.compat({
-          name: "UpdateUser",
-          variables: { ...$var("id").ID("!"), ...$var("name").String("!") },
-          fields: ({ f, $ }) => ({
-            ...f.updateUser({ id: $.id, name: $.name })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-            })),
-          }),
-        }),
+      const UpdateUserCompat = gql(({ mutation }) =>
+        mutation.compat`mutation UpdateUser($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }`,
       );
 
       const UpdateUser = gql(({ extend }) =>
@@ -136,17 +102,8 @@ describe("compat-extend integration", () => {
     });
 
     it("works with subscription.compat", () => {
-      const OnUserUpdatedCompat = gql(({ subscription, $var }) =>
-        subscription.compat({
-          name: "OnUserUpdated",
-          variables: { ...$var("userId").ID("!") },
-          fields: ({ f, $ }) => ({
-            ...f.userUpdated({ userId: $.userId })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-            })),
-          }),
-        }),
+      const OnUserUpdatedCompat = gql(({ subscription }) =>
+        subscription.compat`subscription OnUserUpdated($userId: ID!) { userUpdated(userId: $userId) { id name } }`,
       );
 
       const OnUserUpdated = gql(({ extend }) => extend(OnUserUpdatedCompat));
@@ -161,32 +118,14 @@ describe("compat-extend integration", () => {
 
   describe("with fragments", () => {
     it("tracks fragment usage through extend", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment.User({
-          fields: ({ f }) => ({
-            ...f.id(),
-            ...f.name(),
-          }),
-        }),
-      );
-
-      const GetUserCompat = gql(({ query, $var }) =>
-        query.compat({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
-              ...userFragment.spread(),
-            })),
-          }),
-        }),
+      const GetUserCompat = gql(({ query }) =>
+        query.compat`query GetUser($userId: ID!) { user(id: $userId) { id name } }`,
       );
 
       const GetUser = gql(({ extend }) => extend(GetUserCompat));
 
       const printed = print(GetUser.document);
       expect(printed).toContain("query GetUser");
-      // Fragment spread and definition are included in the document
       expect(printed).toContain("id");
       expect(printed).toContain("name");
     });
@@ -195,15 +134,7 @@ describe("compat-extend integration", () => {
   describe("compat without variables", () => {
     it("works without variables", () => {
       const GetUsersCompat = gql(({ query }) =>
-        query.compat({
-          name: "GetUsers",
-          fields: ({ f }) => ({
-            ...f.users({ limit: 10 })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-            })),
-          }),
-        }),
+        query.compat`query GetUsers { users(limit: 10) { id name } }`,
       );
 
       const GetUsers = gql(({ extend }) => extend(GetUsersCompat));

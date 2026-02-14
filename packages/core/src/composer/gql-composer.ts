@@ -8,12 +8,14 @@ import { GqlDefine } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
-import { createCompatComposer } from "./compat";
+import { createCompatTaggedTemplate } from "./compat-tagged-template";
 import { applyContextTransformer } from "./context-transformer";
 import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createExtendComposer } from "./extend";
-import { createGqlFragmentComposers, type FragmentBuilderFor } from "./fragment";
+import { type FragmentBuilderFor, createGqlFragmentComposers } from "./fragment";
+import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 import { createOperationComposerFactory } from "./operation";
+import { createOperationTaggedTemplate } from "./operation-tagged-template";
 import { type AnyInputTypeMethods, createVarBuilder } from "./var-builder";
 
 /**
@@ -138,29 +140,39 @@ export const createGqlElementComposer = <
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const transformDocument = adapter?.transformDocument;
-  const fragment = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
+  // Hybrid fragment: tagged template function + type-keyed builders for backward compat
+  const fragmentBuilders = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
+  const fragment = Object.assign(createFragmentTaggedTemplate(schema), fragmentBuilders);
   const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
     schema,
     metadataAdapter,
     transformDocument,
   );
 
-  // Wrap operation composers in objects with an `operation` method for extensibility
-  // This allows adding more factories (e.g., query.compat, mutation.compat) in the future
+  // Hybrid context: tagged template functions with .operation and .compat properties
   const context = {
     fragment,
-    query: {
-      operation: createOperationComposer("query"),
-      compat: createCompatComposer<TSchema, "query">(schema, "query"),
-    },
-    mutation: {
-      operation: createOperationComposer("mutation"),
-      compat: createCompatComposer<TSchema, "mutation">(schema, "mutation"),
-    },
-    subscription: {
-      operation: createOperationComposer("subscription"),
-      compat: createCompatComposer<TSchema, "subscription">(schema, "subscription"),
-    },
+    query: Object.assign(
+      createOperationTaggedTemplate(schema, "query", metadataAdapter, transformDocument),
+      {
+        operation: createOperationComposer("query"),
+        compat: createCompatTaggedTemplate(schema, "query"),
+      },
+    ),
+    mutation: Object.assign(
+      createOperationTaggedTemplate(schema, "mutation", metadataAdapter, transformDocument),
+      {
+        operation: createOperationComposer("mutation"),
+        compat: createCompatTaggedTemplate(schema, "mutation"),
+      },
+    ),
+    subscription: Object.assign(
+      createOperationTaggedTemplate(schema, "subscription", metadataAdapter, transformDocument),
+      {
+        operation: createOperationComposer("subscription"),
+        compat: createCompatTaggedTemplate(schema, "subscription"),
+      },
+    ),
     define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine.create(factory),
     extend: createExtendComposer<TSchema, TMetadataAdapter>(schema, metadataAdapter, transformDocument),
     $var: createVarBuilder<TSchema>(inputTypeMethods),
@@ -196,10 +208,19 @@ export const createGqlElementComposer = <
  * the Context type.
  */
 export type AnyGqlContext = {
-  readonly fragment: Record<string, unknown>;
-  readonly query: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
-  readonly mutation: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
-  readonly subscription: { operation: (...args: unknown[]) => AnyOperation; compat: (...args: unknown[]) => AnyGqlDefine };
+  readonly fragment: (...args: unknown[]) => unknown;
+  readonly query: ((...args: unknown[]) => unknown) & {
+    operation: (...args: unknown[]) => AnyOperation;
+    compat: (...args: unknown[]) => AnyGqlDefine;
+  };
+  readonly mutation: ((...args: unknown[]) => unknown) & {
+    operation: (...args: unknown[]) => AnyOperation;
+    compat: (...args: unknown[]) => AnyGqlDefine;
+  };
+  readonly subscription: ((...args: unknown[]) => unknown) & {
+    operation: (...args: unknown[]) => AnyOperation;
+    compat: (...args: unknown[]) => AnyGqlDefine;
+  };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly extend: (...args: unknown[]) => AnyOperation;
   readonly $var: unknown;
