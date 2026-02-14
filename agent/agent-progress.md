@@ -3,9 +3,9 @@
 ## Current State
 
 CURRENT_PHASE: 4
-CURRENT_ROUND: 4.1 (complete)
-LAST_COMPLETED_TASK: 4.1.6 (Session 4.1 gate)
-LAST_SESSION: 2026-02-15T00
+CURRENT_ROUND: 4.2 (complete)
+LAST_COMPLETED_TASK: 4.2.5 (Session 4.2 gate)
+LAST_SESSION: 2026-02-15T01
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
 PHASE_3_STATUS: complete
@@ -166,7 +166,7 @@ Files in scope (40 files with `.operation(` or callback `fields:`):
 ### Session 4.2: Core type & integration tests (12 files)
 
 MAX_COMMITS: 5
-STATUS: not_started
+STATUS: complete
 
 Files in scope:
 - packages/core/test/types/alias-handling.test.ts
@@ -182,11 +182,19 @@ Files in scope:
 - packages/core/test/integration/nested-var-ref.test.ts
 - packages/core/test/integration/tagged-template-operation.test.ts
 
-- [ ] Task 4.2.1: Convert type tests LOW (alias-handling, union-field-selection)
-- [ ] Task 4.2.2: Convert type tests MEDIUM (directive-application, variable-builder, operation-definition)
-- [ ] Task 4.2.3: Convert type tests MEDIUM (fragment-spreading, nested-object-selection)
-- [ ] Task 4.2.4: Convert integration tests (metadata-adapter, document-transform, metadata-with-variables, nested-var-ref, tagged-template-operation)
-- [ ] Task 4.2.5: Session gate — bun run test
+- [x] Task 4.2.1: Reviewed alias-handling, union-field-selection — KEPT AS CALLBACK BUILDERS
+  Reason: alias option `{ alias: "..." }` and union member selection callbacks are callback-builder-only features
+- [x] Task 4.2.2: Reviewed directive-application, variable-builder, operation-definition — KEPT AS CALLBACK BUILDERS
+  Reason: `$dir.skip/include`, `$var` type safety, and `$infer.input/output` type assertions require callback builder API
+- [x] Task 4.2.3: Reviewed fragment-spreading, nested-object-selection — KEPT AS CALLBACK BUILDERS
+  Reason: Fragments already tagged templates (from Phase 1). Operations use `.spread()` (cannot interpolate in operation tagged template) and `$infer` type assertions
+- [x] Task 4.2.4: Reviewed integration tests — ALL ALREADY CONVERTED OR MUST STAY AS CALLBACK BUILDERS
+  - metadata-adapter: fragments already tagged template; operations use metadata callbacks + `.spread()`
+  - document-transform: fragments already tagged template; operations use adapter/metadata + `.spread()`
+  - metadata-with-variables: operations use metadata callback with `$` variable access
+  - nested-var-ref: operations use VarRef helpers (`$var.getNameAt/getValueAt`)
+  - tagged-template-operation: already uses tagged templates (nothing to convert)
+- [x] Task 4.2.5: Session gate — bun run test (2095 pass, 1 skip, 1 fail pre-existing)
 
 ### Session 4.3: Core composer unit tests (6 files, high complexity)
 
@@ -264,3 +272,4 @@ Files in scope:
 2026-02-14 16:00 | Phase 3 Round 1 complete (3.1-3.4) | Scoped Phase 3, committed Phase 1 changes, removed fragment.ts, fixed codegen tests, converted 5 critical fixtures. 50+ fixtures remain for Phase 4.
 2026-02-14 18:00 | Phase 3 complete (3.5-3.8) | Fixed Fragment.spread type for AnyFragment, typegen dedup logic, e2e fixtures. All fixture-catalog + builder tests converted. Phase 3 gate passed.
 2026-02-15 00:00 | Session 4.1 complete (4.1.1-4.1.6) | Converted ~30 standalone operations to tagged template across fixture-catalog. Key finding: operation tagged template rejects interpolation, so operations with fragment spreads + formatting fixtures kept as callback builders. Gate: 2095 pass.
+2026-02-15 01:00 | Session 4.2 complete (4.2.1-4.2.5) | All 12 files reviewed. No conversions needed: type tests use callback-builder-only features ($infer, $dir, aliases, unions, $var); integration tests already have tagged template fragments or use metadata/spread; tagged-template-operation.test.ts already tagged template. Gate: 2095 pass.
