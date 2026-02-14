@@ -117,7 +117,7 @@ bun run soda-gql builder \
 
 ### Step 1: Define Fragments with `gql.default`
 
-Fragments are declared with `fragment.<TypeName>(options)` using the object spread API. The fields builder receives `f` for selections and `$` for fragment-scoped variables, and returns an object with spread field selections.
+Fragments use GraphQL tagged template syntax. Write familiar GraphQL directly:
 
 ```typescript
 // src/fragments/user.fragment.ts
@@ -125,27 +125,22 @@ import { gql } from "@/graphql-system";
 
 // Basic user fragment with field selection
 export const userBasic = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment`fragment UserBasic on User {
+    id
+    name
+  }`(),
 );
 
-// User with nested posts selection
-export const userWithPosts = gql.default(({ fragment, $var }) =>
-  fragment.User({
-    variables: { ...$var("categoryId").ID("?") },
-    fields: ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
-  }),
+// User with nested posts selection and fragment variable
+export const userWithPosts = gql.default(({ fragment }) =>
+  fragment`fragment UserWithPosts($categoryId: ID) on User {
+    id
+    name
+    posts(categoryId: $categoryId) {
+      id
+      title
+    }
+  }`(),
 );
 
 // Export inferred types
@@ -155,10 +150,24 @@ export type UserWithPosts = ReturnType<typeof userWithPosts["normalize"]>;
 
 ### Step 2: Build queries and mutations
 
-`query.operation` / `mutation.operation` define complete GraphQL operations. The options object takes `name` and (optionally) `variables`.
+Operations can use tagged template syntax for standalone queries, or callback builders when fragment spreads are needed.
 
 ```typescript
-// src/operations/profile.query.ts
+// src/operations/update-user.mutation.ts — Tagged template (recommended)
+import { gql } from "@/graphql-system";
+
+export const updateUserMutation = gql.default(({ mutation }) =>
+  mutation`mutation UpdateUser($id: ID!, $name: String!) {
+    updateUser(id: $id, name: $name) {
+      id
+      name
+    }
+  }`(),
+);
+```
+
+```typescript
+// src/operations/profile.query.ts — Callback builder (needed for fragment spreads)
 import { gql } from "@/graphql-system";
 import { userWithPosts } from "../fragments/user.fragment";
 
@@ -171,21 +180,6 @@ export const profileQuery = gql.default(({ query, $var }) =>
         id: [$.userId],
         categoryId: $.categoryId,
       })(({ f }) => ({ ...userWithPosts.spread({ categoryId: $.categoryId }) })),
-    }),
-  }),
-);
-```
-
-```typescript
-// src/operations/update-user.mutation.ts
-import { gql } from "@/graphql-system";
-
-export const updateUserMutation = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "UpdateUser",
-    variables: { ...$var("id").ID("!"), ...$var("name").String("!") },
-    fields: ({ f, $ }) => ({
-      ...f.updateUser({ id: $.id, name: $.name })(({ f }) => ({ ...f.id(), ...f.name() })),
     }),
   }),
 );
@@ -231,14 +225,13 @@ describe("userBasic fragment", () => {
 
 **Before (development)**
 ```typescript
-export const profileQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfilePageQuery",
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.users({ id: [$.userId] })(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  }),
+export const profileQuery = gql.default(({ query }) =>
+  query`query ProfilePageQuery($userId: ID!) {
+    users(id: [$userId]) {
+      id
+      name
+    }
+  }`(),
 );
 ```
 

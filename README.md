@@ -88,10 +88,50 @@ This creates TypeScript files using the compat pattern, preserving your existing
 
 ### Basic Example
 
+soda-gql supports two syntax styles: **tagged templates** (recommended for most cases) and **callback builders** (for advanced features).
+
+#### Tagged Template Syntax (Recommended)
+
+Write GraphQL directly — fragments and operations use familiar GraphQL syntax:
+
 ```typescript
 import { gql } from "@/graphql-system";
 
 // Define a reusable fragment
+export const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserFragment($categoryId: ID) on User {
+    id
+    name
+    posts(categoryId: $categoryId) {
+      id
+      title
+    }
+  }`(),
+);
+
+// Build a complete operation
+export const listUsersQuery = gql.default(({ query }) =>
+  query`query ListUsers($categoryId: ID) {
+    users {
+      id
+      name
+      posts(categoryId: $categoryId) {
+        id
+        title
+      }
+    }
+  }`(),
+);
+```
+
+#### Callback Builder Syntax (Advanced Features)
+
+Use callback builders when you need features like fragment spreads in operations, field aliases, metadata callbacks, or `$colocate`:
+
+```typescript
+import { gql } from "@/graphql-system";
+
+// Fragment with field alias (callback builder only)
 export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").ID("?") },
@@ -106,28 +146,10 @@ export const userFragment = gql.default(({ fragment, $var }) =>
   }),
 );
 
-// Build a complete operation
+// Operation with fragment spread (callback builder only)
 export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQuery",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
-    fields: ({ f, $ }) => ({
-      ...f.users({
-        id: [$.userId],
-        categoryId: $.categoryId,
-      })(({ f }) => ({
-        ...f.id(null, { alias: "uuid" }),
-        ...f.name(),
-        ...f.posts({ categoryId: $.categoryId })(({ f }) => ({ ...f.id(), ...f.title() })),
-      })),
-    }),
-  }),
-);
-
-// Operation with spread fragment
-export const profileQueryWithFragment = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfileQueryWithFragment",
     variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
     fields: ({ f, $ }) => ({
       ...f.users({
@@ -139,7 +161,18 @@ export const profileQueryWithFragment = gql.default(({ query, $var }) =>
 );
 ```
 
-**Note on API**: Variables and field selections use object spread syntax (`variables: { ...$var(...) }` and `({ f }) => ({ ...f.id(), ...f.name() })`). Nested selections use curried callbacks (`f.posts(args)(({ f }) => ({ ... }))`). This improves type safety and aligns with GraphQL's structure.
+**When to use each syntax:**
+| Feature | Tagged Template | Callback Builder |
+|---------|:-:|:-:|
+| Simple field selections | Yes | Yes |
+| Variables and arguments | Yes | Yes |
+| Nested object selections | Yes | Yes |
+| Fragment spreads in fragments | Yes (`${otherFragment}`) | Yes (`.spread()`) |
+| Fragment spreads in operations | — | Yes (`.spread()`) |
+| Field aliases | — | Yes |
+| Metadata callbacks | — | Yes |
+| `$colocate` | — | Yes |
+| Document transforms | — | Yes |
 
 ### Metadata
 
@@ -227,13 +260,10 @@ Fragments require a `key` property to be included in prebuilt types. Fragments w
 ```typescript
 // Fragment with key for prebuilt type lookup
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    key: "UserFields",  // Required for prebuilt type resolution
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment.User("UserFields")`
+    id
+    name
+  `(),
 );
 ```
 
