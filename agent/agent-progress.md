@@ -3,9 +3,9 @@
 ## Current State
 
 CURRENT_PHASE: 4
-CURRENT_ROUND: 4.2 (complete)
-LAST_COMPLETED_TASK: 4.2.5 (Session 4.2 gate)
-LAST_SESSION: 2026-02-15T01
+CURRENT_ROUND: 4.3 (complete)
+LAST_COMPLETED_TASK: 4.3.5 (Session 4.3 gate)
+LAST_SESSION: 2026-02-15T02
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
 PHASE_3_STATUS: complete
@@ -199,7 +199,7 @@ Files in scope:
 ### Session 4.3: Core composer unit tests (6 files, high complexity)
 
 MAX_COMMITS: 5
-STATUS: not_started
+STATUS: complete
 
 Files in scope:
 - packages/core/src/composer/shorthand-fields.test.ts (~437 lines)
@@ -209,11 +209,15 @@ Files in scope:
 - packages/core/src/composer/extend.test.ts
 - packages/core/src/composer/compat.test.ts
 
-- [ ] Task 4.3.1: Convert shorthand-fields.test.ts
-- [ ] Task 4.3.2: Convert gql-composer.test.ts
-- [ ] Task 4.3.3: Convert gql-composer.helpers-injection.test.ts + operation.document-transform.test.ts
-- [ ] Task 4.3.4: Convert extend.test.ts + compat.test.ts
-- [ ] Task 4.3.5: Session gate — bun run test
+- [x] Task 4.3.1: Reviewed shorthand-fields.test.ts — KEPT AS CALLBACK BUILDERS
+  Reason: Fragments already tagged template (from Phase 1). Operations use $var, union member selection callbacks, shorthand `true` syntax — all callback-builder-only features.
+- [x] Task 4.3.2: Reviewed gql-composer.test.ts — KEPT AS CALLBACK BUILDERS
+  Reason: Fragments already tagged template. Operation uses .spread() (cannot interpolate in operation tagged template). $schema tests have no conversions.
+- [x] Task 4.3.3: Reviewed helpers-injection + document-transform — KEPT AS CALLBACK BUILDERS
+  Reason: helpers-injection fragments already tagged template; one operation uses $var callback builder. document-transform operations all use $var, metadata, transformDocument — callback-builder-only features.
+- [x] Task 4.3.4: Reviewed extend.test.ts + compat.test.ts — KEPT AS CALLBACK BUILDERS
+  Reason: extend.test.ts callback compat tests validate the callback builder compat API; tagged template compat tests already use tagged templates. compat.test.ts tests the callback builder compat layer itself.
+- [x] Task 4.3.5: Session gate — bun run test (2095 pass, 1 skip, 1 fail pre-existing)
 
 ### Session 4.4: Playgrounds conversion (~13 files)
 
@@ -273,3 +277,4 @@ Files in scope:
 2026-02-14 18:00 | Phase 3 complete (3.5-3.8) | Fixed Fragment.spread type for AnyFragment, typegen dedup logic, e2e fixtures. All fixture-catalog + builder tests converted. Phase 3 gate passed.
 2026-02-15 00:00 | Session 4.1 complete (4.1.1-4.1.6) | Converted ~30 standalone operations to tagged template across fixture-catalog. Key finding: operation tagged template rejects interpolation, so operations with fragment spreads + formatting fixtures kept as callback builders. Gate: 2095 pass.
 2026-02-15 01:00 | Session 4.2 complete (4.2.1-4.2.5) | All 12 files reviewed. No conversions needed: type tests use callback-builder-only features ($infer, $dir, aliases, unions, $var); integration tests already have tagged template fragments or use metadata/spread; tagged-template-operation.test.ts already tagged template. Gate: 2095 pass.
+2026-02-15 02:00 | Session 4.3 complete (4.3.1-4.3.5) | All 6 files reviewed. No conversions needed: fragments already tagged template (Phase 1); operations use callback-builder-only features ($var, $, .spread(), union callbacks, metadata, transformDocument); compat.test.ts tests the callback builder API itself. Gate: 2095 pass.
