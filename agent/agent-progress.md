@@ -2,11 +2,12 @@
 
 ## Current State
 
-CURRENT_PHASE: 1
-CURRENT_ROUND: 4
-LAST_COMPLETED_TASK: 4.3
-LAST_SESSION: 2026-02-14T05
+CURRENT_PHASE: 2
+CURRENT_ROUND: 1
+LAST_COMPLETED_TASK: 2.3 (runner pipeline integration)
+LAST_SESSION: 2026-02-14T14
 PHASE_1_STATUS: complete
+PHASE_2_STATUS: in_progress
 
 ## Phase 1: Core Tagged Template Implementation
 
@@ -50,13 +51,19 @@ Plan: docs/plans/tagged-template-phase1-round4.md
 ## Phase 2: Typegen Tagged Template Support
 
 Plan: docs/plans/tagged-template-unification.md (overview only)
-STATUS: not_started
+STATUS: in_progress
 
-Key tasks (from overview):
-- Template extraction from source files (SWC-based, reuse LSP pattern)
-- GraphQL AST to field selection conversion
-- Typegen runner pipeline update
-- typegen --watch stabilization
+### Round 1: Template Extraction & Conversion
+
+- [x] Task 2.1: SWC-based template extractor (template-extractor.ts + tests) — STATUS: completed
+- [x] Task 2.2: Template-to-selections converter (template-to-selections.ts) — STATUS: completed
+- [x] Task 2.3: Runner pipeline integration (runner.ts + template-scanner.ts + tests) — STATUS: completed
+
+### Round 2: Watch Mode & Stabilization (remaining)
+
+- [ ] Task 2.4: typegen --watch incremental template scanning — STATUS: not_started
+- [ ] Task 2.5: Phase 2 integration testing — STATUS: not_started
+- [ ] Task 2.6: Phase 2 gate verification — STATUS: not_started
 
 ## Phase 3: Callback Builder API Restructuring
 
@@ -86,3 +93,4 @@ Key tasks (from overview):
 <!-- Each session appends a summary here. Keep entries concise (1-3 lines). -->
 <!-- Format: YYYY-MM-DD HH:MM | Tasks completed | Notes -->
 2026-02-14 04:00 | Round 3 complete (3.1-3.4) | TemplateCompatSpec type, compat-tagged-template, extend adaptation. Pre-existing test failures in tsc/typegen/codegen packages (TS2742 from Round 2).
+2026-02-14 14:00 | Phase 2 Round 1 complete (2.1-2.3) | Runner pipeline integration: template-scanner, template-to-selections tests, merged into runner.ts. Pre-existing failures unchanged.
