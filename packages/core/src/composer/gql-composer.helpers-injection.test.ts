@@ -72,7 +72,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment, auth }) => {
       capturedAuth = auth;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserAuthFields on User { id name }`();
     });
 
     expect(capturedAuth).toBeDefined();
@@ -102,7 +102,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment, cache }) => {
       capturedCacheTTL = cache.ttl(300).cacheTTL;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserCacheTTLFields on User { id name }`();
     });
 
     expect(capturedCacheTTL).toBe(300);
@@ -143,7 +143,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment, $var }) => {
       varBuilderAvailable = typeof $var === "function";
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserVarBuilderFields on User { id name }`();
     });
 
     expect(varBuilderAvailable).toBe(true);
@@ -179,7 +179,7 @@ describe("helpers injection via adapter", () => {
     gql(({ fragment, auth, tracking }) => {
       capturedRole = auth.roles.admin().role;
       capturedEvent = tracking.analytics("page_view").event;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserNestedHelpersFields on User { id name }`();
     });
 
     expect(capturedRole).toBe("admin");

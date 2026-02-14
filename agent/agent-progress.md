@@ -3,9 +3,10 @@
 ## Current State
 
 CURRENT_PHASE: 1
-CURRENT_ROUND: 1
-LAST_COMPLETED_TASK: none
-LAST_SESSION: none
+CURRENT_ROUND: 4
+LAST_COMPLETED_TASK: 4.3
+LAST_SESSION: 2026-02-14T05
+PHASE_1_STATUS: complete
 
 ## Phase 1: Core Tagged Template Implementation
 
@@ -15,36 +16,36 @@ Plan: docs/plans/tagged-template-unification-phase1.md
 
 Plan: docs/plans/tagged-template-phase1-round1.md
 
-- [ ] Task 1.1: GraphQL parser utilities (result.ts, types.ts, parser.ts + tests) — STATUS: not_started
-- [ ] Task 1.2: GraphQL transformer utilities (schema-index.ts, schema-adapter.ts, transformer.ts + tests) — STATUS: not_started
-- [ ] Task 1.3: Fragment args preprocessor (fragment-args-preprocessor.ts + tests) — STATUS: not_started
-- [ ] Task 1.4: VarSpecifier builder from AST (var-specifier-builder.ts + tests) — STATUS: not_started
-- [ ] Task 1.5: GraphQL utilities index (index.ts) — STATUS: not_started
+- [x] Task 1.1: GraphQL parser utilities (result.ts, types.ts, parser.ts + tests) — STATUS: completed
+- [x] Task 1.2: GraphQL transformer utilities (schema-index.ts, schema-adapter.ts, transformer.ts + tests) — STATUS: completed
+- [x] Task 1.3: Fragment args preprocessor (fragment-args-preprocessor.ts + tests) — STATUS: completed
+- [x] Task 1.4: VarSpecifier builder from AST (var-specifier-builder.ts + tests) — STATUS: completed
+- [x] Task 1.5: GraphQL utilities index (index.ts) — STATUS: completed
 
 ### Round 2: Operation & Fragment Tagged Templates
 
 Plan: docs/plans/tagged-template-phase1-round2.md
 
-- [ ] Task 2.1: Operation tagged template (operation-tagged-template.ts) — STATUS: not_started
-- [ ] Task 2.2: Fragment tagged template (fragment-tagged-template.ts) — STATUS: not_started
-- [ ] Task 2.3: Hybrid context integration (modify gql-composer.ts + migrate 32 fragment tests) — STATUS: not_started
+- [x] Task 2.1: Operation tagged template (operation-tagged-template.ts) — STATUS: completed
+- [x] Task 2.2: Fragment tagged template (fragment-tagged-template.ts) — STATUS: completed
+- [x] Task 2.3: Hybrid context integration (modify gql-composer.ts + migrate 32 fragment tests) — STATUS: completed
 
 ### Round 3: Compat Tagged Template + Extend Adaptation
 
 Plan: docs/plans/tagged-template-phase1-round3.md
 
-- [ ] Task 3.1: TemplateCompatSpec type (modify compat-spec.ts) — STATUS: not_started
-- [ ] Task 3.2: Compat tagged template (compat-tagged-template.ts) — STATUS: not_started
-- [ ] Task 3.3: Compat composer update (review compat.ts) — STATUS: not_started
-- [ ] Task 3.4: Extend adaptation (modify extend.ts) — STATUS: not_started
+- [x] Task 3.1: TemplateCompatSpec type (modify compat-spec.ts) — STATUS: completed
+- [x] Task 3.2: Compat tagged template (compat-tagged-template.ts) — STATUS: completed
+- [x] Task 3.3: Compat composer update (review compat.ts) — STATUS: completed
+- [x] Task 3.4: Extend adaptation (modify extend.ts) — STATUS: completed
 
 ### Round 4: Integration, Testing, Phase Gate
 
 Plan: docs/plans/tagged-template-phase1-round4.md
 
-- [ ] Task 4.1: Finalize hybrid context (modify gql-composer.ts) — STATUS: not_started
-- [ ] Task 4.2: Integration tests (tagged-template-*.test.ts) — STATUS: not_started
-- [ ] Task 4.3: Phase gate verification — STATUS: not_started
+- [x] Task 4.1: Finalize hybrid context (modify gql-composer.ts) — STATUS: completed
+- [x] Task 4.2: Integration tests (tagged-template-*.test.ts) — STATUS: completed
+- [x] Task 4.3: Phase gate verification — STATUS: completed
 
 ## Phase 2: Typegen Tagged Template Support
 
@@ -84,3 +85,4 @@ Key tasks (from overview):
 
 <!-- Each session appends a summary here. Keep entries concise (1-3 lines). -->
 <!-- Format: YYYY-MM-DD HH:MM | Tasks completed | Notes -->
+2026-02-14 04:00 | Round 3 complete (3.1-3.4) | TemplateCompatSpec type, compat-tagged-template, extend adaptation. Pre-existing test failures in tsc/typegen/codegen packages (TS2742 from Round 2).

@@ -4,13 +4,17 @@
  * @module
  */
 
-import { parse as parseGraphql, Kind } from "graphql";
+import { parse as parseGraphql, Kind, type SelectionSetNode } from "graphql";
 import { Fragment } from "../types/element";
+import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
 import type { AnyFragment } from "../types/element/fragment";
 import { buildVarSpecifiers, createSchemaIndexFromSchema, preprocessFragmentArgs } from "../graphql";
 import type { SchemaIndex } from "../graphql/schema-index";
+import { createFieldFactories } from "./fields-builder";
+import { recordFragmentUsage } from "./fragment-usage-context";
+import { createVarAssignments } from "./input";
 import type { TemplateResult, TemplateResultMetadataOptions } from "./operation-tagged-template";
 
 /** Tagged template function type for fragments. */
@@ -78,6 +82,128 @@ function extractFragmentVariables(
 }
 
 /**
+ * Builds field selections from a GraphQL AST SelectionSet by driving field factories.
+ * Converts parsed AST selections into the AnyFieldsExtended format that the document builder expects.
+ */
+function buildFieldsFromSelectionSet(
+  selectionSet: SelectionSetNode,
+  schema: AnyGraphqlSchema,
+  typeName: string,
+): AnyFieldsExtended {
+  const f = createFieldFactories(schema, typeName);
+  const result: Record<string, unknown> = {};
+
+  for (const selection of selectionSet.selections) {
+    if (selection.kind === Kind.FIELD) {
+      const fieldName = selection.name.value;
+      const alias = selection.alias?.value ?? fieldName;
+      const factory = (f as Record<string, ((...args: unknown[]) => unknown) | undefined>)[fieldName];
+
+      if (!factory) {
+        // Field not found in schema — use shorthand as fallback
+        result[alias] = true;
+        continue;
+      }
+
+      // Build args from AST arguments
+      const args = buildArgsFromASTArguments(selection.arguments ?? []);
+      const extras = alias !== fieldName ? { alias } : undefined;
+
+      if (selection.selectionSet) {
+        // Object field — factory returns a curried function
+        const curried = factory(args, extras);
+        if (typeof curried === "function") {
+          // Drive nested builder with recursive field building
+          const nestedFields = buildFieldsFromSelectionSet(selection.selectionSet, schema, resolveFieldTypeName(schema, typeName, fieldName));
+          const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
+            ({ f: nestedFactories }: { f: unknown }) => {
+              // Ignore the provided factories; use pre-built fields
+              void nestedFactories;
+              return nestedFields;
+            },
+          );
+          Object.assign(result, fieldResult);
+        } else {
+          Object.assign(result, curried);
+        }
+      } else {
+        // Scalar/enum field — factory returns the field selection directly
+        const fieldResult = factory(args, extras);
+        if (typeof fieldResult === "function") {
+          // Object field used without selection set — just call with empty builder
+          const emptyResult = (fieldResult as (nest: unknown) => Record<string, unknown>)(
+            () => ({}),
+          );
+          Object.assign(result, emptyResult);
+        } else {
+          Object.assign(result, fieldResult);
+        }
+      }
+    }
+    // InlineFragment and FragmentSpread nodes are not supported in tagged template fragments
+  }
+
+  return result as AnyFieldsExtended;
+}
+
+/**
+ * Build a simple args object from GraphQL AST argument nodes.
+ * Extracts literal values from the AST for passing to field factories.
+ */
+function buildArgsFromASTArguments(
+  args: readonly { readonly name: { readonly value: string }; readonly value: { readonly kind: string; readonly value?: unknown } }[],
+): Record<string, unknown> {
+  if (args.length === 0) return {};
+  const result: Record<string, unknown> = {};
+  for (const arg of args) {
+    result[arg.name.value] = extractASTValue(arg.value);
+  }
+  return result;
+}
+
+/**
+ * Extract a runtime value from a GraphQL AST ValueNode.
+ */
+function extractASTValue(node: { readonly kind: string; readonly value?: unknown; readonly values?: readonly unknown[]; readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[] }): unknown {
+  switch (node.kind) {
+    case Kind.STRING:
+    case Kind.INT:
+    case Kind.FLOAT:
+    case Kind.BOOLEAN:
+    case Kind.ENUM:
+      return node.value;
+    case Kind.NULL:
+      return null;
+    case Kind.LIST:
+      return (node.values as readonly { kind: string; value?: unknown }[])?.map(extractASTValue) ?? [];
+    case Kind.OBJECT:
+      return Object.fromEntries(
+        (node.fields ?? []).map((f) => [f.name.value, extractASTValue(f.value as { kind: string; value?: unknown })]),
+      );
+    case Kind.VARIABLE:
+      // Variable references in fragments are handled by the variable system
+      return `$${(node as unknown as { name: { value: string } }).name.value}`;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Resolve the output type name for a field on a given type.
+ * Looks up the field's type specifier in the schema and extracts the type name.
+ * Handles both string specifiers ("o|Avatar|?") and object specifiers ({ spec: "o|Avatar|?" }).
+ */
+function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldName: string): string {
+  const typeDef = schema.object[typeName];
+  if (!typeDef) return typeName;
+  const fieldDef = typeDef.fields[fieldName] as string | { spec: string } | undefined;
+  if (!fieldDef) return typeName;
+  const specStr = typeof fieldDef === "string" ? fieldDef : fieldDef.spec;
+  const parts = specStr.split("|");
+  return parts[1] ?? typeName;
+}
+
+/**
  * Creates a tagged template function for fragments.
  *
  * @param schema - The GraphQL schema definition
@@ -131,14 +257,24 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(
       throw new Error(`Type "${onType}" is not defined in schema objects`);
     }
 
-    return (_options?: TemplateResultMetadataOptions): AnyFragment => {
+    return (options?: TemplateResultMetadataOptions): AnyFragment => {
       // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       return Fragment.create(() => ({
         typename: onType,
         key: fragmentName,
         schemaLabel: schema.label,
         variableDefinitions: varSpecifiers,
-        spread: () => ({}) as never,
+        spread: (variables) => {
+          const $ = createVarAssignments(varSpecifiers, variables);
+          void $; // Variable assignments reserved for future Fragment Arguments support
+
+          recordFragmentUsage({
+            metadataBuilder: options?.metadata ? () => options.metadata : null,
+            path: null,
+          });
+
+          return buildFieldsFromSelectionSet(fragNode.selectionSet, schema, onType);
+        },
       })) as any;
     };
   };
