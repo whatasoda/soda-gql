@@ -1,7 +1,7 @@
 import { gql } from "../../../graphql-system";
 import { topLevelModel } from "./common/top-level";
 
-export const taskFragment = gql.default(({ fragment }) => fragment.Task({ fields: ({ f }) => ({ ...f.id() }) }));
+export const taskFragment = gql.default(({ fragment }) => fragment`fragment TaskFragment on Task { id }`());
 
 export const pageQuery = gql.default(({ query, $var }) =>
   query.operation({

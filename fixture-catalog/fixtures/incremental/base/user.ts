@@ -1,18 +1,11 @@
 import { gql } from "../../../graphql-system";
 
-export const userFragment = gql.default(({ fragment, $var }) =>
-  fragment.Employee({
-    variables: { ...$var("completed").Boolean("?") },
-    fields: ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.tasks({ completed: $.completed })(({ f }) => ({ ...f.id(), ...f.title() })),
-    }),
-  }),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserFragment($completed: Boolean) on Employee { id name tasks(completed: $completed) { id title } }`(),
 );
 
 export const userRemote = {
-  forIterate: gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) })),
+  forIterate: gql.default(({ fragment }) => fragment`fragment ForIterateFragment on Employee { id name }`()),
 };
 
 export const usersQuery = gql.default(({ query, $var }) =>

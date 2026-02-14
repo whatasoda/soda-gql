@@ -4,15 +4,13 @@ import { gql } from "../../../graphql-system";
 // Should be collected with canonical ID: filePath::internalPostFragment
 // UPDATED: Added completed() field
 const internalPostFragment = gql.default(({ fragment }) =>
-  fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.completed() }) }),
+  fragment`fragment InternalPostFragment on Task { id title completed }`(),
 );
 
 // Case 2: Exported fragment using the internal fragment
 // Should be collected with canonical ID: filePath::userWithPostsFragment
 export const userWithPostsFragment = gql.default(({ fragment }) =>
-  fragment.Employee({
-    fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.tasks({})(({ f }) => ({ ...f.id(), ...f.title(), ...f.completed() })) }),
-  }),
+  fragment`fragment UserWithPostsFragment on Employee { id name tasks { id title completed } }`(),
 );
 
 // Case 3: Nested definitions in function scope

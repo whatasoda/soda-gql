@@ -10,12 +10,12 @@ const testAttachment = <T extends object>(): TestAttachment<T> => ({
 
 // Simple .attach() chaining
 export const simpleAttach = gql
-  .default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) }))
+  .default(({ fragment }) => fragment`fragment SimpleAttach on Employee { id }`())
   .attach(testAttachment());
 
 // Multiple .attach() chains
 export const multipleAttach = gql
-  .default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }))
+  .default(({ fragment }) => fragment`fragment MultipleAttach on Employee { id name }`())
   .attach(testAttachment())
   .attach({ name: "second", createValue: () => ({ b: 2 }) });
 

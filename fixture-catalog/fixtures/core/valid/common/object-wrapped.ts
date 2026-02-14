@@ -1,7 +1,7 @@
 import { gql } from "../../../../graphql-system";
 
 export const objectWrapped = {
-  fragment: gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) })),
+  fragment: gql.default(({ fragment }) => fragment`fragment ObjectWrappedFragment on Employee { id }`()),
 
   query: gql.default(({ query, $var }) =>
     query.operation({
@@ -12,7 +12,7 @@ export const objectWrapped = {
   ),
 
   nested: {
-    fragment: gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) })),
+    fragment: gql.default(({ fragment }) => fragment`fragment NestedFragment on Employee { id }`()),
 
     query: gql.default(({ query, $var }) =>
       query.operation({

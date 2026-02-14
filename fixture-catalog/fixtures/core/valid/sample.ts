@@ -1,7 +1,7 @@
 import { gql } from "../../../graphql-system";
 
 // Simple model for testing
-export const userFragment = gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.email() }) }));
+export const userFragment = gql.default(({ fragment }) => fragment`fragment UserFragment on Employee { id email }`());
 
 // Simple operation for testing
 export const getUserQuery = gql.default(({ query, $var }) =>

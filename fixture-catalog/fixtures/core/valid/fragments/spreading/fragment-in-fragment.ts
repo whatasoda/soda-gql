@@ -3,20 +3,20 @@ import { gql } from "../../../../../graphql-system";
 /**
  * Base task fragment
  */
-export const taskFragment = gql.default(({ fragment }) => fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));
+export const taskFragment = gql.default(({ fragment }) => fragment`fragment TaskFragment on Task { id title }`());
 
 /**
  * Employee fragment that spreads the task fragment in its nested field
  */
-export const employeeWithTasksFragment = gql.default(({ fragment, $var }) =>
-  fragment.Employee({
-    variables: { ...$var("completed").Boolean("?") },
-    fields: ({ f, $ }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.tasks({ completed: $.completed })(() => ({ ...taskFragment.spread() })),
-    }),
-  }),
+export const employeeWithTasksFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeWithTasksFragment($completed: Boolean) on Employee {
+    id
+    name
+    tasks(completed: $completed) {
+      id
+      title
+    }
+  }`(),
 );
 
 /**

@@ -2,12 +2,12 @@ import { gql } from "../../../graphql-system";
 
 // Case 1: Non-exported top-level definition (used internally only)
 // Should be collected with canonical ID: filePath::internalPostFragment
-const internalPostFragment = gql.default(({ fragment }) => fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) }));
+const internalPostFragment = gql.default(({ fragment }) => fragment`fragment InternalPostFragment on Task { id title }`());
 
 // Case 2: Exported fragment using the internal fragment
 // Should be collected with canonical ID: filePath::userWithPostsFragment
 export const userWithPostsFragment = gql.default(({ fragment }) =>
-  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.tasks({})(({ f }) => ({ ...f.id(), ...f.title() })) }) }),
+  fragment`fragment UserWithPostsFragment on Employee { id name tasks { id title } }`(),
 );
 
 // Case 3: Nested definitions in function scope

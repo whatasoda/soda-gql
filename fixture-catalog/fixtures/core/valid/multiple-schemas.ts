@@ -1,6 +1,6 @@
 import { gql } from "../../../graphql-system";
 
-export const adminFragment = gql.admin(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
+export const adminFragment = gql.admin(({ fragment }) => fragment`fragment AdminFragment on Employee { id name }`());
 
 export const defaultQuery = gql.default(({ query }) =>
   query.operation({
