@@ -3,9 +3,9 @@
 ## Current State
 
 CURRENT_PHASE: 4
-CURRENT_ROUND: 4.3 (complete)
-LAST_COMPLETED_TASK: 4.3.5 (Session 4.3 gate)
-LAST_SESSION: 2026-02-15T02
+CURRENT_ROUND: 4.4 (complete)
+LAST_COMPLETED_TASK: 4.4.4 (Session 4.4 gate)
+LAST_SESSION: 2026-02-15T03
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
 PHASE_3_STATUS: complete
@@ -222,7 +222,7 @@ Files in scope:
 ### Session 4.4: Playgrounds conversion (~13 files)
 
 MAX_COMMITS: 4
-STATUS: not_started
+STATUS: complete
 
 Files in scope:
 - playgrounds/hasura/src/graphql/fragments.ts (17 defs)
@@ -239,10 +239,13 @@ Files in scope:
 - playgrounds/nestjs-compiler-tsc/src/graphql/operations.ts
 - playgrounds/nestjs-compiler-tsc/README.md
 
-- [ ] Task 4.4.1: Convert hasura playground (fragments.ts + operations.ts)
-- [ ] Task 4.4.2: Convert vite-react playground (fragments, operations, component fragments, ProjectPage)
-- [ ] Task 4.4.3: Convert nextjs-webpack, expo-metro, nestjs-compiler-tsc playgrounds
-- [ ] Task 4.4.4: Session gate — bun run test (playground-specific if available)
+- [x] Task 4.4.1: Convert hasura playground (fragments.ts + operations.ts)
+  Converted 15 simple fragments + UserProfileFragment (with $var) to tagged template. 3 operations without spreads (getProductsAggregate, updateProduct, deleteProduct) converted. Anonymous fragment with spread args + all operations with .spread() kept as callback builders.
+- [x] Task 4.4.2: Convert vite-react playground (fragments, operations, component fragments, ProjectPage)
+  Converted employeeFragment, taskFragment, employeeCardFragment to tagged template. Converted listEmployeesQuery, updateTaskMutation to tagged template. Kept: getEmployeeQuery (.spread()), taskListFragment (metadata callback), ProjectPage ($colocate + .spread()).
+- [x] Task 4.4.3: Convert nextjs-webpack, expo-metro, nestjs-compiler-tsc playgrounds
+  Converted identical fragment files (employeeFragment, taskFragment) across nextjs-webpack + expo-metro. Converted listEmployeesQuery + updateTaskMutation in both. Converted both nestjs-compiler-tsc operations (no spreads). Kept: getEmployeeQuery (.spread()) in nextjs-webpack + expo-metro.
+- [x] Task 4.4.4: Session gate — bun run test (2095 pass, 1 skip, 1 fail pre-existing)
 
 ### Session 4.5: Documentation + final phase gate
 
@@ -278,3 +281,4 @@ Files in scope:
 2026-02-15 00:00 | Session 4.1 complete (4.1.1-4.1.6) | Converted ~30 standalone operations to tagged template across fixture-catalog. Key finding: operation tagged template rejects interpolation, so operations with fragment spreads + formatting fixtures kept as callback builders. Gate: 2095 pass.
 2026-02-15 01:00 | Session 4.2 complete (4.2.1-4.2.5) | All 12 files reviewed. No conversions needed: type tests use callback-builder-only features ($infer, $dir, aliases, unions, $var); integration tests already have tagged template fragments or use metadata/spread; tagged-template-operation.test.ts already tagged template. Gate: 2095 pass.
 2026-02-15 02:00 | Session 4.3 complete (4.3.1-4.3.5) | All 6 files reviewed. No conversions needed: fragments already tagged template (Phase 1); operations use callback-builder-only features ($var, $, .spread(), union callbacks, metadata, transformDocument); compat.test.ts tests the callback builder API itself. Gate: 2095 pass.
+2026-02-15 03:00 | Session 4.4 complete (4.4.1-4.4.4) | Converted fragments + standalone operations across all 5 playgrounds (hasura, vite-react, nextjs-webpack, expo-metro, nestjs-compiler-tsc). Operations with .spread(), metadata callbacks, and $colocate kept as callback builders. Gate: 2095 pass.
