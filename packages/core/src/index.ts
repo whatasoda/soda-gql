@@ -1,4 +1,5 @@
 export * from "./composer";
+export * from "./graphql";
 export * from "./prebuilt";
 export * from "./schema";
 export * from "./types/element";

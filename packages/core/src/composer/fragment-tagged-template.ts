@@ -53,7 +53,7 @@ function extractFragmentArgText(rawSource: string): string | null {
  * Extract variable definitions from Fragment Arguments syntax.
  * Wraps the argument list in a synthetic query to parse with graphql-js.
  */
-function extractFragmentVariables(
+export function extractFragmentVariables(
   rawSource: string,
   schemaIndex: SchemaIndex,
 ): VariableDefinitions {
@@ -84,8 +84,9 @@ function extractFragmentVariables(
 /**
  * Builds field selections from a GraphQL AST SelectionSet by driving field factories.
  * Converts parsed AST selections into the AnyFieldsExtended format that the document builder expects.
+ * Also used by typegen for static field extraction from tagged templates.
  */
-function buildFieldsFromSelectionSet(
+export function buildFieldsFromSelectionSet(
   selectionSet: SelectionSetNode,
   schema: AnyGraphqlSchema,
   typeName: string,
