@@ -135,25 +135,16 @@ export const getOrderItems = gql.default(({ query, $var }) =>
 
 // Aggregation query
 export const getProductsAggregate = gql.default(({ query }) =>
-  query.operation({
-    name: "GetProductsAggregate",
-    fields: ({ f }) => ({
-      ...f.products_aggregate()(({ f }) => ({
-        ...f.aggregate()(({ f }) => ({
-          ...f.count(),
-          ...f.avg()(({ f }) => ({
-            ...f.base_price(),
-          })),
-          ...f.max()(({ f }) => ({
-            ...f.base_price(),
-          })),
-          ...f.min()(({ f }) => ({
-            ...f.base_price(),
-          })),
-        })),
-      })),
-    }),
-  }),
+  query`query GetProductsAggregate {
+    products_aggregate {
+      aggregate {
+        count
+        avg { base_price }
+        max { base_price }
+        min { base_price }
+      }
+    }
+  }`(),
 );
 
 // Mutation examples
@@ -183,37 +174,22 @@ export const createProduct = gql.default(({ mutation, $var }) =>
   }),
 );
 
-export const updateProduct = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "UpdateProduct",
-    variables: {
-      ...$var("id").uuid("!"),
-      ...$var("name").String("?"),
-      ...$var("isPublished").Boolean("?"),
-    },
-    fields: ({ f, $ }) => ({
-      ...f.update_products_by_pk({
-        pk_columns: { id: $.id },
-        _set: { name: $.name, is_published: $.isPublished },
-      })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.is_published(),
-        ...f.updated_at(),
-      })),
-    }),
-  }),
+export const updateProduct = gql.default(({ mutation }) =>
+  mutation`mutation UpdateProduct($id: uuid!, $name: String, $isPublished: Boolean) {
+    update_products_by_pk(pk_columns: { id: $id }, _set: { name: $name, is_published: $isPublished }) {
+      id
+      name
+      is_published
+      updated_at
+    }
+  }`(),
 );
 
-export const deleteProduct = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "DeleteProduct",
-    variables: { ...$var("id").uuid("!") },
-    fields: ({ f, $ }) => ({
-      ...f.delete_products_by_pk({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const deleteProduct = gql.default(({ mutation }) =>
+  mutation`mutation DeleteProduct($id: uuid!) {
+    delete_products_by_pk(id: $id) {
+      id
+      name
+    }
+  }`(),
 );
