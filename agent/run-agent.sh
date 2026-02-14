@@ -10,7 +10,6 @@ echo "=== Autonomous Agent Loop ==="
 echo "Project: $PROJECT_DIR"
 echo "Logs:    $SCRIPT_DIR/logs/"
 echo "Model:   claude-opus-4-6"
-echo "Budget:  \$5 per session"
 echo "Press Ctrl+C to stop"
 echo ""
 
@@ -30,7 +29,6 @@ while true; do
         --print \
         --dangerously-skip-permissions \
         --model claude-opus-4-6 \
-        --max-budget-usd 5 \
         --append-system-prompt "$(cat "$SCRIPT_DIR/AGENT_PROMPT.md")" \
         -p "Read agent/agent-progress.md and continue the tagged-template-unification implementation. Pick up where the last session left off." \
         2>&1 | tee "$LOGFILE" || true
