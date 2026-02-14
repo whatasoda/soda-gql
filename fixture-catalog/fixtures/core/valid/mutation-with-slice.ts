@@ -1,11 +1,7 @@
 import { gql } from "../../../graphql-system";
 
-export const pageAction = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "PageAction",
-    variables: { ...$var("projectId").ID("!"), ...$var("title").String("!") },
-    fields: ({ f, $ }) => ({
-      ...f.createTask({ projectId: $.projectId, input: { title: $.title } })(({ f }) => ({ ...f.id() })),
-    }),
-  }),
+export const pageAction = gql.default(({ mutation }) =>
+  mutation`mutation PageAction($projectId: ID!, $title: String!) {
+    createTask(projectId: $projectId, input: { title: $title }) { id }
+  }`(),
 );
