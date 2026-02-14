@@ -30,23 +30,35 @@ soda-gql fragments with variables are similar to Relay's `@argumentDefinitions` 
 
 ## Defining a Fragment
 
-Use the `gql.default()` pattern to define a fragment:
+Use the `gql.default()` pattern with tagged template syntax to define a fragment:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserFragment on User {
+    id
+    name
+    email
+  }`(),
+);
+```
+
+The tagged template specifies the GraphQL type and field selections directly. soda-gql validates the fragment against your schema at build time.
+
+For advanced features like field aliases, you can use the callback builder syntax:
+
+```typescript
+export const userFragment = gql.default(({ fragment }) =>
   fragment.User({
     fields: ({ f }) => ({
-      ...f.id(),
+      ...f.id(null, { alias: "userId" }),
       ...f.name(),
       ...f.email(),
     }),
   }),
 );
 ```
-
-The `fragment.User` call specifies the GraphQL type this fragment applies to. The field builder (`f`) provides type-safe access to all fields defined on that type.
 
 ## Field Selection API
 
@@ -208,7 +220,18 @@ For colocation patterns, see the [Fragment Colocation](/guide/colocation) guide.
 
 ## Fragment Keys
 
-The optional `key` property gives a fragment a unique identifier:
+The optional `key` property gives a fragment a unique identifier. With tagged template syntax, pass the key as an argument before the template:
+
+```typescript
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User("UserFields")`
+    id
+    name
+  `(),
+);
+```
+
+With callback builder syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>

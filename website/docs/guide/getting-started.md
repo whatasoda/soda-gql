@@ -86,26 +86,25 @@ This generates the type-safe GraphQL system in the `graphql-system/` directory.
 
 ### Define a Fragment
 
-Fragments specify reusable field selections:
+Fragments specify reusable field selections using tagged template syntax:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment`fragment UserFragment on User {
+    id
+    name
+  }`(),
 );
 ```
 
 ### Create an Operation
 
-Operations define complete GraphQL queries with field selections:
+Operations can use tagged template syntax for standalone queries, or callback builders when fragment spreads are needed:
 
 ```typescript
+// Callback builder (required for fragment spreads)
 export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
