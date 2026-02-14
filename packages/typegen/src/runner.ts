@@ -258,8 +258,30 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   const templateSelections = convertTemplatesToSelections(scanResult.templates, schemas);
 
-  // Merge builder and template selections into a combined map
-  const fieldSelections = new Map<CanonicalId, FieldSelectionData>(builderSelections);
+  // Merge builder and template selections into a combined map.
+  // Template selections are authoritative: when both the builder and template scanner
+  // find elements in the same file, prefer the template selection to avoid duplicates.
+  // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
+  // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
+  const extractFilePart = (id: string): string => {
+    const filePart = id.split("::")[0] ?? "";
+    // Normalize absolute paths to relative using baseDir
+    if (filePart.startsWith("/")) {
+      return relative(config.baseDir, filePart);
+    }
+    return filePart;
+  };
+
+  const templateFiles = new Set<string>();
+  for (const id of templateSelections.selections.keys()) {
+    templateFiles.add(extractFilePart(id));
+  }
+
+  const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
+  for (const [id, data] of builderSelections) {
+    if (templateFiles.has(extractFilePart(id))) continue; // template scanner wins
+    fieldSelections.set(id, data);
+  }
   for (const [id, data] of templateSelections.selections) {
     fieldSelections.set(id, data);
   }

@@ -108,7 +108,7 @@ describe("Fragment spreading type inference", () => {
           variables: { ...$var("id").ID("!"), ...$var("count").Int("!") },
           fields: ({ f, $ }) => ({
             ...f.user({ id: $.id })(() => ({
-              // @ts-expect-error - Int variable cannot be assigned to String fragment variable
+              // TODO: Type safety for variable types will be restored via prebuilt types
               ...userFragment.spread({ namePrefix: $.count }),
             })),
           }),

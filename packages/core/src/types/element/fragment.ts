@@ -36,7 +36,7 @@ interface FragmentArtifact<
   readonly key: string | undefined;
   readonly schemaLabel: string;
   readonly variableDefinitions: VariableDefinitions;
-  readonly spread: (variables: TVariables) => TFields;
+  readonly spread: (...args: TVariables extends void ? [] : [variables: TVariables]) => TFields;
 }
 
 declare const __FRAGMENT_BRAND__: unique symbol;
@@ -111,7 +111,11 @@ export class Fragment<
       key: string | undefined;
       schemaLabel: TSchema["label"];
       variableDefinitions: TVariableDefinitions;
-      spread: (variables: OptionalArg<AssignableInputFromVarDefs<TSchema, TVariableDefinitions>>) => TFields;
+      spread: (
+        ...args: OptionalArg<AssignableInputFromVarDefs<TSchema, TVariableDefinitions>> extends void
+          ? []
+          : [variables: OptionalArg<AssignableInputFromVarDefs<TSchema, TVariableDefinitions>>]
+      ) => TFields;
     },
   ) {
     type Fields = TFields & { [key: symbol]: never };
