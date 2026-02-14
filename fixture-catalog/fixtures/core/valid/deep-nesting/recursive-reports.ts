@@ -28,34 +28,30 @@ export const employeeHierarchyFragment = gql.default(({ fragment }) =>
 /**
  * Recursive relation query
  */
-export const employeeTreeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "EmployeeTree",
-    variables: { ...$var("employeeId").ID("!"), ...$var("reportsLimit").Int("?") },
-    fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.role(),
-        ...f.manager()(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.manager()(({ f }) => ({
-            ...f.id(),
-            ...f.name(),
-          })),
-        })),
-        ...f.reports({ limit: $.reportsLimit })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.reports({ limit: $.reportsLimit })(({ f }) => ({
-            ...f.id(),
-            ...f.name(),
-          })),
-        })),
-      })),
-    }),
-  }),
+export const employeeTreeQuery = gql.default(({ query }) =>
+  query`query EmployeeTree($employeeId: ID!, $reportsLimit: Int) {
+    employee(id: $employeeId) {
+      id
+      name
+      role
+      manager {
+        id
+        name
+        manager {
+          id
+          name
+        }
+      }
+      reports(limit: $reportsLimit) {
+        id
+        name
+        reports(limit: $reportsLimit) {
+          id
+          name
+        }
+      }
+    }
+  }`(),
 );
 
 /**
