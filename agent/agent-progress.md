@@ -3,13 +3,13 @@
 ## Current State
 
 CURRENT_PHASE: 4
-CURRENT_ROUND: not_started
-LAST_COMPLETED_TASK: 3.8 (Phase 3 gate)
-LAST_SESSION: 2026-02-14T18
+CURRENT_ROUND: 4.1 (complete)
+LAST_COMPLETED_TASK: 4.1.6 (Session 4.1 gate)
+LAST_SESSION: 2026-02-15T00
 PHASE_1_STATUS: complete
 PHASE_2_STATUS: complete
 PHASE_3_STATUS: complete
-PHASE_4_STATUS: not_started
+PHASE_4_STATUS: in_progress
 
 ## Phase 1: Core Tagged Template Implementation
 
@@ -100,7 +100,7 @@ updating codegen output expectations, and fixing fixture-catalog fragments.
 ## Phase 4: Tests, Fixtures, Documentation
 
 Plan: docs/plans/tagged-template-phase4-sessions.md
-STATUS: not_started
+STATUS: in_progress
 
 Execution model: session-scoped with MAX_COMMITS limit per session.
 Each session works only on its assigned tasks. Exit after completing all tasks or reaching MAX_COMMITS.
@@ -108,7 +108,7 @@ Each session works only on its assigned tasks. Exit after completing all tasks o
 ### Session 4.1: Fixture-catalog operation & remaining fragment conversion
 
 MAX_COMMITS: 4
-STATUS: not_started
+STATUS: complete
 
 Files in scope (40 files with `.operation(` or callback `fields:`):
 - fixture-catalog/fixtures/core/valid/sample.ts
@@ -152,12 +152,16 @@ Files in scope (40 files with `.operation(` or callback `fields:`):
 - fixture-catalog/fixtures/incremental/variants/nested-definitions.updated.ts
 - fixture-catalog/fixtures/core/invalid/nested-non-top-level/source.ts
 
-- [ ] Task 4.1.1: Convert core/valid/ simple operations (sample, common/*, attach-chaining, local-and-imported-deps, multiple-schemas)
-- [ ] Task 4.1.2: Convert core/valid/ metadata & subscription operations (top-level-with-metadata, top-level-definitions, async-metadata-operation, anonymous-hasura-destructure, subscription-*, mutation-*)
-- [ ] Task 4.1.3: Convert core/valid/ import-dependent & namespace operations (namespace-imports, nested-namespace-deps, imported-binding-refs, imported-slice-refs, deep-nesting/*, inputs/*, unions/*, operations/*, runtime/*)
-- [ ] Task 4.1.4: Convert core/valid/fragments/spreading/* operations + core/invalid/nested-non-top-level
-- [ ] Task 4.1.5: Convert formatting/ and incremental/ fixtures
-- [ ] Task 4.1.6: Session gate — bun run test
+- [x] Task 4.1.1: Convert core/valid/ simple operations (sample, common/*, attach-chaining, multiple-schemas)
+- [x] Task 4.1.2: Convert core/valid/ metadata & subscription operations (top-level-*, async-metadata, anonymous-hasura, subscription-*, mutation-*)
+- [x] Task 4.1.3: Convert core/valid/ standalone operations (deep-nesting/*, inputs/*, unions/*, operations/basic)
+  Note: Operations with fragment spreads kept as callback builders (operation tagged template rejects interpolation):
+  namespace-imports, nested-namespace-deps, imported-*-refs, local-and-imported-deps,
+  operations/inline-with-imported-fragments, runtime/cross-file-order, fragments/spreading/*
+- [x] Task 4.1.4: Reviewed core/valid/fragments/spreading/* + core/invalid/nested-non-top-level — kept as callback builders
+- [x] Task 4.1.5: Convert incremental/ fixtures (user, nested-definitions, profile-query, user-catalog, variants)
+  Note: formatting/ fixtures kept as callback builders (formatter tests validate field selection object formatting)
+- [x] Task 4.1.6: Session gate — bun run test (2095 pass, 1 skip, 1 fail pre-existing)
 
 ### Session 4.2: Core type & integration tests (12 files)
 
@@ -259,3 +263,4 @@ Files in scope:
 2026-02-14 15:00 | Phase 2 complete (2.4-2.6) | Watch mode works via full runTypegen() calls; no incremental path needed. 25 unit tests total. Phase 2 gate passed.
 2026-02-14 16:00 | Phase 3 Round 1 complete (3.1-3.4) | Scoped Phase 3, committed Phase 1 changes, removed fragment.ts, fixed codegen tests, converted 5 critical fixtures. 50+ fixtures remain for Phase 4.
 2026-02-14 18:00 | Phase 3 complete (3.5-3.8) | Fixed Fragment.spread type for AnyFragment, typegen dedup logic, e2e fixtures. All fixture-catalog + builder tests converted. Phase 3 gate passed.
+2026-02-15 00:00 | Session 4.1 complete (4.1.1-4.1.6) | Converted ~30 standalone operations to tagged template across fixture-catalog. Key finding: operation tagged template rejects interpolation, so operations with fragment spreads + formatting fixtures kept as callback builders. Gate: 2095 pass.
