@@ -4,7 +4,7 @@ import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -63,7 +63,7 @@ describe("helpers injection via adapter", () => {
       helpers: { auth: authHelper },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -93,7 +93,7 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -113,7 +113,7 @@ describe("helpers injection via adapter", () => {
       helpers: { custom: () => "test" },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -137,7 +137,7 @@ describe("helpers injection via adapter", () => {
   });
 
   it("works with inputTypeMethods option", () => {
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
     let varBuilderAvailable = false;
 
@@ -168,7 +168,7 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });

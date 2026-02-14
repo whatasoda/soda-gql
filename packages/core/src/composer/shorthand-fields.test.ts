@@ -4,7 +4,7 @@ import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/sche
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 /**
@@ -103,7 +103,7 @@ const inputTypeMethods = {
 };
 
 describe("Shorthand Field Selection", () => {
-  const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
   describe("basic shorthand syntax", () => {
     it("accepts shorthand for scalar fields", () => {

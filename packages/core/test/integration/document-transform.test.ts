@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { Kind, print, visit } from "graphql";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type ExtractMetadataAdapter, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
@@ -106,7 +106,6 @@ describe("document transformation integration", () => {
 
       const gql = createGqlElementComposer<
         Schema,
-        FragmentBuildersAll<Schema, ExtractMetadataAdapter<typeof adapter>>,
         StandardDirectives,
         typeof adapter
       >(schema, { adapter, inputTypeMethods });
@@ -166,7 +165,7 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
         inputTypeMethods,
       });
@@ -203,7 +202,7 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
         inputTypeMethods,
       });
@@ -239,7 +238,7 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
         inputTypeMethods,
       });
@@ -287,7 +286,7 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
         inputTypeMethods,
       });

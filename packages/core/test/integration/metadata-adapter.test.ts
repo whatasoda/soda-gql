@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createVarMethod } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { FragmentMetaInfo, MetadataAdapter, OperationMetadata } from "../../src/types/metadata";
@@ -66,7 +66,7 @@ const inputTypeMethods = {
 describe("metadata adapter", () => {
   describe("default adapter", () => {
     it("aggregates fragment metadata as readonly array", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a fragment (no metadata builder — tagged template)
       const userFragment = gql(({ fragment }) =>
@@ -91,7 +91,7 @@ describe("metadata adapter", () => {
     });
 
     it("works with operations without spread fragments", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -150,7 +150,7 @@ describe("metadata adapter", () => {
     });
 
     it("supports custom fragment metadata types", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof headerMergingAdapter>(
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(
         schema,
         {
           adapter: headerMergingAdapter,
@@ -193,7 +193,7 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof capturingAdapter>(
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(
         schema,
         {
           adapter: capturingAdapter,
@@ -224,7 +224,7 @@ describe("metadata adapter", () => {
     });
 
     it("provides aggregated metadata to operation callback", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof headerMergingAdapter>(
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(
         schema,
         {
           adapter: headerMergingAdapter,
@@ -281,7 +281,7 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof capturingAdapter>(
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(
         schema,
         {
           adapter: capturingAdapter,
@@ -312,7 +312,7 @@ describe("metadata adapter", () => {
 
   describe("operation metadata inference", () => {
     it("infers operation metadata type from callback return", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Simple return type
       const operation1 = gql(({ query, $var }) =>
@@ -351,7 +351,7 @@ describe("metadata adapter", () => {
     });
 
     it("allows different metadata types per operation", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Operation with string metadata
       const op1 = gql(({ query, $var }) =>

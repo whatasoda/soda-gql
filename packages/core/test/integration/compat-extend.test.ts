@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadata } from "../../src/types/metadata";
 import { type ExtendedTestSchema, extendedInputTypeMethods, extendedTestSchema } from "../fixtures";
 
@@ -10,7 +10,7 @@ type Schema = ExtendedTestSchema;
 const inputTypeMethods = extendedInputTypeMethods;
 
 describe("compat-extend integration", () => {
-  const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
   describe("basic compat -> extend flow", () => {
     it("creates operation from compat via extend", () => {

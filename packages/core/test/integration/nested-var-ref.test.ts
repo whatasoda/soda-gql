@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
@@ -62,7 +62,7 @@ const inputTypeMethods = {
 describe("nested VarRef with $var helpers", () => {
   describe("$var.getNameAt", () => {
     it("extracts variable name from nested structure in metadata", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a nested structure with a VarRef inside
       const userIdVarRef = createVarRefFromVariable("userId");
@@ -95,7 +95,7 @@ describe("nested VarRef with $var helpers", () => {
 
   describe("$var.getValueAt", () => {
     it("extracts const value from nested structure in metadata", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a nested structure with const values and a VarRef
       const userIdVarRef = createVarRefFromVariable("userId");
@@ -131,7 +131,7 @@ describe("nested VarRef with $var helpers", () => {
 
   describe("mixed nested VarRef usage", () => {
     it("handles nested structure with both VarRef and const values", () => {
-      const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       const ageVarRef = createVarRefFromVariable("userAge");
       const nestedRef = createVarRefFromNestedValue({

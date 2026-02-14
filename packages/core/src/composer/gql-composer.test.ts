@@ -3,7 +3,7 @@ import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/sche
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -45,7 +45,7 @@ const inputTypeMethods = {
 };
 
 describe("createGqlInvoker", () => {
-  const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
   it("provides variable builders sourced from schema metadata", () => {
     let idVarRef: Record<string, any> | undefined;

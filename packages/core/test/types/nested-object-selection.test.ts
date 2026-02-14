@@ -8,11 +8,11 @@
 
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { type NestedSchema, nestedInputTypeMethods, nestedSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<NestedSchema, FragmentBuildersAll<NestedSchema>, StandardDirectives>(nestedSchema, {
+const gql = createGqlElementComposer<NestedSchema, StandardDirectives>(nestedSchema, {
   inputTypeMethods: nestedInputTypeMethods,
 });
 

@@ -12,7 +12,6 @@ import { createCompatTaggedTemplate } from "./compat-tagged-template";
 import { applyContextTransformer } from "./context-transformer";
 import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createExtendComposer } from "./extend";
-import { type FragmentBuilderFor, createGqlFragmentComposers } from "./fragment";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 import { createOperationComposerFactory } from "./operation";
 import { createOperationTaggedTemplate } from "./operation-tagged-template";
@@ -64,19 +63,6 @@ export type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter exten
   : DefaultMetadataAdapter;
 
 /**
- * Default fragment builders type computed from schema.
- * This is the mapped type that's expensive to compute for large schemas.
- */
-export type FragmentBuildersAll<
-  TSchema extends AnyGraphqlSchema,
-  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
-> = {
-  readonly [TTypeName in keyof TSchema["object"]]: TTypeName extends string
-    ? FragmentBuilderFor<TSchema, TTypeName, TAdapter>
-    : never;
-};
-
-/**
  * Configuration options for `createGqlElementComposer`.
  */
 export type GqlElementComposerOptions<
@@ -97,7 +83,7 @@ export type GqlElementComposerOptions<
  *
  * This is the main entry point for defining GraphQL operations and fragments.
  * The returned function provides a context with:
- * - `fragment`: Builders for each object type
+ * - `fragment`: Tagged template function for fragment definitions
  * - `query/mutation/subscription`: Operation builders
  * - `$var`: Variable definition helpers
  * - `$dir`: Field directive helpers (@skip, @include)
@@ -127,7 +113,6 @@ export type GqlElementComposerOptions<
  */
 export const createGqlElementComposer = <
   TSchema extends AnyGraphqlSchema,
-  TFragmentBuilders,
   TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
 >(
@@ -140,9 +125,8 @@ export const createGqlElementComposer = <
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const transformDocument = adapter?.transformDocument;
-  // Hybrid fragment: tagged template function + type-keyed builders for backward compat
-  const fragmentBuilders = createGqlFragmentComposers<TSchema, TMetadataAdapter>(schema, metadataAdapter) as TFragmentBuilders;
-  const fragment = Object.assign(createFragmentTaggedTemplate(schema), fragmentBuilders);
+  // Fragment: pure tagged template function (callback builders removed in Phase 3)
+  const fragment = createFragmentTaggedTemplate(schema);
   const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
     schema,
     metadataAdapter,
