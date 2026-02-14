@@ -5,7 +5,6 @@ export * from "./directive-builder";
 export * from "./extend";
 export * from "./field-path-context";
 export * from "./fields-builder";
-export * from "./fragment";
 export * from "./fragment-tagged-template";
 export * from "./fragment-usage-context";
 export * from "./gql-composer";
