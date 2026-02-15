@@ -3,18 +3,18 @@
  * @module
  */
 
-import { parse as parseGraphql, Kind } from "graphql";
+import { Kind, parse as parseGraphql } from "graphql";
+import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
 import { Operation } from "../types/element";
+import type { AnyFragment } from "../types/element/fragment";
+import type { AnyOperationOf } from "../types/element/operation";
 import type { AnyMetadataAdapter, DocumentTransformer } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
-import type { AnyFragment } from "../types/element/fragment";
-import type { AnyOperation } from "../types/element/operation";
-import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
 
 /** Callable result from tagged template - resolves to Operation or Fragment. */
-export type TemplateResult<TElement extends AnyOperation | AnyFragment> = {
-  (options?: TemplateResultMetadataOptions): TElement;
-};
+export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyFragment> = (
+  options?: TemplateResultMetadataOptions,
+) => TElement;
 
 /** Options for TemplateResult resolution. */
 export type TemplateResultMetadataOptions = {
@@ -22,10 +22,10 @@ export type TemplateResultMetadataOptions = {
 };
 
 /** Tagged template function type for operations. */
-export type OperationTaggedTemplateFunction = (
+export type OperationTaggedTemplateFunction<TOperationType extends OperationType = OperationType> = (
   strings: TemplateStringsArray,
   ...values: never[]
-) => TemplateResult<AnyOperation>;
+) => TemplateResult<AnyOperationOf<TOperationType>>;
 
 /**
  * Creates a tagged template function for a specific operation type.
@@ -35,16 +35,16 @@ export type OperationTaggedTemplateFunction = (
  * @param _metadataAdapter - Optional metadata adapter (reserved for future use)
  * @param _transformDocument - Optional document transformer (reserved for future use)
  */
-export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
+export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
-  operationType: OperationType,
+  operationType: TOperationType,
   _metadataAdapter?: AnyMetadataAdapter,
   // biome-ignore lint/suspicious/noExplicitAny: DocumentTransformer generic params not needed here
   _transformDocument?: DocumentTransformer<any, any>,
-): OperationTaggedTemplateFunction => {
+): OperationTaggedTemplateFunction<TOperationType> => {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
-  return (strings: TemplateStringsArray, ...values: never[]): TemplateResult<AnyOperation> => {
+  return (strings: TemplateStringsArray, ...values: never[]): TemplateResult<AnyOperationOf<TOperationType>> => {
     if (values.length > 0) {
       throw new Error("Tagged templates must not contain interpolated expressions");
     }
@@ -74,16 +74,14 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
     }
 
     if (opNode.operation !== operationType) {
-      throw new Error(
-        `Operation type mismatch: expected "${operationType}", got "${opNode.operation}"`,
-      );
+      throw new Error(`Operation type mismatch: expected "${operationType}", got "${opNode.operation}"`);
     }
 
     const operationName = opNode.name.value;
     const varDefNodes = opNode.variableDefinitions ?? [];
     const varSpecifiers = buildVarSpecifiers(varDefNodes, schemaIndex);
 
-    return (options?: TemplateResultMetadataOptions): AnyOperation => {
+    return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
       // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
       return Operation.create(() => ({
         operationType,

@@ -1,11 +1,11 @@
-import type { AnyFields } from "../types/fragment";
+import type { AnyFieldsExtended } from "../types/fragment";
 import type { UnionToIntersection } from "../utils/type-utils";
 
 /**
  * Type for colocated field entries.
  * Maps labels to their corresponding field selections.
  */
-export type ColocatedEntries = Record<string, AnyFields>;
+export type ColocatedEntries = Record<string, AnyFieldsExtended>;
 
 /**
  * Result type for colocated fields.

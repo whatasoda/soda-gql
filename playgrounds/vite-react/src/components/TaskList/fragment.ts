@@ -6,28 +6,17 @@ import { gql } from "@/graphql-system";
  * Fetches tasks for a specific project.
  */
 export const taskListFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: {
-        ...$var("projectId").ID("!"),
-        ...$var("completed").Boolean("?"),
-      },
-      metadata: ({ $ }) => ({
-        custom: {
-          projectId: $.projectId,
-        },
-      }),
-      fields: ({ f, $ }) => ({
-        ...f.project({ id: $.projectId })(({ f }) => ({
-          ...f.tasks({ completed: $.completed })(({ f }) => ({
-            ...f.id(),
-            ...f.title(),
-            ...f.completed(),
-            ...f.priority(),
-          })),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment`fragment TaskListFragment($projectId: ID!, $completed: Boolean) on Query {
+      project(id: $projectId) {
+        tasks(completed: $completed) {
+          id
+          title
+          completed
+          priority
+        }
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
