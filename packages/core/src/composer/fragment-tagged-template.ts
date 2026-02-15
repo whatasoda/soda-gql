@@ -98,12 +98,16 @@ export function buildFieldsFromSelectionSet(
     if (selection.kind === Kind.FIELD) {
       const fieldName = selection.name.value;
       const alias = selection.alias?.value ?? fieldName;
+      // __typename is an implicit introspection field on all object types
+      if (fieldName === "__typename") {
+        result[alias] = true;
+        continue;
+      }
+
       const factory = (f as Record<string, ((...args: unknown[]) => unknown) | undefined>)[fieldName];
 
       if (!factory) {
-        // Field not found in schema — use shorthand as fallback
-        result[alias] = true;
-        continue;
+        throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
       }
 
       // Build args from AST arguments
@@ -196,9 +200,13 @@ function extractASTValue(node: { readonly kind: string; readonly value?: unknown
  */
 function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldName: string): string {
   const typeDef = schema.object[typeName];
-  if (!typeDef) return typeName;
+  if (!typeDef) {
+    throw new Error(`Type "${typeName}" is not defined in schema objects`);
+  }
   const fieldDef = typeDef.fields[fieldName] as string | { spec: string } | undefined;
-  if (!fieldDef) return typeName;
+  if (!fieldDef) {
+    throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
+  }
   const specStr = typeof fieldDef === "string" ? fieldDef : fieldDef.spec;
   const parts = specStr.split("|");
   return parts[1] ?? typeName;

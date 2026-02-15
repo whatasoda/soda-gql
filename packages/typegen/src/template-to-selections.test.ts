@@ -203,6 +203,27 @@ describe("convertTemplatesToSelections", () => {
     }
   });
 
+  it("emits warning for unknown field in template", () => {
+    const templates = new Map<string, readonly ExtractedTemplate[]>([
+      [
+        "/src/bad-field.ts",
+        [
+          {
+            schemaName: "default",
+            kind: "fragment",
+            content: "fragment Bad on User { nonexistent }",
+          },
+        ],
+      ],
+    ]);
+
+    const result = convertTemplatesToSelections(templates, schemas);
+
+    expect(result.selections.size).toBe(0);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0]).toContain("nonexistent");
+  });
+
   it("handles templates from multiple files", () => {
     const templates = new Map<string, readonly ExtractedTemplate[]>([
       [

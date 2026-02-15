@@ -123,6 +123,13 @@ describe("createFragmentTaggedTemplate", () => {
         fragment`fragment A on User { id } fragment B on Post { id }`,
       ).toThrow("Expected exactly one fragment definition, found 2");
     });
+
+    it("throws when selecting a field not in the schema", () => {
+      const frag = fragment`fragment Foo on User { nonexistent }`();
+      expect(() => frag.spread({} as never)).toThrow(
+        'Field "nonexistent" is not defined on type "User"',
+      );
+    });
   });
 
   describe("spread function", () => {
@@ -131,6 +138,12 @@ describe("createFragmentTaggedTemplate", () => {
       expect(typeof result.spread).toBe("function");
       const spreadResult = result.spread({} as never);
       expect(spreadResult).toBeDefined();
+    });
+
+    it("allows __typename as an implicit introspection field", () => {
+      const result = fragment`fragment UserWithTypename on User { __typename id name }`();
+      const fields = result.spread({} as never);
+      expect(fields).toHaveProperty("__typename");
     });
   });
 });

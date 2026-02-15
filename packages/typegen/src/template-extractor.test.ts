@@ -23,7 +23,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
     expect(templates[0]!.schemaName).toBe("default");
@@ -39,7 +39,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
     expect(templates[0]!.kind).toBe("fragment");
@@ -59,7 +59,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(2);
     expect(templates[0]!.schemaName).toBe("default");
@@ -74,7 +74,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
     expect(templates[0]!.kind).toBe("query");
@@ -89,7 +89,7 @@ describe("extractTemplatesFromSource", () => {
       });
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
     expect(templates[0]!.kind).toBe("query");
@@ -101,7 +101,7 @@ describe("extractTemplatesFromSource", () => {
       export const foo = something();
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(0);
   });
@@ -109,9 +109,21 @@ describe("extractTemplatesFromSource", () => {
   it("returns empty for invalid TypeScript", () => {
     const source = "this is not valid typescript {{{";
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates, warnings } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(0);
+    // No warning because file doesn't contain "gql"
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("warns when gql-containing file fails to parse", () => {
+    const source = "import { gql } from './graphql-system'; this is not valid {{{";
+
+    const { templates, warnings } = extractTemplatesFromSource("/src/bad.ts", source, helper);
+
+    expect(templates).toHaveLength(0);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("/src/bad.ts");
   });
 
   it("skips templates with interpolation expressions", () => {
@@ -122,7 +134,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(0);
   });
@@ -138,7 +150,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(2);
     expect(templates[0]!.kind).toBe("mutation");
@@ -153,7 +165,7 @@ describe("extractTemplatesFromSource", () => {
       ).attach("module", "/src/a.ts");
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
     expect(templates[0]!.kind).toBe("query");
@@ -168,7 +180,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/component.tsx", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/component.tsx", source, helper);
 
     expect(templates).toHaveLength(1);
   });
@@ -181,7 +193,7 @@ describe("extractTemplatesFromSource", () => {
       );
     `;
 
-    const templates = extractTemplatesFromSource("/src/a.ts", source, helper);
+    const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
 
     expect(templates).toHaveLength(1);
   });

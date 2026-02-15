@@ -59,7 +59,8 @@ export const scanSourceFiles = (options: ScanSourceFilesOptions): ScanResult => 
 
     try {
       const source = readFileSync(normalizedPath, "utf-8");
-      const extracted = extractTemplatesFromSource(normalizedPath, source, helper);
+      const { templates: extracted, warnings: extractionWarnings } = extractTemplatesFromSource(normalizedPath, source, helper);
+      warnings.push(...extractionWarnings);
 
       if (extracted.length > 0) {
         templates.set(normalizedPath, extracted);

@@ -34,6 +34,12 @@ export type ExtractedTemplate = {
   readonly content: string;
 };
 
+/** Result of extracting templates from a source file. */
+export type ExtractionResult = {
+  readonly templates: readonly ExtractedTemplate[];
+  readonly warnings: readonly string[];
+};
+
 const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
 
 const isOperationKind = (value: string): value is OperationKind => OPERATION_KINDS.has(value);
@@ -276,24 +282,28 @@ const walkAndExtract = (
  * @param filePath - Absolute path to the source file (used for import resolution)
  * @param source - TypeScript source code
  * @param helper - GraphQL system identifier for resolving gql imports
- * @returns Array of extracted templates, empty if file has no gql usage
+ * @returns Extracted templates and any warnings
  */
 export const extractTemplatesFromSource = (
   filePath: string,
   source: string,
   helper: GraphqlSystemIdentifyHelper,
-): readonly ExtractedTemplate[] => {
+): ExtractionResult => {
+  const warnings: string[] = [];
   const isTsx = filePath.endsWith(".tsx");
 
   const program = safeParseSync(source, isTsx);
   if (!program || program.type !== "Module") {
-    return [];
+    if (source.includes("gql")) {
+      warnings.push(`[typegen-extract] Failed to parse ${filePath}`);
+    }
+    return { templates: [], warnings };
   }
 
   const gqlIdentifiers = collectGqlIdentifiers(program, filePath, helper);
   if (gqlIdentifiers.size === 0) {
-    return [];
+    return { templates: [], warnings };
   }
 
-  return walkAndExtract(program, gqlIdentifiers);
+  return { templates: walkAndExtract(program, gqlIdentifiers), warnings };
 };
