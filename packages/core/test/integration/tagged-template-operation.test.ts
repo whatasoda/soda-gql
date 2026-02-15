@@ -73,7 +73,6 @@ describe("tagged template operation integration", () => {
       expect(() => {
         gql(({ query }) => {
           const name = "test";
-          // biome-ignore lint/suspicious/noExplicitAny: Testing error case
           return (query as any)`query ${name} { user(id: "1") { id } }`();
         });
       }).toThrow("interpolated expressions");

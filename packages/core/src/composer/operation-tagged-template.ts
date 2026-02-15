@@ -49,9 +49,9 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       throw new Error("Tagged templates must not contain interpolated expressions");
     }
 
-    const source = strings[0]!;
+    const source = strings[0] ?? "";
 
-    let document;
+    let document: import("graphql").DocumentNode;
     try {
       document = parseGraphql(source);
     } catch (error) {
@@ -64,6 +64,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       throw new Error(`Expected exactly one operation definition, found ${opDefs.length}`);
     }
 
+    // biome-ignore lint/style/noNonNullAssertion: Length checked above
     const opNode = opDefs[0]!;
     if (opNode.kind !== Kind.OPERATION_DEFINITION) {
       throw new Error("Unexpected definition kind");
@@ -82,7 +83,6 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
     const varSpecifiers = buildVarSpecifiers(varDefNodes, schemaIndex);
 
     return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
-      // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
       return Operation.create(() => ({
         operationType,
         operationName,
@@ -91,6 +91,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
         documentSource: () => ({}) as never,
         document: document as never,
         metadata: options?.metadata,
+        // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
       })) as any;
     };
   };

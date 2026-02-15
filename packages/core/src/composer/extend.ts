@@ -90,11 +90,11 @@ export const createExtendComposer = <
 
     // TemplateCompatSpec path — parse GraphQL and build operation directly
     if (isTemplateCompatSpec(spec as AnyCompatSpec | TemplateCompatSpec)) {
-      // biome-ignore lint/suspicious/noExplicitAny: Options type narrowing not possible across union
       return buildOperationFromTemplateSpec(
         schema,
         spec as TemplateCompatSpec,
         resolvedAdapter,
+        // biome-ignore lint/suspicious/noExplicitAny: Options type narrowing not possible across union
         options as any,
         transformDocument,
       );
@@ -108,7 +108,6 @@ export const createExtendComposer = <
     const operationTypeName = schema.operations[operationType] as TTypeName;
 
     type DefineResult = Parameters<typeof Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>[0];
-    // biome-ignore lint/suspicious/noExplicitAny: Type cast needed for compat spec fieldsBuilder
     return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>((() =>
       buildOperationArtifact({
         schema,
@@ -116,6 +115,7 @@ export const createExtendComposer = <
         operationTypeName,
         operationName,
         variables: variables as TVarDefinitions,
+        // biome-ignore lint/suspicious/noExplicitAny: Type cast needed for compat spec fieldsBuilder
         fieldsFactory: fieldsBuilder as any,
         adapter: resolvedAdapter,
         metadata: options?.metadata,
@@ -174,7 +174,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
 
   // Fast path: no metadata
   if (!metadataBuilder && !adapterTransformDocument && !operationTransformDocument) {
-    // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
     return Operation.create(() => ({
       operationType,
       operationName,
@@ -183,6 +182,7 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
       documentSource: () => ({}) as never,
       document: document as never,
       metadata: undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
     })) as any;
   }
 
@@ -215,7 +215,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
     } as any);
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
   return Operation.create(() => ({
     operationType,
     operationName,
@@ -224,5 +223,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
     documentSource: () => ({}) as never,
     document: finalDocument as never,
     metadata: operationMetadata,
+    // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
   })) as any;
 };

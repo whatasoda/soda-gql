@@ -62,7 +62,9 @@ export const isModifierAssignable = (source: string, target: string): boolean =>
   if (srcStruct.inner === "?" && tgtStruct.inner === "!") return false;
 
   for (let i = 0; i < srcStruct.lists.length; i++) {
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const srcList = srcStruct.lists[i]!;
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const tgtList = tgtListsToCompare[i]!;
     if (srcList === "[]?" && tgtList === "[]!") return false;
   }
@@ -92,7 +94,9 @@ export const mergeModifiers = (a: string, b: string): { ok: true; value: string 
   const mergedInner: "!" | "?" = structA.inner === "!" || structB.inner === "!" ? "!" : "?";
   const mergedLists: ("[]!" | "[]?")[] = [];
   for (let i = 0; i < structA.lists.length; i++) {
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const listA = structA.lists[i]!;
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const listB = structB.lists[i]!;
     mergedLists.push(listA === "[]!" || listB === "[]!" ? "[]!" : "[]?");
   }
@@ -301,6 +305,7 @@ export const mergeVariableUsages = (
     });
   }
 
+  // biome-ignore lint/style/noNonNullAssertion: Length checked above
   const first = usages[0]!;
 
   for (const usage of usages) {
@@ -315,6 +320,7 @@ export const mergeVariableUsages = (
 
   let candidateModifier = first.minimumModifier;
   for (let i = 1; i < usages.length; i++) {
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const result = mergeModifiers(candidateModifier, usages[i]!.minimumModifier);
     if (!result.ok) {
       return err({

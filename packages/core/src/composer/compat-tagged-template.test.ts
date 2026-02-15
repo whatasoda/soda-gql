@@ -129,7 +129,6 @@ describe("createCompatTaggedTemplate", () => {
     });
 
     it("throws on interpolation values", () => {
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error case
       expect(() => (queryCompat as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
 

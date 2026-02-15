@@ -97,7 +97,6 @@ describe("createOperationTaggedTemplate", () => {
 
     it("throws when source contains interpolation", () => {
       const fn = createOperationTaggedTemplate(schema, "query");
-      // biome-ignore lint/suspicious/noExplicitAny: Testing error case
       expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
 

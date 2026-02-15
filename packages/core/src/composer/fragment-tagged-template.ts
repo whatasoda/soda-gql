@@ -56,7 +56,7 @@ export function extractFragmentVariables(rawSource: string, schemaIndex: SchemaI
 
   const syntheticQuery = `query _Synthetic(${argText}) { __typename }`;
 
-  let syntheticDoc;
+  let syntheticDoc: import("graphql").DocumentNode;
   try {
     syntheticDoc = parseGraphql(syntheticQuery);
   } catch (error) {
@@ -229,7 +229,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
       throw new Error("Tagged templates must not contain interpolated expressions");
     }
 
-    const rawSource = strings[0]!;
+    const rawSource = strings[0] ?? "";
 
     // Extract variables from Fragment Arguments syntax before preprocessing
     const varSpecifiers = extractFragmentVariables(rawSource, schemaIndex);
@@ -238,7 +238,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
     const { preprocessed } = preprocessFragmentArgs(rawSource);
 
     // Parse the preprocessed GraphQL
-    let document;
+    let document: import("graphql").DocumentNode;
     try {
       document = parseGraphql(preprocessed);
     } catch (error) {
@@ -255,6 +255,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
       throw new Error(`Expected exactly one fragment definition, found ${fragmentDefs.length}`);
     }
 
+    // biome-ignore lint/style/noNonNullAssertion: Length checked above
     const fragNode = fragmentDefs[0]!;
     if (fragNode.kind !== Kind.FRAGMENT_DEFINITION) {
       throw new Error("Unexpected definition kind");
@@ -269,7 +270,6 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
     }
 
     return (options?: TemplateResultMetadataOptions): AnyFragment => {
-      // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       return Fragment.create(() => ({
         typename: onType,
         key: fragmentName,
@@ -286,6 +286,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
 
           return buildFieldsFromSelectionSet(fragNode.selectionSet, schema, onType);
         },
+        // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
     };
   };

@@ -25,6 +25,7 @@ const findMatchingParen = (content: string, openIndex: number): number => {
   let inString: false | '"' | "'" = false;
 
   for (let i = openIndex + 1; i < content.length; i++) {
+    // biome-ignore lint/style/noNonNullAssertion: Loop index is within bounds
     const ch = content[i]!;
 
     if (inString) {

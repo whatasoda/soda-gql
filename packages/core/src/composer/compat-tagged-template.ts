@@ -36,9 +36,9 @@ export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
       throw new Error("Tagged templates must not contain interpolated expressions");
     }
 
-    const source = strings[0]!;
+    const source = strings[0] ?? "";
 
-    let document;
+    let document: import("graphql").DocumentNode;
     try {
       document = parseGraphql(source);
     } catch (error) {
@@ -51,6 +51,7 @@ export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
       throw new Error(`Expected exactly one operation definition, found ${opDefs.length}`);
     }
 
+    // biome-ignore lint/style/noNonNullAssertion: Length checked above
     const opNode = opDefs[0]!;
     if (opNode.kind !== Kind.OPERATION_DEFINITION) {
       throw new Error("Unexpected definition kind");
