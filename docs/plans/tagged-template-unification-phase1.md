@@ -104,7 +104,7 @@ Phase 1 is complete when:
    - `bun run test` (all existing + new tests)
    - `bun quality` (lint + type check)
 
-4. **No regressions**: Tagged template 移行対象外の既存テストが不変 (existing tests not targeted by tagged template migration are unchanged and passing). Tests using `fragment.User(...)` callback builder syntax (32 calls across 8 files) are migrated to tagged template syntax as part of Round 2 Task 2.3. Type-level inference tests (`$infer.output`, `$infer.input`) are deferred to Phase 2 typegen integration.
+4. **No regressions**: Existing tests not targeted by tagged template migration are unchanged and passing. Tests using `fragment.User(...)` callback builder syntax (32 calls across 8 files) are migrated to tagged template syntax as part of Round 2 Task 2.3. Type-level inference tests (`$infer.output`, `$infer.input`) are deferred to Phase 2 typegen integration.
 
 ## Phase 2 Preview
 

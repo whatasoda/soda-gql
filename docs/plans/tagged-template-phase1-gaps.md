@@ -21,7 +21,7 @@ This document captures all gaps, inconsistencies, and improvement opportunities 
 
 ### GAP-01: Function name mismatch — `buildVarSpecifier` vs `buildVarSpecifierFromAST`
 
-> **Resolved**: Round 1 名 `buildVarSpecifier` に統一。Round 2/3 計画の全参照を修正済み。
+> **Resolved**: Unified to Round 1 name `buildVarSpecifier`. All references in Round 2/3 plans corrected.
 
 **Affected plans**: Round 1, Round 2, Round 3
 
@@ -40,7 +40,7 @@ Round 1 defines the function as `buildVarSpecifier`, but Round 2 and Round 3 ref
 
 ### GAP-02: Function name mismatch — `preprocessFragmentArgs` vs `preprocessFragmentArguments`
 
-> **Resolved**: Round 1 名 `preprocessFragmentArgs` に統一。Round 2 計画の全参照を修正済み。
+> **Resolved**: Unified to Round 1 name `preprocessFragmentArgs`. All references in Round 2 plan corrected.
 
 **Affected plans**: Round 1, Round 2
 
@@ -55,7 +55,7 @@ Round 1 defines the function as `buildVarSpecifier`, but Round 2 and Round 3 ref
 
 ### GAP-03: Schema type mismatch — `SchemaIndex` vs `AnyGraphqlSchema`
 
-> **Resolved**: SchemaIndex を維持しつつ adapter (`createSchemaIndexFromSchema`) を追加。Round 2/3 では adapter 経由で `buildVarSpecifier` を呼ぶ。設計: [tagged-template-phase1-schema-adapter.md](./tagged-template-phase1-schema-adapter.md)
+> **Resolved**: Maintain SchemaIndex while adding adapter (`createSchemaIndexFromSchema`). Round 2/3 call `buildVarSpecifier` via adapter. Design: [tagged-template-phase1-schema-adapter.md](./tagged-template-phase1-schema-adapter.md)
 
 **Affected plans**: Round 1, Round 2, Round 3
 
@@ -75,7 +75,7 @@ There is no conversion function between them in any round's plan.
 
 ### GAP-04: Existing test breakage contradiction
 
-> **Resolved**: テストを書き換えて完全移行。32 箇所の `fragment.User(...)` を tagged template に移行。Round 2 Task 2.3 にテスト移行戦略を追加済み。
+> **Resolved**: Rewrite tests for complete migration. Migrate 32 `fragment.User(...)` calls to tagged template. Added test migration strategy to Round 2 Task 2.3.
 
 **Affected plans**: Round 2 Task 2.3, Round 4 Task 4.3, Phase 1 overview
 
@@ -105,7 +105,7 @@ Similarly, Round 4 Task 4.1 replaces `query.compat` (callback builder) with comp
 
 ### GAP-05: `parseGraphqlSource` return type mismatch
 
-> **Resolved**: `ParseResult` に `document: DocumentNode` フィールドを追加。Round 3 の戻り値型と `sourceFile` パラメータ記述を修正済み。
+> **Resolved**: Added `document: DocumentNode` field to `ParseResult`. Corrected return type and `sourceFile` parameter descriptions in Round 3.
 
 **Affected plans**: Round 1, Round 3
 
@@ -122,7 +122,7 @@ Additionally, Round 3 treats `sourceFile` as optional, but Round 1 defines it as
 
 ### GAP-06: Phase 1 success criteria contradicts breaking changes
 
-> **Resolved**: Phase 1 成功基準 #4 を修正。「tagged template 移行対象外の既存テストが不変」にスコープを限定。fragment 移行は Round 2 で実施。
+> **Resolved**: Revised Phase 1 success criteria #4. Scoped to "existing tests not targeted by tagged template migration are unchanged". Fragment migration performed in Round 2.
 
 **Affected plans**: Phase 1 overview
 
@@ -134,7 +134,7 @@ The criteria needs to be scoped to specify which callback builder paths are pres
 
 ### GAP-07: `neverthrow` missing from `@soda-gql/core` dependencies
 
-> **Resolved**: core では neverthrow を使わず、自作の軽量 Result 型 (`packages/core/src/graphql/result.ts`) を使用。設計: [tagged-template-phase1-core-result.md](./tagged-template-phase1-core-result.md)
+> **Resolved**: Core does not use neverthrow. Uses a custom lightweight Result type (`packages/core/src/graphql/result.ts`). Design: [tagged-template-phase1-core-result.md](./tagged-template-phase1-core-result.md)
 
 **Affected plans**: Round 1
 
@@ -146,7 +146,7 @@ The plan does not include a step to add `neverthrow` to `packages/core/package.j
 
 ### GAP-08: Error type name mismatch
 
-> **Resolved**: Round 1 名 `GraphqlAnalysisError` に統一。Round 2 計画の `GraphqlCompatError` 参照を修正済み。
+> **Resolved**: Unified to Round 1 name `GraphqlAnalysisError`. Corrected `GraphqlCompatError` references in Round 2 plan.
 
 **Affected plans**: Round 1, Round 2
 

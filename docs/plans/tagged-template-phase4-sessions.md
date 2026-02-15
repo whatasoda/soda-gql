@@ -2,23 +2,23 @@
 
 ## Task Summary
 
-Phase 4 (Tests, Fixtures, Documentation) をセッション分割方式で実行するため、エージェントハーネスを改修し、Phase 4 タスクを 5 セッションに分割して `agent-progress.md` に記載する。
+To execute Phase 4 (Tests, Fixtures, Documentation) using a session-based approach, update the agent harness and split Phase 4 tasks into 5 sessions documented in `agent-progress.md`.
 
-**Branch**: `docs/plan-tagged-template-unification` (現在のブランチで継続)
+**Branch**: `docs/plan-tagged-template-unification` (continuing on current branch)
 
 ## Investigation Summary
 
 ### Current Agent Harness
 
-- `agent/run-agent.sh`: 無限ループで `claude --print` を起動
-- `agent/AGENT_PROMPT.md`: セッション内ワークフローとコーディング規約
-- `agent/agent-progress.md`: Phase/Round/Task 単位の進捗管理
+- `agent/run-agent.sh`: Runs `claude --print` in an infinite loop
+- `agent/AGENT_PROMPT.md`: In-session workflow and coding conventions
+- `agent/agent-progress.md`: Progress tracking by Phase/Round/Task units
 
 ### Problems
 
-1. セッション長の制御なし — コンテキスト枯渇まで走り続ける
-2. Phase 4 のタスク粒度が粗い — 概要レベルの記載のみ
-3. セッション間のスコープ境界が未定義
+1. No session length control — runs until context exhaustion
+2. Phase 4 task granularity too coarse — summary-level descriptions only
+3. Scope boundaries between sessions undefined
 
 ### Phase 4 Remaining Work
 
