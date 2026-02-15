@@ -98,15 +98,11 @@ describe("createOperationTaggedTemplate", () => {
     it("throws when source contains interpolation", () => {
       const fn = createOperationTaggedTemplate(schema, "query");
       // biome-ignore lint/suspicious/noExplicitAny: Testing error case
-      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow(
-        "interpolated expressions",
-      );
+      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
 
     it("throws on anonymous operations", () => {
-      expect(() => query`query { user(id: "1") { id } }`).toThrow(
-        "Anonymous operations are not allowed",
-      );
+      expect(() => query`query { user(id: "1") { id } }`).toThrow("Anonymous operations are not allowed");
     });
 
     it("throws on parse errors", () => {
@@ -114,15 +110,13 @@ describe("createOperationTaggedTemplate", () => {
     });
 
     it("throws when no operation definitions found", () => {
-      expect(() => query`fragment UserFields on User { id }`).toThrow(
-        "Expected exactly one operation definition, found 0",
-      );
+      expect(() => query`fragment UserFields on User { id }`).toThrow("Expected exactly one operation definition, found 0");
     });
 
     it("throws when multiple operation definitions found", () => {
-      expect(() =>
-        query`query GetUser { user(id: "1") { id } } query GetUser2 { user(id: "2") { id } }`,
-      ).toThrow("Expected exactly one operation definition, found 2");
+      expect(() => query`query GetUser { user(id: "1") { id } } query GetUser2 { user(id: "2") { id } }`).toThrow(
+        "Expected exactly one operation definition, found 2",
+      );
     });
   });
 

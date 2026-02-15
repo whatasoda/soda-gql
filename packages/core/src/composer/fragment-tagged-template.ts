@@ -4,24 +4,21 @@
  * @module
  */
 
-import { parse as parseGraphql, Kind, type SelectionSetNode } from "graphql";
+import { Kind, parse as parseGraphql, type SelectionSetNode } from "graphql";
+import { buildVarSpecifiers, createSchemaIndexFromSchema, preprocessFragmentArgs } from "../graphql";
+import type { SchemaIndex } from "../graphql/schema-index";
 import { Fragment } from "../types/element";
+import type { AnyFragment } from "../types/element/fragment";
 import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-import type { AnyFragment } from "../types/element/fragment";
-import { buildVarSpecifiers, createSchemaIndexFromSchema, preprocessFragmentArgs } from "../graphql";
-import type { SchemaIndex } from "../graphql/schema-index";
 import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import type { TemplateResult, TemplateResultMetadataOptions } from "./operation-tagged-template";
 
 /** Tagged template function type for fragments. */
-export type FragmentTaggedTemplateFunction = (
-  strings: TemplateStringsArray,
-  ...values: never[]
-) => TemplateResult<AnyFragment>;
+export type FragmentTaggedTemplateFunction = (strings: TemplateStringsArray, ...values: never[]) => TemplateResult<AnyFragment>;
 
 /**
  * Extract the argument list text from a fragment definition with Fragment Arguments syntax.
@@ -53,10 +50,7 @@ function extractFragmentArgText(rawSource: string): string | null {
  * Extract variable definitions from Fragment Arguments syntax.
  * Wraps the argument list in a synthetic query to parse with graphql-js.
  */
-export function extractFragmentVariables(
-  rawSource: string,
-  schemaIndex: SchemaIndex,
-): VariableDefinitions {
+export function extractFragmentVariables(rawSource: string, schemaIndex: SchemaIndex): VariableDefinitions {
   const argText = extractFragmentArgText(rawSource);
   if (!argText?.trim()) return {};
 
@@ -119,7 +113,11 @@ export function buildFieldsFromSelectionSet(
         const curried = factory(args, extras);
         if (typeof curried === "function") {
           // Drive nested builder with recursive field building
-          const nestedFields = buildFieldsFromSelectionSet(selection.selectionSet, schema, resolveFieldTypeName(schema, typeName, fieldName));
+          const nestedFields = buildFieldsFromSelectionSet(
+            selection.selectionSet,
+            schema,
+            resolveFieldTypeName(schema, typeName, fieldName),
+          );
           const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
             ({ f: nestedFactories }: { f: unknown }) => {
               // Ignore the provided factories; use pre-built fields
@@ -136,9 +134,7 @@ export function buildFieldsFromSelectionSet(
         const fieldResult = factory(args, extras);
         if (typeof fieldResult === "function") {
           // Object field used without selection set — just call with empty builder
-          const emptyResult = (fieldResult as (nest: unknown) => Record<string, unknown>)(
-            () => ({}),
-          );
+          const emptyResult = (fieldResult as (nest: unknown) => Record<string, unknown>)(() => ({}));
           Object.assign(result, emptyResult);
         } else {
           Object.assign(result, fieldResult);
@@ -156,7 +152,10 @@ export function buildFieldsFromSelectionSet(
  * Extracts literal values from the AST for passing to field factories.
  */
 function buildArgsFromASTArguments(
-  args: readonly { readonly name: { readonly value: string }; readonly value: { readonly kind: string; readonly value?: unknown } }[],
+  args: readonly {
+    readonly name: { readonly value: string };
+    readonly value: { readonly kind: string; readonly value?: unknown };
+  }[],
 ): Record<string, unknown> {
   if (args.length === 0) return {};
   const result: Record<string, unknown> = {};
@@ -169,7 +168,12 @@ function buildArgsFromASTArguments(
 /**
  * Extract a runtime value from a GraphQL AST ValueNode.
  */
-function extractASTValue(node: { readonly kind: string; readonly value?: unknown; readonly values?: readonly unknown[]; readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[] }): unknown {
+function extractASTValue(node: {
+  readonly kind: string;
+  readonly value?: unknown;
+  readonly values?: readonly unknown[];
+  readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[];
+}): unknown {
   switch (node.kind) {
     case Kind.STRING:
     case Kind.INT:
@@ -217,9 +221,7 @@ function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldN
  *
  * @param schema - The GraphQL schema definition
  */
-export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(
-  schema: TSchema,
-): FragmentTaggedTemplateFunction {
+export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(schema: TSchema): FragmentTaggedTemplateFunction {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
   return (strings: TemplateStringsArray, ...values: never[]): TemplateResult<AnyFragment> => {

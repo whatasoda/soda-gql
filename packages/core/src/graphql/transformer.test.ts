@@ -76,10 +76,14 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
 
       expect(result.value.operations[0]!.variables[0]).toMatchObject({
-        name: "userId", typeName: "ID", typeKind: "scalar",
+        name: "userId",
+        typeName: "ID",
+        typeKind: "scalar",
       });
       expect(result.value.operations[0]!.variables[1]).toMatchObject({
-        name: "name", typeName: "String", typeKind: "scalar",
+        name: "name",
+        typeName: "String",
+        typeKind: "scalar",
       });
     });
 
@@ -94,7 +98,9 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
 
       expect(result.value.operations[0]!.variables[0]).toMatchObject({
-        name: "status", typeName: "Status", typeKind: "enum",
+        name: "status",
+        typeName: "Status",
+        typeKind: "enum",
       });
     });
 
@@ -109,7 +115,9 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
 
       expect(result.value.operations[0]!.variables[0]).toMatchObject({
-        name: "filter", typeName: "UserFilter", typeKind: "input",
+        name: "filter",
+        typeName: "UserFilter",
+        typeKind: "input",
       });
     });
 
@@ -124,7 +132,9 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
 
       expect(result.value.operations[0]!.variables[0]).toMatchObject({
-        name: "value", typeName: "CustomScalar", typeKind: "scalar",
+        name: "value",
+        typeName: "CustomScalar",
+        typeKind: "scalar",
       });
     });
 
@@ -237,7 +247,10 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
       expect(result.value.fragments[0]!.variables).toHaveLength(1);
       expect(result.value.fragments[0]!.variables[0]).toMatchObject({
-        name: "limit", typeName: "Int", modifier: "!", typeKind: "scalar",
+        name: "limit",
+        typeName: "Int",
+        modifier: "!",
+        typeKind: "scalar",
       });
     });
 
@@ -258,7 +271,9 @@ describe("transformParsedGraphql", () => {
       if (!result.ok) throw new Error("Expected ok");
       expect(result.value.fragments[0]!.variables).toHaveLength(1);
       expect(result.value.fragments[0]!.variables[0]).toMatchObject({
-        name: "status", typeName: "PostStatus", typeKind: "enum",
+        name: "status",
+        typeName: "PostStatus",
+        typeKind: "enum",
       });
     });
 
@@ -349,7 +364,10 @@ describe("collectVariableUsages", () => {
     if (!result.ok) throw new Error("Expected ok");
     expect(result.value).toHaveLength(1);
     expect(result.value[0]).toMatchObject({
-      name: "limit", typeName: "Int", expectedModifier: "?", minimumModifier: "?",
+      name: "limit",
+      typeName: "Int",
+      expectedModifier: "?",
+      minimumModifier: "?",
     });
   });
 
@@ -361,7 +379,11 @@ describe("collectVariableUsages", () => {
     if (!result.ok) throw new Error("Expected ok");
     expect(result.value).toHaveLength(1);
     expect(result.value[0]).toMatchObject({
-      name: "status", typeName: "PostStatus", expectedModifier: "?", minimumModifier: "?", typeKind: "enum",
+      name: "status",
+      typeName: "PostStatus",
+      expectedModifier: "?",
+      minimumModifier: "?",
+      typeKind: "enum",
     });
   });
 
@@ -583,22 +605,42 @@ describe("sortFragmentsByDependency", () => {
 
 describe("mergeModifiers", () => {
   describe("simple modifiers", () => {
-    it("merges non-null and nullable to non-null", () => { expect(mergeModifiers("!", "?")).toEqual({ ok: true, value: "!" }); });
-    it("merges nullable and non-null to non-null", () => { expect(mergeModifiers("?", "!")).toEqual({ ok: true, value: "!" }); });
-    it("merges non-null and non-null to non-null", () => { expect(mergeModifiers("!", "!")).toEqual({ ok: true, value: "!" }); });
-    it("merges nullable and nullable to nullable", () => { expect(mergeModifiers("?", "?")).toEqual({ ok: true, value: "?" }); });
+    it("merges non-null and nullable to non-null", () => {
+      expect(mergeModifiers("!", "?")).toEqual({ ok: true, value: "!" });
+    });
+    it("merges nullable and non-null to non-null", () => {
+      expect(mergeModifiers("?", "!")).toEqual({ ok: true, value: "!" });
+    });
+    it("merges non-null and non-null to non-null", () => {
+      expect(mergeModifiers("!", "!")).toEqual({ ok: true, value: "!" });
+    });
+    it("merges nullable and nullable to nullable", () => {
+      expect(mergeModifiers("?", "?")).toEqual({ ok: true, value: "?" });
+    });
   });
 
   describe("list modifiers", () => {
-    it("merges list modifiers with stricter outer", () => { expect(mergeModifiers("![]!", "?[]!")).toEqual({ ok: true, value: "![]!" }); });
-    it("merges list modifiers with stricter inner", () => { expect(mergeModifiers("![]!", "![]?")).toEqual({ ok: true, value: "![]!" }); });
-    it("merges nullable lists to nullable", () => { expect(mergeModifiers("?[]?", "?[]?")).toEqual({ ok: true, value: "?[]?" }); });
-    it("merges mixed list modifiers", () => { expect(mergeModifiers("?[]?", "![]!")).toEqual({ ok: true, value: "![]!" }); });
+    it("merges list modifiers with stricter outer", () => {
+      expect(mergeModifiers("![]!", "?[]!")).toEqual({ ok: true, value: "![]!" });
+    });
+    it("merges list modifiers with stricter inner", () => {
+      expect(mergeModifiers("![]!", "![]?")).toEqual({ ok: true, value: "![]!" });
+    });
+    it("merges nullable lists to nullable", () => {
+      expect(mergeModifiers("?[]?", "?[]?")).toEqual({ ok: true, value: "?[]?" });
+    });
+    it("merges mixed list modifiers", () => {
+      expect(mergeModifiers("?[]?", "![]!")).toEqual({ ok: true, value: "![]!" });
+    });
   });
 
   describe("nested list modifiers", () => {
-    it("merges nested lists", () => { expect(mergeModifiers("![]![]!", "?[]?[]?")).toEqual({ ok: true, value: "![]![]!" }); });
-    it("merges nested lists with mixed strictness", () => { expect(mergeModifiers("![]?[]!", "?[]![]?")).toEqual({ ok: true, value: "![]![]!" }); });
+    it("merges nested lists", () => {
+      expect(mergeModifiers("![]![]!", "?[]?[]?")).toEqual({ ok: true, value: "![]![]!" });
+    });
+    it("merges nested lists with mixed strictness", () => {
+      expect(mergeModifiers("![]?[]!", "?[]![]?")).toEqual({ ok: true, value: "![]![]!" });
+    });
   });
 
   describe("incompatible modifiers", () => {
@@ -617,34 +659,74 @@ describe("mergeModifiers", () => {
 
 describe("isModifierAssignable", () => {
   describe("same depth (no List Coercion)", () => {
-    it("allows non-null to nullable", () => { expect(isModifierAssignable("!", "?")).toBe(true); });
-    it("allows non-null to non-null", () => { expect(isModifierAssignable("!", "!")).toBe(true); });
-    it("disallows nullable to non-null", () => { expect(isModifierAssignable("?", "!")).toBe(false); });
-    it("allows nullable to nullable", () => { expect(isModifierAssignable("?", "?")).toBe(true); });
-    it("allows non-null list to nullable list", () => { expect(isModifierAssignable("![]!", "?[]?")).toBe(true); });
-    it("disallows nullable list to non-null list", () => { expect(isModifierAssignable("?[]?", "![]!")).toBe(false); });
+    it("allows non-null to nullable", () => {
+      expect(isModifierAssignable("!", "?")).toBe(true);
+    });
+    it("allows non-null to non-null", () => {
+      expect(isModifierAssignable("!", "!")).toBe(true);
+    });
+    it("disallows nullable to non-null", () => {
+      expect(isModifierAssignable("?", "!")).toBe(false);
+    });
+    it("allows nullable to nullable", () => {
+      expect(isModifierAssignable("?", "?")).toBe(true);
+    });
+    it("allows non-null list to nullable list", () => {
+      expect(isModifierAssignable("![]!", "?[]?")).toBe(true);
+    });
+    it("disallows nullable list to non-null list", () => {
+      expect(isModifierAssignable("?[]?", "![]!")).toBe(false);
+    });
   });
 
   describe("List Coercion (depth diff = 1)", () => {
-    it("allows single value to required list (! to ![]!)", () => { expect(isModifierAssignable("!", "![]!")).toBe(true); });
-    it("allows single value to nullable list (! to ![]?)", () => { expect(isModifierAssignable("!", "![]?")).toBe(true); });
-    it("allows single value to nullable outer list (! to ?[]!)", () => { expect(isModifierAssignable("!", "?[]!")).toBe(true); });
-    it("allows nullable single to nullable list (? to ?[]?)", () => { expect(isModifierAssignable("?", "?[]?")).toBe(true); });
-    it("disallows nullable single to non-null inner list (? to ![]!)", () => { expect(isModifierAssignable("?", "![]!")).toBe(false); });
-    it("disallows nullable single to non-null outer list (? to ?[]!)", () => { expect(isModifierAssignable("?", "?[]!")).toBe(false); });
-    it("allows list to nested list (![]! to ![]![]!)", () => { expect(isModifierAssignable("![]!", "![]![]!")).toBe(true); });
-    it("allows nullable inner list to nullable nested list (?[]? to ?[]?[]?)", () => { expect(isModifierAssignable("?[]?", "?[]?[]?")).toBe(true); });
+    it("allows single value to required list (! to ![]!)", () => {
+      expect(isModifierAssignable("!", "![]!")).toBe(true);
+    });
+    it("allows single value to nullable list (! to ![]?)", () => {
+      expect(isModifierAssignable("!", "![]?")).toBe(true);
+    });
+    it("allows single value to nullable outer list (! to ?[]!)", () => {
+      expect(isModifierAssignable("!", "?[]!")).toBe(true);
+    });
+    it("allows nullable single to nullable list (? to ?[]?)", () => {
+      expect(isModifierAssignable("?", "?[]?")).toBe(true);
+    });
+    it("disallows nullable single to non-null inner list (? to ![]!)", () => {
+      expect(isModifierAssignable("?", "![]!")).toBe(false);
+    });
+    it("disallows nullable single to non-null outer list (? to ?[]!)", () => {
+      expect(isModifierAssignable("?", "?[]!")).toBe(false);
+    });
+    it("allows list to nested list (![]! to ![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]!")).toBe(true);
+    });
+    it("allows nullable inner list to nullable nested list (?[]? to ?[]?[]?)", () => {
+      expect(isModifierAssignable("?[]?", "?[]?[]?")).toBe(true);
+    });
   });
 
   describe("invalid depth differences", () => {
-    it("disallows list to single value (![]! to !)", () => { expect(isModifierAssignable("![]!", "!")).toBe(false); });
-    it("disallows depth diff > 1 (! to ![]![]!)", () => { expect(isModifierAssignable("!", "![]![]!")).toBe(false); });
-    it("disallows depth diff > 1 (![]! to ![]![]![]!)", () => { expect(isModifierAssignable("![]!", "![]![]![]!")).toBe(false); });
+    it("disallows list to single value (![]! to !)", () => {
+      expect(isModifierAssignable("![]!", "!")).toBe(false);
+    });
+    it("disallows depth diff > 1 (! to ![]![]!)", () => {
+      expect(isModifierAssignable("!", "![]![]!")).toBe(false);
+    });
+    it("disallows depth diff > 1 (![]! to ![]![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]![]!")).toBe(false);
+    });
   });
 
   describe("complex nullability cases", () => {
-    it("allows when inner matches through coercion (![]! to ![]![]!)", () => { expect(isModifierAssignable("![]!", "![]![]!")).toBe(true); });
-    it("disallows when inner nullability conflicts through coercion (?[]? to ![]![]!)", () => { expect(isModifierAssignable("?[]?", "![]![]!")).toBe(false); });
-    it("allows matching nullability at all levels (?[]! to ?[]![]?)", () => { expect(isModifierAssignable("?[]!", "?[]![]?")).toBe(true); });
+    it("allows when inner matches through coercion (![]! to ![]![]!)", () => {
+      expect(isModifierAssignable("![]!", "![]![]!")).toBe(true);
+    });
+    it("disallows when inner nullability conflicts through coercion (?[]? to ![]![]!)", () => {
+      expect(isModifierAssignable("?[]?", "![]![]!")).toBe(false);
+    });
+    it("allows matching nullability at all levels (?[]! to ?[]![]?)", () => {
+      expect(isModifierAssignable("?[]!", "?[]![]?")).toBe(true);
+    });
   });
 });

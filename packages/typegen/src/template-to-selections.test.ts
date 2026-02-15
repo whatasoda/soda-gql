@@ -114,7 +114,7 @@ describe("convertTemplatesToSelections", () => {
           {
             schemaName: "default",
             kind: "query",
-            content: "query GetUser { user(id: \"1\") { id } }",
+            content: 'query GetUser { user(id: "1") { id } }',
           },
           {
             schemaName: "default",
@@ -181,8 +181,7 @@ describe("convertTemplatesToSelections", () => {
           {
             schemaName: "default",
             kind: "mutation",
-            content:
-              "mutation UpdateUser($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }",
+            content: "mutation UpdateUser($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }",
           },
         ],
       ],
@@ -226,14 +225,8 @@ describe("convertTemplatesToSelections", () => {
 
   it("handles templates from multiple files", () => {
     const templates = new Map<string, readonly ExtractedTemplate[]>([
-      [
-        "/src/a.ts",
-        [{ schemaName: "default", kind: "query", content: "query A { user(id: \"1\") { id } }" }],
-      ],
-      [
-        "/src/b.ts",
-        [{ schemaName: "default", kind: "fragment", content: "fragment B on User { name }" }],
-      ],
+      ["/src/a.ts", [{ schemaName: "default", kind: "query", content: 'query A { user(id: "1") { id } }' }]],
+      ["/src/b.ts", [{ schemaName: "default", kind: "fragment", content: "fragment B on User { name }" }]],
     ]);
 
     const result = convertTemplatesToSelections(templates, schemas);

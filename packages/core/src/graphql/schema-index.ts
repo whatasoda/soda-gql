@@ -78,10 +78,7 @@ const ensureRecord = <T>(collection: Map<string, T>, key: string, factory: (name
   return created;
 };
 
-const addObjectFields = (
-  target: Map<string, FieldDefinitionNode>,
-  fields: readonly FieldDefinitionNode[] | undefined,
-): void => {
+const addObjectFields = (target: Map<string, FieldDefinitionNode>, fields: readonly FieldDefinitionNode[] | undefined): void => {
   if (!fields) return;
   for (const field of fields) {
     target.set(field.name.value, field);

@@ -23,10 +23,9 @@ const enumGql = createGqlElementComposer<EnumSchema, StandardDirectives>(enumSch
   inputTypeMethods: enumInputTypeMethods,
 });
 
-const inputGql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(
-  inputObjectSchema,
-  { inputTypeMethods: inputObjectInputTypeMethods },
-);
+const inputGql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {
+  inputTypeMethods: inputObjectInputTypeMethods,
+});
 
 describe("Variable builder type safety", () => {
   describe("Scalar variable creation", () => {

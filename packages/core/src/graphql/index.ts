@@ -4,27 +4,9 @@
  * @module
  */
 
-export { ok, err, type Result, type OkResult, type ErrResult } from "./result";
+export { type PreprocessResult, preprocessFragmentArgs } from "./fragment-args-preprocessor";
 export { parseGraphqlSource, parseTypeNode } from "./parser";
-export { preprocessFragmentArgs, type PreprocessResult } from "./fragment-args-preprocessor";
-export {
-  collectVariableUsages,
-  getArgumentType,
-  getFieldReturnType,
-  getInputFieldType,
-  inferVariablesFromUsages,
-  isModifierAssignable,
-  mergeModifiers,
-  mergeVariableUsages,
-  sortFragmentsByDependency,
-  transformParsedGraphql,
-  type EnrichedFragment,
-  type EnrichedOperation,
-  type EnrichedVariable,
-  type TransformOptions,
-  type TransformResult,
-  type VariableUsage,
-} from "./transformer";
+export { type ErrResult, err, type OkResult, ok, type Result } from "./result";
 export { createSchemaIndexFromSchema } from "./schema-adapter";
 export {
   createSchemaIndex,
@@ -38,10 +20,23 @@ export {
   type UnionRecord,
 } from "./schema-index";
 export {
-  buildVarSpecifier,
-  buildVarSpecifiers,
-  type BuiltVarSpecifier,
-} from "./var-specifier-builder";
+  collectVariableUsages,
+  type EnrichedFragment,
+  type EnrichedOperation,
+  type EnrichedVariable,
+  getArgumentType,
+  getFieldReturnType,
+  getInputFieldType,
+  inferVariablesFromUsages,
+  isModifierAssignable,
+  mergeModifiers,
+  mergeVariableUsages,
+  sortFragmentsByDependency,
+  type TransformOptions,
+  type TransformResult,
+  transformParsedGraphql,
+  type VariableUsage,
+} from "./transformer";
 export type {
   GraphqlAnalysisError,
   InferredVariable,
@@ -58,3 +53,8 @@ export type {
   ParseResult,
   TypeInfo,
 } from "./types";
+export {
+  type BuiltVarSpecifier,
+  buildVarSpecifier,
+  buildVarSpecifiers,
+} from "./var-specifier-builder";

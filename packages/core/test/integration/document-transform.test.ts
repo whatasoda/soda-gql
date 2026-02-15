@@ -104,16 +104,10 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<
-        Schema,
-        StandardDirectives,
-        typeof adapter
-      >(schema, { adapter, inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, { adapter, inputTypeMethods });
 
       // Create fragment (metadata not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserCacheFields on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserCacheFields on User { id name }`());
 
       // Create operation that spreads the fragment
       const operation = gql(({ query, $var }) =>

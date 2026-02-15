@@ -5,16 +5,14 @@ import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { BasicTestSchema } from "../fixtures";
 import { basicInputTypeMethods, basicTestSchema } from "../fixtures";
 
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(
-  basicTestSchema, { inputTypeMethods: basicInputTypeMethods }
-);
+const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
+  inputTypeMethods: basicInputTypeMethods,
+});
 
 describe("tagged template operation integration", () => {
   describe("query", () => {
     it("creates query operation from tagged template", () => {
-      const GetUser = gql(({ query }) =>
-        query`query GetUser($id: ID!) { user(id: $id) { id name } }`(),
-      );
+      const GetUser = gql(({ query }) => query`query GetUser($id: ID!) { user(id: $id) { id name } }`());
       expect(GetUser.operationType).toBe("query");
       expect(GetUser.operationName).toBe("GetUser");
       expect(GetUser.variableNames).toEqual(["id"]);
@@ -24,9 +22,7 @@ describe("tagged template operation integration", () => {
     });
 
     it("generates correct document", () => {
-      const GetUser = gql(({ query }) =>
-        query`query GetUser { user(id: "1") { id name } }`(),
-      );
+      const GetUser = gql(({ query }) => query`query GetUser { user(id: "1") { id name } }`());
       const printed = print(GetUser.document);
       expect(printed).toContain("query GetUser");
       expect(printed).toContain("id");
@@ -67,9 +63,7 @@ describe("tagged template operation integration", () => {
     });
 
     it("metadata is undefined when not provided", () => {
-      const GetUser = gql(({ query }) =>
-        query`query GetUser { user(id: "1") { id } }`(),
-      );
+      const GetUser = gql(({ query }) => query`query GetUser { user(id: "1") { id } }`());
       expect(GetUser.metadata).toBeUndefined();
     });
   });

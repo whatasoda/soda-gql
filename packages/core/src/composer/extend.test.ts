@@ -389,7 +389,7 @@ describe("createExtendComposer", () => {
         schema,
         operationType: "query",
         operationName: "DirectCreate",
-        graphqlSource: "query DirectCreate { user(id: \"1\") { id } }",
+        graphqlSource: 'query DirectCreate { user(id: "1") { id } }',
       }));
 
       const operation = extend(compat);

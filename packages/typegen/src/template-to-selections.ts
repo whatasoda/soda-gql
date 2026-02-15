@@ -8,6 +8,7 @@
  * @module
  */
 
+import type { FieldSelectionData, FieldSelectionsMap } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import {
   type AnyGraphqlSchema,
@@ -16,7 +17,6 @@ import {
   extractFragmentVariables,
   preprocessFragmentArgs,
 } from "@soda-gql/core";
-import type { FieldSelectionData, FieldSelectionsMap } from "@soda-gql/builder";
 import { Kind, parse as parseGraphql } from "graphql";
 import type { ExtractedTemplate } from "./template-extractor";
 
@@ -41,9 +41,7 @@ export const convertTemplatesToSelections = (
   const warnings: string[] = [];
 
   // Build schema indexes once per schema
-  const schemaIndexes = new Map(
-    Object.entries(schemas).map(([name, schema]) => [name, createSchemaIndexFromSchema(schema)]),
-  );
+  const schemaIndexes = new Map(Object.entries(schemas).map(([name, schema]) => [name, createSchemaIndexFromSchema(schema)]));
 
   for (const [filePath, fileTemplates] of templates) {
     for (const template of fileTemplates) {
@@ -169,10 +167,7 @@ const convertOperationTemplate = (
 /**
  * Get the root type name for an operation type from the schema.
  */
-const getRootTypeName = (
-  schema: AnyGraphqlSchema,
-  operationType: string,
-): string => {
+const getRootTypeName = (schema: AnyGraphqlSchema, operationType: string): string => {
   switch (operationType) {
     case "query":
       return schema.operations.query ?? "Query";

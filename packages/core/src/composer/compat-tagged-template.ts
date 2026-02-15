@@ -4,16 +4,13 @@
  * @module
  */
 
-import { parse as parseGraphql, Kind } from "graphql";
+import { Kind, parse as parseGraphql } from "graphql";
 import { GqlDefine } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 
 /** Tagged template function type for compat operations. */
-export type CompatTaggedTemplate = (
-  strings: TemplateStringsArray,
-  ...values: never[]
-) => GqlDefine<TemplateCompatSpec>;
+export type CompatTaggedTemplate = (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<TemplateCompatSpec>;
 
 /**
  * Creates a tagged template function for compat mode operations.
@@ -64,9 +61,7 @@ export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
     }
 
     if (opNode.operation !== operationType) {
-      throw new Error(
-        `Operation type mismatch: expected "${operationType}", got "${opNode.operation}"`,
-      );
+      throw new Error(`Operation type mismatch: expected "${operationType}", got "${opNode.operation}"`);
     }
 
     const operationName = opNode.name.value;

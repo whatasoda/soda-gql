@@ -63,9 +63,7 @@ describe("createGqlInvoker", () => {
   });
 
   it("creates fragment descriptors with fragment wiring", () => {
-    const userFragment = gql(({ fragment }) =>
-      fragment`fragment UserFields on User { id name }`(),
-    );
+    const userFragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
 
     expect(userFragment.typename).toBe("User");
     const fields = userFragment.spread({} as never);
@@ -73,9 +71,7 @@ describe("createGqlInvoker", () => {
   });
 
   it("creates inline operations with variable references", () => {
-    const userFragment = gql(({ fragment }) =>
-      fragment`fragment UserFields on User { id name }`(),
-    );
+    const userFragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
 
     const profileQuery = gql(({ query, $var }) =>
       query.operation({

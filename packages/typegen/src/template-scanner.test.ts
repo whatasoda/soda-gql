@@ -8,8 +8,7 @@ const TEST_DIR = join(import.meta.dir, "../test/fixtures/.template-scanner-test"
 
 const createTestHelper = (): GraphqlSystemIdentifyHelper => ({
   isGraphqlSystemFile: () => false,
-  isGraphqlSystemImportSpecifier: ({ specifier }) =>
-    specifier === "./graphql-system" || specifier === "@/graphql-system",
+  isGraphqlSystemImportSpecifier: ({ specifier }) => specifier === "./graphql-system" || specifier === "@/graphql-system",
   isInternalModuleFile: () => false,
 });
 

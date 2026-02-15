@@ -95,40 +95,30 @@ describe("createFragmentTaggedTemplate", () => {
     it("throws when source contains interpolation", () => {
       const fn = createFragmentTaggedTemplate(schema);
       // biome-ignore lint/suspicious/noExplicitAny: Testing error case
-      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow(
-        "interpolated expressions",
-      );
+      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
 
     it("throws on parse errors", () => {
-      expect(() => fragment`fragment UserFields on User { invalid!!! syntax }`).toThrow(
-        "GraphQL parse error",
-      );
+      expect(() => fragment`fragment UserFields on User { invalid!!! syntax }`).toThrow("GraphQL parse error");
     });
 
     it("throws when onType is not found in schema", () => {
-      expect(() => fragment`fragment Foo on NonExistent { id }`).toThrow(
-        'Type "NonExistent" is not defined in schema objects',
-      );
+      expect(() => fragment`fragment Foo on NonExistent { id }`).toThrow('Type "NonExistent" is not defined in schema objects');
     });
 
     it("throws when source contains no fragment definition", () => {
-      expect(() => fragment`query GetUser { user { id } }`).toThrow(
-        "Expected a fragment definition, found none",
-      );
+      expect(() => fragment`query GetUser { user { id } }`).toThrow("Expected a fragment definition, found none");
     });
 
     it("throws when source contains multiple fragment definitions", () => {
-      expect(() =>
-        fragment`fragment A on User { id } fragment B on Post { id }`,
-      ).toThrow("Expected exactly one fragment definition, found 2");
+      expect(() => fragment`fragment A on User { id } fragment B on Post { id }`).toThrow(
+        "Expected exactly one fragment definition, found 2",
+      );
     });
 
     it("throws when selecting a field not in the schema", () => {
       const frag = fragment`fragment Foo on User { nonexistent }`();
-      expect(() => frag.spread({} as never)).toThrow(
-        'Field "nonexistent" is not defined on type "User"',
-      );
+      expect(() => frag.spread({} as never)).toThrow('Field "nonexistent" is not defined on type "User"');
     });
   });
 

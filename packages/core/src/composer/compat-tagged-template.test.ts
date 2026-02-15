@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyGraphqlSchema } from "../types/schema";
 import { GqlDefine } from "../types/element";
 import { isTemplateCompatSpec } from "../types/element/compat-spec";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 
 const schema = {
@@ -104,9 +104,9 @@ describe("createCompatTaggedTemplate", () => {
     });
 
     it("throws on operation type mismatch", () => {
-      expect(() =>
-        queryCompat`mutation UpdateUser { updateUser(id: "1") { id } }`,
-      ).toThrow('Operation type mismatch: expected "query", got "mutation"');
+      expect(() => queryCompat`mutation UpdateUser { updateUser(id: "1") { id } }`).toThrow(
+        'Operation type mismatch: expected "query", got "mutation"',
+      );
     });
 
     it("throws when operation type is not defined in schema roots", () => {
@@ -125,28 +125,22 @@ describe("createCompatTaggedTemplate", () => {
     });
 
     it("throws on anonymous operations", () => {
-      expect(() => queryCompat`query { user(id: "1") { id } }`).toThrow(
-        "Anonymous operations are not allowed",
-      );
+      expect(() => queryCompat`query { user(id: "1") { id } }`).toThrow("Anonymous operations are not allowed");
     });
 
     it("throws on interpolation values", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Testing error case
-      expect(() => (queryCompat as any)(["part1", "part2"], "interpolated")).toThrow(
-        "interpolated expressions",
-      );
+      expect(() => (queryCompat as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
 
     it("throws when no operation definitions found", () => {
-      expect(() => queryCompat`fragment UserFields on User { id }`).toThrow(
-        "Expected exactly one operation definition, found 0",
-      );
+      expect(() => queryCompat`fragment UserFields on User { id }`).toThrow("Expected exactly one operation definition, found 0");
     });
 
     it("throws when multiple operation definitions found", () => {
-      expect(() =>
-        queryCompat`query GetUser { user(id: "1") { id } } query GetUser2 { user(id: "2") { id } }`,
-      ).toThrow("Expected exactly one operation definition, found 2");
+      expect(() => queryCompat`query GetUser { user(id: "1") { id } } query GetUser2 { user(id: "2") { id } }`).toThrow(
+        "Expected exactly one operation definition, found 2",
+      );
     });
   });
 });

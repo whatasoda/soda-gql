@@ -99,9 +99,7 @@ export type TemplateCompatSpec = {
  * Type guard to distinguish TemplateCompatSpec from CompatSpec at runtime.
  * Uses structural discrimination (presence of `graphqlSource` field).
  */
-export const isTemplateCompatSpec = (
-  spec: AnyCompatSpec | TemplateCompatSpec,
-): spec is TemplateCompatSpec => {
+export const isTemplateCompatSpec = (spec: AnyCompatSpec | TemplateCompatSpec): spec is TemplateCompatSpec => {
   return "graphqlSource" in spec && !("fieldsBuilder" in spec);
 };
 

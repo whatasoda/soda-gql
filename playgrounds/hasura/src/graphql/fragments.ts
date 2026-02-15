@@ -69,9 +69,7 @@ export const ColorFragment = gql.default(({ fragment }) =>
 );
 
 // Size fragment
-export const SizeFragment = gql.default(({ fragment }) =>
-  fragment`fragment SizeFragment on sizes { id name code sort_order }`(),
-);
+export const SizeFragment = gql.default(({ fragment }) => fragment`fragment SizeFragment on sizes { id name code sort_order }`());
 
 // Street fragment (for deep nesting chain)
 export const StreetFragment = gql.default(({ fragment }) =>

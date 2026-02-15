@@ -136,27 +136,18 @@ export const createGqlElementComposer = <
   // Hybrid context: tagged template functions with .operation and .compat properties
   const context = {
     fragment,
-    query: Object.assign(
-      createOperationTaggedTemplate(schema, "query", metadataAdapter, transformDocument),
-      {
-        operation: createOperationComposer("query"),
-        compat: createCompatTaggedTemplate(schema, "query"),
-      },
-    ),
-    mutation: Object.assign(
-      createOperationTaggedTemplate(schema, "mutation", metadataAdapter, transformDocument),
-      {
-        operation: createOperationComposer("mutation"),
-        compat: createCompatTaggedTemplate(schema, "mutation"),
-      },
-    ),
-    subscription: Object.assign(
-      createOperationTaggedTemplate(schema, "subscription", metadataAdapter, transformDocument),
-      {
-        operation: createOperationComposer("subscription"),
-        compat: createCompatTaggedTemplate(schema, "subscription"),
-      },
-    ),
+    query: Object.assign(createOperationTaggedTemplate(schema, "query", metadataAdapter, transformDocument), {
+      operation: createOperationComposer("query"),
+      compat: createCompatTaggedTemplate(schema, "query"),
+    }),
+    mutation: Object.assign(createOperationTaggedTemplate(schema, "mutation", metadataAdapter, transformDocument), {
+      operation: createOperationComposer("mutation"),
+      compat: createCompatTaggedTemplate(schema, "mutation"),
+    }),
+    subscription: Object.assign(createOperationTaggedTemplate(schema, "subscription", metadataAdapter, transformDocument), {
+      operation: createOperationComposer("subscription"),
+      compat: createCompatTaggedTemplate(schema, "subscription"),
+    }),
     define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine.create(factory),
     extend: createExtendComposer<TSchema, TMetadataAdapter>(schema, metadataAdapter, transformDocument),
     $var: createVarBuilder<TSchema>(inputTypeMethods),

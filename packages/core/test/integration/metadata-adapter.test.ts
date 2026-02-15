@@ -69,9 +69,7 @@ describe("metadata adapter", () => {
       const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a fragment (no metadata builder — tagged template)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserMetaFields on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserMetaFields on User { id name }`());
 
       // Create operation that spreads the fragment
       const operation = gql(({ query, $var }) =>
@@ -150,18 +148,13 @@ describe("metadata adapter", () => {
     });
 
     it("supports custom fragment metadata types", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(
-        schema,
-        {
-          adapter: headerMergingAdapter,
-          inputTypeMethods,
-        },
-      );
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(schema, {
+        adapter: headerMergingAdapter,
+        inputTypeMethods,
+      });
 
       // Fragment without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserCustomMetaFields on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserCustomMetaFields on User { id name }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -193,18 +186,13 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(
-        schema,
-        {
-          adapter: capturingAdapter,
-          inputTypeMethods,
-        },
-      );
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(schema, {
+        adapter: capturingAdapter,
+        inputTypeMethods,
+      });
 
       // Fragment without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserCapturingFields on User { id }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserCapturingFields on User { id }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -224,22 +212,15 @@ describe("metadata adapter", () => {
     });
 
     it("provides aggregated metadata to operation callback", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(
-        schema,
-        {
-          adapter: headerMergingAdapter,
-          inputTypeMethods,
-        },
-      );
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof headerMergingAdapter>(schema, {
+        adapter: headerMergingAdapter,
+        inputTypeMethods,
+      });
 
       // Fragments without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserAggregateFields on User { id }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserAggregateFields on User { id }`());
 
-      const postFragment = gql(({ fragment }) =>
-        fragment`fragment PostAggregateFields on Post { id title }`(),
-      );
+      const postFragment = gql(({ fragment }) => fragment`fragment PostAggregateFields on Post { id title }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -281,13 +262,10 @@ describe("metadata adapter", () => {
         metadata: capturingMetadataAdapter,
       });
 
-      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(
-        schema,
-        {
-          adapter: capturingAdapter,
-          inputTypeMethods,
-        },
-      );
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof capturingAdapter>(schema, {
+        adapter: capturingAdapter,
+        inputTypeMethods,
+      });
 
       // Fragment without metadata (tagged template)
       const userFragment = gql(({ fragment }) => fragment`fragment UserNoMetaFields on User { id }`());

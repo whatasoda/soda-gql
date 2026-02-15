@@ -37,10 +37,7 @@ import type {
 } from "./types";
 
 /** Parse GraphQL source string directly. No file I/O. */
-export const parseGraphqlSource = (
-  source: string,
-  sourceFile: string,
-): Result<ParseResult, GraphqlAnalysisError> => {
+export const parseGraphqlSource = (source: string, sourceFile: string): Result<ParseResult, GraphqlAnalysisError> => {
   try {
     const document = parse(source);
     return ok({ document, ...extractFromDocument(document, sourceFile) });

@@ -286,10 +286,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<MutationSchema, StandardDirectives, typeof adapter>(
-      mutationSchema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<MutationSchema, StandardDirectives, typeof adapter>(mutationSchema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ mutation, $var }) =>
       mutation.operation({

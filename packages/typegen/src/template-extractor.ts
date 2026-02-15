@@ -133,10 +133,7 @@ const getGqlCallSchemaName = (identifiers: ReadonlySet<string>, call: CallExpres
  * Extract templates from a gql callback's arrow function body.
  * Handles both expression bodies and block bodies with return statements.
  */
-const extractTemplatesFromCallback = (
-  arrow: ArrowFunctionExpression,
-  schemaName: string,
-): ExtractedTemplate[] => {
+const extractTemplatesFromCallback = (arrow: ArrowFunctionExpression, schemaName: string): ExtractedTemplate[] => {
   const templates: ExtractedTemplate[] = [];
 
   const processExpression = (expr: Node): void => {
@@ -230,10 +227,7 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
 /**
  * Walk AST to find gql calls and extract templates.
  */
-const walkAndExtract = (
-  node: Node,
-  identifiers: ReadonlySet<string>,
-): ExtractedTemplate[] => {
+const walkAndExtract = (node: Node, identifiers: ReadonlySet<string>): ExtractedTemplate[] => {
   const templates: ExtractedTemplate[] = [];
 
   const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): void => {

@@ -166,9 +166,7 @@ describe("Nested object selection type inference", () => {
   describe("Fragment on nested type", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers fragment spread in nested selection", () => {
-      const postFragment = gql(({ fragment }) =>
-        fragment`fragment PostNestedFields on Post { id title }`(),
-      );
+      const postFragment = gql(({ fragment }) => fragment`fragment PostNestedFields on Post { id title }`());
 
       const GetUserWithPosts = gql(({ query, $var }) =>
         query.operation({

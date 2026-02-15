@@ -20,9 +20,7 @@ describe("Fragment spreading type inference", () => {
   describe("Fragment spread without variables", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("propagates fragment output type", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserSpreadFields on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserSpreadFields on User { id name }`());
 
       const GetUser = gql(({ query, $var }) =>
         query.operation({
@@ -47,9 +45,7 @@ describe("Fragment spreading type inference", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("requires variable in spread call", () => {
       // Fragment that defines a required variable (for use in spread)
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserPrefixFields($namePrefix: String!) on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserPrefixFields($namePrefix: String!) on User { id name }`());
 
       const GetUser = gql(({ query, $var }) =>
         query.operation({
@@ -122,9 +118,7 @@ describe("Fragment spreading type inference", () => {
   describe("Nested fragment spread", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("spreads fragment in nested selection", () => {
-      const idFragment = gql(({ fragment }) =>
-        fragment`fragment UserIdOnlyFields on User { id }`(),
-      );
+      const idFragment = gql(({ fragment }) => fragment`fragment UserIdOnlyFields on User { id }`());
 
       const GetUsers = gql(({ query, $var }) =>
         query.operation({
@@ -148,13 +142,9 @@ describe("Fragment spreading type inference", () => {
   describe("Multiple fragment spreads", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("combines fields from multiple fragments", () => {
-      const idFragment = gql(({ fragment }) =>
-        fragment`fragment UserIdFragment on User { id }`(),
-      );
+      const idFragment = gql(({ fragment }) => fragment`fragment UserIdFragment on User { id }`());
 
-      const nameFragment = gql(({ fragment }) =>
-        fragment`fragment UserNameFragment on User { name }`(),
-      );
+      const nameFragment = gql(({ fragment }) => fragment`fragment UserNameFragment on User { name }`());
 
       const GetUser = gql(({ query, $var }) =>
         query.operation({

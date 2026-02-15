@@ -4,25 +4,21 @@ import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { BasicTestSchema } from "../fixtures";
 import { basicInputTypeMethods, basicTestSchema } from "../fixtures";
 
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(
-  basicTestSchema, { inputTypeMethods: basicInputTypeMethods }
-);
+const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
+  inputTypeMethods: basicInputTypeMethods,
+});
 
 describe("tagged template fragment integration", () => {
   describe("basic fragment", () => {
     it("creates fragment from tagged template", () => {
-      const UserFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User { id name }`(),
-      );
+      const UserFields = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
       expect(UserFields.key).toBe("UserFields");
       expect(UserFields.typename).toBe("User");
       expect(UserFields.schemaLabel).toBe(basicTestSchema.label);
     });
 
     it("spread returns field selections", () => {
-      const UserFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User { id name }`(),
-      );
+      const UserFields = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
       const fields = UserFields.spread();
       expect(fields).toBeDefined();
       expect(typeof fields).toBe("object");

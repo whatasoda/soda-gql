@@ -107,9 +107,7 @@ describe("Shorthand Field Selection", () => {
 
   describe("basic shorthand syntax", () => {
     it("accepts shorthand for scalar fields", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserFields on User { id name }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
 
       expect(userFragment.typename).toBe("User");
       const fields = userFragment.spread({} as never);
@@ -117,9 +115,7 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("accepts shorthand for enum fields", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserStatusFields on User { status }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserStatusFields on User { status }`());
 
       expect(userFragment.typename).toBe("User");
       const fields = userFragment.spread({} as never);
@@ -170,9 +166,7 @@ describe("Shorthand Field Selection", () => {
 
   describe("mixed shorthand and factory syntax", () => {
     it("accepts mixed syntax in same fields builder", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment`fragment UserMixedFields on User { id name email age }`(),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserMixedFields on User { id name email age }`());
 
       const fields = userFragment.spread({} as never);
       expect(fields).toBeDefined();

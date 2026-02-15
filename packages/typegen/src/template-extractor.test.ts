@@ -7,8 +7,7 @@ import { extractTemplatesFromSource } from "./template-extractor";
  */
 const createTestHelper = (): GraphqlSystemIdentifyHelper => ({
   isGraphqlSystemFile: () => false,
-  isGraphqlSystemImportSpecifier: ({ specifier }) =>
-    specifier === "./graphql-system" || specifier === "@/graphql-system",
+  isGraphqlSystemImportSpecifier: ({ specifier }) => specifier === "./graphql-system" || specifier === "@/graphql-system",
   isInternalModuleFile: () => false,
 });
 

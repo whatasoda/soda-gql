@@ -3,14 +3,10 @@
  * @module
  */
 
-import { parse as parseGraphql, Kind, type OperationDefinitionNode } from "graphql";
+import { Kind, type OperationDefinitionNode, parse as parseGraphql } from "graphql";
+import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
 import { type GqlDefine, Operation } from "../types/element";
-import {
-  type AnyCompatSpec,
-  type CompatSpec,
-  type TemplateCompatSpec,
-  isTemplateCompatSpec,
-} from "../types/element/compat-spec";
+import { type AnyCompatSpec, type CompatSpec, isTemplateCompatSpec, type TemplateCompatSpec } from "../types/element/compat-spec";
 import type { AnyFields, DeclaredVariables } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
@@ -23,7 +19,6 @@ import type {
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
 import { createVarRefs } from "./input";
 
 import { buildOperationArtifact } from "./operation-core";
@@ -85,7 +80,9 @@ export const createExtendComposer = <
     TFields extends AnyFields,
     TOperationMetadata = unknown,
   >(
-    compat: GqlDefine<CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>> | GqlDefine<TemplateCompatSpec>,
+    compat:
+      | GqlDefine<CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>
+      | GqlDefine<TemplateCompatSpec>,
     options?: ExtendOptions<TSchema, TVarDefinitions, TOperationMetadata, TAggregatedFragmentMetadata, TSchemaLevel>,
   ) => {
     // Extract the spec from GqlDefine
@@ -94,7 +91,13 @@ export const createExtendComposer = <
     // TemplateCompatSpec path — parse GraphQL and build operation directly
     if (isTemplateCompatSpec(spec as AnyCompatSpec | TemplateCompatSpec)) {
       // biome-ignore lint/suspicious/noExplicitAny: Options type narrowing not possible across union
-      return buildOperationFromTemplateSpec(schema, spec as TemplateCompatSpec, resolvedAdapter, options as any, transformDocument);
+      return buildOperationFromTemplateSpec(
+        schema,
+        spec as TemplateCompatSpec,
+        resolvedAdapter,
+        options as any,
+        transformDocument,
+      );
     }
 
     // Existing CompatSpec path — delegate to buildOperationArtifact
@@ -126,18 +129,25 @@ export const createExtendComposer = <
  * Builds an Operation from a TemplateCompatSpec by parsing the raw GraphQL source.
  * This bypasses buildOperationArtifact since we have a DocumentNode, not a fieldsBuilder.
  */
-const buildOperationFromTemplateSpec = <
-  TSchema extends AnyGraphqlSchema,
-  TAdapter extends AnyMetadataAdapter,
->(
+const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyMetadataAdapter>(
   schema: TSchema,
   spec: TemplateCompatSpec,
   adapter: TAdapter,
-  options: ExtendOptions<TSchema, VariableDefinitions, unknown, ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"], ExtractAdapterTypes<TAdapter>["schemaLevel"]> | undefined,
-  adapterTransformDocument: DocumentTransformer<
-    ExtractAdapterTypes<TAdapter>["schemaLevel"],
-    ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"]
-  > | undefined,
+  options:
+    | ExtendOptions<
+        TSchema,
+        VariableDefinitions,
+        unknown,
+        ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"],
+        ExtractAdapterTypes<TAdapter>["schemaLevel"]
+      >
+    | undefined,
+  adapterTransformDocument:
+    | DocumentTransformer<
+        ExtractAdapterTypes<TAdapter>["schemaLevel"],
+        ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"]
+      >
+    | undefined,
 ) => {
   const { operationType, operationName, graphqlSource } = spec;
 
@@ -145,9 +155,7 @@ const buildOperationFromTemplateSpec = <
   const document = parseGraphql(graphqlSource);
 
   // 2. Extract operation definition for variable analysis
-  const opDef = document.definitions.find(
-    (d): d is OperationDefinitionNode => d.kind === Kind.OPERATION_DEFINITION,
-  );
+  const opDef = document.definitions.find((d): d is OperationDefinitionNode => d.kind === Kind.OPERATION_DEFINITION);
   if (!opDef) {
     throw new Error("No operation definition found in compat template spec");
   }
@@ -187,7 +195,7 @@ const buildOperationFromTemplateSpec = <
     document,
     fragmentMetadata: aggregated,
     schemaLevel: adapter.schemaLevel,
-  // biome-ignore lint/suspicious/noExplicitAny: Metadata builder generic params
+    // biome-ignore lint/suspicious/noExplicitAny: Metadata builder generic params
   } as any);
 
   // Apply document transforms
@@ -203,7 +211,7 @@ const buildOperationFromTemplateSpec = <
       variableNames,
       schemaLevel: adapter.schemaLevel,
       fragmentMetadata: aggregated,
-    // biome-ignore lint/suspicious/noExplicitAny: Adapter transform generic params
+      // biome-ignore lint/suspicious/noExplicitAny: Adapter transform generic params
     } as any);
   }
 

@@ -4,9 +4,9 @@
  */
 
 import type { DocumentNode } from "graphql";
+import { parseTypeNode } from "./parser";
 import { err, ok, type Result } from "./result";
 import { createSchemaIndex, type SchemaIndex } from "./schema-index";
-import { parseTypeNode } from "./parser";
 import type {
   GraphqlAnalysisError,
   InferredVariable,
@@ -344,9 +344,7 @@ export const mergeVariableUsages = (
   });
 };
 
-export const inferVariablesFromUsages = (
-  usages: readonly VariableUsage[],
-): Result<InferredVariable[], GraphqlAnalysisError> => {
+export const inferVariablesFromUsages = (usages: readonly VariableUsage[]): Result<InferredVariable[], GraphqlAnalysisError> => {
   const byName = new Map<string, VariableUsage[]>();
   for (const usage of usages) {
     const existing = byName.get(usage.name);
@@ -368,8 +366,7 @@ export const inferVariablesFromUsages = (
   return ok(variables);
 };
 
-const isScalarName = (schema: SchemaIndex, name: string): boolean =>
-  builtinScalarTypes.has(name) || schema.scalars.has(name);
+const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
 
 // ============================================================================
 // Fragment Dependency Ordering
@@ -528,10 +525,7 @@ export const transformParsedGraphql = (
   return ok({ operations, fragments });
 };
 
-const transformOperation = (
-  op: ParsedOperation,
-  schema: SchemaIndex,
-): Result<EnrichedOperation, GraphqlAnalysisError> => {
+const transformOperation = (op: ParsedOperation, schema: SchemaIndex): Result<EnrichedOperation, GraphqlAnalysisError> => {
   const variables: EnrichedVariable[] = [];
   for (const v of op.variables) {
     const typeKind = resolveTypeKind(schema, v.typeName);

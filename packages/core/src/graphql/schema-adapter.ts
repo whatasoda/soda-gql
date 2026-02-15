@@ -21,9 +21,7 @@ import type { SchemaIndex } from "./schema-index";
  * use createSchemaIndex(DocumentNode) from schema-index.ts.
  */
 export const createSchemaIndexFromSchema = (schema: AnyGraphqlSchema): SchemaIndex => {
-  const scalars: SchemaIndex["scalars"] = new Map(
-    Object.keys(schema.scalar).map((n) => [n, { name: n, directives: [] }]),
-  );
+  const scalars: SchemaIndex["scalars"] = new Map(Object.keys(schema.scalar).map((n) => [n, { name: n, directives: [] }]));
   const enums: SchemaIndex["enums"] = new Map(
     Object.keys(schema.enum).map((n) => [n, { name: n, values: new Map(), directives: [] }]),
   );
