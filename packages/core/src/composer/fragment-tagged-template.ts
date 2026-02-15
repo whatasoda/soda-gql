@@ -175,9 +175,11 @@ function extractASTValue(node: {
   readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[];
 }): unknown {
   switch (node.kind) {
-    case Kind.STRING:
     case Kind.INT:
+      return Number.parseInt(node.value as string, 10);
     case Kind.FLOAT:
+      return Number.parseFloat(node.value as string);
+    case Kind.STRING:
     case Kind.BOOLEAN:
     case Kind.ENUM:
       return node.value;
