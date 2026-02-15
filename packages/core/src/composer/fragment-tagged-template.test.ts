@@ -1,7 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
+import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import type { AnyGraphqlSchema } from "../types/schema";
+import { createVarRefFromVariable, VarRef } from "../types/type-foundation/var-ref";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 
 const schema = {
@@ -31,6 +33,18 @@ const schema = {
     Post: define("Post").object({
       id: unsafeOutputType.scalar("ID:!", {}),
       title: unsafeOutputType.scalar("String:!", {}),
+    }),
+    Employee: define("Employee").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      name: unsafeOutputType.scalar("String:!", {}),
+      tasks: unsafeOutputType.object("Task:![]!", {
+        arguments: { completed: unsafeInputType.scalar("Boolean:?", {}) },
+      }),
+    }),
+    Task: define("Task").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+      done: unsafeOutputType.scalar("Boolean:!", {}),
     }),
   },
   union: {},
@@ -133,6 +147,53 @@ describe("createFragmentTaggedTemplate", () => {
       const result = fragment`fragment UserWithTypename on User { __typename id name }`();
       const fields = result.spread({} as never);
       expect(fields).toHaveProperty("__typename");
+    });
+  });
+
+  describe("variable references in spread", () => {
+    it("spread with VarRef produces args containing the VarRef", () => {
+      const frag =
+        fragment`fragment EmployeeTasks($completed: Boolean) on Employee { tasks(completed: $completed) { id title } }`();
+      const varRef = createVarRefFromVariable("completed");
+      const fields = frag.spread({ completed: varRef } as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      expect(tasksField.args).toBeDefined();
+      const completedArg = tasksField.args.completed;
+      expect(completedArg).toBeInstanceOf(VarRef);
+      const inner = VarRef.getInner(completedArg as VarRef<never>);
+      expect(inner.type).toBe("variable");
+      expect(inner).toEqual({ type: "variable", name: "completed" });
+    });
+
+    it("spread with literal value produces args containing nested-value VarRef", () => {
+      const frag =
+        fragment`fragment EmployeeTasks($completed: Boolean) on Employee { tasks(completed: $completed) { id title } }`();
+      const fields = frag.spread({ completed: true } as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      const completedArg = tasksField.args.completed;
+      expect(completedArg).toBeInstanceOf(VarRef);
+      const inner = VarRef.getInner(completedArg as VarRef<never>);
+      expect(inner.type).toBe("nested-value");
+      expect(inner).toEqual({ type: "nested-value", value: true });
+    });
+
+    it("spread without variables works unchanged", () => {
+      const frag = fragment`fragment EmployeeBasic on Employee { id name }`();
+      const fields = frag.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("unassigned variable produces nested-value VarRef with undefined", () => {
+      const frag =
+        fragment`fragment EmployeeTasks($completed: Boolean) on Employee { tasks(completed: $completed) { id title } }`();
+      const fields = frag.spread({} as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      const completedArg = tasksField.args.completed;
+      expect(completedArg).toBeInstanceOf(VarRef);
+      const inner = VarRef.getInner(completedArg as VarRef<never>);
+      expect(inner.type).toBe("nested-value");
+      expect(inner).toEqual({ type: "nested-value", value: undefined });
     });
   });
 });

@@ -11,7 +11,8 @@ import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
-import type { VariableDefinitions } from "../types/type-foundation";
+import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
+import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
@@ -84,6 +85,7 @@ export function buildFieldsFromSelectionSet(
   selectionSet: SelectionSetNode,
   schema: AnyGraphqlSchema,
   typeName: string,
+  varAssignments?: Readonly<Record<string, AnyVarRef>>,
 ): AnyFieldsExtended {
   const f = createFieldFactories(schema, typeName);
   const result: Record<string, unknown> = {};
@@ -105,7 +107,7 @@ export function buildFieldsFromSelectionSet(
       }
 
       // Build args from AST arguments
-      const args = buildArgsFromASTArguments(selection.arguments ?? []);
+      const args = buildArgsFromASTArguments(selection.arguments ?? [], varAssignments);
       const extras = alias !== fieldName ? { alias } : undefined;
 
       if (selection.selectionSet) {
@@ -117,6 +119,7 @@ export function buildFieldsFromSelectionSet(
             selection.selectionSet,
             schema,
             resolveFieldTypeName(schema, typeName, fieldName),
+            varAssignments,
           );
           const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
             ({ f: nestedFactories }: { f: unknown }) => {
@@ -156,11 +159,12 @@ function buildArgsFromASTArguments(
     readonly name: { readonly value: string };
     readonly value: { readonly kind: string; readonly value?: unknown };
   }[],
+  varAssignments?: Readonly<Record<string, AnyVarRef>>,
 ): Record<string, unknown> {
   if (args.length === 0) return {};
   const result: Record<string, unknown> = {};
   for (const arg of args) {
-    result[arg.name.value] = extractASTValue(arg.value);
+    result[arg.name.value] = extractASTValue(arg.value, varAssignments);
   }
   return result;
 }
@@ -168,12 +172,15 @@ function buildArgsFromASTArguments(
 /**
  * Extract a runtime value from a GraphQL AST ValueNode.
  */
-function extractASTValue(node: {
-  readonly kind: string;
-  readonly value?: unknown;
-  readonly values?: readonly unknown[];
-  readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[];
-}): unknown {
+function extractASTValue(
+  node: {
+    readonly kind: string;
+    readonly value?: unknown;
+    readonly values?: readonly unknown[];
+    readonly fields?: readonly { readonly name: { readonly value: string }; readonly value: unknown }[];
+  },
+  varAssignments?: Readonly<Record<string, AnyVarRef>>,
+): unknown {
   switch (node.kind) {
     case Kind.INT:
       return Number.parseInt(node.value as string, 10);
@@ -186,14 +193,22 @@ function extractASTValue(node: {
     case Kind.NULL:
       return null;
     case Kind.LIST:
-      return (node.values as readonly { kind: string; value?: unknown }[])?.map(extractASTValue) ?? [];
+      return (node.values as readonly { kind: string; value?: unknown }[])?.map((v) => extractASTValue(v, varAssignments)) ?? [];
     case Kind.OBJECT:
       return Object.fromEntries(
-        (node.fields ?? []).map((f) => [f.name.value, extractASTValue(f.value as { kind: string; value?: unknown })]),
+        (node.fields ?? []).map((f) => [
+          f.name.value,
+          extractASTValue(f.value as { kind: string; value?: unknown }, varAssignments),
+        ]),
       );
-    case Kind.VARIABLE:
-      // Variable references in fragments are handled by the variable system
-      return `$${(node as unknown as { name: { value: string } }).name.value}`;
+    case Kind.VARIABLE: {
+      const varName = (node as unknown as { name: { value: string } }).name.value;
+      if (varAssignments && varName in varAssignments) {
+        // biome-ignore lint/style/noNonNullAssertion: Checked with `in` operator above
+        return varAssignments[varName]!;
+      }
+      return createVarRefFromVariable(varName);
+    }
     default:
       return undefined;
   }
@@ -279,14 +294,13 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
         variableDefinitions: varSpecifiers,
         spread: (variables) => {
           const $ = createVarAssignments(varSpecifiers, variables);
-          void $; // Variable assignments reserved for future Fragment Arguments support
 
           recordFragmentUsage({
             metadataBuilder: options?.metadata ? () => options.metadata : null,
             path: null,
           });
 
-          return buildFieldsFromSelectionSet(fragNode.selectionSet, schema, onType);
+          return buildFieldsFromSelectionSet(fragNode.selectionSet, schema, onType, $ as Readonly<Record<string, AnyVarRef>>);
         },
         // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
