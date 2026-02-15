@@ -5,22 +5,19 @@ import { gql } from "@/graphql-system";
  * Fragment for EmployeeCard component.
  * Defines the data requirements colocated with the component.
  */
-export const employeeCardFragment = gql.default(({ fragment, $var }) =>
-  fragment.Query({
-    variables: { ...$var("employeeId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.email(),
-        ...f.role(),
-        ...f.department()(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-      })),
-    }),
-  }),
+export const employeeCardFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeCardFragment($employeeId: ID!) on Query {
+    employee(id: $employeeId) {
+      id
+      name
+      email
+      role
+      department {
+        id
+        name
+      }
+    }
+  }`(),
 );
 
 /**

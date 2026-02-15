@@ -104,14 +104,12 @@ my-next-app/
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.email(),
-      ...f.avatarUrl(),
-    }),
-  }),
+  fragment`fragment UserFragment on User {
+    id
+    name
+    email
+    avatarUrl
+  }`(),
 );
 ```
 

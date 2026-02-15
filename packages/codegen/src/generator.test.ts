@@ -503,7 +503,7 @@ describe("generateMultiSchemaModule", () => {
     expect(mFieldIndex).toBeLessThan(zFieldIndex);
   });
 
-  test("generates fragment builder types", () => {
+  test("does not generate fragment builder types (tagged templates only)", () => {
     const document = parse(`
       type Query { users: [User!]! }
       type User { id: ID!, name: String! }
@@ -512,21 +512,15 @@ describe("generateMultiSchemaModule", () => {
     const schemas = new Map([["default", document]]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Should import FragmentBuilderFor
-    expect(result.code).toContain("type FragmentBuilderFor");
+    // Should NOT import FragmentBuilderFor (fragments use tagged templates exclusively)
+    expect(result.code).not.toContain("FragmentBuilderFor");
+    expect(result.code).not.toContain("FragmentBuilders_default");
 
-    // Should generate FragmentBuilders type
-    expect(result.code).toContain("type FragmentBuilders_default");
-    expect(result.code).toContain('FragmentBuilderFor<Schema_default, "Query">');
-    expect(result.code).toContain('FragmentBuilderFor<Schema_default, "User">');
-
-    // Should use FragmentBuilders type in createGqlElementComposer
-    expect(result.code).toContain(
-      "createGqlElementComposer<Schema_default, FragmentBuilders_default, typeof customDirectives_default>",
-    );
+    // Should use simplified type params in createGqlElementComposer (no FragmentBuilders)
+    expect(result.code).toContain("createGqlElementComposer<Schema_default, typeof customDirectives_default>");
   });
 
-  test("generates fragment builder types for multiple schemas", () => {
+  test("does not generate fragment builder types for multiple schemas", () => {
     const schema1 = parse(`
       type Query { users: [User!]! }
       type User { id: ID! }
@@ -543,11 +537,10 @@ describe("generateMultiSchemaModule", () => {
     ]);
     const result = generateMultiSchemaModule(schemas);
 
-    // Should generate separate FragmentBuilders for each schema
-    expect(result.code).toContain("type FragmentBuilders_api");
-    expect(result.code).toContain("type FragmentBuilders_blog");
-    expect(result.code).toContain('FragmentBuilderFor<Schema_api, "User">');
-    expect(result.code).toContain('FragmentBuilderFor<Schema_blog, "Post">');
+    // Should NOT generate FragmentBuilders for any schema
+    expect(result.code).not.toContain("FragmentBuilders_api");
+    expect(result.code).not.toContain("FragmentBuilders_blog");
+    expect(result.code).not.toContain("FragmentBuilderFor");
   });
 
   test("generates __inputDepthOverrides when provided", () => {

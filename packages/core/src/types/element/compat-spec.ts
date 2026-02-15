@@ -76,3 +76,35 @@ export type ExtractCompatSpec<T> = T extends CompatSpec<
       fields: TFields;
     }
   : never;
+
+/**
+ * Specification for a tagged template compat operation.
+ * Stores raw GraphQL source string instead of fieldsBuilder callback.
+ * Created by `query.compat\`...\``, `mutation.compat\`...\``, `subscription.compat\`...\``.
+ *
+ * Unlike {@link CompatSpec}, this type is not generic — tagged template compat
+ * does not carry type-level field or variable information. Types come from typegen.
+ *
+ * The graphqlSource is stored raw (unparsed). Parsing happens inside extend()
+ * at extend-time, preserving the deferred execution model.
+ */
+export type TemplateCompatSpec = {
+  readonly schema: AnyGraphqlSchema;
+  readonly operationType: OperationType;
+  readonly operationName: string;
+  readonly graphqlSource: string;
+};
+
+/**
+ * Type guard to distinguish TemplateCompatSpec from CompatSpec at runtime.
+ * Uses structural discrimination (presence of `graphqlSource` field).
+ */
+export const isTemplateCompatSpec = (spec: AnyCompatSpec | TemplateCompatSpec): spec is TemplateCompatSpec => {
+  return "graphqlSource" in spec && !("fieldsBuilder" in spec);
+};
+
+/**
+ * Union type for specs that extend() can accept.
+ * Includes both callback builder compat specs and tagged template compat specs.
+ */
+export type AnyExtendableSpec = AnyCompatSpec | TemplateCompatSpec;

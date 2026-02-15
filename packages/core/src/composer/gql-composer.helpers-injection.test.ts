@@ -4,7 +4,7 @@ import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -63,7 +63,7 @@ describe("helpers injection via adapter", () => {
       helpers: { auth: authHelper },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -72,7 +72,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment, auth }) => {
       capturedAuth = auth;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserAuthFields on User { id name }`();
     });
 
     expect(capturedAuth).toBeDefined();
@@ -93,7 +93,7 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -102,7 +102,7 @@ describe("helpers injection via adapter", () => {
 
     gql(({ fragment, cache }) => {
       capturedCacheTTL = cache.ttl(300).cacheTTL;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserCacheTTLFields on User { id name }`();
     });
 
     expect(capturedCacheTTL).toBe(300);
@@ -113,7 +113,7 @@ describe("helpers injection via adapter", () => {
       helpers: { custom: () => "test" },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -137,13 +137,13 @@ describe("helpers injection via adapter", () => {
   });
 
   it("works with inputTypeMethods option", () => {
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
     let varBuilderAvailable = false;
 
     gql(({ fragment, $var }) => {
       varBuilderAvailable = typeof $var === "function";
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserVarBuilderFields on User { id name }`();
     });
 
     expect(varBuilderAvailable).toBe(true);
@@ -168,7 +168,7 @@ describe("helpers injection via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -179,7 +179,7 @@ describe("helpers injection via adapter", () => {
     gql(({ fragment, auth, tracking }) => {
       capturedRole = auth.roles.admin().role;
       capturedEvent = tracking.analytics("page_view").event;
-      return fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) });
+      return fragment`fragment UserNestedHelpersFields on User { id name }`();
     });
 
     expect(capturedRole).toBe("admin");

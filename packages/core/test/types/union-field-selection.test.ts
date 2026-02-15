@@ -8,11 +8,11 @@
 
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { type UnionSchema, unionInputTypeMethods, unionSchema } from "./_fixtures";
 import type { Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<UnionSchema, FragmentBuildersAll<UnionSchema>, StandardDirectives>(unionSchema, {
+const gql = createGqlElementComposer<UnionSchema, StandardDirectives>(unionSchema, {
   inputTypeMethods: unionInputTypeMethods,
 });
 

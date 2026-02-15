@@ -3,11 +3,7 @@ import type { z } from "zod";
 
 export type AliasMap = Record<string, string>;
 
-export const parseArgs = <T extends z.ZodType>(
-  args: string[],
-  schema: T,
-  aliases?: AliasMap,
-): Result<z.infer<T>, string> => {
+export const parseArgs = <T extends z.ZodType>(args: string[], schema: T, aliases?: AliasMap): Result<z.infer<T>, string> => {
   const parsed: Record<string, unknown> = {};
   const positional: string[] = [];
 

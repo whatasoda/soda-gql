@@ -34,13 +34,10 @@ For fragments to be included in the prebuilt registry, they must have a `key` pr
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    key: "UserFields",  // Required for prebuilt types
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment.User("UserFields")`
+    id
+    name
+  `(),
 );
 ```
 

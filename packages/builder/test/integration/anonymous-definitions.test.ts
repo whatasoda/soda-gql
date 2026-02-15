@@ -114,7 +114,7 @@ type User {
 import { gql } from "./graphql-system";
 
 const { useQueryOperation, $infer } = gql
-  .default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }))
+  .default(({ fragment }) => fragment\`fragment UserFragment on User { id }\`())
   .attach({});
 
 export type UserFragment = typeof $infer;
@@ -193,12 +193,12 @@ import { gql } from "./graphql-system";
 
 // First anonymous definition (destructuring)
 const { useQueryOperation: useFirst } = gql
-  .default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }))
+  .default(({ fragment }) => fragment\`fragment UserIdFragment on User { id }\`())
   .attach({});
 
 // Second anonymous definition (destructuring)
 const { useQueryOperation: useSecond } = gql
-  .default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.name() }) }))
+  .default(({ fragment }) => fragment\`fragment UserNameFragment on User { name }\`())
   .attach({});
 
 export { useFirst, useSecond };

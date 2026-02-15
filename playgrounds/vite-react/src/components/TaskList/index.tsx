@@ -1,6 +1,8 @@
 import type { InferExecutionResultProjection, NormalizedError } from "@soda-gql/colocation-tools";
 import type { taskListProjection } from "./fragment";
 
+type Task = { id: string; title: string; completed: boolean; priority: string };
+
 type Props = {
   result: InferExecutionResultProjection<typeof taskListProjection>;
 };
@@ -39,7 +41,7 @@ export const TaskList = ({ result }: Props) => {
     <div style={{ padding: "1rem", background: "#f5f5f5", borderRadius: "4px" }}>
       <h4 style={{ margin: "0 0 0.5rem 0" }}>Tasks</h4>
       <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
-        {result.tasks.map((task) => (
+        {result.tasks.map((task: Task) => (
           <li
             key={task.id}
             style={{

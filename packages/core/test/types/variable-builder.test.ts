@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import {
   type EnumSchema,
   enumInputTypeMethods,
@@ -19,14 +19,13 @@ import {
 } from "./_fixtures";
 import type { Equal, Expect, Extends } from "./_helpers";
 
-const enumGql = createGqlElementComposer<EnumSchema, FragmentBuildersAll<EnumSchema>, StandardDirectives>(enumSchema, {
+const enumGql = createGqlElementComposer<EnumSchema, StandardDirectives>(enumSchema, {
   inputTypeMethods: enumInputTypeMethods,
 });
 
-const inputGql = createGqlElementComposer<InputObjectSchema, FragmentBuildersAll<InputObjectSchema>, StandardDirectives>(
-  inputObjectSchema,
-  { inputTypeMethods: inputObjectInputTypeMethods },
-);
+const inputGql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {
+  inputTypeMethods: inputObjectInputTypeMethods,
+});
 
 describe("Variable builder type safety", () => {
   describe("Scalar variable creation", () => {

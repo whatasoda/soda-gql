@@ -1,11 +1,3 @@
 import { gql } from "../graphql-system";
 
-export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    key: "UserFields",
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
-);
+export const userFragment = gql.default(({ fragment }) => fragment`fragment UserFields on User { id name }`());

@@ -5,9 +5,10 @@
  * 1. Load schemas from generated CJS bundle
  * 2. Generate index.prebuilt.ts
  * 3. Build artifact to evaluate elements
- * 4. Extract field selections
- * 5. Emit types.prebuilt.ts
- * 6. Bundle prebuilt module
+ * 4. Extract field selections from builder
+ * 5. Scan source files for tagged templates and merge selections
+ * 6. Emit types.prebuilt.ts
+ * 7. Bundle prebuilt module
  *
  * @module
  */
@@ -17,7 +18,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import {
   createBuilderService,
+  createGraphqlSystemIdentifyHelper,
   extractFieldSelections,
+  type FieldSelectionData,
   type IntermediateArtifactElement,
   loadSchemasFromBundle,
 } from "@soda-gql/builder";
@@ -29,6 +32,8 @@ import { err, ok } from "neverthrow";
 import { emitPrebuiltTypes } from "./emitter";
 import { typegenErrors } from "./errors";
 import { generatePrebuiltModule } from "./prebuilt-generator";
+import { scanSourceFiles } from "./template-scanner";
+import { convertTemplatesToSelections } from "./template-to-selections";
 import type { TypegenResult, TypegenSuccess } from "./types";
 
 /**
@@ -240,7 +245,48 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   }
 
   const fieldSelectionsResult = extractFieldSelections(intermediateElements as Record<CanonicalId, IntermediateArtifactElement>);
-  const { selections: fieldSelections, warnings: extractWarnings } = fieldSelectionsResult;
+  const { selections: builderSelections, warnings: extractWarnings } = fieldSelectionsResult;
+
+  // Step 5b: Scan source files for tagged templates and merge selections
+  const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
+  const scanResult = scanSourceFiles({
+    include: [...config.include],
+    exclude: [...config.exclude],
+    baseDir: config.baseDir,
+    helper: graphqlHelper,
+  });
+
+  const templateSelections = convertTemplatesToSelections(scanResult.templates, schemas);
+
+  // Merge builder and template selections into a combined map.
+  // Template selections are authoritative: when both the builder and template scanner
+  // find elements in the same file, prefer the template selection to avoid duplicates.
+  // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
+  // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
+  const extractFilePart = (id: string): string => {
+    const filePart = id.split("::")[0] ?? "";
+    // Normalize absolute paths to relative using baseDir
+    if (filePart.startsWith("/")) {
+      return relative(config.baseDir, filePart);
+    }
+    return filePart;
+  };
+
+  const templateFiles = new Set<string>();
+  for (const id of templateSelections.selections.keys()) {
+    templateFiles.add(extractFilePart(id));
+  }
+
+  const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
+  for (const [id, data] of builderSelections) {
+    if (templateFiles.has(extractFilePart(id))) continue; // template scanner wins
+    fieldSelections.set(id, data);
+  }
+  for (const [id, data] of templateSelections.selections) {
+    fieldSelections.set(id, data);
+  }
+
+  const scanWarnings = [...scanResult.warnings, ...templateSelections.warnings];
 
   // Step 6: Emit types.prebuilt.ts
   // Reuse injectsModulePath from step 3 (same directory, same relative path)
@@ -283,7 +329,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     }
   }
 
-  const allWarnings = [...extractWarnings, ...emitWarnings];
+  const allWarnings = [...extractWarnings, ...scanWarnings, ...emitWarnings];
 
   return ok({
     prebuiltIndexPath,

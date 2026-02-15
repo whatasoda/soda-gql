@@ -5,24 +5,12 @@ import { gql } from "../../../../../graphql-system";
  * This tests that keyed fragments are correctly resolved.
  */
 export const keyedUserFields = gql.default(({ fragment }) =>
-  fragment.Employee({
-    key: "KeyedUserFields",
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment`fragment KeyedUserFields on Employee { id name }`(),
 );
 
 /**
  * Another keyed fragment for testing multiple fragments.
  */
 export const keyedPostFields = gql.default(({ fragment }) =>
-  fragment.Task({
-    key: "KeyedPostFields",
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.title(),
-    }),
-  }),
+  fragment`fragment KeyedPostFields on Task { id title }`(),
 );

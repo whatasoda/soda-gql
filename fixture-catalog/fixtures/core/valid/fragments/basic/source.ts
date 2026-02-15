@@ -1,11 +1,11 @@
 import { gql } from "../../../../../graphql-system";
 
-export const userFragment = gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
+export const userFragment = gql.default(({ fragment }) => fragment`fragment UserFragment on Employee { id name }`());
 
 export const productFragment = gql.default(({ fragment }) => {
-  return fragment.Project({ fields: ({ f }) => ({ ...f.id(), ...f.title() }) });
+  return fragment`fragment ProductFragment on Project { id title }`();
 });
 
 export const fragments = {
-  user: gql.default(({ fragment }) => fragment.Employee({ fields: ({ f }) => ({ ...f.id() }) })),
+  user: gql.default(({ fragment }) => fragment`fragment UserIdFragment on Employee { id }`()),
 };

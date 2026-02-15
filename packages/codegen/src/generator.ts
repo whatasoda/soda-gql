@@ -555,17 +555,7 @@ const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
     .filter((name) => !name.startsWith("__"))
     .sort((left, right) => left.localeCompare(right));
 
-const renderFragmentBuildersType = (objectTypeNames: string[], schemaName: string, adapterTypeName?: string): string => {
-  if (objectTypeNames.length === 0) {
-    return `type FragmentBuilders_${schemaName} = Record<string, never>;`;
-  }
-
-  const adapterPart = adapterTypeName ? `, ExtractMetadataAdapter<${adapterTypeName}>` : "";
-  const entries = objectTypeNames.map(
-    (name) => `  readonly ${name}: FragmentBuilderFor<Schema_${schemaName}, "${name}"${adapterPart}>`,
-  );
-  return `type FragmentBuilders_${schemaName} = {\n${entries.join(";\n")};\n};`;
-};
+// Fragment callback builders removed in Phase 3 — fragments use tagged templates exclusively.
 
 const collectInputTypeNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.inputs.keys())
@@ -768,7 +758,7 @@ type MultiRuntimeTemplateOptions = {
       readonly unionNames: string[];
       readonly inputTypeMethodsBlock: string;
       readonly directiveMethodsBlock: string;
-      readonly fragmentBuildersTypeBlock: string;
+
       readonly defaultInputDepth?: number;
       readonly inputDepthOverrides?: Readonly<Record<string, number>>;
     }
@@ -907,12 +897,11 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
 
-    // Build type exports with fragment builders type
+    // Build type exports
     const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
     if (adapterVar) {
       typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
-    typeExports.push(config.fragmentBuildersTypeBlock);
 
     const inputTypeMethodsVar = `inputTypeMethods_${name}`;
     const factoryVar = `createMethod_${name}`;
@@ -1028,12 +1017,12 @@ ${typeExports.join("\n")}`);
     // Build gql composer as a named variable for Context type extraction
     const gqlVarName = `gql_${name}`;
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
+      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
       schemaBlocks.push(
         `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     } else {
-      const typeParams = `<Schema_${name}, FragmentBuilders_${name}, typeof ${customDirectivesVar}>`;
+      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}>`;
       schemaBlocks.push(
         `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
       );
@@ -1063,8 +1052,6 @@ ${typeExports.join("\n")}`);
 
   return `\
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
-  type ExtractMetadataAdapter,
-  type FragmentBuilderFor,
   type AnyGraphqlSchema,
   createDirectiveMethod,
   createTypedDirectiveMethod,
@@ -1179,9 +1166,7 @@ export const generateMultiSchemaModule = (
     const factoryVar = `createMethod_${name}`;
     const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
     const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
-    // Pass adapter type name if injection has adapter for this schema
-    const adapterTypeName = options?.injection?.get(name)?.adapterImportPath ? `Adapter_${name}` : undefined;
-    const fragmentBuildersTypeBlock = renderFragmentBuildersType(objectTypeNames, name, adapterTypeName);
+    // Fragment callback builders removed in Phase 3 — adapter type for fragments no longer needed
 
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";
@@ -1205,7 +1190,6 @@ export const generateMultiSchemaModule = (
       unionNames: unionTypeNames,
       inputTypeMethodsBlock,
       directiveMethodsBlock,
-      fragmentBuildersTypeBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),
     };

@@ -217,7 +217,7 @@ export const MyConfig = gql.default(({ define }) =>
 
 // Fragment element - should be included
 export const UserFragment = gql.default(({ fragment }) =>
-  fragment.User({ fields: ({ f }) => ({ ...f.id() }) })
+  fragment\`fragment UserFragment on User { id }\`()
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "mixed-elements.ts"), moduleContent);

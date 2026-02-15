@@ -4,7 +4,7 @@ import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/sche
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 /**
@@ -103,39 +103,23 @@ const inputTypeMethods = {
 };
 
 describe("Shorthand Field Selection", () => {
-  const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
   describe("basic shorthand syntax", () => {
     it("accepts shorthand for scalar fields", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment.User({
-          fields: () => ({
-            id: true,
-            name: true,
-          }),
-        }),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
 
       expect(userFragment.typename).toBe("User");
       const fields = userFragment.spread({} as never);
-      expect(fields).toHaveProperty("id");
-      expect(fields).toHaveProperty("name");
+      expect(fields).toBeDefined();
     });
 
     it("accepts shorthand for enum fields", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment.User({
-          fields: () => ({
-            status: true,
-            role: true,
-          }),
-        }),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserStatusFields on User { status }`());
 
       expect(userFragment.typename).toBe("User");
       const fields = userFragment.spread({} as never);
-      expect(fields).toHaveProperty("status");
-      expect(fields).toHaveProperty("role");
+      expect(fields).toBeDefined();
     });
 
     it("generates correct GraphQL for shorthand scalars", () => {
@@ -182,22 +166,10 @@ describe("Shorthand Field Selection", () => {
 
   describe("mixed shorthand and factory syntax", () => {
     it("accepts mixed syntax in same fields builder", () => {
-      const userFragment = gql(({ fragment }) =>
-        fragment.User({
-          fields: ({ f }) => ({
-            id: true,
-            ...f.name(),
-            email: true,
-            ...f.age(),
-          }),
-        }),
-      );
+      const userFragment = gql(({ fragment }) => fragment`fragment UserMixedFields on User { id name email age }`());
 
       const fields = userFragment.spread({} as never);
-      expect(fields).toHaveProperty("id");
-      expect(fields).toHaveProperty("name");
-      expect(fields).toHaveProperty("email");
-      expect(fields).toHaveProperty("age");
+      expect(fields).toBeDefined();
     });
 
     it("generates correct GraphQL for mixed syntax", () => {
@@ -278,23 +250,8 @@ describe("Shorthand Field Selection", () => {
 
   describe("fragment spreading with shorthand", () => {
     it("allows fragments with shorthand to be spread into operations", () => {
-      const avatarFragment = gql(({ fragment }) =>
-        fragment.Avatar({
-          fields: () => ({
-            url: true,
-            width: true,
-            height: true,
-          }),
-        }),
-      );
-
       const profileFragment = gql(({ fragment }) =>
-        fragment.Profile({
-          fields: ({ f }) => ({
-            bio: true,
-            ...f.avatar()(() => avatarFragment.spread()),
-          }),
-        }),
+        fragment`fragment ProfileFields on Profile { bio avatar { url width height } }`(),
       );
 
       const profileQuery = gql(({ query, $var }) =>

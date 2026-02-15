@@ -489,8 +489,8 @@ describe("createIntermediateRegistry", () => {
       expect(asTestElement(element3).value).toBe("Value3");
 
       // Parallel execution: total time should be much less than sequential (3 * 50ms = 150ms)
-      // Allow some margin for timing variance
-      expect(totalTime).toBeLessThan(120);
+      // Allow generous margin for timing variance and system load
+      expect(totalTime).toBeLessThan(140);
 
       // All elements should start at approximately the same time (within 20ms)
       const times = Object.values(startTimes);

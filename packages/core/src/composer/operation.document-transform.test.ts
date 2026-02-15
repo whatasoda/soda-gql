@@ -6,7 +6,7 @@ import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { DocumentTransformArgs, OperationDocumentTransformArgs } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "./gql-composer";
+import { createGqlElementComposer } from "./gql-composer";
 import { createVarMethod } from "./var-builder";
 
 const schema = {
@@ -72,7 +72,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -110,7 +110,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -143,7 +143,7 @@ describe("document transformation via adapter", () => {
       helpers: { test: () => "test" },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -192,7 +192,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -238,7 +238,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -286,10 +286,10 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<MutationSchema, FragmentBuildersAll<MutationSchema>, StandardDirectives, typeof adapter>(
-      mutationSchema,
-      { adapter, inputTypeMethods },
-    );
+    const gql = createGqlElementComposer<MutationSchema, StandardDirectives, typeof adapter>(mutationSchema, {
+      adapter,
+      inputTypeMethods,
+    });
 
     const operation = gql(({ mutation, $var }) =>
       mutation.operation({
@@ -320,7 +320,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -367,7 +367,7 @@ describe("document transformation via adapter", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -394,7 +394,7 @@ describe("operation-level transformDocument", () => {
     type OperationMeta = { cacheHint: number; requiresAuth: boolean };
     let capturedArgs: OperationDocumentTransformArgs<OperationMeta> | undefined;
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {
       inputTypeMethods,
     });
 
@@ -422,7 +422,7 @@ describe("operation-level transformDocument", () => {
   });
 
   it("can modify document based on typed metadata", () => {
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {
       inputTypeMethods,
     });
 
@@ -482,7 +482,7 @@ describe("operation-level transformDocument", () => {
       },
     });
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives, typeof adapter>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
       inputTypeMethods,
     });
@@ -522,7 +522,7 @@ describe("operation-level transformDocument", () => {
   });
 
   it("works with only operation transform (no adapter transform)", () => {
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {
       inputTypeMethods,
     });
 
@@ -553,7 +553,7 @@ describe("operation-level transformDocument", () => {
   it("receives undefined metadata when no metadata builder", () => {
     let receivedMetadata: unknown = "not-called";
 
-    const gql = createGqlElementComposer<Schema, FragmentBuildersAll<Schema>, StandardDirectives>(schema, {
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {
       inputTypeMethods,
     });
 

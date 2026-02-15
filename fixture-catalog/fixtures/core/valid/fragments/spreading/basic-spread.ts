@@ -4,7 +4,7 @@ import { gql } from "../../../../../graphql-system";
  * Basic fragment definition
  */
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.Employee({ fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.email() }) }),
+  fragment`fragment UserFragment on Employee { id name email }`(),
 );
 
 /**

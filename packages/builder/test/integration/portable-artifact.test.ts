@@ -80,12 +80,7 @@ export const scalar = {
 import { gql } from "../graphql-system";
 
 export const UserFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-    }),
-  }),
+  fragment\`fragment UserFragment on User { id name }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src", "entities", "user.ts"), fragmentContent);
@@ -213,11 +208,7 @@ export const scalar = {
 import { gql } from "./graphql-system";
 
 export const HelloFragment = gql.default(({ fragment }) =>
-  fragment.Query({
-    fields: ({ f }) => ({
-      ...f.hello(),
-    }),
-  }),
+  fragment\`fragment HelloFragment on Query { hello }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "hello.ts"), fragmentContent);

@@ -8,11 +8,11 @@
 
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer, type FragmentBuildersAll } from "../../src/composer/gql-composer";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { type NestedSchema, nestedInputTypeMethods, nestedSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<NestedSchema, FragmentBuildersAll<NestedSchema>, StandardDirectives>(nestedSchema, {
+const gql = createGqlElementComposer<NestedSchema, StandardDirectives>(nestedSchema, {
   inputTypeMethods: nestedInputTypeMethods,
 });
 
@@ -164,15 +164,9 @@ describe("Nested object selection type inference", () => {
   });
 
   describe("Fragment on nested type", () => {
+    // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers fragment spread in nested selection", () => {
-      const postFragment = gql(({ fragment }) =>
-        fragment.Post({
-          fields: ({ f }) => ({
-            ...f.id(),
-            ...f.title(),
-          }),
-        }),
-      );
+      const postFragment = gql(({ fragment }) => fragment`fragment PostNestedFields on Post { id title }`());
 
       const GetUserWithPosts = gql(({ query, $var }) =>
         query.operation({
@@ -189,11 +183,9 @@ describe("Nested object selection type inference", () => {
         }),
       );
 
-      type Output = typeof GetUserWithPosts.$infer.output;
-      type _Test = Expect<
-        Extends<{ user: { id: string; posts: Array<{ id: string; title: string }> } | null | undefined }, Output>
-      >;
-      expect(true).toBe(true);
+      // Runtime behavior tests
+      expect(GetUserWithPosts.operationName).toBe("GetUser");
+      expect(postFragment.typename).toBe("Post");
     });
   });
 });

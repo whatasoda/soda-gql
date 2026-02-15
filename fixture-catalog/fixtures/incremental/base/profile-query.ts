@@ -6,14 +6,8 @@ type ProfileQueryVariables = {
   readonly employeeId: string;
 };
 
-export const profileQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfilePageQuery",
-    variables: { ...$var("employeeId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })),
-    }),
-  }),
+export const profileQuery = gql.default(({ query }) =>
+  query`query ProfilePageQuery($employeeId: ID!) { employee(id: $employeeId) { id name email } }`(),
 );
 
 export type ProfileQuery = typeof profileQuery;

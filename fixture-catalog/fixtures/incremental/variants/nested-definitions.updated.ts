@@ -4,15 +4,13 @@ import { gql } from "../../../graphql-system";
 // Should be collected with canonical ID: filePath::internalPostFragment
 // UPDATED: Added completed() field
 const internalPostFragment = gql.default(({ fragment }) =>
-  fragment.Task({ fields: ({ f }) => ({ ...f.id(), ...f.title(), ...f.completed() }) }),
+  fragment`fragment InternalPostFragment on Task { id title completed }`(),
 );
 
 // Case 2: Exported fragment using the internal fragment
 // Should be collected with canonical ID: filePath::userWithPostsFragment
 export const userWithPostsFragment = gql.default(({ fragment }) =>
-  fragment.Employee({
-    fields: ({ f }) => ({ ...f.id(), ...f.name(), ...f.tasks({})(({ f }) => ({ ...f.id(), ...f.title(), ...f.completed() })) }),
-  }),
+  fragment`fragment UserWithPostsFragment on Employee { id name tasks { id title completed } }`(),
 );
 
 // Case 3: Nested definitions in function scope
@@ -20,20 +18,12 @@ export const userWithPostsFragment = gql.default(({ fragment }) =>
 // - filePath::createUserQueries.userById
 // - filePath::createUserQueries.userList
 export function createUserQueries() {
-  const userById = gql.default(({ query, $var }) =>
-    query.operation({
-      name: "UserById",
-      variables: { ...$var("id").ID("!") },
-      fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-    }),
+  const userById = gql.default(({ query }) =>
+    query`query UserById($id: ID!) { employee(id: $id) { id name } }`(),
   );
 
-  const userList = gql.default(({ query, $var }) =>
-    query.operation({
-      name: "UserList",
-      variables: { ...$var("limit").Int("?") },
-      fields: ({ f, $ }) => ({ ...f.employees({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-    }),
+  const userList = gql.default(({ query }) =>
+    query`query UserList($limit: Int) { employees(limit: $limit) { id name } }`(),
   );
 
   return { userById, userList };
@@ -43,10 +33,7 @@ export function createUserQueries() {
 // Should be collected with canonical ID: filePath::queryFactory._arrow_0.baseQuery
 export const queryFactory = () => {
   const baseQuery = gql.default(({ query }) =>
-    query.operation({
-      name: "BaseQuery",
-      fields: ({ f }) => ({ ...f.employees({ limit: 5 })(({ f }) => ({ ...f.id() })) }),
-    }),
+    query`query BaseQuery { employees(limit: 5) { id } }`(),
   );
 
   return baseQuery;
@@ -59,19 +46,11 @@ export const queryFactory = () => {
 // - filePath::nestedQueries.users.byId
 export const nestedQueries = {
   users: {
-    list: gql.default(({ query, $var }) =>
-      query.operation({
-        name: "NestedUserList",
-        variables: { ...$var("limit").Int("?") },
-        fields: ({ f, $ }) => ({ ...f.employees({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
-      }),
+    list: gql.default(({ query }) =>
+      query`query NestedUserList($limit: Int) { employees(limit: $limit) { id name email } }`(),
     ),
-    byId: gql.default(({ query, $var }) =>
-      query.operation({
-        name: "NestedUserById",
-        variables: { ...$var("id").ID("!") },
-        fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-      }),
+    byId: gql.default(({ query }) =>
+      query`query NestedUserById($id: ID!) { employee(id: $id) { id name } }`(),
     ),
   },
 };
@@ -79,12 +58,8 @@ export const nestedQueries = {
 // Case 6: Operation definition in function scope
 // Should be collected with canonical ID: filePath::createUserOperation.getUserOperation
 export function createUserOperation() {
-  const getUserOperation = gql.default(({ query, $var }) =>
-    query.operation({
-      name: "GetUserById",
-      variables: { ...$var("id").ID("!") },
-      fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-    }),
+  const getUserOperation = gql.default(({ query }) =>
+    query`query GetUserById($id: ID!) { employee(id: $id) { id name } }`(),
   );
 
   return getUserOperation;
@@ -93,12 +68,8 @@ export function createUserOperation() {
 // Case 7: Operation definition in arrow function
 // Should be collected with canonical ID: filePath::operationFactory._arrow_0.listUsersOperation
 export const operationFactory = () => {
-  const listUsersOperation = gql.default(({ query, $var }) =>
-    query.operation({
-      name: "ListUsers",
-      variables: { ...$var("limit").Int("?") },
-      fields: ({ f, $ }) => ({ ...f.employees({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-    }),
+  const listUsersOperation = gql.default(({ query }) =>
+    query`query ListUsers($limit: Int) { employees(limit: $limit) { id name } }`(),
   );
 
   return listUsersOperation;
@@ -110,19 +81,11 @@ export const operationFactory = () => {
 // - filePath::nestedOperations.users.listUsers
 export const nestedOperations = {
   users: {
-    getUser: gql.default(({ query, $var }) =>
-      query.operation({
-        name: "NestedGetUser",
-        variables: { ...$var("id").ID("!") },
-        fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-      }),
+    getUser: gql.default(({ query }) =>
+      query`query NestedGetUser($id: ID!) { employee(id: $id) { id name } }`(),
     ),
-    listUsers: gql.default(({ query, $var }) =>
-      query.operation({
-        name: "NestedListUsers",
-        variables: { ...$var("limit").Int("?") },
-        fields: ({ f, $ }) => ({ ...f.employees({ limit: $.limit })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-      }),
+    listUsers: gql.default(({ query }) =>
+      query`query NestedListUsers($limit: Int) { employees(limit: $limit) { id name } }`(),
     ),
   },
 };

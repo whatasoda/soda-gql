@@ -34,19 +34,17 @@ This approach eliminates the codegen loop while keeping runtime overhead minimal
 
 ### Fragments
 
-Fragments define reusable field selections for GraphQL types:
+Fragments define reusable field selections for GraphQL types using tagged template syntax:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.email(),
-    }),
-  }),
+  fragment`fragment UserFragment on User {
+    id
+    name
+    email
+  }`(),
 );
 ```
 

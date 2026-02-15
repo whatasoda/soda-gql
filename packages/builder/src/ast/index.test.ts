@@ -301,7 +301,7 @@ describe("AST Analyzer", () => {
       // Expression should NOT contain any .attach()
       expect(multipleAttach?.expression).not.toContain(".attach");
       // Should contain the fragment definition
-      expect(multipleAttach?.expression).toContain("fragment.Employee");
+      expect(multipleAttach?.expression).toContain("fragment`fragment MultipleAttach on Employee");
     });
 
     it("correctly identifies astPath for attach-chained definitions", () => {
