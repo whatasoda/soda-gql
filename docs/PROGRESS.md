@@ -83,7 +83,7 @@ Establish query-level fragment patterns and `$colocate`-based operation composit
   - Pass criteria: `bun run test` passes with integration tests.
   - Deps: 4.1
 
-- [ ] **4.2**: Implement end-to-end `$colocate` workflow [implement]
+- [~] **4.2**: Implement end-to-end `$colocate` workflow [implement]
   - Description: Demonstrate and test the full `$colocate` workflow: multiple query-level fragments (each spreading tagged template entity fragments) are combined into a single operation using `$colocate`. Verify that `createExecutionResultParser` from `@soda-gql/colocation-tools` correctly parses the prefixed fields back to individual fragment results.
   - Files: `packages/core/test/integration/`, `packages/colocation-tools/`
   - Validation: A single operation containing two or more colocated query fragments produces a valid GraphQL document with label-prefixed fields, and the execution result parser correctly extracts per-fragment data.
@@ -167,3 +167,6 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: 2 items processed, context management
 - Test status: 2124 pass, 1 skip, 0 fail
 - Notes: Query-level fragment pattern established. Integration tests demonstrate operations (query.operation()) spreading entity-level tagged template fragments. Pattern shows entity fragments as reusable field selections, operations as query-level compositions, fragment reusability across operations, and variable forwarding. Foundation set for $colocate workflow.
+
+### Session 4 (2026-02-16 02:01) [exit: normal]
+- Exit reason: normal
