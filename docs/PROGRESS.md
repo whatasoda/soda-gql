@@ -83,20 +83,20 @@ Establish query-level fragment patterns and `$colocate`-based operation composit
   - Pass criteria: `bun run test` passes with integration tests.
   - Deps: 4.1
 
-- [~] **4.2**: Implement end-to-end `$colocate` workflow [implement]
+- [x] **4.2**: Implement end-to-end `$colocate` workflow [implement]
   - Description: Demonstrate and test the full `$colocate` workflow: multiple query-level fragments (each spreading tagged template entity fragments) are combined into a single operation using `$colocate`. Verify that `createExecutionResultParser` from `@soda-gql/colocation-tools` correctly parses the prefixed fields back to individual fragment results.
   - Files: `packages/core/test/integration/`, `packages/colocation-tools/`
   - Validation: A single operation containing two or more colocated query fragments produces a valid GraphQL document with label-prefixed fields, and the execution result parser correctly extracts per-fragment data.
   - Deps: V-4.1
 
-- [ ] **V-4.2**: Validate `$colocate` end-to-end [validate]
+- [x] **V-4.2**: Validate `$colocate` end-to-end [validate]
   - Steps: Run integration test that builds a colocated operation, inspects the generated document for prefixed fields, and verifies `createExecutionResultParser` extracts correct data from a mock execution result.
   - Expected: Label-prefixed fields in document; parser returns correct per-fragment results.
   - Pass criteria: `bun run test` passes with colocation integration test.
   - Deps: 4.2
 
 ### Phase Validation
-- [ ] **PV-4**: Composition and colocation workflow is complete and tested
+- [x] **PV-4**: Composition and colocation workflow is complete and tested
   - Deps: V-4.1, V-4.2
 
 ## Phase 5: E2E Validation
@@ -168,5 +168,10 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Test status: 2124 pass, 1 skip, 0 fail
 - Notes: Query-level fragment pattern established. Integration tests demonstrate operations (query.operation()) spreading entity-level tagged template fragments. Pattern shows entity fragments as reusable field selections, operations as query-level compositions, fragment reusability across operations, and variable forwarding. Foundation set for $colocate workflow.
 
-### Session 4 (2026-02-16 02:01) [exit: normal]
-- Exit reason: normal
+### Session 5 (2026-02-16)
+- Items completed: 4.2, V-4.2, PV-4 (Phase 4 complete)
+- Commits:
+  - ab794efe - feat: implement end-to-end $colocate workflow integration test
+- Exit reason: 3 items processed, context management
+- Test status: 2128 pass, 1 skip, 0 fail
+- Notes: Phase 4 complete. End-to-end $colocate workflow fully tested. Integration test demonstrates: tagged template entity fragments, callback builder operations spreading entity fragments, $colocate combining multiple query fragments, createExecutionResultParser extracting per-fragment data from prefixed results. All colocation patterns validated.
