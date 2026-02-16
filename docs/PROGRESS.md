@@ -123,6 +123,25 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 ## Discovered Items
 <!-- Max 10 items. Format: D-N prefix. Agent adds when vision gaps found. -->
 
+- [ ] **D-1**: Fix vite-react playground soda-gql.config.ts to include actual source files [implement]
+  - Description: Current config only includes `./fixtures/core/valid/**/*.ts`, not the actual playground source files (`../src/**/*.{ts,tsx}`). This causes the builder to fail with "fragment is not a function" because it's not finding the actual fragment definitions in the playground components. Update the config to scan the actual source directory instead of (or in addition to) fixtures.
+  - Files: `playgrounds/vite-react/fixture-catalog/soda-gql.config.ts`
+  - Validation: `bun run build` in playground succeeds without "fragment is not a function" error.
+  - Deps: none
+  - Unblocks: 5.1
+
+- [ ] **D-2**: Validate vite-react playground builds successfully [validate]
+  - Steps: Run `bun run build` in `playgrounds/vite-react/` and verify no build errors. Check that generated GraphQL artifact includes operations and fragments from ProjectPage.tsx and component fragments.
+  - Expected: Build succeeds, no errors, artifact includes projectPageQuery, employeeCardFragment, taskListFragment.
+  - Pass criteria: `bun run build` completes successfully in playgrounds/vite-react directory.
+  - Deps: D-1
+
+- [ ] **D-3**: Unblock item 5.1 and mark it pending [implement]
+  - Description: Once the build issue is resolved via D-1 and D-2, update item 5.1 status from `[!]` blocked to `[ ]` pending, and remove the BLOCKED note. Item 5.1 can then be picked up by the loop.
+  - Files: `docs/PROGRESS.md`
+  - Validation: Item 5.1 is marked `[ ]` with no blocked status.
+  - Deps: D-2
+
 ## Session Log
 <!-- Append-only. Harness appends after each session. -->
 
@@ -186,3 +205,14 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: Item 5.1 blocked - playground build failure (pre-existing infrastructure issue)
 - Test status: 2128 pass, 1 skip, 0 fail (unchanged)
 - Notes: Investigated vite-react playground build. Error "fragment is not a function" in vite plugin occurs before processing any new code. Existing ProjectPage demonstrates complete E2E workflow (tagged templates, $colocate, parsers, projections, typed components). Build validation blocked by infrastructure issue. Marked 5.1 [!] blocked.
+
+### Session 6 (2026-02-16 02:20) [exit: normal]
+- Exit reason: normal
+
+### Session 7 (2026-02-16)
+- Items attempted: Discovery triggered (no pending items, Phase 5 incomplete)
+- Discovered items: D-1, D-2, D-3
+- Commits: none
+- Exit reason: Discovery protocol complete (3 items added)
+- Test status: 2128 pass, 1 skip, 0 fail (no tests run)
+- Notes: Root cause of 5.1 blockage identified: `soda-gql.config.ts` only includes fixture files, not actual playground source. Builder cannot find fragment definitions from ProjectPage/components. Added D-1 to fix config, D-2 to validate build, D-3 to unblock 5.1. Discovery quota: 3/10 items.
