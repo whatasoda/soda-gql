@@ -1,0 +1,22 @@
+{
+  "scopeName": "inline.graphql",
+  "injectionSelector": "L:source.ts, L:source.tsx",
+  "patterns": [
+    {
+      "name": "meta.embedded.block.graphql",
+      "contentName": "source.graphql",
+      "begin": "\\b(query|mutation|subscription|fragment)\\s*`",
+      "end": "`",
+      "beginCaptures": {
+        "1": {
+          "name": "entity.name.tag.graphql"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.graphql#graphql-content"
+        }
+      ]
+    }
+  ]
+}

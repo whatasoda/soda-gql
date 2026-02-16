@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/vscode-extension",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/vscode-extension/tsconfig.tsbuildinfo",
+    "rootDir": ".",
+    "lib": ["ES2022"],
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "paths": {}
+  },
+  "include": ["src/**/*", "@x-*.ts"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    {
+      "path": "../lsp/tsconfig.editor.json"
+    }
+  ]
+}

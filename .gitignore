@@ -199,3 +199,7 @@ docs/**/PROGRESS.md
 docs/**/VISION.md
 docs/**/AGENT_PROMPT.md
 docs/**/run-loop.ts
+
+# VS Code extension build artifacts
+packages/vscode-extension/dist/
+packages/vscode-extension/*.vsix
