@@ -309,12 +309,17 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
     }
 
     return (options?: TemplateResultMetadataOptions): AnyFragment => {
-      return Fragment.create(() => ({
+      // Tagged template fragments cannot provide compile-time type inference for field selections
+      // since the GraphQL string is only known at runtime. Type information is generated via typegen.
+      // We explicitly pass the schema type parameter to Fragment.create to at least preserve
+      // typename and variable definition types in the type system.
+      // biome-ignore lint/suspicious/noExplicitAny: Runtime-only GraphQL parsing prevents compile-time field type inference
+      return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
         typename: onType,
         key: fragmentName,
         schemaLabel: schema.label,
         variableDefinitions: varSpecifiers,
-        spread: (variables) => {
+        spread: (variables: any) => {
           const $ = createVarAssignments(varSpecifiers, variables);
 
           recordFragmentUsage({
@@ -330,7 +335,6 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             options?.fragments,
           );
         },
-        // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
     };
   };
