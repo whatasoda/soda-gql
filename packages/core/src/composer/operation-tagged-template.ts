@@ -15,6 +15,7 @@ import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { buildDocument } from "./build-document";
 import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
 import { createVarAssignments } from "./input";
+import { mergeVariableDefinitions } from "./merge-variable-definitions";
 
 /** Callable result from tagged template - resolves to Operation or Fragment. */
 export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyFragment> = (
@@ -40,48 +41,6 @@ export type OperationTaggedTemplateFunction<TOperationType extends OperationType
  * @param _metadataAdapter - Optional metadata adapter (reserved for future use)
  * @param _transformDocument - Optional document transformer (reserved for future use)
  */
-/**
- * Merge variable definitions from interpolated fragments into the parent's variable definitions.
- * Deduplicates variables with matching names and types, throws on conflicting types.
- */
-function mergeVariableDefinitions(
-  parentVars: VariableDefinitions,
-  interpolationMap: ReadonlyMap<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>,
-): VariableDefinitions {
-  const merged: Record<string, VariableDefinitions[string]> = { ...parentVars };
-
-  for (const value of interpolationMap.values()) {
-    // Only direct Fragment instances have variable definitions to merge
-    // Callback interpolations handle their own variable context
-    if (value instanceof Fragment) {
-      const childVars = value.variableDefinitions;
-      for (const [varName, varDef] of Object.entries(childVars)) {
-        if (varName in merged) {
-          // Variable already exists - check if types match
-          const existing = merged[varName];
-          // Compare kind, name, and modifier to determine if types are compatible
-          if (
-            existing?.kind !== varDef.kind ||
-            existing?.name !== varDef.name ||
-            existing?.modifier !== varDef.modifier
-          ) {
-            throw new Error(
-              `Variable definition conflict: $${varName} is defined with incompatible types ` +
-              `(${existing?.kind}:${existing?.name}:${existing?.modifier} vs ${varDef.kind}:${varDef.name}:${varDef.modifier})`
-            );
-          }
-          // Types match - no need to duplicate
-        } else {
-          // New variable - add to merged definitions
-          merged[varName] = varDef;
-        }
-      }
-    }
-  }
-
-  return merged as VariableDefinitions;
-}
-
 export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
   operationType: TOperationType,
