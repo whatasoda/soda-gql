@@ -109,6 +109,7 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
       "@swc/types",
       "esbuild",
       "fast-glob",
+      "fsevents",
       "graphql",
       "graphql-request",
       "neverthrow",

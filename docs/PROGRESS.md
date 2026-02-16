@@ -143,7 +143,7 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
   - Validation: Item 5.1 is marked `[ ]` with no blocked status.
   - Deps: D-2
 
-- [ ] **D-4**: Fix build infrastructure fsevents error [implement]
+- [x] **D-4**: Fix build infrastructure fsevents error [implement]
   - Description: Main build command `bun run build` fails with "[UNLOADABLE_DEPENDENCY] Could not load node_modules/fsevents/fsevents.node" error in tsdown/rolldown. This prevents package dist files from being fully built (only .cjs generated, missing .mjs and .d.mts files). Package exports reference these missing files, breaking Vite config loading in playground. Root cause appears to be tsdown/rolldown trying to bundle fsevents.node (a native binary) when it should be externalized. Fix build config to exclude native dependencies or resolve fsevents bundling issue.
   - Files: root build configuration, package.json scripts, tsdown config
   - Validation: `bun run build` completes successfully, all packages have complete dist files (.cjs, .mjs, .d.mts, .d.cts as specified in exports).
@@ -235,3 +235,6 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: D-1 blocked by build infrastructure - added D-4, early exit (discovery quota 4/10)
 - Test status: not tested
 - Notes: Updated soda-gql.config.ts to include ../src/**/*.{ts,tsx} as intended. Attempted validation but discovered deeper build infrastructure issue: `bun run build` fails with fsevents.node error in tsdown/rolldown, leaving packages incomplete (only .cjs, missing .mjs/.d.mts). Vite can't load playground config because @soda-gql/vite-plugin exports reference missing files. Added D-4 to address build infrastructure. Config change is correct but validation blocked until D-4 resolved. Marked D-1 as blocked (retry 1/3).
+
+### Session 8 (2026-02-16 02:30) [exit: normal]
+- Exit reason: normal
