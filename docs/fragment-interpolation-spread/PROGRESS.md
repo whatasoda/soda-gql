@@ -43,7 +43,7 @@ Enable interpolation-based fragment spread in tagged template fragments with bot
 Extend interpolation support to operation tagged templates, ensure metadata callback coexistence, and validate that typegen produces correct `$` argument types for interpolation callbacks.
 
 ### Items
-- [ ] **2.1**: Implement interpolation-based fragment spread in operation tagged templates [implement]
+- [x] **2.1**: Implement interpolation-based fragment spread in operation tagged templates [implement]
   - Description: Extend the operation tagged template processing in `packages/core/src/composer/operation-tagged-template.ts` to support the same interpolation patterns as fragment tagged templates. Currently operation tagged templates also throw "Tagged templates must not contain interpolated expressions". Apply the same interpolation detection logic: accept Fragment instances and callbacks, reject other values. Variable definitions from interpolated fragments should merge into the operation's variable definitions.
   - Files: `packages/core/src/composer/operation-tagged-template.ts`
   - Validation: `query`query Q($id: ID!) { user(id: $id) { ...${userFields} } }`` works and produces correct GraphQL output with merged variables.
@@ -135,3 +135,6 @@ Deprecate the fragment registry approach and rewrite the playground example to d
 - Status: Items completed successfully
 - Exit reason: Context management - processed 3 items (including initial V-1.2)
 - Notes: Added comprehensive tests for variable definition auto-merge including deduplication, conflict detection, and multi-fragment merging. Added end-to-end tests validating the complete Phase 1 workflow. All tests pass (2141 pass, 1 skip, 0 fail).
+
+### Session 2 (2026-02-16 03:54) [exit: normal]
+- Exit reason: normal

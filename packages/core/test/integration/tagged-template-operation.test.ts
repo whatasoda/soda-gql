@@ -69,13 +69,13 @@ describe("tagged template operation integration", () => {
   });
 
   describe("error handling", () => {
-    it("rejects interpolation in tagged template", () => {
+    it("rejects non-fragment/non-callback interpolation in tagged template", () => {
       expect(() => {
         gql(({ query }) => {
           const name = "test";
           return (query as any)`query ${name} { user(id: "1") { id } }`();
         });
-      }).toThrow("interpolated expressions");
+      }).toThrow("Tagged templates only accept Fragment instances or callback functions as interpolated values");
     });
   });
 
