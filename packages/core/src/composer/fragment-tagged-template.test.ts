@@ -322,4 +322,63 @@ describe("createFragmentTaggedTemplate", () => {
       expect(inner).toEqual({ type: "nested-value", value: undefined });
     });
   });
+
+  describe("interpolation-based fragment spread", () => {
+    it("direct fragment interpolation spreads fields", () => {
+      // Create a child fragment
+      const nameFragment = fragment`fragment UserName on User { name }`();
+
+      // Create parent fragment with direct interpolation
+      const parentFragment = fragment`fragment UserWithName on User { id ...${nameFragment} }`();
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("callback interpolation receives $ context", () => {
+      // Create a child fragment with variable
+      const tasksFragment =
+        fragment`fragment EmployeeTasks($completed: Boolean) on Employee { tasks(completed: $completed) { id title } }`();
+
+      // Create parent fragment with callback interpolation
+      const parentFragment = fragment`fragment EmployeeWithTasks($completed: Boolean) on Employee {
+        id
+        name
+        ...${($: { $: Readonly<Record<string, unknown>> }) => tasksFragment.spread({ completed: $.$.completed } as never)}
+      }`();
+
+      const varRef = createVarRefFromVariable("completed");
+      const fields = parentFragment.spread({ completed: varRef } as never);
+
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+      expect(fields).toHaveProperty("tasks");
+
+      const tasksField = fields.tasks as AnyFieldSelection;
+      expect(tasksField.args.completed).toBeInstanceOf(VarRef);
+    });
+
+    it("non-fragment interpolation values throw an error", () => {
+      expect(() => (fragment as any)`fragment Foo on User { id ...${123} }`).toThrow(
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values"
+      );
+    });
+
+    it("multiple interpolated fragments in the same selection set work", () => {
+      const nameFragment = fragment`fragment UserName on User { name }`();
+      const emailFragment = fragment`fragment UserEmail on User { email }`();
+
+      const parentFragment = fragment`fragment UserFull on User {
+        id
+        ...${nameFragment}
+        ...${emailFragment}
+      }`();
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+      expect(fields).toHaveProperty("email");
+    });
+  });
 });
