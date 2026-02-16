@@ -192,3 +192,10 @@ website/.rspress/
 # Generated entry wrapper files (created by scripts/generate-entry-wrappers.ts)
 packages/*/*.js
 packages/*/*.d.ts
+.agent-loops/
+
+# Agent loop artifacts (docs/ working files)
+docs/**/PROGRESS.md
+docs/**/VISION.md
+docs/**/AGENT_PROMPT.md
+docs/**/run-loop.ts
