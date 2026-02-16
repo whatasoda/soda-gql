@@ -19,7 +19,10 @@ import { createVarAssignments } from "./input";
 import type { TemplateResult, TemplateResultMetadataOptions } from "./operation-tagged-template";
 
 /** Tagged template function type for fragments. */
-export type FragmentTaggedTemplateFunction = (strings: TemplateStringsArray, ...values: never[]) => TemplateResult<AnyFragment>;
+export type FragmentTaggedTemplateFunction = (
+  strings: TemplateStringsArray,
+  ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
+) => TemplateResult<AnyFragment>;
 
 /**
  * Extract the argument list text from a fragment definition with Fragment Arguments syntax.
@@ -87,6 +90,7 @@ export function buildFieldsFromSelectionSet(
   typeName: string,
   varAssignments?: Readonly<Record<string, AnyVarRef>>,
   fragmentRegistry?: Readonly<Record<string, AnyFragment>>,
+  interpolationMap?: ReadonlyMap<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>,
 ): AnyFieldsExtended {
   const f = createFieldFactories(schema, typeName);
   const result: Record<string, unknown> = {};
@@ -122,6 +126,7 @@ export function buildFieldsFromSelectionSet(
             resolveFieldTypeName(schema, typeName, fieldName),
             varAssignments,
             fragmentRegistry,
+            interpolationMap,
           );
           const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
             ({ f: nestedFactories }: { f: unknown }) => {
@@ -149,22 +154,42 @@ export function buildFieldsFromSelectionSet(
       // Handle fragment spread: ...FragmentName
       const fragmentName = selection.name.value;
 
-      if (!fragmentRegistry) {
+      // Check interpolation map first (for interpolated fragments)
+      if (interpolationMap?.has(fragmentName)) {
+        const interpolatedValue = interpolationMap.get(fragmentName);
+        if (!interpolatedValue) {
+          throw new Error(`Interpolation placeholder "${fragmentName}" has no value`);
+        }
+
+        let spreadFields: AnyFieldsExtended;
+        if (interpolatedValue instanceof Fragment) {
+          // Direct fragment interpolation: ...${frag}
+          spreadFields = interpolatedValue.spread(varAssignments as never);
+        } else {
+          // Callback interpolation: ...${($) => frag.spread(args)}
+          if (!varAssignments) {
+            throw new Error(`Callback interpolation requires variable context`);
+          }
+          spreadFields = interpolatedValue({ $: varAssignments });
+        }
+        Object.assign(result, spreadFields);
+      } else if (fragmentRegistry) {
+        // Fall back to fragment registry (legacy approach)
+        const fragment = fragmentRegistry[fragmentName];
+        if (!fragment) {
+          throw new Error(`Fragment "${fragmentName}" is not defined in the fragment registry`);
+        }
+
+        // Call fragment.spread() with variable assignments
+        // Fragment spreads in GraphQL don't have their own variables - they use the parent's variable context
+        const spreadFields = fragment.spread(varAssignments as never);
+        Object.assign(result, spreadFields);
+      } else {
         throw new Error(
           `Fragment spread "...${fragmentName}" requires a fragment registry. ` +
           `Pass fragments via the \`fragments\` option when calling the tagged template result.`
         );
       }
-
-      const fragment = fragmentRegistry[fragmentName];
-      if (!fragment) {
-        throw new Error(`Fragment "${fragmentName}" is not defined in the fragment registry`);
-      }
-
-      // Call fragment.spread() with variable assignments
-      // Fragment spreads in GraphQL don't have their own variables - they use the parent's variable context
-      const spreadFields = fragment.spread(varAssignments as never);
-      Object.assign(result, spreadFields);
     }
     // InlineFragment nodes are not supported in tagged template fragments
   }
@@ -263,12 +288,31 @@ function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldN
 export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(schema: TSchema): FragmentTaggedTemplateFunction {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
-  return (strings: TemplateStringsArray, ...values: never[]): TemplateResult<AnyFragment> => {
-    if (values.length > 0) {
-      throw new Error("Tagged templates must not contain interpolated expressions");
+  return (
+    strings: TemplateStringsArray,
+    ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
+  ): TemplateResult<AnyFragment> => {
+    // Validate interpolated values are fragments or callbacks
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      if (!(value instanceof Fragment) && typeof value !== "function") {
+        throw new Error(
+          `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
+          `Received ${typeof value} at position ${i}.`
+        );
+      }
     }
 
-    const rawSource = strings[0] ?? "";
+    // Build GraphQL source with placeholder fragment spread names for interpolations
+    // This allows us to parse the GraphQL and later replace placeholders with actual fragment fields
+    let rawSource = strings[0] ?? "";
+    const interpolationMap = new Map<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>();
+
+    for (let i = 0; i < values.length; i++) {
+      const placeholderName = `__INTERPOLATION_${i}__`;
+      interpolationMap.set(placeholderName, values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended));
+      rawSource += placeholderName + (strings[i + 1] ?? "");
+    }
 
     // Extract variables from Fragment Arguments syntax before preprocessing
     const varSpecifiers = extractFragmentVariables(rawSource, schemaIndex);
@@ -344,6 +388,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             onType,
             $ as Readonly<Record<string, AnyVarRef>>,
             options?.fragments,
+            interpolationMap,
           );
         },
       })) as any;

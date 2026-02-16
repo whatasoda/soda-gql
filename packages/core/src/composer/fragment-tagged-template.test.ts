@@ -230,9 +230,11 @@ describe("createFragmentTaggedTemplate", () => {
   });
 
   describe("error handling", () => {
-    it("throws when source contains interpolation", () => {
+    it("throws when interpolated value is not a Fragment or callback", () => {
       const fn = createFragmentTaggedTemplate(schema);
-      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
+      expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow(
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values"
+      );
     });
 
     it("throws on parse errors", () => {
