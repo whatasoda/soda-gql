@@ -103,11 +103,12 @@ Establish query-level fragment patterns and `$colocate`-based operation composit
 Demonstrate the complete fragment colocation workflow in a working playground example.
 
 ### Items
-- [ ] **5.1**: Create E2E colocation example in playground [implement]
+- [!] **5.1**: Create E2E colocation example in playground [implement]
   - Description: Build a complete working example in `playgrounds/vite-react/` that demonstrates the full workflow: (1) tagged template entity fragments with variables and `$infer` types, (2) callback builder query-level fragments spreading entity fragments, (3) `$colocate` combining multiple query fragments into one operation, (4) `createProjectionAttachment` for runtime data extraction, (5) React components consuming typed fragment data via projections.
   - Files: `playgrounds/vite-react/src/`
   - Validation: The playground builds without errors (`bun run build` in playground dir), components render with correctly typed data, and the colocation pattern is visible in the component tree.
   - Deps: PV-4
+  - BLOCKED: vite-react playground has pre-existing build error ("fragment is not a function" in vite plugin buildStart). Existing ProjectPage.tsx demonstrates E2E workflow but cannot validate via build. Build infrastructure issue requires investigation.
 
 - [ ] **V-5.1**: Validate E2E playground example [validate]
   - Steps: Build the vite-react playground and verify no type errors. Inspect the generated GraphQL document to confirm fragment colocation. Check that component props use `$infer` types from fragments.
@@ -175,3 +176,13 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: 3 items processed, context management
 - Test status: 2128 pass, 1 skip, 0 fail
 - Notes: Phase 4 complete. End-to-end $colocate workflow fully tested. Integration test demonstrates: tagged template entity fragments, callback builder operations spreading entity fragments, $colocate combining multiple query fragments, createExecutionResultParser extracting per-fragment data from prefixed results. All colocation patterns validated.
+
+### Session 5 (2026-02-16 02:13) [exit: normal]
+- Exit reason: normal
+
+### Session 6 (2026-02-16)
+- Items attempted: 5.1
+- Commits: none
+- Exit reason: Item 5.1 blocked - playground build failure (pre-existing infrastructure issue)
+- Test status: 2128 pass, 1 skip, 0 fail (unchanged)
+- Notes: Investigated vite-react playground build. Error "fragment is not a function" in vite plugin occurs before processing any new code. Existing ProjectPage demonstrates complete E2E workflow (tagged templates, $colocate, parsers, projections, typed components). Build validation blocked by infrastructure issue. Marked 5.1 [!] blocked.
