@@ -49,7 +49,7 @@ Extend interpolation support to operation tagged templates, ensure metadata call
   - Validation: `query`query Q($id: ID!) { user(id: $id) { ...${userFields} } }`` works and produces correct GraphQL output with merged variables.
   - Deps: PV-1
 
-- [ ] **V-2.1**: Validate operation tagged template interpolation [validate]
+- [x] **V-2.1**: Validate operation tagged template interpolation [validate]
   - Steps: Write tests that verify: (1) operation tagged template with `...${frag}` produces correct query, (2) callback interpolation works in operation context, (3) variable definitions are merged from interpolated fragments into the operation, (4) generated GraphQL document is valid.
   - Expected: Operation with interpolated fragments produces correct GraphQL; variables are unified.
   - Pass criteria: `bun run test` passes with operation interpolation tests.

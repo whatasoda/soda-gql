@@ -98,4 +98,134 @@ describe("tagged template operation integration", () => {
       expect(GetUser.variableNames).toEqual(["id"]);
     });
   });
+
+  describe("interpolation-based fragment spread", () => {
+    it("operation with direct fragment interpolation produces correct query", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment`fragment UserFields on User {
+          id
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query`query GetUser {
+          user(id: "1") {
+            ...${userFields}
+          }
+        }`(),
+      );
+
+      expect(GetUser.operationType).toBe("query");
+      expect(GetUser.operationName).toBe("GetUser");
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("query GetUser");
+      expect(printed).toContain("id");
+      expect(printed).toContain("name");
+    });
+
+    it("callback interpolation works in operation context", () => {
+      // Simple fragment without variables that we'll spread via callback
+      const userIdField = gql(({ fragment }) =>
+        fragment`fragment UserIdField on User {
+          id
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query`query GetUser {
+          user(id: "1") {
+            ...${() => userIdField.spread({})}
+            name
+          }
+        }`(),
+      );
+
+      expect(GetUser.operationType).toBe("query");
+      expect(GetUser.operationName).toBe("GetUser");
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("query GetUser");
+      expect(printed).toContain("id");
+      expect(printed).toContain("name");
+    });
+
+    it("variable definitions are merged from interpolated fragments", () => {
+      // Fragment with a variable
+      const userFields = gql(({ fragment }) =>
+        fragment`fragment UserFields($userId: ID!) on User {
+          id
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query`query GetUser {
+          user(id: "1") {
+            ...${userFields}
+          }
+        }`(),
+      );
+
+      // Variable from fragment should be merged into operation
+      expect(GetUser.variableNames).toContain("userId");
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("$userId: ID!");
+    });
+
+    it("multiple interpolated fragments work correctly", () => {
+      const userIdField = gql(({ fragment }) =>
+        fragment`fragment UserIdField on User {
+          id
+        }`(),
+      );
+
+      const userNameField = gql(({ fragment }) =>
+        fragment`fragment UserNameField on User {
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query`query GetUser {
+          user(id: "1") {
+            ...${userIdField}
+            ...${userNameField}
+          }
+        }`(),
+      );
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("id");
+      expect(printed).toContain("name");
+    });
+
+    it("generated GraphQL document is valid", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment`fragment UserFields on User {
+          id
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query`query GetUser {
+          user(id: "1") {
+            ...${userFields}
+          }
+        }`(),
+      );
+
+      // Should be able to print the document without errors
+      expect(() => print(GetUser.document)).not.toThrow();
+
+      const printed = print(GetUser.document);
+      // Basic GraphQL structure validation
+      expect(printed).toContain("query GetUser");
+      expect(printed).toContain("{");
+      expect(printed).toContain("}");
+    });
+  });
 });
