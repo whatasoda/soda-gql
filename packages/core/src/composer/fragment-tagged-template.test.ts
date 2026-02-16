@@ -180,6 +180,55 @@ describe("createFragmentTaggedTemplate", () => {
     });
   });
 
+  describe("metadata callbacks", () => {
+    it("supports static metadata value", () => {
+      const userFragment = fragment`fragment UserFields on User { id name }`({
+        metadata: { headers: { "X-Custom": "test" } },
+      });
+
+      expect(userFragment).toBeDefined();
+      expect(userFragment.typename).toBe("User");
+    });
+
+    it("supports metadata callback with variable access", () => {
+      const userFragment = fragment`fragment UserFields($userId: ID!) on User { id name }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => {
+          // Verify $ is passed and contains variable ref
+          return {
+            headers: {
+              "X-User-Var": $.userId ? "has-userId" : "no-userId",
+            },
+          };
+        },
+      });
+
+      expect(userFragment).toBeDefined();
+      expect(userFragment.typename).toBe("User");
+
+      // Spread to trigger metadata callback
+      const varRef = createVarRefFromVariable("userId");
+      const fields = userFragment.spread({ userId: varRef } as never);
+
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("metadata callback without variables receives empty $", () => {
+      const userFragment = fragment`fragment UserFields on User { id name }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => ({
+          custom: {
+            varCount: Object.keys($).length,
+          },
+        }),
+      });
+
+      const fields = userFragment.spread({} as never);
+
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+  });
+
   describe("error handling", () => {
     it("throws when source contains interpolation", () => {
       const fn = createFragmentTaggedTemplate(schema);
