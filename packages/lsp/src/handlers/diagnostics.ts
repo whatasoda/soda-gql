@@ -38,25 +38,37 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
     input.externalFragments as FragmentDefinitionNode[] | undefined,
   );
 
-  return gqlDiagnostics.map((diag): Diagnostic => {
-    // Map GraphQL positions to TS file positions
-    const startTs = mapper.graphqlToTs({
-      line: diag.range.start.line,
-      character: diag.range.start.character,
-    });
-    const endTs = mapper.graphqlToTs({
-      line: diag.range.end.line,
-      character: diag.range.end.character,
-    });
+  // Pattern to detect interpolation placeholder fragments
+  const placeholderPattern = /__FRAG_SPREAD_\d+__/;
 
-    return {
-      range: {
-        start: { line: startTs.line, character: startTs.character },
-        end: { line: endTs.line, character: endTs.character },
-      },
-      message: diag.message,
-      severity: diag.severity,
-      source: "soda-gql",
-    };
-  });
+  return gqlDiagnostics
+    .filter((diag) => {
+      // Suppress diagnostics about placeholder fragments (from interpolation)
+      // These are not real fragment references and will be resolved at runtime
+      if (placeholderPattern.test(diag.message)) {
+        return false;
+      }
+      return true;
+    })
+    .map((diag): Diagnostic => {
+      // Map GraphQL positions to TS file positions
+      const startTs = mapper.graphqlToTs({
+        line: diag.range.start.line,
+        character: diag.range.start.character,
+      });
+      const endTs = mapper.graphqlToTs({
+        line: diag.range.end.line,
+        character: diag.range.end.character,
+      });
+
+      return {
+        range: {
+          start: { line: startTs.line, character: startTs.character },
+          end: { line: endTs.line, character: endTs.character },
+        },
+        message: diag.message,
+        severity: diag.severity,
+        source: "soda-gql",
+      };
+    });
 };

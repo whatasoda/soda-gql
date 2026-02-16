@@ -142,4 +142,59 @@ describe("computeTemplateDiagnostics", () => {
     const argErrors = diagnostics.filter((d) => d.message.includes("$showEmail"));
     expect(argErrors).toHaveLength(0);
   });
+
+  test("suppresses diagnostics for interpolation placeholders", () => {
+    // Simulate a template with interpolation placeholder (from document manager)
+    const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ name } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const diagnostics = computeTemplateDiagnostics({
+      template,
+      schema: defaultSchema,
+      tsSource,
+    });
+
+    // Should not report "Unknown fragment" for placeholder
+    const placeholderErrors = diagnostics.filter((d) => d.message.includes("__FRAG_SPREAD_"));
+    expect(placeholderErrors).toHaveLength(0);
+
+    // Should still report other errors if present (verifying filter doesn't suppress all diagnostics)
+    // In this case, no other errors expected for valid query structure
+  });
+
+  test("still reports other diagnostics when placeholder present", () => {
+    // Template with both placeholder AND an actual error
+    const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ unknownField } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    const diagnostics = computeTemplateDiagnostics({
+      template,
+      schema: defaultSchema,
+      tsSource,
+    });
+
+    // Should NOT report placeholder error
+    const placeholderErrors = diagnostics.filter((d) => d.message.includes("__FRAG_SPREAD_"));
+    expect(placeholderErrors).toHaveLength(0);
+
+    // Should still report unknownField error
+    const unknownFieldErrors = diagnostics.filter((d) => d.message.includes("unknownField"));
+    expect(unknownFieldErrors.length).toBeGreaterThan(0);
+  });
 });
