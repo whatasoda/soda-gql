@@ -89,7 +89,6 @@ export function buildFieldsFromSelectionSet(
   schema: AnyGraphqlSchema,
   typeName: string,
   varAssignments?: Readonly<Record<string, AnyVarRef>>,
-  fragmentRegistry?: Readonly<Record<string, AnyFragment>>,
   interpolationMap?: ReadonlyMap<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>,
 ): AnyFieldsExtended {
   const f = createFieldFactories(schema, typeName);
@@ -125,7 +124,6 @@ export function buildFieldsFromSelectionSet(
             schema,
             resolveFieldTypeName(schema, typeName, fieldName),
             varAssignments,
-            fragmentRegistry,
             interpolationMap,
           );
           const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
@@ -154,7 +152,7 @@ export function buildFieldsFromSelectionSet(
       // Handle fragment spread: ...FragmentName
       const fragmentName = selection.name.value;
 
-      // Check interpolation map first (for interpolated fragments)
+      // Check interpolation map for interpolated fragments
       if (interpolationMap?.has(fragmentName)) {
         const interpolatedValue = interpolationMap.get(fragmentName);
         if (!interpolatedValue) {
@@ -173,21 +171,11 @@ export function buildFieldsFromSelectionSet(
           spreadFields = interpolatedValue({ $: varAssignments });
         }
         Object.assign(result, spreadFields);
-      } else if (fragmentRegistry) {
-        // Fall back to fragment registry (legacy approach)
-        const fragment = fragmentRegistry[fragmentName];
-        if (!fragment) {
-          throw new Error(`Fragment "${fragmentName}" is not defined in the fragment registry`);
-        }
-
-        // Call fragment.spread() with variable assignments
-        // Fragment spreads in GraphQL don't have their own variables - they use the parent's variable context
-        const spreadFields = fragment.spread(varAssignments as never);
-        Object.assign(result, spreadFields);
       } else {
+        // Fragment spread without interpolation - must use interpolation syntax
         throw new Error(
-          `Fragment spread "...${fragmentName}" requires a fragment registry. ` +
-          `Pass fragments via the \`fragments\` option when calling the tagged template result.`
+          `Fragment spread "...${fragmentName}" in tagged template must use interpolation syntax. ` +
+          `Use \`...@\${fragment}\` instead of \`...FragmentName\`.`
         );
       }
     }
@@ -432,7 +420,6 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             schema,
             onType,
             $ as Readonly<Record<string, AnyVarRef>>,
-            options?.fragments,
             interpolationMap,
           );
         },

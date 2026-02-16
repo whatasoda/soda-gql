@@ -53,78 +53,12 @@ const schema = {
 describe("createFragmentTaggedTemplate", () => {
   const fragment = createFragmentTaggedTemplate(schema);
 
-  describe("fragment spread in tagged templates", () => {
-    it("spreads another fragment's fields into parent fragment", () => {
-      // Create base fragment
-      const userBaseFields = fragment`fragment UserBaseFields on User { id name }`();
-
-      // Create parent fragment that spreads the base fragment
-      const userExtendedFields = fragment`fragment UserExtendedFields on User { ...UserBaseFields email }`({
-        fragments: { UserBaseFields: userBaseFields },
-      });
-
-      // Spread parent fragment to get fields
-      const fields = userExtendedFields.spread({} as never);
-
-      // Verify that fields from base fragment are present
-      expect(fields).toHaveProperty("id");
-      expect(fields).toHaveProperty("name");
-      expect(fields).toHaveProperty("email");
-    });
-
-    it("throws error when fragment spread references undefined fragment", () => {
-      expect(() => {
-        const frag = fragment`fragment UserWithSpread on User { ...UndefinedFragment }`({
-          fragments: {},
-        });
-        frag.spread({} as never);
-      }).toThrow('Fragment "UndefinedFragment" is not defined in the fragment registry');
-    });
-
-    it("throws error when fragment spread is used without fragment registry", () => {
+  describe("fragment spread in tagged templates (deprecated registry approach)", () => {
+    it("throws error when fragment spread is used without interpolation", () => {
       expect(() => {
         const frag = fragment`fragment UserWithSpread on User { ...SomeFragment }`();
         frag.spread({} as never);
-      }).toThrow('Fragment spread "...SomeFragment" requires a fragment registry');
-    });
-
-    it("spreads multiple fragments in same selection set", () => {
-      const userIdFragment = fragment`fragment UserIdFields on User { id }`();
-      const userNameFragment = fragment`fragment UserNameFields on User { name }`();
-
-      const userCombinedFragment = fragment`fragment UserCombinedFields on User { ...UserIdFields ...UserNameFields email }`({
-        fragments: {
-          UserIdFields: userIdFragment,
-          UserNameFields: userNameFragment,
-        },
-      });
-
-      const fields = userCombinedFragment.spread({} as never);
-
-      expect(fields).toHaveProperty("id");
-      expect(fields).toHaveProperty("name");
-      expect(fields).toHaveProperty("email");
-    });
-
-    it("forwards variable assignments through fragment spread", () => {
-      // Fragment with variable that affects field arguments
-      const taskFragment = fragment`fragment TaskFields($completed: Boolean) on Employee { id tasks(completed: $completed) { id title } }`();
-
-      // Parent fragment that spreads the task fragment
-      const employeeFragment = fragment`fragment EmployeeFields($completed: Boolean) on Employee { ...TaskFields name }`({
-        fragments: { TaskFields: taskFragment },
-      });
-
-      // Create variable reference
-      const varRef = createVarRefFromVariable("completed");
-
-      // Spread with variable assignment
-      const fields = employeeFragment.spread({ completed: varRef } as never);
-
-      // Verify fields are present (runtime behavior check)
-      expect(fields).toHaveProperty("id");
-      expect(fields).toHaveProperty("tasks");
-      expect(fields).toHaveProperty("name");
+      }).toThrow('Fragment spread "...SomeFragment" in tagged template must use interpolation syntax');
     });
   });
 

@@ -24,7 +24,6 @@ export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyF
 /** Options for TemplateResult resolution. */
 export type TemplateResultMetadataOptions = {
   metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
-  fragments?: Readonly<Record<string, AnyFragment>>;
 };
 
 /** Tagged template function type for operations. */
@@ -166,7 +165,6 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
         schema,
         operationTypeName,
         $ as Readonly<Record<string, AnyVarRef>>,
-        options?.fragments,
         interpolationMap,
       );
 
