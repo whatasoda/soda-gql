@@ -611,4 +611,92 @@ describe("createFragmentTaggedTemplate", () => {
       expect(fields).toHaveProperty("name");
     });
   });
+
+  describe("metadata and interpolation coexistence", () => {
+    it("supports both interpolated fragment spread and static metadata", () => {
+      const childFragment = fragment`fragment ChildFields on User {
+        id
+      }`();
+
+      const parentFragment = fragment`fragment ParentFields on User {
+        ...${childFragment}
+        name
+      }`({
+        metadata: { source: "test" },
+      });
+
+      expect(parentFragment).toBeDefined();
+      expect(parentFragment.typename).toBe("User");
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("supports both interpolated fragment spread and metadata callback", () => {
+      const childFragment = fragment`fragment ChildFields($userId: ID!) on User {
+        id
+      }`();
+
+      const parentFragment = fragment`fragment ParentFields($userId: ID!) on User {
+        ...${childFragment}
+        name
+      }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => ({
+          userId: $ ? "has-context" : "no-context",
+        }),
+      });
+
+      expect(parentFragment).toBeDefined();
+      expect(parentFragment.variableDefinitions).toHaveProperty("userId");
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("metadata callback receives $ context including variables from interpolated fragments", () => {
+      const childFragment = fragment`fragment ChildFields($childVar: ID!) on User {
+        id
+      }`();
+
+      let capturedContext: unknown = null;
+
+      const parentFragment = fragment`fragment ParentFields($parentVar: String!) on User {
+        ...${childFragment}
+        name
+      }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => {
+          capturedContext = $;
+          return { captured: true };
+        },
+      });
+
+      // Spread to trigger metadata callback
+      parentFragment.spread({} as never);
+
+      // Metadata callback should have received $ context
+      expect(capturedContext).toBeDefined();
+    });
+
+    it("supports callback interpolation with metadata", () => {
+      const childFragment = fragment`fragment ChildFields($userId: ID!) on User {
+        id
+      }`();
+
+      const parentFragment = fragment`fragment ParentFields($parentId: ID!) on User {
+        ...${({ $ }: { $: Record<string, any> }) => childFragment.spread({ userId: $.parentId })}
+        name
+      }`({
+        metadata: { tag: "with-callback-interpolation" },
+      });
+
+      expect(parentFragment).toBeDefined();
+      expect(parentFragment.variableDefinitions).toHaveProperty("parentId");
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+  });
 });

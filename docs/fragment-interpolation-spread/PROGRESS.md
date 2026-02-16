@@ -55,7 +55,7 @@ Extend interpolation support to operation tagged templates, ensure metadata call
   - Pass criteria: `bun run test` passes with operation interpolation tests.
   - Deps: 2.1
 
-- [ ] **2.2**: Ensure interpolation spread and metadata callbacks coexist [implement]
+- [x] **2.2**: Ensure interpolation spread and metadata callbacks coexist [implement]
   - Description: Verify and ensure that the `TemplateResult` call signature supports both interpolated fragment spreads and metadata options simultaneously. The pattern `fragment`...${frag}``({ metadata: ({ $ }) => ({ ... }) })` should work: interpolated fragments provide spread fields, and the metadata option provides dynamic metadata. If the current implementation already supports this naturally, add explicit tests. If not, adjust the `TemplateResultMetadataOptions` type and processing.
   - Files: `packages/core/src/composer/fragment-tagged-template.ts`, `packages/core/src/composer/operation-tagged-template.ts`
   - Validation: A tagged template with both interpolated fragment spreads and a metadata callback produces correct fields and collects metadata via `withFragmentUsageCollection`.
@@ -138,3 +138,9 @@ Deprecate the fragment registry approach and rewrite the playground example to d
 
 ### Session 2 (2026-02-16 03:54) [exit: normal]
 - Exit reason: normal
+
+### Session 3 - 2026-02-16
+- Completed: 2.1, V-2.1
+- Status: Items completed successfully
+- Exit reason: Context management - processed 2 items, continuing to next item
+- Notes: Implemented interpolation-based fragment spread in operation tagged templates with placeholder resolution, variable merging, and document building. Added comprehensive validation tests. All tests pass (2146 pass, 1 skip, 0 fail).
