@@ -103,12 +103,11 @@ Establish query-level fragment patterns and `$colocate`-based operation composit
 Demonstrate the complete fragment colocation workflow in a working playground example.
 
 ### Items
-- [!] **5.1**: Create E2E colocation example in playground [implement]
+- [ ] **5.1**: Create E2E colocation example in playground [implement]
   - Description: Build a complete working example in `playgrounds/vite-react/` that demonstrates the full workflow: (1) tagged template entity fragments with variables and `$infer` types, (2) callback builder query-level fragments spreading entity fragments, (3) `$colocate` combining multiple query fragments into one operation, (4) `createProjectionAttachment` for runtime data extraction, (5) React components consuming typed fragment data via projections.
   - Files: `playgrounds/vite-react/src/`
   - Validation: The playground builds without errors (`bun run build` in playground dir), components render with correctly typed data, and the colocation pattern is visible in the component tree.
   - Deps: PV-4
-  - BLOCKED: vite-react playground has pre-existing build error ("fragment is not a function" in vite plugin buildStart). Existing ProjectPage.tsx demonstrates E2E workflow but cannot validate via build. Build infrastructure issue requires investigation.
 
 - [ ] **V-5.1**: Validate E2E playground example [validate]
   - Steps: Build the vite-react playground and verify no type errors. Inspect the generated GraphQL document to confirm fragment colocation. Check that component props use `$infer` types from fragments.
@@ -130,13 +129,13 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
   - Deps: D-4
   - Unblocks: 5.1
 
-- [ ] **D-2**: Validate vite-react playground builds successfully [validate]
+- [x] **D-2**: Validate vite-react playground builds successfully [validate]
   - Steps: Run `bun run build` in `playgrounds/vite-react/` and verify no build errors. Check that generated GraphQL artifact includes operations and fragments from ProjectPage.tsx and component fragments.
   - Expected: Build succeeds, no errors, artifact includes projectPageQuery, employeeCardFragment, taskListFragment.
   - Pass criteria: `bun run build` completes successfully in playgrounds/vite-react directory.
   - Deps: D-1
 
-- [ ] **D-3**: Unblock item 5.1 and mark it pending [implement]
+- [x] **D-3**: Unblock item 5.1 and mark it pending [implement]
   - Description: Once the build issue is resolved via D-1 and D-2, update item 5.1 status from `[!]` blocked to `[ ]` pending, and remove the BLOCKED note. Item 5.1 can then be picked up by the loop.
   - Files: `docs/PROGRESS.md`
   - Validation: Item 5.1 is marked `[ ]` with no blocked status.
