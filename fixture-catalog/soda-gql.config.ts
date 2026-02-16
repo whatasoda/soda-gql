@@ -2,9 +2,11 @@ import { defineConfig } from "@soda-gql/config";
 
 export default defineConfig({
   outdir: "./graphql-system",
-  // Only include core valid fixtures (excludes formatting fixtures which have duplicate operation names)
-  // Exclude fixtures with duplicate operation names using negation patterns (keep sample.ts, top-level-definitions.ts as representatives)
+  // Include actual playground source files and test fixtures
   include: [
+    // Playground source files
+    "../src/**/*.{ts,tsx}",
+    // Core valid fixtures (excludes formatting fixtures which have duplicate operation names)
     "./fixtures/core/valid/**/*.ts",
     // Duplicates of GetUser (keep sample.ts)
     "!./fixtures/**/attach-chaining.ts",
