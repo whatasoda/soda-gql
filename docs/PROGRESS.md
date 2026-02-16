@@ -51,20 +51,20 @@ Ensure tagged template fragment `$infer` provides accurate input (variables) and
 Add context-aware metadata callback support to tagged template fragments, beyond static objects.
 
 ### Items
-- [ ] **3.1**: Support metadata callbacks in tagged template fragments [implement]
+- [x] **3.1**: Support metadata callbacks in tagged template fragments [implement]
   - Description: Currently tagged template fragments only accept static metadata objects in the `TemplateResult` call. Extend the API to accept a callback function `(context) => metadata` that receives fragment context (e.g., variable assignments, field path) and returns metadata dynamically. This should mirror the callback builder's `metadata: ({ $ }) => ({...})` pattern.
   - Files: `packages/core/src/composer/fragment-tagged-template.ts`
   - Validation: A tagged template fragment with a metadata callback produces correct metadata when spread into an operation, and the metadata is collected via `withFragmentUsageCollection`.
   - Deps: none
 
-- [ ] **V-3.1**: Validate metadata callbacks [validate]
+- [x] **V-3.1**: Validate metadata callbacks [validate]
   - Steps: Write a test that defines a tagged template fragment with a metadata callback, spreads it into an operation, and verifies the collected metadata matches the callback's return value.
   - Expected: Metadata callback is invoked during operation building; returned metadata appears in fragment usage records.
   - Pass criteria: `bun run test` passes with metadata callback test.
   - Deps: 3.1
 
 ### Phase Validation
-- [ ] **PV-3**: Tagged template metadata callbacks work with fragment usage collection
+- [x] **PV-3**: Tagged template metadata callbacks work with fragment usage collection
   - Deps: V-3.1
 
 ## Phase 4: Composition Workflow
@@ -144,3 +144,15 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: 2 items processed, context management
 - Test status: 2113 pass, 1 skip, 0 fail
 - Notes: Phase 2 complete. Type-level tests confirm $infer.input and $infer.output are accessible. Field-level accuracy pending typegen integration.
+
+### Session 2 (2026-02-16 01:45) [exit: normal]
+- Exit reason: normal
+
+### Session 3 (2026-02-16)
+- Items completed: 3.1, V-3.1, PV-3 (Phase 3 complete)
+- Commits:
+  - 9c8c756c - feat: support metadata callbacks in tagged template fragments
+  - ce15c9a2 - test: validate metadata callbacks in tagged template fragments
+- Exit reason: 3 items processed, context management
+- Test status: 2119 pass, 1 skip, 0 fail
+- Notes: Phase 3 complete. Metadata callbacks now supported in tagged template fragments. Callbacks receive { $ } context with variable assignments. Both static and callback metadata work. Integration tests confirm metadata collection during operation building.
