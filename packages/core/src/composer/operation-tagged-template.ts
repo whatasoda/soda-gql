@@ -18,7 +18,7 @@ export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyF
 
 /** Options for TemplateResult resolution. */
 export type TemplateResultMetadataOptions = {
-  metadata?: unknown;
+  metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
   fragments?: Readonly<Record<string, AnyFragment>>;
 };
 

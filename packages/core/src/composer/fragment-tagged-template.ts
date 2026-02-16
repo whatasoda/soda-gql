@@ -322,8 +322,19 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
         spread: (variables: any) => {
           const $ = createVarAssignments(varSpecifiers, variables);
 
+          // Handle metadata - can be static value or callback
+          let metadataBuilder: (() => unknown | Promise<unknown>) | null = null;
+          if (options?.metadata !== undefined) {
+            const metadata = options.metadata;
+            if (typeof metadata === "function") {
+              metadataBuilder = () => (metadata as (ctx: { $: unknown }) => unknown | Promise<unknown>)({ $ });
+            } else {
+              metadataBuilder = () => metadata;
+            }
+          }
+
           recordFragmentUsage({
-            metadataBuilder: options?.metadata ? () => options.metadata : null,
+            metadataBuilder,
             path: null,
           });
 
