@@ -71,13 +71,13 @@ Add context-aware metadata callback support to tagged template fragments, beyond
 Establish query-level fragment patterns and `$colocate`-based operation composition from tagged template fragments through callback builder operations.
 
 ### Items
-- [ ] **4.1**: Establish query-level fragment pattern with fragment references [implement]
+- [x] **4.1**: Establish query-level fragment pattern with fragment references [implement]
   - Description: Create a clear, documented pattern for defining query-level fragments (on Query/Mutation types) via callback builder that spread entity-level tagged template fragments. This pattern represents the "top-level resolver unit" concept where each query fragment maps to one resolver call (e.g., `users`, `project`). Demonstrate with test fixtures showing the pattern.
   - Files: `packages/core/test/integration/`, `packages/core/test/fixtures/`
   - Validation: Integration test demonstrates a callback builder query-level fragment that spreads a tagged template entity fragment, and the resulting operation artifact contains correct field selections and variable definitions.
   - Deps: PV-1
 
-- [ ] **V-4.1**: Validate query-level fragment pattern [validate]
+- [x] **V-4.1**: Validate query-level fragment pattern [validate]
   - Steps: Run integration tests that verify query-level fragments correctly spread entity fragments, variable definitions are merged, and the generated GraphQL document is valid.
   - Expected: All field selections from entity fragments appear in the query-level fragment; variables are properly forwarded.
   - Pass criteria: `bun run test` passes with integration tests.
@@ -156,3 +156,14 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 - Exit reason: 3 items processed, context management
 - Test status: 2119 pass, 1 skip, 0 fail
 - Notes: Phase 3 complete. Metadata callbacks now supported in tagged template fragments. Callbacks receive { $ } context with variable assignments. Both static and callback metadata work. Integration tests confirm metadata collection during operation building.
+
+### Session 3 (2026-02-16 01:55) [exit: normal]
+- Exit reason: normal
+
+### Session 4 (2026-02-16)
+- Items completed: 4.1, V-4.1
+- Commits:
+  - aafa22fb - feat: establish query-level fragment pattern with integration tests
+- Exit reason: 2 items processed, context management
+- Test status: 2124 pass, 1 skip, 0 fail
+- Notes: Query-level fragment pattern established. Integration tests demonstrate operations (query.operation()) spreading entity-level tagged template fragments. Pattern shows entity fragments as reusable field selections, operations as query-level compositions, fragment reusability across operations, and variable forwarding. Foundation set for $colocate workflow.
