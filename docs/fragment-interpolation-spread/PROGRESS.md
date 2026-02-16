@@ -29,14 +29,14 @@ Enable interpolation-based fragment spread in tagged template fragments with bot
   - Validation: A parent fragment that interpolates a child fragment with `$userId: ID!` automatically includes `$userId: ID!` in its own variable definitions without manual re-declaration.
   - Deps: 1.1
 
-- [ ] **V-1.2**: Validate variable definition auto-merge [validate]
+- [x] **V-1.2**: Validate variable definition auto-merge [validate]
   - Steps: Write tests that verify: (1) spread fragment's variables are merged into parent, (2) duplicate variable names with matching types are deduplicated, (3) conflicting variable types produce an error, (4) variable definitions from multiple interpolated fragments are all merged.
   - Expected: Parent fragment's `variableDefinitions` contains all child variables; no manual re-declaration needed.
   - Pass criteria: `bun run test` passes with variable merge tests.
   - Deps: 1.2
 
 ### Phase Validation
-- [ ] **PV-1**: Core interpolation-based fragment spread works end-to-end with variable auto-merge
+- [x] **PV-1**: Core interpolation-based fragment spread works end-to-end with variable auto-merge
   - Deps: V-1.1, V-1.2
 
 ## Phase 2: Extended Support & Type Safety
@@ -126,3 +126,6 @@ Deprecate the fragment registry approach and rewrite the playground example to d
 - Status: Items completed successfully
 - Exit reason: Context management - processed 3 items
 - Notes: Implemented interpolation-based fragment spread in tagged templates with placeholder-based approach. Added comprehensive tests for direct fragment interpolation and callback patterns. Implemented automatic variable definition merging with conflict detection.
+
+### Session 1 (2026-02-16 03:50) [exit: normal]
+- Exit reason: normal
