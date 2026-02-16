@@ -19,6 +19,7 @@ export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyF
 /** Options for TemplateResult resolution. */
 export type TemplateResultMetadataOptions = {
   metadata?: unknown;
+  fragments?: Readonly<Record<string, AnyFragment>>;
 };
 
 /** Tagged template function type for operations. */

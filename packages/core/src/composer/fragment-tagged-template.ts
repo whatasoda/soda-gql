@@ -86,6 +86,7 @@ export function buildFieldsFromSelectionSet(
   schema: AnyGraphqlSchema,
   typeName: string,
   varAssignments?: Readonly<Record<string, AnyVarRef>>,
+  fragmentRegistry?: Readonly<Record<string, AnyFragment>>,
 ): AnyFieldsExtended {
   const f = createFieldFactories(schema, typeName);
   const result: Record<string, unknown> = {};
@@ -120,6 +121,7 @@ export function buildFieldsFromSelectionSet(
             schema,
             resolveFieldTypeName(schema, typeName, fieldName),
             varAssignments,
+            fragmentRegistry,
           );
           const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
             ({ f: nestedFactories }: { f: unknown }) => {
@@ -143,8 +145,28 @@ export function buildFieldsFromSelectionSet(
           Object.assign(result, fieldResult);
         }
       }
+    } else if (selection.kind === Kind.FRAGMENT_SPREAD) {
+      // Handle fragment spread: ...FragmentName
+      const fragmentName = selection.name.value;
+
+      if (!fragmentRegistry) {
+        throw new Error(
+          `Fragment spread "...${fragmentName}" requires a fragment registry. ` +
+          `Pass fragments via the \`fragments\` option when calling the tagged template result.`
+        );
+      }
+
+      const fragment = fragmentRegistry[fragmentName];
+      if (!fragment) {
+        throw new Error(`Fragment "${fragmentName}" is not defined in the fragment registry`);
+      }
+
+      // Call fragment.spread() with variable assignments
+      // Fragment spreads in GraphQL don't have their own variables - they use the parent's variable context
+      const spreadFields = fragment.spread(varAssignments as never);
+      Object.assign(result, spreadFields);
     }
-    // InlineFragment and FragmentSpread nodes are not supported in tagged template fragments
+    // InlineFragment nodes are not supported in tagged template fragments
   }
 
   return result as AnyFieldsExtended;
@@ -300,7 +322,13 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             path: null,
           });
 
-          return buildFieldsFromSelectionSet(fragNode.selectionSet, schema, onType, $ as Readonly<Record<string, AnyVarRef>>);
+          return buildFieldsFromSelectionSet(
+            fragNode.selectionSet,
+            schema,
+            onType,
+            $ as Readonly<Record<string, AnyVarRef>>,
+            options?.fragments,
+          );
         },
         // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
