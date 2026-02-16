@@ -18,6 +18,8 @@ export default defineConfig({
     "!./fixtures/**/namespace-imports.ts",
     "!./fixtures/**/nested-namespace-deps.ts",
     "!./fixtures/**/top-level-with-metadata.ts",
+    // Duplicate UpdateTask mutation (conflicts with playground src)
+    "!./fixtures/**/nested-create.ts",
   ],
   analyzer: "ts",
   schemas: {

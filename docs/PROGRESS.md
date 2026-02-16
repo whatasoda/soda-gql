@@ -123,13 +123,12 @@ Demonstrate the complete fragment colocation workflow in a working playground ex
 ## Discovered Items
 <!-- Max 10 items. Format: D-N prefix. Agent adds when vision gaps found. -->
 
-- [!] **D-1**: Fix vite-react playground soda-gql.config.ts to include actual source files [implement]
+- [x] **D-1**: Fix vite-react playground soda-gql.config.ts to include actual source files [implement]
   - Description: Current config only includes `./fixtures/core/valid/**/*.ts`, not the actual playground source files (`../src/**/*.{ts,tsx}`). This causes the builder to fail with "fragment is not a function" because it's not finding the actual fragment definitions in the playground components. Update the config to scan the actual source directory instead of (or in addition to) fixtures.
   - Files: `playgrounds/vite-react/fixture-catalog/soda-gql.config.ts`
   - Validation: `bun run build` in playground succeeds without "fragment is not a function" error.
-  - Deps: none
+  - Deps: D-4
   - Unblocks: 5.1
-  - BLOCKED (retry 1/3): Config updated correctly (added ../src/**/*.{ts,tsx} to include array), but cannot validate due to build infrastructure failure (D-4). Main build fails with fsevents.node error in tsdown, leaving packages incomplete (missing .mjs/.d.mts files). Vite can't load config because @soda-gql/vite-plugin package exports reference missing files. Requires D-4 resolution before validation possible.
 
 - [ ] **D-2**: Validate vite-react playground builds successfully [validate]
   - Steps: Run `bun run build` in `playgrounds/vite-react/` and verify no build errors. Check that generated GraphQL artifact includes operations and fragments from ProjectPage.tsx and component fragments.
