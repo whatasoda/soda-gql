@@ -4,7 +4,7 @@
  */
 
 import type { GraphQLObjectType, GraphQLSchema } from "graphql";
-import { getNamedType, isObjectType, parse, visit } from "graphql";
+import { getNamedType, isObjectType, parse, visit, Kind } from "graphql";
 import type { InlayHint } from "vscode-languageserver-types";
 import { InlayHintKind } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
@@ -32,7 +32,7 @@ export const handleInlayHint = (input: HandleInlayHintInput): InlayHint[] => {
 
   try {
     const doc = parse(preprocessed);
-    const rootType = getRootType(schema, template.kind);
+    const rootType = getRootType(schema, template.kind, preprocessed);
     if (!rootType) {
       return hints;
     }
@@ -104,7 +104,7 @@ export const handleInlayHint = (input: HandleInlayHintInput): InlayHint[] => {
   return hints;
 };
 
-const getRootType = (schema: GraphQLSchema, kind: string): GraphQLObjectType | null => {
+const getRootType = (schema: GraphQLSchema, kind: string, content?: string): GraphQLObjectType | null => {
   switch (kind) {
     case "query":
       return schema.getQueryType() ?? null;
@@ -112,6 +112,19 @@ const getRootType = (schema: GraphQLSchema, kind: string): GraphQLObjectType | n
       return schema.getMutationType() ?? null;
     case "subscription":
       return schema.getSubscriptionType() ?? null;
+    case "fragment": {
+      if (!content) return null;
+      try {
+        const doc = parse(content);
+        const fragDef = doc.definitions.find((d) => d.kind === Kind.FRAGMENT_DEFINITION);
+        if (!fragDef || fragDef.kind !== Kind.FRAGMENT_DEFINITION) return null;
+        const typeName = fragDef.typeCondition.name.value;
+        const type = schema.getType(typeName);
+        return isObjectType(type) ? type : null;
+      } catch {
+        return null;
+      }
+    }
     default:
       return null;
   }
