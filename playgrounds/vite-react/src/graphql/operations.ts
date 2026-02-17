@@ -353,10 +353,19 @@ export const updateTaskWithDirectivesMutation = gql.default(({ mutation }) =>
 // Fragments define their requirements; operations declare their contract.
 
 /**
- * Query: Direct interpolation of a single fragment with variables
- * Demonstrates spreading a fragment using ...fragment.spread() syntax.
- * The operation EXPLICITLY declares all variables needed by the fragment
- * ($employeeId, $completed, $taskLimit) even though they're defined in the fragment.
+ * Phase 2.1: Fragment spread with explicit variable declaration
+ *
+ * IMPORTANT: Tagged templates reject interpolation! Operations with fragment spreads
+ * MUST use callback builder syntax. See fragment-spread-patterns.md for details.
+ *
+ * This example demonstrates:
+ * 1. Spreading a single fragment using ...fragment.spread() syntax
+ * 2. EXPLICIT variable declaration - parent operation MUST declare ALL variables
+ *    (including those needed by the fragment) using $var()
+ * 3. Explicit variable passing - variables are passed via spread({ var: $.var })
+ *
+ * Variables declared: $employeeId, $completed, $taskLimit
+ * Fragment used: employeeTasksDetailFragment (declares the same variables)
  */
 export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
   query.operation({
@@ -377,12 +386,21 @@ export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
 );
 
 /**
- * Query: Direct interpolation of multiple fragments
- * Demonstrates spreading multiple fragments into the same operation.
- * The operation explicitly declares ALL variables needed:
- * - Operation's own: $projectId
- * - From projectTasksFragment: $limit
- * - From taskDetailConditionalFragment: $includeProject, $skipAssignee
+ * Phase 2.2: Fragment spread with callback interpolation (multiple fragments)
+ *
+ * This example demonstrates callback builder pattern for spreading multiple fragments.
+ * The fields callback ({ f, $ }) provides the $ context for variable passing.
+ *
+ * Key points:
+ * 1. Multiple fragments can be spread into the same operation
+ * 2. Each fragment receives variables through explicit .spread({ ... }) calls
+ * 3. Parent operation declares ALL variables (no auto-merge):
+ *    - Operation's own: $projectId
+ *    - From projectTasksFragment: $limit
+ *    - From taskDetailConditionalFragment: $includeProject, $skipAssignee
+ *
+ * This is "callback interpolation" because the fields are constructed inside
+ * the fields: ({ f, $ }) => {...} callback, where $ provides variable context.
  */
 export const getProjectWithMultipleFragmentsQuery = gql.default(({ query, $var }) =>
   query.operation({
@@ -410,10 +428,18 @@ export const getProjectWithMultipleFragmentsQuery = gql.default(({ query, $var }
 );
 
 /**
- * Query: Direct interpolation with operation-level and fragment-level variables
- * Demonstrates that ALL variables must be explicitly declared by the operation:
+ * Phase 2.2: Mixed operation-level and fragment-level variables
+ *
+ * This example demonstrates callback builder pattern with mixed variables:
+ * - Some variables are used by the operation's own fields ($teamId, $projectStatus)
+ * - Some variables are passed to fragments ($limit)
+ *
+ * All variables must be explicitly declared by the parent operation:
  * - Operation's own: $teamId, $projectStatus
  * - From projectTasksFragment: $limit
+ *
+ * The fragment is spread within nested field selection:
+ * team.projects.{...fragment.spread()}
  */
 export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
   query.operation({
