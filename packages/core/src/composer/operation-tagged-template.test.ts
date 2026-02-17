@@ -98,7 +98,7 @@ describe("createOperationTaggedTemplate", () => {
     it("throws when source contains non-fragment/non-callback interpolation", () => {
       const fn = createOperationTaggedTemplate(schema, "query");
       expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow(
-        "Tagged templates only accept Fragment instances or callback functions as interpolated values"
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values",
       );
     });
 

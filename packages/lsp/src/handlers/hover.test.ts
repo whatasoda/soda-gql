@@ -111,7 +111,7 @@ describe("handleHover", () => {
   });
 
   test("returns type info for field with arguments", () => {
-    const content = "query { user(id: \"1\") { id name } }";
+    const content = 'query { user(id: "1") { id name } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

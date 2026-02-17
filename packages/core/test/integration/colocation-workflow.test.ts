@@ -11,9 +11,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { createExecutionResultParser, createProjection } from "@soda-gql/colocation-tools";
 import { print } from "graphql";
-import { createProjection } from "@soda-gql/colocation-tools";
-import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { BasicTestSchema } from "../fixtures";
@@ -26,9 +25,7 @@ const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicT
 describe("$colocate end-to-end workflow", () => {
   it("combines multiple query fragments with $colocate and parses results", () => {
     // Step 1: Define entity-level tagged template fragments
-    const UserCardFields = gql(({ fragment }) =>
-      fragment`fragment UserCardFields on User { id name }`(),
-    );
+    const UserCardFields = gql(({ fragment }) => fragment`fragment UserCardFields on User { id name }`());
 
     const UserIdFields = gql(({ fragment }) => fragment`fragment UserIdFields on User { id }`());
 

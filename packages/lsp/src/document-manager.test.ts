@@ -183,7 +183,7 @@ export const GetUser = gql.default(({ query }) => query\`
     expect(t.content).toContain("__FRAG_SPREAD_0__");
     expect(t.content).toContain("name");
     // Should preserve the surrounding context
-    expect(t.content).toContain("user(id: \"1\")");
+    expect(t.content).toContain('user(id: "1")');
   });
 
   test("extracts template with multiple interpolations", () => {

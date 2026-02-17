@@ -29,14 +29,10 @@ export function mergeVariableDefinitions(
           // Variable already exists - check if types match
           const existing = merged[varName];
           // Compare kind, name, and modifier to determine if types are compatible
-          if (
-            existing?.kind !== varDef.kind ||
-            existing?.name !== varDef.name ||
-            existing?.modifier !== varDef.modifier
-          ) {
+          if (existing?.kind !== varDef.kind || existing?.name !== varDef.name || existing?.modifier !== varDef.modifier) {
             throw new Error(
               `Variable definition conflict: $${varName} is defined with incompatible types ` +
-              `(${existing?.kind}:${existing?.name}:${existing?.modifier} vs ${varDef.kind}:${varDef.name}:${varDef.modifier})`
+                `(${existing?.kind}:${existing?.name}:${existing?.modifier} vs ${varDef.kind}:${varDef.name}:${varDef.modifier})`,
             );
           }
           // Types match - no need to duplicate

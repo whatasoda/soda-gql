@@ -168,5 +168,4 @@ describe("fragment metadata callbacks in tagged templates", () => {
     const firstFragment = meta.custom?.firstFragmentMetadata as { custom?: { variableCount?: number } } | undefined;
     expect(firstFragment?.custom?.variableCount).toBe(0);
   });
-
 });

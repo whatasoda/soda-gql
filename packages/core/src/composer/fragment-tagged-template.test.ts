@@ -167,7 +167,7 @@ describe("createFragmentTaggedTemplate", () => {
     it("throws when interpolated value is not a Fragment or callback", () => {
       const fn = createFragmentTaggedTemplate(schema);
       expect(() => (fn as any)(["part1", "part2"], "interpolated")).toThrow(
-        "Tagged templates only accept Fragment instances or callback functions as interpolated values"
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values",
       );
     });
 
@@ -295,7 +295,7 @@ describe("createFragmentTaggedTemplate", () => {
 
     it("non-fragment interpolation values throw an error", () => {
       expect(() => (fragment as any)`fragment Foo on User { id ...${123} }`).toThrow(
-        "Tagged templates only accept Fragment instances or callback functions as interpolated values"
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values",
       );
     });
 
@@ -435,8 +435,7 @@ describe("createFragmentTaggedTemplate", () => {
       // The parent should automatically inherit the child's variables without re-declaration
 
       // Step 1: Create a child fragment with variables
-      const tasksFragment =
-        fragment`fragment EmployeeTasks($completed: Boolean!, $limit: Int) on Employee {
+      const tasksFragment = fragment`fragment EmployeeTasks($completed: Boolean!, $limit: Int) on Employee {
           tasks(completed: $completed) { id title done }
         }`();
 
@@ -481,8 +480,7 @@ describe("createFragmentTaggedTemplate", () => {
       // The parent passes its $ context to the child through the callback
 
       // Step 1: Create a child fragment with a variable
-      const tasksFragment =
-        fragment`fragment EmployeeTasks($completed: Boolean!) on Employee {
+      const tasksFragment = fragment`fragment EmployeeTasks($completed: Boolean!) on Employee {
           tasks(completed: $completed) { id title done }
         }`();
 
