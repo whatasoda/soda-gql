@@ -6,9 +6,6 @@
     "outDir": "../../node_modules/.soda-gql/.typecheck/vscode-extension",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/vscode-extension/tsconfig.tsbuildinfo",
     "rootDir": ".",
-    "lib": ["ES2022"],
-    "module": "Node16",
-    "moduleResolution": "Node16",
     "paths": {}
   },
   "include": ["src/**/*", "@x-*.ts"],

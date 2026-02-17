@@ -5,7 +5,7 @@
 
 import * as path from "node:path";
 import type * as vscode from "vscode";
-import { type LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient/node";
+import { type LanguageClient, type LanguageClientOptions, type ServerOptions, TransportKind } from "vscode-languageclient/node";
 
 let client: LanguageClient | undefined;
 
@@ -41,9 +41,10 @@ export const activate = (context: vscode.ExtensionContext): void => {
 
   // Create and start the language client
   const { LanguageClient: LC } = require("vscode-languageclient/node");
-  client = new LC("soda-gql", "soda-gql GraphQL LSP", serverOptions, clientOptions);
+  const lc = new LC("soda-gql", "soda-gql GraphQL LSP", serverOptions, clientOptions) as LanguageClient;
+  client = lc;
 
-  client.start();
+  lc.start();
 };
 
 export const deactivate = (): Thenable<void> | undefined => {

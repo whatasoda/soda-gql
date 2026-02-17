@@ -176,7 +176,7 @@ export function buildFieldsFromSelectionSet(
         // Fragment spread without interpolation - must use interpolation syntax
         throw new Error(
           `Fragment spread "...${fragmentName}" in tagged template must use interpolation syntax. ` +
-          `Use \`...@\${fragment}\` instead of \`...FragmentName\`.`
+            `Use \`...@\${fragment}\` instead of \`...FragmentName\`.`,
         );
       }
     }
@@ -287,7 +287,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
       if (!(value instanceof Fragment) && typeof value !== "function") {
         throw new Error(
           `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
-          `Received ${typeof value} at position ${i}.`
+            `Received ${typeof value} at position ${i}.`,
         );
       }
     }
@@ -295,11 +295,17 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
     // Build GraphQL source with placeholder fragment spread names for interpolations
     // This allows us to parse the GraphQL and later replace placeholders with actual fragment fields
     let rawSource = strings[0] ?? "";
-    const interpolationMap = new Map<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>();
+    const interpolationMap = new Map<
+      string,
+      AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)
+    >();
 
     for (let i = 0; i < values.length; i++) {
       const placeholderName = `__INTERPOLATION_${i}__`;
-      interpolationMap.set(placeholderName, values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended));
+      interpolationMap.set(
+        placeholderName,
+        values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended),
+      );
       rawSource += placeholderName + (strings[i + 1] ?? "");
     }
 
@@ -349,12 +355,12 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
       // since the GraphQL string is only known at runtime. Type information is generated via typegen.
       // We explicitly pass the schema type parameter to Fragment.create to at least preserve
       // typename and variable definition types in the type system.
-      // biome-ignore lint/suspicious/noExplicitAny: Runtime-only GraphQL parsing prevents compile-time field type inference
       return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
         typename: onType,
         key: fragmentName,
         schemaLabel: schema.label,
         variableDefinitions: varSpecifiers,
+        // biome-ignore lint/suspicious/noExplicitAny: Runtime-only spread needs dynamic variable types
         spread: (variables: any) => {
           const $ = createVarAssignments(varSpecifiers, variables);
 
@@ -382,6 +388,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             interpolationMap,
           );
         },
+        // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
     };
   };

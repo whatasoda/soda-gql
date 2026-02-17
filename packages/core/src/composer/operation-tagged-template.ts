@@ -60,7 +60,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       if (!(value instanceof Fragment) && typeof value !== "function") {
         throw new Error(
           `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
-          `Received ${typeof value} at position ${i}.`
+            `Received ${typeof value} at position ${i}.`,
         );
       }
     }
@@ -68,11 +68,17 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
     // Build GraphQL source with placeholder fragment spread names for interpolations
     // This allows us to parse the GraphQL and later replace placeholders with actual fragment fields
     let source = strings[0] ?? "";
-    const interpolationMap = new Map<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>();
+    const interpolationMap = new Map<
+      string,
+      AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)
+    >();
 
     for (let i = 0; i < values.length; i++) {
       const placeholderName = `__INTERPOLATION_${i}__`;
-      interpolationMap.set(placeholderName, values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended));
+      interpolationMap.set(
+        placeholderName,
+        values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended),
+      );
       source += placeholderName + (strings[i + 1] ?? "");
     }
 
@@ -117,6 +123,22 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
     const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
     return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
+      // When there are no interpolations, use the parsed AST directly
+      // This preserves support for inline fragments (union types) that
+      // buildFieldsFromSelectionSet cannot handle
+      if (interpolationMap.size === 0) {
+        return Operation.create(() => ({
+          operationType,
+          operationName,
+          schemaLabel: schema.label,
+          variableNames: Object.keys(varSpecifiers),
+          documentSource: () => ({}) as never,
+          document: document as never,
+          metadata: options?.metadata,
+          // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
+        })) as any;
+      }
+
       // Build fields from selection set, resolving interpolated fragments
       const $ = createVarAssignments(varSpecifiers, {} as never);
       const fields = buildFieldsFromSelectionSet(
