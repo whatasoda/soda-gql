@@ -4,7 +4,7 @@
  */
 
 import type { GraphQLObjectType, GraphQLSchema } from "graphql";
-import { getNamedType, isObjectType, parse, visit, Kind } from "graphql";
+import { getNamedType, isObjectType, Kind, parse, visit } from "graphql";
 import type { InlayHint } from "vscode-languageserver-types";
 import { InlayHintKind } from "vscode-languageserver-types";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
