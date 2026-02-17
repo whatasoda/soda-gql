@@ -1,0 +1,11 @@
+{
+  "name": "@soda-gql/claude-code-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Claude Code marketplace plugin for soda-gql GraphQL development",
+  "scripts": {
+    "detect-project": "bun scripts/detect-project.ts",
+    "validate-templates": "bun scripts/validate-templates.ts"
+  }
+}
