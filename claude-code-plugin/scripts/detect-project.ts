@@ -23,7 +23,8 @@
  *   schemas?: Record<string, { schemaFiles: string[] }>,
  *   outdir?: string,
  *   hasLsp?: boolean,
- *   error?: string
+ *   error?: string,
+ *   suggestions?: string[]
  * }
  */
 
@@ -39,6 +40,7 @@ interface ProjectInfo {
   outdir?: string;
   hasLsp?: boolean;
   error?: string;
+  suggestions?: string[];
 }
 
 /**
@@ -55,7 +57,13 @@ function detectProject(cwd: string = process.cwd()): ProjectInfo {
         console.log(JSON.stringify({
           found: false,
           projectDir: process.cwd(),
-          error: result.error.message
+          error: result.error.message,
+          suggestions: [
+            'Check if you are running from the correct directory (should contain soda-gql.config.{ts,js,mjs})',
+            'Verify that "bun install" has been run to install dependencies',
+            'Run "bun run soda-gql codegen schema" to initialize the project',
+            'See getting started documentation: https://github.com/soda-gql/soda-gql#quick-start'
+          ]
         }));
         process.exit(0);
       }
@@ -91,7 +99,13 @@ function detectProject(cwd: string = process.cwd()): ProjectInfo {
       console.log(JSON.stringify({
         found: false,
         projectDir: process.cwd(),
-        error: error.message
+        error: error.message,
+        suggestions: [
+          'Ensure @soda-gql packages are installed: bun add -D @soda-gql/cli @soda-gql/config',
+          'Check if you are running from the correct directory',
+          'Verify that your soda-gql.config file has valid syntax',
+          'See getting started documentation: https://github.com/soda-gql/soda-gql#quick-start'
+        ]
       }));
     }
   `;
@@ -159,6 +173,12 @@ function fallbackDetection(cwd: string): ProjectInfo {
           found: false,
           projectDir: cwd,
           error: `Found config file but failed to parse: ${error}`,
+          suggestions: [
+            'Check syntax errors in your soda-gql.config file',
+            'Ensure the config file exports a valid configuration',
+            'Try running "bun run soda-gql doctor" for detailed diagnostics',
+            'See configuration documentation for valid schema format'
+          ]
         };
       }
     }
@@ -168,6 +188,12 @@ function fallbackDetection(cwd: string): ProjectInfo {
     found: false,
     projectDir: cwd,
     error: "No soda-gql.config.{ts,js,mjs} file found",
+    suggestions: [
+      'Check if you are running from the correct directory',
+      'Create a soda-gql.config.ts file using: bun run soda-gql init',
+      'Verify that "bun install" has been run',
+      'See getting started documentation: https://github.com/soda-gql/soda-gql#quick-start'
+    ]
   };
 }
 
