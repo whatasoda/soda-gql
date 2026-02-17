@@ -1,5 +1,10 @@
 import { gql } from "@/graphql-system";
-import { employeeFragment } from "./fragments";
+import {
+  employeeFragment,
+  employeeTasksDetailFragment,
+  projectTasksFragment,
+  taskDetailConditionalFragment,
+} from "./fragments";
 
 /**
  * Query operation to fetch a single employee
@@ -335,4 +340,97 @@ export const updateTaskWithDirectivesMutation = gql.default(({ mutation }) =>
       }
     }
   }`(),
+);
+
+// ============================================================================
+// Phase 2.1: Fragment spread with direct interpolation
+// ============================================================================
+// NOTE: Fragment spreading requires callback builder syntax because tagged templates
+// reject all interpolated expressions (${...}).
+//
+// IMPORTANT: Fragment variables are NOT auto-merged. Parent operations must explicitly
+// declare all variables (both their own and those needed by fragments) using $var().
+// Fragments define their requirements; operations declare their contract.
+
+/**
+ * Query: Direct interpolation of a single fragment with variables
+ * Demonstrates spreading a fragment using ...fragment.spread() syntax.
+ * The operation EXPLICITLY declares all variables needed by the fragment
+ * ($employeeId, $completed, $taskLimit) even though they're defined in the fragment.
+ */
+export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetEmployeeWithFragment",
+    variables: {
+      ...$var("employeeId").ID("!"),
+      ...$var("completed").Boolean("?"),
+      ...$var("taskLimit").Int("?"),
+    },
+    fields: ({ $ }) => ({
+      ...employeeTasksDetailFragment.spread({
+        employeeId: $.employeeId,
+        completed: $.completed,
+        taskLimit: $.taskLimit,
+      }),
+    }),
+  }),
+);
+
+/**
+ * Query: Direct interpolation of multiple fragments
+ * Demonstrates spreading multiple fragments into the same operation.
+ * The operation explicitly declares ALL variables needed:
+ * - Operation's own: $projectId
+ * - From projectTasksFragment: $limit
+ * - From taskDetailConditionalFragment: $includeProject, $skipAssignee
+ */
+export const getProjectWithMultipleFragmentsQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetProjectWithMultipleFragments",
+    variables: {
+      ...$var("projectId").ID("!"),
+      ...$var("limit").Int("?"),
+      ...$var("includeProject").Boolean("!"),
+      ...$var("skipAssignee").Boolean("!"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.project({ id: $.projectId })(({ f }) => ({
+        ...projectTasksFragment.spread({ limit: $.limit }),
+        ...f.tasks()(({ f }) => ({
+          ...f.id(),
+          ...f.title(),
+          ...taskDetailConditionalFragment.spread({
+            includeProject: $.includeProject,
+            skipAssignee: $.skipAssignee,
+          }),
+        })),
+      })),
+    }),
+  }),
+);
+
+/**
+ * Query: Direct interpolation with operation-level and fragment-level variables
+ * Demonstrates that ALL variables must be explicitly declared by the operation:
+ * - Operation's own: $teamId, $projectStatus
+ * - From projectTasksFragment: $limit
+ */
+export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetTeamProjectsWithFragment",
+    variables: {
+      ...$var("teamId").ID("!"),
+      ...$var("projectStatus").ProjectStatus("?"),
+      ...$var("limit").Int("?"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.team({ id: $.teamId })(({ f }) => ({
+        ...f.id(),
+        ...f.name(),
+        ...f.projects({ status: $.projectStatus, limit: 10 })(() => ({
+          ...projectTasksFragment.spread({ limit: $.limit }),
+        })),
+      })),
+    }),
+  }),
 );
