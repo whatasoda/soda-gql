@@ -3,33 +3,117 @@
 /**
  * LSP-Based Template Validation Script for soda-gql
  *
- * This script validates GraphQL tagged templates using LSP diagnostics.
+ * PURPOSE:
+ * This script validates GraphQL tagged templates using LSP diagnostics integrated from @soda-gql/lsp.
+ * It provides compile-time validation of GraphQL queries, fragments, and operations against your schema.
+ * The script uses the same validation engine as the VS Code extension, ensuring consistent error detection
+ * across CLI and IDE workflows.
  *
- * Usage:
- *   bun validate-templates.ts [file-path]     - Validate specific file
- *   bun validate-templates.ts --all           - Validate all files in project
+ * USAGE EXAMPLES:
+ *
+ * 1. Validate a specific file:
+ *    bun validate-templates.ts ./src/graphql/operations.ts
+ *
+ * 2. Validate all files in the project:
+ *    bun validate-templates.ts --all
+ *
+ * 3. Use from another script:
+ *    const result = Bun.spawnSync({
+ *      cmd: ['bun', 'validate-templates.ts', './src/graphql/operations.ts'],
+ *      cwd: process.cwd(),
+ *      stdout: 'pipe'
+ *    });
+ *    const validation = JSON.parse(result.stdout.toString());
+ *    if (!validation.success) {
+ *      // Handle validation errors
+ *      validation.diagnostics.forEach(d => console.error(d.message));
+ *    }
+ *
+ * OUTPUT FORMAT (JSON):
+ * {
+ *   success: boolean,              // true if no errors found
+ *   diagnostics: Array<{
+ *     file: string,                // Absolute path to file with issue
+ *     line: number,                // Line number (1-indexed)
+ *     column: number,              // Column number (1-indexed)
+ *     severity: "error" | "warning" | "info" | "hint",
+ *     message: string              // Human-readable error message
+ *   }>,
+ *   summary: {
+ *     total: number,               // Total diagnostic count
+ *     errors: number,              // Number of errors
+ *     warnings: number             // Number of warnings
+ *   },
+ *   fallback?: boolean             // true if using CLI fallback (LSP unavailable)
+ * }
+ *
+ * FALLBACK MODE:
+ * When @soda-gql/lsp is not installed or cannot be loaded, the script automatically falls back to
+ * CLI-based validation using `bun run soda-gql typegen`. The CLI fallback:
+ * - Parses stderr output for validation errors
+ * - Converts error messages into the same JSON diagnostic format
+ * - Sets `fallback: true` in the output to indicate reduced functionality
+ * - May have less precise line/column information compared to LSP mode
+ *
+ * EXAMPLE OUTPUT (LSP mode):
+ * {
+ *   "success": false,
+ *   "diagnostics": [
+ *     {
+ *       "file": "/path/to/operations.ts",
+ *       "line": 42,
+ *       "column": 5,
+ *       "severity": "error",
+ *       "message": "Unknown field 'emailAddress' on type 'User'. Did you mean 'email'?"
+ *     }
+ *   ],
+ *   "summary": { "total": 1, "errors": 1, "warnings": 0 }
+ * }
+ *
+ * EXAMPLE OUTPUT (CLI fallback mode):
+ * {
+ *   "success": false,
+ *   "diagnostics": [
+ *     {
+ *       "file": "operations.ts",
+ *       "line": 42,
+ *       "column": 0,
+ *       "severity": "error",
+ *       "message": "Unknown field: emailAddress"
+ *     }
+ *   ],
+ *   "summary": { "total": 1, "errors": 1, "warnings": 0 },
+ *   "fallback": true
+ * }
+ *
+ * INTEGRATION IN SKILLS:
+ * Skills can use this script to validate generated code:
+ *
+ * ```typescript
+ * // After writing GraphQL code to a file
+ * const validateResult = Bun.spawnSync({
+ *   cmd: ['bun', `${CLAUDE_PLUGIN_ROOT}/scripts/validate-templates.ts`, filePath],
+ *   cwd: process.cwd(),
+ *   stdout: 'pipe',
+ *   stderr: 'pipe'
+ * });
+ *
+ * const validation = JSON.parse(validateResult.stdout.toString());
+ *
+ * if (!validation.success) {
+ *   console.log(`Found ${validation.summary.errors} validation errors:`);
+ *   validation.diagnostics.forEach(d => {
+ *     console.log(`  ${d.file}:${d.line}:${d.column} - ${d.message}`);
+ *   });
+ *
+ *   // Retry or fix errors (max 3 attempts per loop protocol)
+ * }
+ * ```
  *
  * MODULE RESOLUTION PATTERN:
  * Same as detect-project.ts - uses `bun -e` pattern to run code from the project's cwd
  * where @soda-gql/lsp and @soda-gql/config can be imported from node_modules or workspace links.
- *
- * Output JSON format:
- * {
- *   success: boolean,
- *   diagnostics: Array<{
- *     file: string,
- *     line: number,
- *     column: number,
- *     severity: "error" | "warning" | "info" | "hint",
- *     message: string
- *   }>,
- *   summary: {
- *     total: number,
- *     errors: number,
- *     warnings: number
- *   },
- *   fallback?: boolean
- * }
+ * This ensures the script works for both external users and monorepo contributors.
  */
 
 import { spawnSync } from "bun";
