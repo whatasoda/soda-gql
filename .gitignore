@@ -174,6 +174,9 @@ benchmarks/runtime-builder/*/graphql-system/
 packages/builder/test/graphql-system/
 packages/tsc/test/fixture-catalog/graphql-system/
 
+# Playground generated files
+playgrounds/*/src/graphql-system/
+
 # Rust/napi-rs build artifacts
 packages/swc/target/
 packages/swc/src/native/*.node
