@@ -229,3 +229,90 @@ export const teamProjectTasksFragment = gql.default(({ fragment }) =>
     }
   }`(),
 );
+
+// ============================================================================
+// Phase 1.3: Directives in tagged templates
+// ============================================================================
+
+/**
+ * Fragment with @skip directive
+ * Demonstrates using @skip directive on fragment fields with a variable
+ */
+export const employeeConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeConditional($skipEmail: Boolean!) on Employee {
+    id
+    name
+    email @skip(if: $skipEmail)
+    role
+    tasks(limit: 5) {
+      id
+      title
+    }
+  }`(),
+);
+
+/**
+ * Fragment with @include directive
+ * Demonstrates using @include directive on fragment fields with a variable
+ */
+export const projectConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectConditional($includeTeam: Boolean!) on Project {
+    id
+    title
+    description
+    status
+    team @include(if: $includeTeam) {
+      id
+      name
+    }
+  }`(),
+);
+
+/**
+ * Fragment with both @skip and @include directives
+ * Demonstrates using multiple directives in a single fragment
+ */
+export const taskDetailConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskDetailConditional($includeProject: Boolean!, $skipAssignee: Boolean!) on Task {
+    id
+    title
+    completed
+    priority
+    dueDate
+    project @include(if: $includeProject) {
+      id
+      title
+      status
+    }
+    assignee @skip(if: $skipAssignee) {
+      id
+      name
+      email
+    }
+  }`(),
+);
+
+/**
+ * Fragment with nested directives
+ * Demonstrates using directives on nested fields within a fragment
+ */
+export const companyDetailConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment CompanyDetailConditional($includeDepartments: Boolean!, $skipEmployees: Boolean!) on Company {
+    id
+    name
+    industry
+    departments @include(if: $includeDepartments) {
+      id
+      name
+      teams {
+        id
+        name
+      }
+    }
+    employees(limit: 10) @skip(if: $skipEmployees) {
+      id
+      name
+      role
+    }
+  }`(),
+);

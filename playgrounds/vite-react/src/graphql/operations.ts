@@ -211,3 +211,128 @@ export const projectUpdatedSubscription = gql.default(({ subscription }) =>
     }
   }`(),
 );
+
+// ============================================================================
+// Phase 1.3: Directives in tagged templates
+// ============================================================================
+
+/**
+ * Query: @skip directive with variable
+ * Demonstrates using @skip directive with a boolean variable reference
+ */
+export const getTaskWithSkipQuery = gql.default(({ query }) =>
+  query`query GetTaskWithSkip($taskId: ID!, $skipAssignee: Boolean!) {
+    task(id: $taskId) {
+      id
+      title
+      completed
+      priority
+      assignee @skip(if: $skipAssignee) {
+        id
+        name
+        email
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: @include directive with variable
+ * Demonstrates using @include directive with a boolean variable reference
+ */
+export const getProjectWithIncludeQuery = gql.default(({ query }) =>
+  query`query GetProjectWithInclude($projectId: ID!, $includeTeam: Boolean!) {
+    project(id: $projectId) {
+      id
+      title
+      description
+      status
+      team @include(if: $includeTeam) {
+        id
+        name
+        department {
+          id
+          name
+        }
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: Multiple directives in one operation
+ * Demonstrates using both @skip and @include directives in the same operation
+ */
+export const getEmployeeConditionalQuery = gql.default(({ query }) =>
+  query`query GetEmployeeConditional($employeeId: ID!, $includeTasks: Boolean!, $skipComments: Boolean!) {
+    employee(id: $employeeId) {
+      id
+      name
+      email
+      role
+      tasks(limit: 10) @include(if: $includeTasks) {
+        id
+        title
+        completed
+        priority
+      }
+      comments @skip(if: $skipComments) {
+        id
+        body
+        createdAt
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: Nested directives
+ * Demonstrates using directives on nested fields
+ */
+export const getTeamNestedDirectivesQuery = gql.default(({ query }) =>
+  query`query GetTeamNestedDirectives($teamId: ID!, $includeProjects: Boolean!, $skipInactive: Boolean!) {
+    team(id: $teamId) {
+      id
+      name
+      projects @include(if: $includeProjects) {
+        id
+        title
+        status @skip(if: $skipInactive)
+        tasks {
+          id
+          title
+        }
+      }
+    }
+  }`(),
+);
+
+/**
+ * Mutation: Directives in mutation response
+ * Demonstrates using directives to conditionally select mutation result fields
+ */
+export const updateTaskWithDirectivesMutation = gql.default(({ mutation }) =>
+  mutation`mutation UpdateTaskWithDirectives(
+    $taskId: ID!,
+    $title: String,
+    $completed: Boolean,
+    $includeProject: Boolean!,
+    $skipAssignee: Boolean!
+  ) {
+    updateTask(id: $taskId, input: { title: $title, completed: $completed }) {
+      id
+      title
+      completed
+      priority
+      project @include(if: $includeProject) {
+        id
+        title
+        status
+      }
+      assignee @skip(if: $skipAssignee) {
+        id
+        name
+      }
+    }
+  }`(),
+);
