@@ -1,0 +1,17 @@
+# Build artifacts
+src/
+*.ts
+tsconfig*.json
+build.js
+
+# Development files
+node_modules/
+.gitignore
+.git/
+
+# Test files
+test/
+*.test.ts
+
+# Documentation
+README.md

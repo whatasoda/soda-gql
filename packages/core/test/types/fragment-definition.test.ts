@@ -10,6 +10,7 @@ import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import type { Expect, Extends, HasKey } from "./_helpers";
 
 const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
   inputTypeMethods: basicInputTypeMethods,
@@ -100,6 +101,60 @@ describe("Fragment definition type inference", () => {
       // Runtime behavior tests
       expect(fragment.variableDefinitions).toBeDefined();
       expect(fragment.typename).toBe("User");
+    });
+  });
+
+  describe("Tagged template $infer type accuracy", () => {
+    it("$infer property is accessible on tagged template fragments", () => {
+      const fragment = gql(({ fragment }) => fragment`fragment UserFields($showEmail: Boolean!) on User { id name }`());
+
+      // Type-level assertions that $infer has input and output properties
+      type InferMeta = typeof fragment.$infer;
+      type _TestHasInput = Expect<HasKey<InferMeta, "input">>;
+      type _TestHasOutput = Expect<HasKey<InferMeta, "output">>;
+
+      // Runtime validation
+      expect(fragment.typename).toBe("User");
+      expect(fragment.variableDefinitions).toHaveProperty("showEmail");
+    });
+
+    it("$infer.input is defined for fragments without variables", () => {
+      const fragment = gql(({ fragment }) => fragment`fragment UserSimple on User { id }`());
+
+      // Type-level assertion that input exists (may be void or empty)
+      type Input = typeof fragment.$infer.input;
+      type _TestInputDefined = Expect<Extends<void, Input> | Extends<{}, Input>>;
+
+      // Runtime validation
+      expect(fragment.variableDefinitions).toEqual({});
+    });
+
+    it("$infer.output is object type", () => {
+      const fragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
+
+      // Type-level assertion that output extends object
+      type Output = typeof fragment.$infer.output;
+      type _TestOutputIsObject = Expect<Extends<object, Output>>;
+
+      // Note: Field-level type accuracy (e.g., Output having .id and .name properties)
+      // requires typegen integration and is tracked separately.
+
+      // Runtime validation
+      const fields = fragment.spread({} as never);
+      expect(fields).toBeDefined();
+      expect(typeof fields).toBe("object");
+    });
+
+    it("typename property is accessible and typed as string", () => {
+      const fragment = gql(({ fragment }) => fragment`fragment UserFields on User { id }`());
+
+      // Type-level assertion that typename is string
+      type TypeName = typeof fragment.typename;
+      type _TestTypeNameIsString = Expect<Extends<TypeName, string>>;
+
+      // Runtime validation
+      expect(fragment.typename).toBe("User");
+      expect(typeof fragment.typename).toBe("string");
     });
   });
 });

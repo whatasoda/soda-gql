@@ -183,21 +183,48 @@ const extractFromTaggedTemplate = (
     return;
   }
 
-  // Skip templates with expressions (interpolation)
-  if (tagged.template.expressions.length > 0) {
+  const { quasis, expressions } = tagged.template;
+
+  if (quasis.length === 0) {
     return;
   }
 
-  const quasi = tagged.template.quasis[0];
-  if (!quasi) {
+  // Build content by interleaving quasis with placeholder tokens
+  const parts: string[] = [];
+  let contentStart = -1;
+  let contentEnd = -1;
+
+  for (let i = 0; i < quasis.length; i++) {
+    const quasi = quasis[i];
+    if (!quasi) {
+      continue;
+    }
+
+    // Track the overall content range (first quasi start to last quasi end)
+    const quasiStart = converter.byteOffsetToCharIndex(quasi.span.start - spanOffset);
+    const quasiEnd = converter.byteOffsetToCharIndex(quasi.span.end - spanOffset);
+
+    if (contentStart === -1) {
+      contentStart = quasiStart;
+    }
+    contentEnd = quasiEnd;
+
+    const quasiContent = quasi.cooked ?? quasi.raw;
+    parts.push(quasiContent);
+
+    // Add placeholder for interpolation expression if this is not the last quasi
+    if (i < expressions.length) {
+      // Use a placeholder that preserves GraphQL spread syntax for fragment references
+      // Pattern: __FRAG_SPREAD_N__ to indicate this is likely a fragment spread interpolation
+      parts.push(`__FRAG_SPREAD_${i}__`);
+    }
+  }
+
+  if (contentStart === -1 || contentEnd === -1) {
     return;
   }
 
-  const content = quasi.cooked ?? quasi.raw;
-
-  // Convert SWC byte offsets to UTF-16 char indices via the converter
-  const contentStart = converter.byteOffsetToCharIndex(quasi.span.start - spanOffset);
-  const contentEnd = converter.byteOffsetToCharIndex(quasi.span.end - spanOffset);
+  const content = parts.join("");
 
   templates.push({
     contentRange: { start: contentStart, end: contentEnd },

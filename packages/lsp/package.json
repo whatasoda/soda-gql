@@ -34,6 +34,9 @@
   "engines": {
     "node": ">=18"
   },
+  "bin": {
+    "soda-gql-lsp": "./dist/bin.mjs"
+  },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",

@@ -1,0 +1,86 @@
+{
+  "name": "soda-gql-vscode-extension",
+  "displayName": "soda-gql",
+  "description": "GraphQL language support for soda-gql with tagged template literals",
+  "version": "0.11.26",
+  "publisher": "soda-gql",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/vscode-extension"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=18"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "graphql",
+    "soda-gql",
+    "typescript",
+    "language-server"
+  ],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "graphql",
+        "extensions": [".graphql", ".gql"],
+        "aliases": ["GraphQL"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "graphql",
+        "scopeName": "source.graphql",
+        "path": "./syntaxes/graphql.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.graphql": "graphql"
+        }
+      },
+      {
+        "scopeName": "inline.graphql",
+        "path": "./syntaxes/graphql.inline.tmLanguage.json",
+        "injectTo": [
+          "source.ts",
+          "source.tsx"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.graphql": "graphql"
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "@soda-gql/lsp": "workspace:*",
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2"
+  },
+  "scripts": {
+    "build": "node build.js",
+    "package": "vsce package --no-dependencies"
+  }
+}

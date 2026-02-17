@@ -27,6 +27,7 @@ import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
+import { handleInlayHint } from "./handlers/inlay-hint";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
 import type { SchemaResolver } from "./schema-resolver";
@@ -107,6 +108,7 @@ export const createLspServer = (options?: LspServerOptions) => {
           triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
         },
         hoverProvider: true,
+        inlayHintProvider: true,
         documentSymbolProvider: true,
         definitionProvider: true,
         referencesProvider: true,
@@ -210,6 +212,41 @@ export const createLspServer = (options?: LspServerOptions) => {
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
     });
+  });
+
+  connection.languages.inlayHint.on((params) => {
+    if (!documentManager || !schemaResolver) {
+      return [];
+    }
+
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const docState = documentManager.get(params.textDocument.uri);
+    if (!docState || docState.templates.length === 0) {
+      return [];
+    }
+
+    const allHints: ReturnType<typeof handleInlayHint> = [];
+
+    for (const template of docState.templates) {
+      const entry = schemaResolver.getSchema(template.schemaName);
+      if (!entry) {
+        continue;
+      }
+
+      const hints = handleInlayHint({
+        template,
+        schema: entry.schema,
+        tsSource: doc.getText(),
+      });
+
+      allHints.push(...hints);
+    }
+
+    return allHints;
   });
 
   connection.onDefinition(async (params) => {

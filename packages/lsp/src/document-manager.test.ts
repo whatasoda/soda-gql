@@ -159,6 +159,57 @@ describe("createDocumentManager", () => {
     expect(extracted).toBe(t.content);
   });
 
+  test("extracts template with interpolation expressions", () => {
+    const dm = createDocumentManager(helper);
+    const source = `import { gql } from "@/graphql-system";
+import { userFields } from "./fragment";
+
+export const GetUser = gql.default(({ query }) => query\`
+  query GetUser {
+    user(id: "1") {
+      ...\${userFields}
+      name
+    }
+  }
+\`);`;
+    const uri = "/test/query-with-interpolation.ts";
+    const state = dm.update(uri, 1, source);
+
+    expect(state.templates).toHaveLength(1);
+    const t = state.templates[0]!;
+    expect(t.schemaName).toBe("default");
+    expect(t.kind).toBe("query");
+    // Content should contain placeholder instead of interpolation
+    expect(t.content).toContain("__FRAG_SPREAD_0__");
+    expect(t.content).toContain("name");
+    // Should preserve the surrounding context
+    expect(t.content).toContain("user(id: \"1\")");
+  });
+
+  test("extracts template with multiple interpolations", () => {
+    const dm = createDocumentManager(helper);
+    const source = `import { gql } from "@/graphql-system";
+import { userFields, addressFields } from "./fragments";
+
+export const GetUser = gql.default(({ query }) => query\`
+  query GetUser {
+    user(id: "1") {
+      ...\${userFields}
+      address {
+        ...\${addressFields}
+      }
+    }
+  }
+\`);`;
+    const uri = "/test/query-with-multiple-interpolations.ts";
+    const state = dm.update(uri, 1, source);
+
+    expect(state.templates).toHaveLength(1);
+    const t = state.templates[0]!;
+    expect(t.content).toContain("__FRAG_SPREAD_0__");
+    expect(t.content).toContain("__FRAG_SPREAD_1__");
+  });
+
   test("findTemplateAtOffset works with non-ASCII content before template", () => {
     const dm = createDocumentManager(helper);
     const source = readFixture("unicode-comments.ts");

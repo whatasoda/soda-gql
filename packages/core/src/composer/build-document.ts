@@ -342,6 +342,13 @@ const buildUnionSelection = (union: AnyUnionSelection, schema: AnyGraphqlSchema)
  */
 const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeName?: string): FieldNode[] =>
   Object.entries(fields).map(([alias, value]): FieldNode => {
+    // __typename is an implicit introspection field on all object types
+    if (alias === "__typename" && isShorthand(value)) {
+      return {
+        kind: Kind.FIELD,
+        name: { kind: Kind.NAME, value: "__typename" },
+      };
+    }
     // Expand shorthand to AnyFieldSelection if needed
     const selection = isShorthand(value) ? expandShorthand(schema, typeName!, alias) : value;
 

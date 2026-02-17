@@ -5,11 +5,17 @@
 
 import { Kind, parse as parseGraphql } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
-import { Operation } from "../types/element";
+import { Fragment, Operation } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyOperationOf } from "../types/element/operation";
+import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyMetadataAdapter, DocumentTransformer } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
+import { buildDocument } from "./build-document";
+import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
+import { createVarAssignments } from "./input";
+import { mergeVariableDefinitions } from "./merge-variable-definitions";
 
 /** Callable result from tagged template - resolves to Operation or Fragment. */
 export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyFragment> = (
@@ -18,13 +24,13 @@ export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyF
 
 /** Options for TemplateResult resolution. */
 export type TemplateResultMetadataOptions = {
-  metadata?: unknown;
+  metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
 };
 
 /** Tagged template function type for operations. */
 export type OperationTaggedTemplateFunction<TOperationType extends OperationType = OperationType> = (
   strings: TemplateStringsArray,
-  ...values: never[]
+  ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
 ) => TemplateResult<AnyOperationOf<TOperationType>>;
 
 /**
@@ -44,13 +50,39 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
 ): OperationTaggedTemplateFunction<TOperationType> => {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
-  return (strings: TemplateStringsArray, ...values: never[]): TemplateResult<AnyOperationOf<TOperationType>> => {
-    if (values.length > 0) {
-      throw new Error("Tagged templates must not contain interpolated expressions");
+  return (
+    strings: TemplateStringsArray,
+    ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
+  ): TemplateResult<AnyOperationOf<TOperationType>> => {
+    // Validate interpolated values are fragments or callbacks
+    for (let i = 0; i < values.length; i++) {
+      const value = values[i];
+      if (!(value instanceof Fragment) && typeof value !== "function") {
+        throw new Error(
+          `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
+            `Received ${typeof value} at position ${i}.`,
+        );
+      }
     }
 
-    const source = strings[0] ?? "";
+    // Build GraphQL source with placeholder fragment spread names for interpolations
+    // This allows us to parse the GraphQL and later replace placeholders with actual fragment fields
+    let source = strings[0] ?? "";
+    const interpolationMap = new Map<
+      string,
+      AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)
+    >();
 
+    for (let i = 0; i < values.length; i++) {
+      const placeholderName = `__INTERPOLATION_${i}__`;
+      interpolationMap.set(
+        placeholderName,
+        values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended),
+      );
+      source += placeholderName + (strings[i + 1] ?? "");
+    }
+
+    // Parse the GraphQL source with placeholders
     let document: import("graphql").DocumentNode;
     try {
       document = parseGraphql(source);
@@ -80,16 +112,60 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
 
     const operationName = opNode.name.value;
     const varDefNodes = opNode.variableDefinitions ?? [];
-    const varSpecifiers = buildVarSpecifiers(varDefNodes, schemaIndex);
+    // BuiltVarSpecifier is structurally compatible at runtime; cast needed because
+    // BuiltVarSpecifier.defaultValue uses `unknown` while VarSpecifier uses `ConstValue`
+    let varSpecifiers = buildVarSpecifiers(varDefNodes, schemaIndex) as VariableDefinitions;
+
+    // Merge variable definitions from interpolated fragments
+    varSpecifiers = mergeVariableDefinitions(varSpecifiers, interpolationMap);
+
+    // Determine root type name based on operation type
+    const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
     return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
+      // When there are no interpolations, use the parsed AST directly
+      // This preserves support for inline fragments (union types) that
+      // buildFieldsFromSelectionSet cannot handle
+      if (interpolationMap.size === 0) {
+        return Operation.create(() => ({
+          operationType,
+          operationName,
+          schemaLabel: schema.label,
+          variableNames: Object.keys(varSpecifiers),
+          documentSource: () => ({}) as never,
+          document: document as never,
+          metadata: options?.metadata,
+          // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
+        })) as any;
+      }
+
+      // Build fields from selection set, resolving interpolated fragments
+      const $ = createVarAssignments(varSpecifiers, {} as never);
+      const fields = buildFieldsFromSelectionSet(
+        opNode.selectionSet,
+        schema,
+        operationTypeName,
+        $ as Readonly<Record<string, AnyVarRef>>,
+        interpolationMap,
+      );
+
+      // Build the TypedDocumentNode from the resolved fields
+      const builtDocument = buildDocument({
+        operationName,
+        operationType,
+        operationTypeName,
+        variables: varSpecifiers,
+        fields,
+        schema,
+      });
+
       return Operation.create(() => ({
         operationType,
         operationName,
         schemaLabel: schema.label,
         variableNames: Object.keys(varSpecifiers),
-        documentSource: () => ({}) as never,
-        document: document as never,
+        documentSource: () => fields,
+        document: builtDocument as never,
         metadata: options?.metadata,
         // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
       })) as any;

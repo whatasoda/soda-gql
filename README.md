@@ -6,6 +6,7 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 - 🔍 **Full Type Safety**: Complete TypeScript inference from schema to query results
 - 🎯 **No Code Generation Loop**: Unlike traditional GraphQL codegen, no constant regeneration needed
+- 💡 **LSP Integration**: VS Code extension with hover, completion, and diagnostics for tagged templates
 - 🔧 **Transform Functions**: Built-in data normalization at the fragment level
 - 📦 **Modular Architecture**: Compose queries from reusable fragments
 - ⚡ **Instant Feedback**: Type errors appear immediately in your IDE
@@ -14,17 +15,19 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ```
 packages/
-├── core/           # Core GraphQL types and utilities
-├── codegen/        # Schema code generation
-├── builder/        # Static analysis & artifact generation
-├── babel/          # Babel transformer and plugin
-├── tsc/            # TypeScript transformer and plugin
-├── swc/            # SWC-based native transformer
-├── webpack-plugin/ # Webpack plugin with HMR support
-├── vite-plugin/    # Vite plugin
-├── metro-plugin/   # Metro plugin (React Native)
-├── runtime/        # Runtime execution helpers
-└── cli/            # Command-line interface
+├── core/              # Core GraphQL types and utilities
+├── codegen/           # Schema code generation
+├── builder/           # Static analysis & artifact generation
+├── babel/             # Babel transformer and plugin
+├── tsc/               # TypeScript transformer and plugin
+├── swc/               # SWC-based native transformer
+├── webpack-plugin/    # Webpack plugin with HMR support
+├── vite-plugin/       # Vite plugin
+├── metro-plugin/      # Metro plugin (React Native)
+├── lsp/               # Language Server Protocol implementation
+├── vscode-extension/  # VS Code extension for LSP
+├── runtime/           # Runtime execution helpers
+└── cli/               # Command-line interface
 ```
 
 ## Quick Start
@@ -65,6 +68,31 @@ bun run soda-gql codegen schema
 ```
 
 The generated module imports your scalar definitions from the inject file. Keep the inject file (e.g., `default.inject.ts`) under version control so custom scalar behavior stays explicit.
+
+### LSP Integration (VS Code)
+
+**Recommended workflow**: Install the VS Code extension to get real-time type information, completion, and diagnostics without running typegen.
+
+```bash
+# Install the VS Code extension
+code --install-extension soda-gql-*.vsix
+```
+
+With the extension installed, you get:
+- **Hover type information**: See field types directly in tagged templates
+- **Inlay hints**: Display GraphQL return types inline (`: String!`, `: [Post!]!`)
+- **Field completion**: Auto-complete based on your schema
+- **Diagnostics**: Real-time error detection for invalid fields
+- **Fragment interpolation support**: Use `...${fragment}` spreads with full LSP support
+
+This enables a **development without typegen** workflow:
+1. Define `schema.graphql`
+2. Run `codegen schema` (one-time setup)
+3. Install VS Code extension
+4. Write tagged templates with full LSP support
+5. **Optionally** run `typegen` for compile-time type safety
+
+See [LSP Workflow Guide](./docs/guides/lsp-workflow.md) for detailed setup and usage.
 
 ### Generated Files
 
