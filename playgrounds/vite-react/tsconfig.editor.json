@@ -13,7 +13,7 @@
       "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "fixture-catalog/**/*"],
+  "include": ["src/**/*", "fixture-catalog/**/*", "scalars.ts", "soda-gql.config.ts"],
   "exclude": ["**/graphql-system/*.prebuilt.ts", "**/graphql-system/*.cjs"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
