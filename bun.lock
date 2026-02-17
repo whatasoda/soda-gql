@@ -284,7 +284,7 @@
       ],
     },
     "packages/vscode-extension": {
-      "name": "@soda-gql/vscode-extension",
+      "name": "soda-gql",
       "version": "0.11.26",
       "dependencies": {
         "@soda-gql/lsp": "workspace:*",
@@ -1232,8 +1232,6 @@
     "@soda-gql/typegen": ["@soda-gql/typegen@workspace:packages/typegen"],
 
     "@soda-gql/vite-plugin": ["@soda-gql/vite-plugin@workspace:packages/vite-plugin"],
-
-    "@soda-gql/vscode-extension": ["@soda-gql/vscode-extension@workspace:packages/vscode-extension"],
 
     "@soda-gql/webpack-plugin": ["@soda-gql/webpack-plugin@workspace:packages/webpack-plugin"],
 
@@ -2866,6 +2864,8 @@
     "slice-ansi": ["slice-ansi@4.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "astral-regex": "^2.0.0", "is-fullwidth-code-point": "^3.0.0" } }, "sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ=="],
 
     "slugify": ["slugify@1.6.6", "", {}, "sha512-h+z7HKHYXj6wJU+AnS/+IH8Uh9fdcX1Lrhg1/VMdf9PwoBQXFcXiAdsy2tSK0P6gKwJLXp02r90ahUCqHk9rrw=="],
+
+    "soda-gql": ["soda-gql@workspace:packages/vscode-extension"],
 
     "sort-keys": ["sort-keys@1.1.2", "", { "dependencies": { "is-plain-obj": "^1.0.0" } }, "sha512-vzn8aSqKgytVik0iwdBEi+zevbTYZogewTUM6dtpmGwEcdzbub/TX4bCzRhebDCRC3QzXgJsLRKB2V/Oof7HXg=="],
 
