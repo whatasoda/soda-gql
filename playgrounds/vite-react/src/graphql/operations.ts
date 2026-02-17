@@ -463,6 +463,132 @@ export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
 );
 
 // ============================================================================
+// Phase 3.1: Union type selection
+// ============================================================================
+
+/**
+ * Query: Union type with all members
+ * Demonstrates selecting all members of SearchResult union (Employee, Project, Task, Comment)
+ * using inline fragments and __typename
+ */
+export const searchAllQuery = gql.default(({ query }) =>
+  query`query SearchAll($query: String!, $limit: Int) {
+    search(query: $query, limit: $limit) {
+      __typename
+      ... on Employee {
+        id
+        name
+        email
+        role
+      }
+      ... on Project {
+        id
+        title
+        description
+        status
+      }
+      ... on Task {
+        id
+        title
+        completed
+        priority
+      }
+      ... on Comment {
+        id
+        body
+        createdAt
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: Union type with partial member selection
+ * Demonstrates selecting only some union members (Employee and Project from SearchResult)
+ * to verify that output type includes only selected members
+ */
+export const searchPartialQuery = gql.default(({ query }) =>
+  query`query SearchPartial($query: String!, $limit: Int) {
+    search(query: $query, limit: $limit) {
+      __typename
+      ... on Employee {
+        id
+        name
+        email
+        role
+        department {
+          id
+          name
+        }
+      }
+      ... on Project {
+        id
+        title
+        description
+        status
+        team {
+          id
+          name
+        }
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: ActivityItem union type
+ * Demonstrates ActivityItem union (Task, Comment, Project) with nested field selection
+ * and __typename discrimination
+ */
+export const activityFeedQuery = gql.default(({ query }) =>
+  query`query ActivityFeed($userId: ID!, $since: DateTime, $limit: Int) {
+    activityFeed(userId: $userId, since: $since, limit: $limit) {
+      __typename
+      ... on Task {
+        id
+        title
+        completed
+        priority
+        dueDate
+        assignee {
+          id
+          name
+        }
+        project {
+          id
+          title
+        }
+      }
+      ... on Comment {
+        id
+        body
+        createdAt
+        author {
+          id
+          name
+        }
+        task {
+          id
+          title
+        }
+      }
+      ... on Project {
+        id
+        title
+        description
+        status
+        priority
+        tasks(limit: 5) {
+          id
+          title
+          completed
+        }
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
 // Phase 2.3: Nested fragment composition
 // ============================================================================
 
