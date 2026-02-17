@@ -129,7 +129,7 @@ Provides topic-based guidance and code examples for soda-gql features.
 - `colocation`: Fragment-level data colocation patterns
 
 **What it provides:**
-- Links to relevant documentation files (`docs/guides/*.md`, `packages/core/README.md`)
+- Links to relevant playground examples and documentation
 - References to playground examples (`playgrounds/vite-react/src/graphql/*.ts`)
 - Tagged-template vs callback-builder decision tree
 - Code examples for common patterns
@@ -240,13 +240,6 @@ const result = Bun.spawnSync({
 
 ### User Guides
 - [Main README](../README.md) - Project overview and quick start
-- [LSP Workflow Guide](../docs/guides/lsp-workflow.md) - VS Code extension setup and usage
-- [Builder Flow](../docs/guides/builder-flow.md) - Understanding builder processing
-- [Plugin Selection](../docs/guides/plugin-selection.md) - Choosing the right build plugin
-- [Troubleshooting](../docs/troubleshooting.md) - Common issues and solutions
-
-### API Documentation
-- [Core Package README](../packages/core/README.md) - Core API reference
 - [Config Package README](../packages/config/README.md) - Configuration API
 
 ### Examples

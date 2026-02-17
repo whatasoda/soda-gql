@@ -84,11 +84,9 @@ Does it need field aliases?
 
 **Tagged template fragment:**
 ```typescript
-const userFields = fragment('User')`
-  id
-  name
-  email
-`;
+const userFields = gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User { id name email }`(),
+);
 ```
 
 **Callback builder fragment (with aliases):**
@@ -117,15 +115,15 @@ Does it need any of: aliases, $colocate, metadata callbacks?
 
 **Tagged template operation (simple):**
 ```typescript
-const getUserQuery = query`
-  query GetUser($id: ID!) {
+const getUserQuery = gql.default(({ query }) =>
+  query`query GetUser($id: ID!) {
     user(id: $id) {
       id
       name
       email
     }
-  }
-`;
+  }`(),
+);
 ```
 
 **Callback builder operation (with fragment spreads):**
@@ -148,11 +146,13 @@ const getUserQuery = gql.default(({ query, $var }) =>
 **Fragment → Fragment spreading:**
 ```typescript
 // ✅ Tagged template interpolation works
-const extendedFields = fragment('User')`
-  ${userBasicFields}
-  createdAt
-  updatedAt
-`;
+const extendedFields = gql.default(({ fragment }) =>
+  fragment`fragment ExtendedUser on User {
+    ...${userBasicFields}
+    createdAt
+    updatedAt
+  }`(),
+);
 ```
 
 **Operation → Fragment spreading:**
@@ -178,11 +178,13 @@ const query = gql.default(({ query }) =>
 
 **Fragment with variables:**
 ```typescript
-const userConditional = fragment('User', { includeEmail: 'Boolean!' })`
-  id
-  name
-  email @include(if: $includeEmail)
-`;
+const userConditional = gql.default(({ fragment }) =>
+  fragment`fragment UserConditional($includeEmail: Boolean!) on User {
+    id
+    name
+    email @include(if: $includeEmail)
+  }`(),
+);
 ```
 
 **Operation spreading fragment (callback builder):**
@@ -212,49 +214,60 @@ Use these templates based on the decision tree outcome:
 #### Template 1: Tagged Template Fragment
 
 ```typescript
-import { fragment } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+// Examples: "@/graphql-system", "./src/graphql/generated", etc.
+import { gql } from '<outdir-path>';
 
-export const <name>Fragment = fragment('<TypeName>')`
-  <field1>
-  <field2>
-  <nestedField> {
-    <subField1>
-  }
-`;
+export const <name>Fragment = gql.default(({ fragment }) =>
+  fragment`fragment <Name>Fragment on <TypeName> {
+    <field1>
+    <field2>
+    <nestedField> {
+      <subField1>
+    }
+  }`(),
+);
 ```
 
 #### Template 2: Tagged Template Fragment with Variables
 
 ```typescript
-import { fragment } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 
-export const <name>Fragment = fragment('<TypeName>', { <var1>: '<Type1>!', <var2>: '<Type2>' })`
-  <field1>
-  <field2> @include(if: $<var1>)
-  <field3> @skip(if: $<var2>)
-`;
+export const <name>Fragment = gql.default(({ fragment }) =>
+  fragment`fragment <Name>Fragment($<var1>: <Type1>!, $<var2>: <Type2>) on <TypeName> {
+    <field1>
+    <field2> @include(if: $<var1>)
+    <field3> @skip(if: $<var2>)
+  }`(),
+);
 ```
 
 #### Template 3: Fragment → Fragment Spread (Tagged Template)
 
 ```typescript
-import { fragment } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 import { <baseFragment> } from './<baseFragmentFile>';
 
-export const <name>Fragment = fragment('<TypeName>')`
-  ${<baseFragment>}
-  <additionalField1>
-  <additionalField2>
-`;
+export const <name>Fragment = gql.default(({ fragment }) =>
+  fragment`fragment <Name>Fragment on <TypeName> {
+    ...${<baseFragment>}
+    <additionalField1>
+    <additionalField2>
+  }`(),
+);
 ```
 
 #### Template 4: Tagged Template Operation (No Spreads)
 
 ```typescript
-import { query } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 
-export const <name>Query = query`
-  query <OperationName>($<var1>: <Type1>!, $<var2>: <Type2>) {
+export const <name>Query = gql.default(({ query }) =>
+  query`query <OperationName>($<var1>: <Type1>!, $<var2>: <Type2>) {
     <rootField>(<arg1>: $<var1>, <arg2>: $<var2>) {
       <field1>
       <field2>
@@ -262,14 +275,15 @@ export const <name>Query = query`
         <subField1>
       }
     }
-  }
-`;
+  }`(),
+);
 ```
 
 #### Template 5: Callback Builder Operation with Fragment Spreads
 
 ```typescript
-import { gql } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 import { <fragment1>, <fragment2> } from './<fragmentFile>';
 
 export const <name>Query = gql.default(({ query, $var }) =>
@@ -299,7 +313,8 @@ export const <name>Query = gql.default(({ query, $var }) =>
 #### Template 6: Callback Builder Operation with Multiple Fragment Spreads
 
 ```typescript
-import { gql } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 import { <fragment1>, <fragment2> } from './<fragmentFile>';
 
 export const <name>Query = gql.default(({ query, $var }) =>
@@ -324,22 +339,24 @@ export const <name>Query = gql.default(({ query, $var }) =>
 #### Template 7: Mutation Operation (Tagged Template)
 
 ```typescript
-import { mutation } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 
-export const <name>Mutation = mutation`
-  mutation <OperationName>($<inputVar>: <InputType>!) {
+export const <name>Mutation = gql.default(({ mutation }) =>
+  mutation`mutation <OperationName>($<inputVar>: <InputType>!) {
     <mutationField>(input: $<inputVar>) {
       <resultField1>
       <resultField2>
     }
-  }
-`;
+  }`(),
+);
 ```
 
 #### Template 8: Callback Builder Mutation with Fragment Spread
 
 ```typescript
-import { gql } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+import { gql } from '<outdir-path>';
 import { <resultFragment> } from './<fragmentFile>';
 
 export const <name>Mutation = gql.default(({ mutation, $var }) =>
@@ -360,20 +377,13 @@ export const <name>Mutation = gql.default(({ mutation, $var }) =>
 
 ### 9. Generate Import Statements
 
-Based on the chosen syntax:
+Only `gql` is exported from the generated runtime. The import path depends on the project's `outdir` config (from detect-project output).
 
-**Tagged template imports:**
+**Runtime import (all syntax styles):**
 ```typescript
-import { fragment } from './graphql/generated/runtime';
-// or
-import { query } from './graphql/generated/runtime';
-// or
-import { mutation } from './graphql/generated/runtime';
-```
-
-**Callback builder imports:**
-```typescript
-import { gql } from './graphql/generated/runtime';
+// Import path depends on project's outdir config (from detect-project output)
+// Examples: "@/graphql-system", "./src/graphql/generated", etc.
+import { gql } from '<outdir-path>';
 ```
 
 **Fragment imports (when spreading):**
@@ -553,7 +563,7 @@ Manual steps:
 | Variables in directives | Both (fragment must declare vars) |
 | Metadata callbacks | Callback builder (advanced) |
 | $colocate pattern | Callback builder |
-| Union member selection (`$on`) | Callback builder |
+| Union member selection (inline fragments) | Tagged template ✓ |
 
 **Key Principle:**
 - Fragments declare requirements (can have variables)
@@ -564,44 +574,47 @@ Manual steps:
 
 ### Union Type Handling
 
-When generating code for union types, use callback builder with `$on`:
+When generating code for union types, use standard GraphQL inline fragments in tagged templates:
 
 ```typescript
-const searchQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Search",
-    variables: { ...$var("term").String("!") },
-    fields: ({ f, $ }) => ({
-      ...f.search({ term: $.term })(() => ({
-        ...f.__typename(),
-        // Use $on for union member selection
-        ...$on("User", ({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-        ...$on("Post", ({ f }) => ({
-          ...f.id(),
-          ...f.title(),
-        })),
-      })),
-    }),
+const searchQuery = gql.default(({ query }) =>
+  query`query Search($term: String!) {
+    search(term: $term) {
+      __typename
+      ... on User {
+        id
+        name
+      }
+      ... on Post {
+        id
+        title
+      }
+    }
+  }`(),
+);
+```
+
+**Note:** Union types use standard GraphQL inline fragment syntax (`... on TypeName`). Always include `__typename` for type discrimination.
+
+### Metadata and Colocation
+
+For component colocation patterns, metadata is passed as an argument to the template call:
+
+**Static metadata:**
+```typescript
+const componentFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserCard on User { id name }`({
+    metadata: { component: "UserCard", cacheTTL: 300 },
   }),
 );
 ```
 
-**Note:** Union handling requires callback builder syntax. Always include `__typename` for type discrimination.
-
-### Metadata and Colocation
-
-For component colocation patterns:
-
+**Callback metadata (receives `$` context):**
 ```typescript
 const componentFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    metadata: { component: "UserCard" },
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
+  fragment`fragment UserCard($userId: ID!) on User { id name }`({
+    metadata: ({ $ }: { $: { userId: string } }) => ({
+      cacheKey: `user:${$.userId}`,
     }),
   }),
 );
@@ -639,11 +652,11 @@ Before completing this skill, ensure:
 
 **Generated code:**
 ```typescript
-export const userBasicFragment = fragment('User')`
-  id
-  name
-  email
-`;
+import { gql } from '<outdir-path>';
+
+export const userBasicFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserBasic on User { id name email }`(),
+);
 ```
 
 ### Example 2: Generate Query with Fragment Spread
@@ -661,6 +674,9 @@ export const userBasicFragment = fragment('User')`
 
 **Generated code:**
 ```typescript
+import { gql } from '<outdir-path>';
+import { userBasicFragment } from './fragments';
+
 export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
@@ -689,13 +705,15 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 
 **Generated code:**
 ```typescript
-export const updateTaskMutation = mutation`
-  mutation UpdateTask($taskId: ID!, $title: String, $completed: Boolean) {
+import { gql } from '<outdir-path>';
+
+export const updateTaskMutation = gql.default(({ mutation }) =>
+  mutation`mutation UpdateTask($taskId: ID!, $title: String, $completed: Boolean) {
     updateTask(id: $taskId, input: { title: $title, completed: $completed }) {
       id
       title
       completed
     }
-  }
-`;
+  }`(),
+);
 ```

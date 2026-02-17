@@ -59,27 +59,29 @@ For each topic, provide:
 
 ### Concept
 
-soda-gql supports tagged template syntax for writing GraphQL fragments and operations:
+soda-gql supports tagged template syntax for writing GraphQL fragments and operations. Only `gql` is exported from the generated runtime:
 
 ```typescript
-import { fragment, query } from './graphql/generated/runtime';
+import { gql } from "<outdir-path>"; // e.g. "@/graphql-system"
 
 // Fragment with tagged template
-const userFragment = fragment('User')`
-  id
-  name
-  email
-`;
+const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User {
+    id
+    name
+    email
+  }`(),
+);
 
 // Operation with tagged template
-const getUserQuery = query`
-  query GetUser($id: ID!) {
+const getUserQuery = gql.default(({ query }) =>
+  query`query GetUser($id: ID!) {
     user(id: $id) {
       id
       name
     }
-  }
-`;
+  }`(),
+);
 ```
 
 ### When to Use Tagged Template vs Callback Builder
@@ -91,16 +93,15 @@ const getUserQuery = query`
    - ❌ Use callback builder: Field aliases needed
 
 2. **Fragment spreading (Fragment → Fragment):**
-   - ✅ Use tagged template interpolation: `...${fragment}`
+   - ✅ Use tagged template interpolation: `...${otherFragment}`
 
 3. **Operation definition:**
-   - ✅ Use tagged template: No fragment spreads, no aliases, no $colocate
+   - ✅ Use tagged template: No fragment spreads via `.spread()`, no aliases, no $colocate
    - ❌ Use callback builder: Has fragment spreads via `.spread()`, aliases, or $colocate
 
 4. **Special features:**
-   - Union member selection → callback builder only
-   - Metadata callbacks → callback builder only
-   - Directive with variables → callback builder only
+   - Metadata callbacks with variable access → callback builder only
+   - Operations with `.spread()` → callback builder only
 
 ### Key Constraint
 
@@ -108,88 +109,110 @@ const getUserQuery = query`
 - `fragment\`field: ${value}\`` → ❌ Throws error
 - `query\`query { field(id: ${id}) }\`` → ❌ Throws error
 
+The only valid interpolation is fragment-to-fragment spreading: `fragment\`... ...${otherFragment} ...\``.
+
 Operations with fragment spreads MUST use callback builder syntax with `.spread()` instead of tagged template interpolation.
 
 ### Documentation References
 
-- **Core API:** `packages/core/README.md` — Fragment and operation APIs
-- **Builder flow:** `docs/guides/builder-flow.md` — Processing pipeline
 - **Callback-only features:** `playgrounds/vite-react/src/graphql/callback-builder-features.ts`
+- **Fragment patterns:** `playgrounds/vite-react/src/graphql/fragment-spread-patterns.md`
 
 ### Code Examples
 
 **Tagged template fragment:**
 ```typescript
 // playgrounds/vite-react/src/graphql/fragments.ts
-const userFields = fragment('User')`
-  id
-  name
-  email
-  createdAt
-`;
+const userFields = gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User {
+    id
+    name
+    email
+    createdAt
+  }`(),
+);
 ```
 
 **Tagged template operation (no spreads):**
 ```typescript
 // playgrounds/vite-react/src/graphql/operations.ts
-const simpleQuery = query`
-  query GetUsers {
+const simpleQuery = gql.default(({ query }) =>
+  query`query GetUsers {
     users {
       id
       name
     }
-  }
-`;
+  }`(),
+);
 ```
 
 **Callback builder operation (with spreads):**
 ```typescript
-// playgrounds/vite-react/src/graphql/operations.ts
-const userQuery = query.operation({
-  user: query.field({
-    args: { id: query.var('ID!') },
-    select: (user) => [
-      ...userFields.spread(user),
-      user.posts({ select: (post) => [post.id, post.title] }),
-    ],
+// playgrounds/vite-react/src/graphql/callback-builder-features.ts
+const userQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: {
+      ...$var("id").ID("!"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userFields.spread(),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Common Patterns
 
 ✅ **Simple fragment with tagged template:**
 ```typescript
-const fields = fragment('User')`id name email`;
+const fields = gql.default(({ fragment }) =>
+  fragment`fragment UserBasic on User {
+    id
+    name
+    email
+  }`(),
+);
 ```
 
 ✅ **Fragment spreading another fragment (tagged template):**
 ```typescript
-const extendedFields = fragment('User')`
-  ${userFields}
-  posts { id title }
-`;
+const extendedFields = gql.default(({ fragment }) =>
+  fragment`fragment ExtendedUser on User {
+    ...${userFields}
+    createdAt
+    updatedAt
+  }`(),
+);
 ```
 
 ❌ **Operation with fragment spread (WRONG - tagged template):**
 ```typescript
 // This will FAIL - cannot use tagged template interpolation for fragment spreads in operations
-const query = query`
-  query {
+const badQuery = gql.default(({ query }) =>
+  query`query {
     user {
       ${userFields}
     }
-  }
-`;
+  }`(),
+);
 ```
 
 ✅ **Operation with fragment spread (CORRECT - callback builder):**
 ```typescript
-const userQuery = query.operation({
-  user: query.field({
-    select: (user) => [...userFields.spread(user)],
+const userQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userFields.spread(),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Related Topics
@@ -216,13 +239,12 @@ Fragments define reusable field selections with type safety. They can be spread 
 
 **"Fragments declare requirements; operations declare contract"**
 
-- Fragments can declare variables they need: `fragment('User', { includeEmail: 'Boolean!' })`
+- Fragments can declare variables they need in the GraphQL definition
 - Operations must explicitly declare ALL variables, including fragment requirements
 - No auto-merge: operation variables are the source of truth
 
 ### Documentation References
 
-- **Core API:** `packages/core/README.md` — Fragment API documentation
 - **Spread patterns:** `playgrounds/vite-react/src/graphql/fragment-spread-patterns.md`
 - **Nested spreads:** `playgrounds/vite-react/src/graphql/nested-fragment-verification.ts`
 
@@ -230,67 +252,109 @@ Fragments define reusable field selections with type safety. They can be spread 
 
 **Simple fragment:**
 ```typescript
-const userBasic = fragment('User')`id name email`;
+const userBasic = gql.default(({ fragment }) =>
+  fragment`fragment UserBasic on User {
+    id
+    name
+    email
+  }`(),
+);
 ```
 
 **Fragment with variables:**
 ```typescript
-const userConditional = fragment('User', { includeEmail: 'Boolean!' })`
-  id
-  name
-  email @include(if: $includeEmail)
-`;
+const userConditional = gql.default(({ fragment }) =>
+  fragment`fragment ConditionalUser($includeEmail: Boolean!) on User {
+    id
+    name
+    email @include(if: $includeEmail)
+  }`(),
+);
 ```
 
 **Fragment spreading (Fragment → Fragment):**
 ```typescript
-const userExtended = fragment('User')`
-  ${userBasic}
-  createdAt
-  updatedAt
-`;
+const userExtended = gql.default(({ fragment }) =>
+  fragment`fragment ExtendedUser on User {
+    ...${userBasic}
+    createdAt
+    updatedAt
+  }`(),
+);
 ```
 
-**Operation spreading fragment:**
+**Operation spreading fragment (callback builder):**
 ```typescript
-const getUserQuery = query.operation({
-  user: query.field({
-    args: { id: query.var('ID!') },
-    select: (user) => [...userBasic.spread(user)],
+const getUserQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: {
+      ...$var("id").ID("!"),
+      ...$var("includeEmail").Boolean("!"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userConditional.spread({ includeEmail: $.includeEmail }),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Common Patterns
 
 ✅ **Fragment composition via tagged template:**
 ```typescript
-const baseFields = fragment('User')`id name`;
-const extendedFields = fragment('User')`${baseFields} email`;
+const baseFields = gql.default(({ fragment }) =>
+  fragment`fragment UserBase on User { id name }`(),
+);
+const extendedFields = gql.default(({ fragment }) =>
+  fragment`fragment UserExtended on User {
+    ...${baseFields}
+    email
+  }`(),
+);
 ```
 
 ✅ **Operation declares all variables:**
 ```typescript
-const query = query.operation(
-  { id: 'ID!', includeEmail: 'Boolean!' }, // ALL variables
-  {
-    user: query.field({
-      args: { id: query.var('ID!') },
-      select: (u) => [...userConditional.spread(u)],
+const getUserQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: {
+      ...$var("id").ID("!"),
+      ...$var("includeEmail").Boolean("!"), // ALL variables, including fragment requirements
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userConditional.spread({ includeEmail: $.includeEmail }),
+      })),
     }),
-  }
+  }),
 );
 ```
 
 ❌ **Auto-merge expectation (WRONG):**
 ```typescript
 // Fragment declares $includeEmail
-const frag = fragment('User', { includeEmail: 'Boolean!' })`...`;
+const frag = gql.default(({ fragment }) =>
+  fragment`fragment F($includeEmail: Boolean!) on User {
+    id name email @include(if: $includeEmail)
+  }`(),
+);
 
-// Operation does NOT auto-inherit variables
-const query = query.operation({ id: 'ID!' }, { // Missing includeEmail!
-  user: query.field({ select: (u) => [...frag.spread(u)] }),
-});
+// Operation does NOT auto-inherit variables — must declare includeEmail explicitly
+const badQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") }, // Missing includeEmail!
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...frag.spread(), // Will fail — $includeEmail not in scope
+      })),
+    }),
+  }),
+);
 ```
 
 ### Related Topics
@@ -317,96 +381,106 @@ Operations define the GraphQL query/mutation/subscription structure with variabl
 **Operations declare the contract:**
 - All variables must be declared at operation level
 - Fragment variables are NOT auto-merged
-- Use `query.var('Type')` to reference variables in args
+- In callback builder, use `$var("name").Type("!")` to declare variables
 
 ### Documentation References
 
-- **Core API:** `packages/core/README.md` — Operation APIs
-- **Builder flow:** `docs/guides/builder-flow.md` — Operation processing
 - **Examples:** `playgrounds/vite-react/src/graphql/operations.ts`
+- **Callback-only features:** `playgrounds/vite-react/src/graphql/callback-builder-features.ts`
 
 ### Code Examples
 
 **Simple query (tagged template):**
 ```typescript
-const getUsers = query`
-  query GetUsers {
+const getUsers = gql.default(({ query }) =>
+  query`query GetUsers {
     users {
       id
       name
     }
-  }
-`;
-```
-
-**Query with variables (callback builder):**
-```typescript
-const getUser = query.operation(
-  { id: 'ID!' },
-  {
-    user: query.field({
-      args: { id: query.var('ID!') },
-      select: (user) => [user.id, user.name, user.email],
-    }),
-  }
+  }`(),
 );
 ```
 
-**Query with fragment spread:**
+**Query with variables (tagged template):**
 ```typescript
-const getUserWithFragment = query.operation({
-  user: query.field({
-    args: { id: query.var('ID!') },
-    select: (user) => [...userFields.spread(user)],
-  }),
-});
+const getUser = gql.default(({ query }) =>
+  query`query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+    }
+  }`(),
+);
 ```
 
-**Mutation:**
+**Query with fragment spread (callback builder):**
 ```typescript
-const createUser = mutation.operation(
-  { input: 'CreateUserInput!' },
-  {
-    createUser: mutation.field({
-      args: { input: mutation.var('CreateUserInput!') },
-      select: (result) => [
-        result.success,
-        result.user({ select: (u) => [u.id, u.name] }),
-      ],
+const getUserWithFragment = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUserWithFragment",
+    variables: {
+      ...$var("id").ID("!"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userFields.spread(),
+      })),
     }),
-  }
+  }),
+);
+```
+
+**Mutation (tagged template):**
+```typescript
+const createUser = gql.default(({ mutation }) =>
+  mutation`mutation CreateUser($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      name
+    }
+  }`(),
 );
 ```
 
 ### Common Patterns
 
-✅ **Query with nested selections:**
+✅ **Simple query (tagged template):**
 ```typescript
-query.operation({
-  user: query.field({
-    select: (u) => [
-      u.id,
-      u.posts({ select: (p) => [p.id, p.title] }),
-    ],
-  }),
-});
+const getUserQuery = gql.default(({ query }) =>
+  query`query GetUser($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      posts {
+        id
+        title
+      }
+    }
+  }`(),
+);
 ```
 
-✅ **Operation with multiple variables:**
+✅ **Operation with multiple variables (callback builder):**
 ```typescript
-query.operation(
-  { id: 'ID!', limit: 'Int', offset: 'Int' },
-  {
-    user: query.field({
-      args: { id: query.var('ID!') },
-      select: (u) => [
-        u.posts({
-          args: { limit: query.var('Int'), offset: query.var('Int') },
-          select: (p) => [p.id, p.title],
-        }),
-      ],
+const getUserPosts = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUserPosts",
+    variables: {
+      ...$var("id").ID("!"),
+      ...$var("limit").Int(),
+      ...$var("offset").Int(),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...f.posts({ limit: $.limit, offset: $.offset })(({ f }) => ({
+          id: f.id,
+          title: f.title,
+        })),
+      })),
     }),
-  }
+  }),
 );
 ```
 
@@ -422,78 +496,110 @@ query.operation(
 
 ### Concept
 
-Union types in GraphQL represent a value that could be one of several types. soda-gql provides type-safe union member selection.
+Union types in GraphQL represent a value that could be one of several types. soda-gql handles union types using standard GraphQL inline fragment syntax in tagged templates.
 
 ### Union Member Selection
 
-**Callback builder only** — Union member selection requires callback builder syntax:
+Union handling uses standard GraphQL inline fragment syntax (`... on TypeName { fields }`). Always include `__typename` for type discrimination:
 
 ```typescript
-query.field({
-  select: (result) => [
-    result.__typename,
-    result.$on('User', (user) => [user.id, user.name]),
-    result.$on('Organization', (org) => [org.id, org.name, org.members]),
-  ],
-});
+const searchQuery = gql.default(({ query }) =>
+  query`query Search($term: String!) {
+    search(term: $term) {
+      __typename
+      ... on User {
+        id
+        name
+      }
+      ... on Organization {
+        id
+        name
+        members
+      }
+    }
+  }`(),
+);
 ```
 
 ### Documentation References
 
-- **Callback-only features:** `playgrounds/vite-react/src/graphql/callback-builder-features.ts`
 - **Union verification:** `playgrounds/vite-react/src/graphql/union-type-verification.ts`
+- **Callback-only features:** `playgrounds/vite-react/src/graphql/callback-builder-features.ts`
 
 ### Code Examples
 
-**Union field selection:**
+**Union field selection (tagged template):**
 ```typescript
-const searchQuery = query.operation({
-  search: query.field({
-    args: { term: query.var('String!') },
-    select: (result) => [
-      result.__typename,
-      result.$on('User', (user) => [user.id, user.name, user.email]),
-      result.$on('Post', (post) => [post.id, post.title, post.content]),
-    ],
-  }),
-});
+const searchQuery = gql.default(({ query }) =>
+  query`query Search($term: String!) {
+    search(term: $term) {
+      __typename
+      ... on User {
+        id
+        name
+        email
+      }
+      ... on Post {
+        id
+        title
+        content
+      }
+    }
+  }`(),
+);
 ```
 
-**Union with fragment spread:**
+**Union with fragment spread (callback builder):**
 ```typescript
-const userFields = fragment('User')`id name email`;
-const postFields = fragment('Post')`id title content`;
+const userFields = gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User { id name email }`(),
+);
+const postFields = gql.default(({ fragment }) =>
+  fragment`fragment PostFields on Post { id title content }`(),
+);
 
-const searchQuery = query.operation({
-  search: query.field({
-    select: (result) => [
-      result.__typename,
-      result.$on('User', (user) => [...userFields.spread(user)]),
-      result.$on('Post', (post) => [...postFields.spread(post)]),
-    ],
+const searchQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "Search",
+    variables: { ...$var("term").String("!") },
+    fields: ({ f, $ }) => ({
+      ...f.search({ term: $.term })(({ f }) => ({
+        __typename: f.__typename,
+        ...userFields.spread(),
+        ...postFields.spread(),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Common Patterns
 
 ✅ **Always include __typename:**
 ```typescript
-result => [
-  result.__typename, // Needed for type discrimination
-  result.$on('TypeA', ...),
-  result.$on('TypeB', ...),
-];
+const q = gql.default(({ query }) =>
+  query`query Search($term: String!) {
+    search(term: $term) {
+      __typename
+      ... on TypeA { id fieldA }
+      ... on TypeB { id fieldB }
+    }
+  }`(),
+);
 ```
 
 ✅ **Exhaustive member handling:**
 ```typescript
-// Handle all possible union members
-result => [
-  result.$on('User', (u) => [...]),
-  result.$on('Organization', (o) => [...]),
-  result.$on('Bot', (b) => [...]),
-];
+const q = gql.default(({ query }) =>
+  query`query SearchAll($term: String!) {
+    search(term: $term) {
+      __typename
+      ... on User { id name }
+      ... on Organization { id name }
+      ... on Bot { id label }
+    }
+  }`(),
+);
 ```
 
 ### Related Topics
@@ -518,20 +624,24 @@ GraphQL directives modify field behavior (@include, @skip) or provide metadata f
 
 **Tagged template with static values:**
 ```typescript
-fragment('User')`
-  id
-  name
-  email @include(if: true)
-`;
+gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User {
+    id
+    name
+    email @include(if: true)
+  }`(),
+);
 ```
 
-**Callback builder with variables:**
+**Tagged template with variables:**
 ```typescript
-fragment('User', { includeEmail: 'Boolean!' })`
-  id
-  name
-  email @include(if: $includeEmail)
-`;
+gql.default(({ fragment }) =>
+  fragment`fragment ConditionalUser($includeEmail: Boolean!) on User {
+    id
+    name
+    email @include(if: $includeEmail)
+  }`(),
+);
 ```
 
 ### Documentation References
@@ -542,48 +652,64 @@ fragment('User', { includeEmail: 'Boolean!' })`
 
 **@include directive:**
 ```typescript
-const conditionalFields = fragment('User', { showEmail: 'Boolean!' })`
-  id
-  name
-  email @include(if: $showEmail)
-`;
+const conditionalFields = gql.default(({ fragment }) =>
+  fragment`fragment ConditionalUser($showEmail: Boolean!) on User {
+    id
+    name
+    email @include(if: $showEmail)
+  }`(),
+);
 ```
 
 **@skip directive:**
 ```typescript
-const fields = fragment('User', { hideEmail: 'Boolean!' })`
-  id
-  name
-  email @skip(if: $hideEmail)
-`;
+const fields = gql.default(({ fragment }) =>
+  fragment`fragment SkipEmail($hideEmail: Boolean!) on User {
+    id
+    name
+    email @skip(if: $hideEmail)
+  }`(),
+);
 ```
 
 **Custom directive:**
 ```typescript
 // Assuming schema has: directive @sensitive on FIELD_DEFINITION
-const userFields = fragment('User')`
-  id
-  name
-  socialSecurityNumber @sensitive
-`;
+const userFields = gql.default(({ fragment }) =>
+  fragment`fragment SensitiveUser on User {
+    id
+    name
+    socialSecurityNumber @sensitive
+  }`(),
+);
 ```
 
 ### Common Patterns
 
-✅ **Conditional field inclusion:**
+✅ **Conditional field inclusion (callback builder with fragment spread):**
 ```typescript
-query.operation(
-  { includeDetails: 'Boolean!' },
-  {
-    user: query.field({
-      select: (u) => [
-        u.id,
-        u.name,
-        // Use fragment with @include directive
-        ...detailsFragment.spread(u),
-      ],
+const detailsFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserDetails($includeDetails: Boolean!) on User {
+    bio @include(if: $includeDetails)
+    website @include(if: $includeDetails)
+  }`(),
+);
+
+const getUserQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: {
+      ...$var("id").ID("!"),
+      ...$var("includeDetails").Boolean("!"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        id: f.id,
+        name: f.name,
+        ...detailsFragment.spread({ includeDetails: $.includeDetails }),
+      })),
     }),
-  }
+  }),
 );
 ```
 
@@ -598,19 +724,35 @@ query.operation(
 
 ### Concept
 
-soda-gql allows attaching metadata to fragments and fields for build-time processing (e.g., component mapping, documentation generation).
+soda-gql allows attaching metadata to fragments and operations for build-time processing (e.g., component mapping, documentation generation). Metadata is passed as an argument to the template call.
 
 ### Metadata APIs
 
-**Callback builder only** — Metadata requires callback builder syntax:
+**Static metadata** — passed as argument to the template call:
 
 ```typescript
-fragment('User').metadata(
-  { component: 'UserCard' },
-  (user) => [
-    user.id,
-    user.name.metadata({ label: 'Display Name' }),
-  ]
+const frag = gql.default(({ fragment }) =>
+  fragment`fragment UserFields on User {
+    id
+    name
+  }`({
+    metadata: { component: "UserCard" },
+  }),
+);
+```
+
+**Callback metadata** — receives variables for dynamic values:
+
+```typescript
+const frag = gql.default(({ fragment }) =>
+  fragment`fragment UserFields($userId: ID!) on User {
+    id
+    name
+  }`({
+    metadata: ({ $ }: { $: { userId: string } }) => ({
+      cacheKey: `user:${$.userId}`,
+    }),
+  }),
 );
 ```
 
@@ -621,49 +763,73 @@ fragment('User').metadata(
 
 ### Code Examples
 
-**Fragment-level metadata:**
+**Static fragment metadata:**
 ```typescript
-const userFragment = fragment('User').metadata(
-  { component: 'UserCard', description: 'User profile data' },
-  (user) => [user.id, user.name, user.email]
+const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserCard on User {
+    id
+    name
+    email
+  }`({
+    metadata: { component: "UserCard", description: "User profile data" },
+  }),
 );
 ```
 
-**Field-level metadata:**
+**Callback metadata with variables:**
 ```typescript
-const userFragment = fragment('User', (user) => [
-  user.id,
-  user.name.metadata({ label: 'Full Name', required: true }),
-  user.email.metadata({ label: 'Email Address', format: 'email' }),
-]);
+const userFragment = gql.default(({ fragment }) =>
+  fragment`fragment CachedUser($userId: ID!) on User {
+    id
+    name
+    email
+  }`({
+    metadata: ({ $ }: { $: { userId: string } }) => ({
+      cacheKey: `user:${$.userId}`,
+    }),
+  }),
+);
 ```
 
-**Nested metadata:**
+**Callback builder operation with metadata:**
 ```typescript
-const query = query.operation({
-  user: query.field({
-    select: (user) => [
-      user.posts({
-        select: (post) => [
-          post.id,
-          post.title.metadata({ maxLength: 100 }),
-        ],
-      }).metadata({ component: 'PostList' }),
-    ],
+const q = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") },
+    metadata: ({ $, fragmentMetadata }) => ({
+      entityId: $.id,
+      fragmentCount: fragmentMetadata?.length ?? 0,
+    }),
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...userFragment.spread(),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Common Patterns
 
 ✅ **Component mapping:**
 ```typescript
-fragment('User').metadata({ component: 'UserProfile' }, ...);
+gql.default(({ fragment }) =>
+  fragment`fragment UserProfile on User { id name }`({
+    metadata: { component: "UserProfile" },
+  }),
+);
 ```
 
-✅ **Field documentation:**
+✅ **Dynamic cache key:**
 ```typescript
-user.email.metadata({ description: 'User email for notifications' });
+gql.default(({ fragment }) =>
+  fragment`fragment CachedUser($id: ID!) on User { id name }`({
+    metadata: ({ $ }: { $: { id: string } }) => ({
+      cacheKey: `user:${$.id}`,
+    }),
+  }),
+);
 ```
 
 ### Related Topics
@@ -727,8 +893,7 @@ Setting up a new soda-gql project involves config file creation, schema setup, a
 ### Documentation References
 
 - **Main README:** `README.md` — Installation and quick start
-- **Core README:** `packages/core/README.md` — API overview
-- **Plugin selection:** `docs/guides/plugin-selection.md` — Choosing build plugin
+- **Playground examples:** `playgrounds/vite-react/src/graphql/` — Working examples of all features
 
 ### Common Issues
 
@@ -778,10 +943,6 @@ soda-gql provides LSP (Language Server Protocol) integration for real-time diagn
 **Other editors:**
 - Use language server client compatible with your editor
 - Point to soda-gql LSP server
-
-### Documentation References
-
-- **LSP workflow:** `docs/guides/lsp-workflow.md` — LSP development and usage
 
 ### LSP Diagnostics
 
@@ -850,8 +1011,6 @@ bun run soda-gql codegen schema --watch
 ### Documentation References
 
 - **Monorepo infrastructure:** `docs/guides/monorepo-infrastructure.md` — Build system
-- **Plugin selection:** `docs/guides/plugin-selection.md` — Build plugin setup
-- **Troubleshooting:** `docs/troubleshooting.md` — Common codegen issues
 
 ### Common Issues
 
@@ -882,27 +1041,33 @@ Fragment colocation places fragment definitions near the components that use the
 
 ### Colocation Patterns
 
-**$colocate directive:**
+**$colocate in callback builder spread:**
 ```typescript
-query.operation({
-  user: query.field({
-    select: (user) => [
-      user.id,
-      ...userFragment.spread(user, { $colocate: true }),
-    ],
+const userQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUser",
+    variables: { ...$var("id").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        id: f.id,
+        ...userFragment.spread({ $colocate: true }),
+      })),
+    }),
   }),
-});
+);
 ```
 
 **Component colocation:**
 ```typescript
 // UserCard.tsx
-export const userCardFragment = fragment('User')`
-  id
-  name
-  email
-  avatarUrl
-`;
+export const userCardFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserCardFields on User {
+    id
+    name
+    email
+    avatarUrl
+  }`(),
+);
 
 export function UserCard({ user }) {
   // Component uses fragment data
@@ -925,9 +1090,14 @@ Colocation enables:
 ✅ **Component-fragment pair:**
 ```typescript
 // UserProfile.tsx
-const userProfileFragment = fragment('User')`
-  id name email bio
-`;
+const userProfileFragment = gql.default(({ fragment }) =>
+  fragment`fragment UserProfile on User {
+    id
+    name
+    email
+    bio
+  }`(),
+);
 
 function UserProfile({ data }) {
   // Use fragment data
@@ -936,14 +1106,18 @@ function UserProfile({ data }) {
 
 ✅ **Fragment composition with colocation:**
 ```typescript
-const parentQuery = query.operation({
-  user: query.field({
-    select: (u) => [
-      ...profileFragment.spread(u, { $colocate: true }),
-      ...settingsFragment.spread(u, { $colocate: true }),
-    ],
+const parentQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetUserPage",
+    variables: { ...$var("id").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.user({ id: $.id })(({ f }) => ({
+        ...profileFragment.spread({ $colocate: true }),
+        ...settingsFragment.spread({ $colocate: true }),
+      })),
+    }),
   }),
-});
+);
 ```
 
 ### Related Topics
@@ -958,7 +1132,7 @@ const parentQuery = query.operation({
 If the user's question doesn't match a specific topic, use Grep to search documentation:
 
 1. Extract keywords from user's question
-2. Use Grep to search docs/guides/, packages/core/README.md, and playgrounds/
+2. Use Grep to search docs/guides/ and playgrounds/
 3. Read matching files and synthesize answer
 4. Reference specific documentation sections
 
