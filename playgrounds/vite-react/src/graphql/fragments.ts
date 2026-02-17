@@ -110,3 +110,122 @@ export const companyDetailFragment = gql.default(({ fragment }) =>
     }
   }`(),
 );
+
+// ============================================================================
+// Phase 1.2: Fragment variables and arguments
+// ============================================================================
+
+/**
+ * Fragment with required variable
+ * Demonstrates fragment with required ID variable using Fragment Arguments RFC syntax
+ */
+export const employeeByIdFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeById($id: ID!) on Query {
+    employee(id: $id) {
+      id
+      name
+      email
+      role
+    }
+  }`(),
+);
+
+/**
+ * Fragment with optional variable
+ * Demonstrates fragment with optional Int variable for limit parameter
+ */
+export const projectTasksFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectTasks($limit: Int) on Project {
+    id
+    title
+    tasks(limit: $limit) {
+      id
+      title
+      completed
+    }
+  }`(),
+);
+
+/**
+ * Fragment with enum variable
+ * Demonstrates fragment with enum variable for filtering by employee role
+ */
+export const employeesByRoleFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeesByRole($role: EmployeeRole) on Company {
+    id
+    name
+    employees(role: $role, limit: 20) {
+      id
+      name
+      email
+      role
+    }
+  }`(),
+);
+
+/**
+ * Fragment with complex input variable
+ * Demonstrates fragment with complex input type variable for filtering
+ */
+export const filteredProjectsFragment = gql.default(({ fragment }) =>
+  fragment`fragment FilteredProjects($filter: ProjectFilterInput) on Query {
+    projects(filter: $filter, limit: 50) {
+      id
+      title
+      status
+      priority
+      team {
+        id
+        name
+      }
+    }
+  }`(),
+);
+
+/**
+ * Fragment with multiple variables
+ * Demonstrates fragment with multiple variables of different types
+ */
+export const employeeTasksDetailFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeTasksDetail($employeeId: ID!, $completed: Boolean, $taskLimit: Int) on Query {
+    employee(id: $employeeId) {
+      id
+      name
+      role
+      tasks(completed: $completed, limit: $taskLimit) {
+        id
+        title
+        completed
+        priority
+        dueDate
+        project {
+          id
+          title
+          status
+        }
+      }
+    }
+  }`(),
+);
+
+/**
+ * Fragment with variable used in nested field arguments
+ * Demonstrates variable usage deep in the fragment body
+ */
+export const teamProjectTasksFragment = gql.default(({ fragment }) =>
+  fragment`fragment TeamProjectTasks($projectStatus: ProjectStatus, $taskLimit: Int) on Team {
+    id
+    name
+    projects(status: $projectStatus, limit: 10) {
+      id
+      title
+      status
+      tasks(limit: $taskLimit) {
+        id
+        title
+        completed
+        priority
+      }
+    }
+  }`(),
+);
