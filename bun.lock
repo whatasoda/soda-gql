@@ -284,7 +284,7 @@
       ],
     },
     "packages/vscode-extension": {
-      "name": "soda-gql",
+      "name": "soda-gql-vscode-extension",
       "version": "0.11.26",
       "dependencies": {
         "@soda-gql/lsp": "workspace:*",
@@ -2865,7 +2865,7 @@
 
     "slugify": ["slugify@1.6.6", "", {}, "sha512-h+z7HKHYXj6wJU+AnS/+IH8Uh9fdcX1Lrhg1/VMdf9PwoBQXFcXiAdsy2tSK0P6gKwJLXp02r90ahUCqHk9rrw=="],
 
-    "soda-gql": ["soda-gql@workspace:packages/vscode-extension"],
+    "soda-gql-vscode-extension": ["soda-gql-vscode-extension@workspace:packages/vscode-extension"],
 
     "sort-keys": ["sort-keys@1.1.2", "", { "dependencies": { "is-plain-obj": "^1.0.0" } }, "sha512-vzn8aSqKgytVik0iwdBEi+zevbTYZogewTUM6dtpmGwEcdzbub/TX4bCzRhebDCRC3QzXgJsLRKB2V/Oof7HXg=="],
 
