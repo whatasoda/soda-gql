@@ -316,3 +316,59 @@ export const companyDetailConditionalFragment = gql.default(({ fragment }) =>
     }
   }`(),
 );
+
+// ============================================================================
+// Phase 2.3: Nested fragment composition (3-level fragment hierarchy)
+// ============================================================================
+// Fragment composition demonstrates multi-level fragment spreading where:
+// - Fragment C (innermost): Basic task fields
+// - Fragment B (middle): Spreads Fragment C and adds more task fields
+// - Fragment A (outermost): Spreads Fragment B and adds project fields
+// - Operation: Spreads Fragment A
+
+/**
+ * Fragment C (innermost level): Basic task fields
+ * Demonstrates the innermost fragment in a 3-level composition
+ * Variables: none
+ */
+export const taskBasicFieldsFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskBasicFields on Task {
+    id
+    title
+    completed
+  }`(),
+);
+
+/**
+ * Fragment B (middle level): Extended task fields, spreads Fragment C
+ * Demonstrates middle-level fragment composition using direct interpolation
+ * Variables: $includePriority (optional boolean for @include directive)
+ */
+export const taskExtendedFieldsFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskExtendedFields($includePriority: Boolean) on Task {
+    ...${taskBasicFieldsFragment}
+    priority @include(if: $includePriority)
+    dueDate
+  }`(),
+);
+
+/**
+ * Fragment A (outermost level): Task with project context, spreads Fragment B
+ * Demonstrates outermost fragment composition using direct interpolation
+ * Variables: $includePriority (passed to Fragment B), $includeAssignee (own variable)
+ */
+export const taskWithProjectFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskWithProject($includePriority: Boolean, $includeAssignee: Boolean) on Task {
+    ...${taskExtendedFieldsFragment}
+    assignee @include(if: $includeAssignee) {
+      id
+      name
+      email
+    }
+    project {
+      id
+      title
+      status
+    }
+  }`(),
+);

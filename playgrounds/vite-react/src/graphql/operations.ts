@@ -4,6 +4,7 @@ import {
   employeeTasksDetailFragment,
   projectTasksFragment,
   taskDetailConditionalFragment,
+  taskWithProjectFragment,
 } from "./fragments";
 
 /**
@@ -456,6 +457,49 @@ export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
         ...f.projects({ status: $.projectStatus, limit: 10 })(() => ({
           ...projectTasksFragment.spread({ limit: $.limit }),
         })),
+      })),
+    }),
+  }),
+);
+
+// ============================================================================
+// Phase 2.3: Nested fragment composition
+// ============================================================================
+
+/**
+ * Phase 2.3: 3-level nested fragment composition
+ *
+ * This example demonstrates 3-level fragment composition using tagged template interpolation:
+ * - Fragment C (taskBasicFieldsFragment): innermost - basic task fields (id, title, completed)
+ * - Fragment B (taskExtendedFieldsFragment): spreads C via ...${C} + adds priority, dueDate
+ * - Fragment A (taskWithProjectFragment): spreads B via ...${B} + adds assignee, project
+ * - Operation: spreads A using callback builder syntax
+ *
+ * Variable propagation through all 3 levels:
+ * - Fragment C: no variables
+ * - Fragment B: $includePriority (optional Boolean)
+ * - Fragment A: $includePriority (passed to B), $includeAssignee (own variable)
+ * - Operation: declares all variables explicitly ($taskId, $includePriority, $includeAssignee)
+ *
+ * Key observations:
+ * - Fragment-to-fragment spreading uses tagged template interpolation: ...${fragment}
+ * - Operation-to-fragment spreading uses callback builder: ...fragment.spread({...})
+ * - Parent operation must explicitly declare ALL variables from the entire fragment hierarchy
+ */
+export const getTaskWithNestedFragmentsQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetTaskWithNestedFragments",
+    variables: {
+      ...$var("taskId").ID("!"),
+      ...$var("includePriority").Boolean("?"),
+      ...$var("includeAssignee").Boolean("?"),
+    },
+    fields: ({ f, $ }) => ({
+      ...f.task({ id: $.taskId })(() => ({
+        ...taskWithProjectFragment.spread({
+          includePriority: $.includePriority,
+          includeAssignee: $.includeAssignee,
+        }),
       })),
     }),
   }),
