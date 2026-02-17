@@ -372,3 +372,69 @@ export const taskWithProjectFragment = gql.default(({ fragment }) =>
     }
   }`(),
 );
+
+// ============================================================================
+// Phase 3.2: Metadata attachment
+// ============================================================================
+
+/**
+ * Fragment with static metadata
+ * Demonstrates attaching static metadata to a fragment using tagged template syntax
+ */
+export const employeeWithStaticMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeWithStaticMetadata on Employee {
+    id
+    name
+    email
+    role
+  }`({
+    metadata: {
+      cacheTTL: 300,
+      requiresAuth: true,
+      tags: ["employee", "user-info"],
+    },
+  }),
+);
+
+/**
+ * Fragment with callback metadata
+ * Demonstrates metadata callback that receives variable context
+ */
+export const projectWithCallbackMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectWithCallbackMetadata($projectId: ID!, $priority: Int) on Project {
+    id
+    title
+    description
+    status
+    priority
+  }`({
+    metadata: ({ $ }: { $: { projectId: string; priority?: number | null } }) => ({
+      cacheKey: `project:${$.projectId}`,
+      isPriorityQuery: $.priority !== undefined,
+      headers: {
+        "X-Project-Id": $.projectId,
+      },
+    }),
+  }),
+);
+
+/**
+ * Fragment with metadata demonstrating variable access
+ * Shows metadata callback accessing fragment variables
+ */
+export const taskWithMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskWithMetadata($taskId: ID!, $includeComments: Boolean) on Task {
+    id
+    title
+    completed
+    priority
+    dueDate
+  }`({
+    metadata: ({ $ }: { $: { taskId: string; includeComments?: boolean | null } }) => ({
+      entityType: "task",
+      entityId: $.taskId,
+      includesRelations: $.includeComments === true,
+      cacheStrategy: $.includeComments ? "no-cache" : "cache-first",
+    }),
+  }),
+);

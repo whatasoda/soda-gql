@@ -2,8 +2,11 @@ import { gql } from "@/graphql-system";
 import {
   employeeFragment,
   employeeTasksDetailFragment,
+  employeeWithStaticMetadataFragment,
   projectTasksFragment,
+  projectWithCallbackMetadataFragment,
   taskDetailConditionalFragment,
+  taskWithMetadataFragment,
   taskWithProjectFragment,
 } from "./fragments";
 
@@ -625,6 +628,121 @@ export const getTaskWithNestedFragmentsQuery = gql.default(({ query, $var }) =>
         ...taskWithProjectFragment.spread({
           includePriority: $.includePriority,
           includeAssignee: $.includeAssignee,
+        }),
+      })),
+    }),
+  }),
+);
+
+// ============================================================================
+// Phase 3.2: Metadata attachment
+// ============================================================================
+
+/**
+ * Query with static metadata
+ * Demonstrates attaching static metadata to a tagged template query
+ */
+export const getEmployeeWithStaticMetadataQuery = gql.default(({ query }) =>
+  query`query GetEmployeeWithStaticMetadata($employeeId: ID!) {
+    employee(id: $employeeId) {
+      id
+      name
+      email
+      role
+    }
+  }`({
+    metadata: {
+      operationType: "read",
+      cacheTTL: 600,
+      requiresAuth: true,
+      tags: ["employee", "query"],
+    },
+  }),
+);
+
+/**
+ * Query with callback metadata
+ * Demonstrates metadata callback that receives operation variable context
+ */
+export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
+  query`query GetProjectWithCallbackMetadata($projectId: ID!, $includeTeam: Boolean!) {
+    project(id: $projectId) {
+      id
+      title
+      description
+      status
+      team @include(if: $includeTeam) {
+        id
+        name
+      }
+    }
+  }`({
+    metadata: ({ $ }: { $: { projectId: string; includeTeam: boolean } }) => ({
+      operationType: "read",
+      entityType: "project",
+      entityId: $.projectId,
+      includesRelations: $.includeTeam,
+      cacheKey: `project:${$.projectId}:team=${$.includeTeam}`,
+      headers: {
+        "X-Entity-Type": "Project",
+        "X-Entity-Id": $.projectId,
+      },
+    }),
+  }),
+);
+
+/**
+ * Operation with metadata propagation from fragment
+ * Demonstrates how fragment metadata propagates to the parent operation
+ * through fragmentMetadata in the operation's metadata callback
+ */
+export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetEmployeeWithFragmentMetadata",
+    variables: { ...$var("employeeId").ID("!") },
+    metadata: ({ $, fragmentMetadata }) => ({
+      operationType: "read",
+      entityType: "employee",
+      entityId: $.employeeId,
+      hasFragmentMetadata: fragmentMetadata !== undefined && fragmentMetadata.length > 0,
+      fragmentCount: fragmentMetadata?.length ?? 0,
+      // Access first fragment's metadata if available
+      fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
+    }),
+    fields: ({ f, $ }) => ({
+      ...f.employee({ id: $.employeeId })(() => ({
+        ...employeeWithStaticMetadataFragment.spread(),
+      })),
+    }),
+  }),
+);
+
+/**
+ * Operation spreading fragment with callback metadata
+ * Demonstrates operation accessing fragment metadata from a fragment with callback metadata
+ */
+export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetProjectWithFragmentCallbackMetadata",
+    variables: {
+      ...$var("projectId").ID("!"),
+      ...$var("priority").Int("?"),
+    },
+    metadata: ({ $, fragmentMetadata }) => ({
+      operationType: "read",
+      entityType: "project",
+      entityId: $.projectId,
+      priority: $.priority,
+      // Fragment metadata propagation
+      fragmentMetadataCount: fragmentMetadata?.length ?? 0,
+      hasFragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey !== undefined,
+      fragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey,
+    }),
+    fields: ({ f, $ }) => ({
+      ...f.project({ id: $.projectId })(() => ({
+        ...projectWithCallbackMetadataFragment.spread({
+          projectId: $.projectId,
+          priority: $.priority,
         }),
       })),
     }),
