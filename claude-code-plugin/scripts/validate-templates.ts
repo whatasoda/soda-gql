@@ -157,9 +157,8 @@ function validateWithLsp(targetPath: string | null, cwd: string): ValidationResu
       if (configResult.isErr()) {
         console.log(JSON.stringify({
           success: false,
-          diagnostics: [],
-          summary: { total: 0, errors: 1, warnings: 0 },
-          error: 'Failed to load config: ' + configResult.error.message
+          diagnostics: [{ file: '<config>', line: 1, column: 1, severity: 'error', message: 'Failed to load config: ' + configResult.error.message }],
+          summary: { total: 1, errors: 1, warnings: 0 }
         }));
         process.exit(0);
       }
@@ -169,9 +168,8 @@ function validateWithLsp(targetPath: string | null, cwd: string): ValidationResu
       if (resolverResult.isErr()) {
         console.log(JSON.stringify({
           success: false,
-          diagnostics: [],
-          summary: { total: 0, errors: 1, warnings: 0 },
-          error: 'Failed to create schema resolver: ' + resolverResult.error.message
+          diagnostics: [{ file: '<schema>', line: 1, column: 1, severity: 'error', message: 'Failed to create schema resolver: ' + resolverResult.error.message }],
+          summary: { total: 1, errors: 1, warnings: 0 }
         }));
         process.exit(0);
       }
@@ -274,9 +272,8 @@ function validateWithLsp(targetPath: string | null, cwd: string): ValidationResu
     } catch (error) {
       console.log(JSON.stringify({
         success: false,
-        diagnostics: [],
-        summary: { total: 0, errors: 1, warnings: 0 },
-        error: error.message,
+        diagnostics: [{ file: '<runtime>', line: 1, column: 1, severity: 'error', message: error.message }],
+        summary: { total: 1, errors: 1, warnings: 0 },
         lspNotAvailable: true
       }));
     }
