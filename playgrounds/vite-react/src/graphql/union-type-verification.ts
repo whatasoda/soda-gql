@@ -8,7 +8,7 @@
  * 3. Partial member selection only includes selected members in output type
  */
 
-import type { searchAllQuery, searchPartialQuery, activityFeedQuery } from "./operations";
+import type { activityFeedQuery, searchAllQuery, searchPartialQuery } from "./operations";
 
 // ============================================================================
 // SearchResult union - All members
@@ -38,8 +38,7 @@ function handleProject(result: SearchAllOutput) {
     const _id: string = result.id;
     const _title: string = result.title;
     const _description: string | null = result.description;
-    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" =
-      result.status;
+    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = result.status;
   }
 }
 
@@ -89,8 +88,7 @@ function handlePartialSearch(result: SearchPartialOutput) {
     const _id: string = result.id;
     const _title: string = result.title;
     const _description: string | null = result.description;
-    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" =
-      result.status;
+    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = result.status;
     const _teamId: string = result.team.id;
     const _teamName: string = result.team.name;
   }
@@ -138,11 +136,8 @@ function handleActivityItem(item: ActivityItemOutput) {
     const _id: string = item.id;
     const _title: string = item.title;
     const _description: string | null = item.description;
-    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" =
-      item.status;
+    const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = item.status;
     const _priority: number | null = item.priority;
     const _tasks: Array<{ id: string; title: string; completed: boolean }> = item.tasks;
   }
 }
-
-export {};

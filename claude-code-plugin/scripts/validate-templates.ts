@@ -348,7 +348,7 @@ function validateWithCli(targetPath: string | null, cwd: string): ValidationResu
     }
 
     // Try to parse simple error messages
-    if (line.includes("Error:") || line.includes("error")) {
+    if (line.includes("Error:")) {
       diagnostics.push({
         file: targetPath ? resolve(cwd, targetPath) : cwd,
         line: 1,

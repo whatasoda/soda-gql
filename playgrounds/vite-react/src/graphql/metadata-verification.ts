@@ -11,7 +11,12 @@
  * - Both static and callback metadata work correctly
  */
 
-import { getEmployeeWithStaticMetadataQuery, getProjectWithCallbackMetadataQuery, getEmployeeWithFragmentMetadataQuery, getProjectWithFragmentCallbackMetadataQuery } from "./operations";
+import {
+  getEmployeeWithFragmentMetadataQuery,
+  getEmployeeWithStaticMetadataQuery,
+  getProjectWithCallbackMetadataQuery,
+  getProjectWithFragmentCallbackMetadataQuery,
+} from "./operations";
 
 // ============================================================================
 // Operation metadata verification
@@ -56,7 +61,7 @@ const operationCallbackMetadata = getProjectWithCallbackMetadataQuery.metadata a
 
 // Invoke the callback with test data
 const operationCallbackResult = operationCallbackMetadata({
-  $: { projectId: "proj_abc", includeTeam: true }
+  $: { projectId: "proj_abc", includeTeam: true },
 });
 
 // Verify the result structure (type-level verification)

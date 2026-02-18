@@ -2,16 +2,14 @@
  * Type testing for Phase 1.1: Basic field selection with tagged templates
  * This file verifies that type inference works correctly for the new operations
  */
-import {
-  getTaskBasicQuery,
-  getProjectWithTasksQuery,
+
+import type { commentFragment, projectBasicFragment } from "./graphql/fragments";
+import type {
   createProjectMutation,
+  getProjectWithTasksQuery,
+  getTaskBasicQuery,
   taskUpdatedSubscription,
 } from "./graphql/operations";
-import {
-  projectBasicFragment,
-  commentFragment,
-} from "./graphql/fragments";
 
 // Query: Basic scalar fields
 type TaskBasicInput = typeof getTaskBasicQuery.$infer.input;

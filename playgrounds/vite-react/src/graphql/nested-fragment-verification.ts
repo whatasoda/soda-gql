@@ -7,7 +7,7 @@
  * 3. Type inference works end-to-end
  */
 
-import { getTaskWithNestedFragmentsQuery } from "./operations";
+import type { getTaskWithNestedFragmentsQuery } from "./operations";
 
 // Verify input type includes all variables from the fragment hierarchy
 type Input = typeof getTaskWithNestedFragmentsQuery.$infer.input;

@@ -7,19 +7,19 @@
  * 3. Directive fields are properly typed
  */
 
-import {
-  getTaskWithSkipQuery,
-  getProjectWithIncludeQuery,
-  getEmployeeConditionalQuery,
-  getTeamNestedDirectivesQuery,
-  updateTaskWithDirectivesMutation,
-} from "./operations";
-import {
+import type {
+  companyDetailConditionalFragment,
   employeeConditionalFragment,
   projectConditionalFragment,
   taskDetailConditionalFragment,
-  companyDetailConditionalFragment,
 } from "./fragments";
+import type {
+  getEmployeeConditionalQuery,
+  getProjectWithIncludeQuery,
+  getTaskWithSkipQuery,
+  getTeamNestedDirectivesQuery,
+  updateTaskWithDirectivesMutation,
+} from "./operations";
 
 // ============================================================================
 // Type verification: Operations with directives

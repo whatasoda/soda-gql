@@ -72,9 +72,9 @@ import { employeeFragment } from "./fragments";
  * This example uses callback builder syntax for operations (query.operation)
  * while fragments use tagged templates
  */
-export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
+export const getEmployeeWithFragmentCallbackQuery = gql.default(({ query, $var }) =>
   query.operation({
-    name: "GetEmployeeWithFragment",
+    name: "GetEmployeeWithFragmentCallback",
     variables: {
       ...$var("employeeId").ID("!"),
       ...$var("taskLimit").Int("?"),
@@ -124,10 +124,7 @@ export const getEmployeeWithMetadataAggregationQuery = gql.default(({ query, $va
       operationType: "read",
       entityId: $.employeeId,
       // Aggregate cache hints from all spread fragments
-      maxCacheTTL: Math.max(
-        0,
-        ...(fragmentMetadata?.map((meta) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? []),
-      ),
+      maxCacheTTL: Math.max(0, ...(fragmentMetadata?.map((meta) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? [])),
       fragmentCount: fragmentMetadata?.length ?? 0,
     }),
     fields: ({ f, $ }) => ({

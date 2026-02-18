@@ -2,7 +2,7 @@
  * Simple runtime test for fragment spread with explicit variables
  */
 
-import {
+import type {
   getEmployeeWithFragmentQuery,
   getProjectWithMultipleFragmentsQuery,
   getTeamProjectsWithFragmentQuery,

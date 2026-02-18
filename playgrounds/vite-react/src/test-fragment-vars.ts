@@ -2,12 +2,12 @@
  * Type testing for Phase 1.2: Fragment variables and arguments
  * This file verifies that fragment variable types are correctly inferred
  */
-import {
+import type {
   employeeByIdFragment,
-  projectTasksFragment,
   employeesByRoleFragment,
-  filteredProjectsFragment,
   employeeTasksDetailFragment,
+  filteredProjectsFragment,
+  projectTasksFragment,
   teamProjectTasksFragment,
 } from "./graphql/fragments";
 

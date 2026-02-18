@@ -6,7 +6,6 @@ import {
   projectTasksFragment,
   projectWithCallbackMetadataFragment,
   taskDetailConditionalFragment,
-  taskWithMetadataFragment,
   taskWithProjectFragment,
 } from "./fragments";
 
