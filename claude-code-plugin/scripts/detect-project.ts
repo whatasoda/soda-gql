@@ -122,9 +122,7 @@ function detectProject(cwd: string = process.cwd()): ProjectInfo {
     try {
       const output = result.stdout.toString().trim();
       const info = JSON.parse(output);
-      if (info.found) {
-        return info;
-      }
+      return info;
     } catch (e) {
       // Fall through to fallback mode
     }

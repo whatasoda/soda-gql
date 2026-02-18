@@ -49,7 +49,8 @@ const operationCallbackMetadata = getProjectWithCallbackMetadataQuery.metadata a
   includesRelations: boolean;
   cacheKey: string;
   headers: {
-    "X-Include-Team": string;
+    "X-Entity-Type": string;
+    "X-Entity-Id": string;
   };
 };
 
@@ -66,7 +67,8 @@ const _operationCallbackCheck: typeof operationCallbackResult = {
   includesRelations: true,
   cacheKey: "project:proj_abc:team=true",
   headers: {
-    "X-Include-Team": "true",
+    "X-Entity-Type": "Project",
+    "X-Entity-Id": "proj_abc",
   },
 };
 

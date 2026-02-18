@@ -181,7 +181,7 @@ function validateWithLsp(targetPath: string | null, cwd: string): ValidationResu
       const docManager = createDocumentManager(helper);
 
       // Determine files to validate
-      const targetPath = ${targetPath ? `'${targetPath}'` : 'null'};
+      const targetPath = ${targetPath ? JSON.stringify(targetPath) : 'null'};
       const filesToValidate = [];
 
       if (targetPath) {
@@ -322,7 +322,8 @@ function validateWithCli(targetPath: string | null, cwd: string): ValidationResu
     stderr: "pipe",
   });
 
-  const output = (result.stderr || result.stdout).toString();
+  const stderr = result.stderr.toString();
+  const output = stderr.length > 0 ? stderr : result.stdout.toString();
   const diagnostics: DiagnosticInfo[] = [];
 
   // Parse error output
