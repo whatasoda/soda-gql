@@ -1,0 +1,6 @@
+{
+  "name": "soda-gql",
+  "owner": "soda-gql",
+  "version": "0.1.0",
+  "pluginRoot": "./claude-code-plugin"
+}

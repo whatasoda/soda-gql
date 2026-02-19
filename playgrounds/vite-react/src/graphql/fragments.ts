@@ -25,3 +25,416 @@ export const employeeFragment = gql.default(({ fragment }) =>
 export const taskFragment = gql.default(({ fragment }) =>
   fragment`fragment TaskFragment on Task { id title completed priority dueDate }`(),
 );
+
+// ============================================================================
+// Phase 1.1: Additional basic fragments demonstrating field selection patterns
+// ============================================================================
+
+/**
+ * Project fragment: Scalar and nested fields
+ * Demonstrates selecting scalar fields alongside nested object fields
+ */
+export const projectBasicFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectBasic on Project {
+    id
+    title
+    description
+    status
+    priority
+    createdAt
+    updatedAt
+  }`(),
+);
+
+/**
+ * Comment fragment: Multi-level nesting
+ * Demonstrates selecting nested author and task fields
+ */
+export const commentFragment = gql.default(({ fragment }) =>
+  fragment`fragment CommentDetail on Comment {
+    id
+    body
+    createdAt
+    author {
+      id
+      name
+      email
+    }
+    task {
+      id
+      title
+    }
+  }`(),
+);
+
+/**
+ * Department fragment: Interface field selection
+ * Demonstrates selecting fields from interfaces (Node, Timestamped)
+ */
+export const departmentFragment = gql.default(({ fragment }) =>
+  fragment`fragment DepartmentInfo on Department {
+    id
+    name
+    budget
+    createdAt
+    updatedAt
+    manager {
+      id
+      name
+      role
+    }
+  }`(),
+);
+
+/**
+ * Company fragment: Deep nested lists
+ * Demonstrates selecting nested lists of objects with arguments
+ */
+export const companyDetailFragment = gql.default(({ fragment }) =>
+  fragment`fragment CompanyDetail on Company {
+    id
+    name
+    industry
+    departments {
+      id
+      name
+      teams {
+        id
+        name
+      }
+    }
+    employees(limit: 10) {
+      id
+      name
+      role
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 1.2: Fragment variables and arguments
+// ============================================================================
+
+/**
+ * Fragment with required variable
+ * Demonstrates fragment with required ID variable using Fragment Arguments RFC syntax
+ */
+export const employeeByIdFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeById($id: ID!) on Query {
+    employee(id: $id) {
+      id
+      name
+      email
+      role
+    }
+  }`(),
+);
+
+/**
+ * Fragment with optional variable
+ * Demonstrates fragment with optional Int variable for limit parameter
+ */
+export const projectTasksFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectTasks($limit: Int) on Project {
+    id
+    title
+    tasks(limit: $limit) {
+      id
+      title
+      completed
+    }
+  }`(),
+);
+
+/**
+ * Fragment with enum variable
+ * Demonstrates fragment with enum variable for filtering by employee role
+ */
+export const employeesByRoleFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeesByRole($role: EmployeeRole) on Company {
+    id
+    name
+    employees(role: $role, limit: 20) {
+      id
+      name
+      email
+      role
+    }
+  }`(),
+);
+
+/**
+ * Fragment with complex input variable
+ * Demonstrates fragment with complex input type variable for filtering
+ */
+export const filteredProjectsFragment = gql.default(({ fragment }) =>
+  fragment`fragment FilteredProjects($filter: ProjectFilterInput) on Query {
+    projects(filter: $filter, limit: 50) {
+      id
+      title
+      status
+      priority
+      team {
+        id
+        name
+      }
+    }
+  }`(),
+);
+
+/**
+ * Fragment with multiple variables
+ * Demonstrates fragment with multiple variables of different types
+ */
+export const employeeTasksDetailFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeTasksDetail($employeeId: ID!, $completed: Boolean, $taskLimit: Int) on Query {
+    employee(id: $employeeId) {
+      id
+      name
+      role
+      tasks(completed: $completed, limit: $taskLimit) {
+        id
+        title
+        completed
+        priority
+        dueDate
+        project {
+          id
+          title
+          status
+        }
+      }
+    }
+  }`(),
+);
+
+/**
+ * Fragment with variable used in nested field arguments
+ * Demonstrates variable usage deep in the fragment body
+ */
+export const teamProjectTasksFragment = gql.default(({ fragment }) =>
+  fragment`fragment TeamProjectTasks($projectStatus: ProjectStatus, $taskLimit: Int) on Team {
+    id
+    name
+    projects(status: $projectStatus, limit: 10) {
+      id
+      title
+      status
+      tasks(limit: $taskLimit) {
+        id
+        title
+        completed
+        priority
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 1.3: Directives in tagged templates
+// ============================================================================
+
+/**
+ * Fragment with @skip directive
+ * Demonstrates using @skip directive on fragment fields with a variable
+ */
+export const employeeConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeConditional($skipEmail: Boolean!) on Employee {
+    id
+    name
+    email @skip(if: $skipEmail)
+    role
+    tasks(limit: 5) {
+      id
+      title
+    }
+  }`(),
+);
+
+/**
+ * Fragment with @include directive
+ * Demonstrates using @include directive on fragment fields with a variable
+ */
+export const projectConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectConditional($includeTeam: Boolean!) on Project {
+    id
+    title
+    description
+    status
+    team @include(if: $includeTeam) {
+      id
+      name
+    }
+  }`(),
+);
+
+/**
+ * Fragment with both @skip and @include directives
+ * Demonstrates using multiple directives in a single fragment
+ */
+export const taskDetailConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskDetailConditional($includeProject: Boolean!, $skipAssignee: Boolean!) on Task {
+    id
+    title
+    completed
+    priority
+    dueDate
+    project @include(if: $includeProject) {
+      id
+      title
+      status
+    }
+    assignee @skip(if: $skipAssignee) {
+      id
+      name
+      email
+    }
+  }`(),
+);
+
+/**
+ * Fragment with nested directives
+ * Demonstrates using directives on nested fields within a fragment
+ */
+export const companyDetailConditionalFragment = gql.default(({ fragment }) =>
+  fragment`fragment CompanyDetailConditional($includeDepartments: Boolean!, $skipEmployees: Boolean!) on Company {
+    id
+    name
+    industry
+    departments @include(if: $includeDepartments) {
+      id
+      name
+      teams {
+        id
+        name
+      }
+    }
+    employees(limit: 10) @skip(if: $skipEmployees) {
+      id
+      name
+      role
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 2.3: Nested fragment composition (3-level fragment hierarchy)
+// ============================================================================
+// Fragment composition demonstrates multi-level fragment spreading where:
+// - Fragment C (innermost): Basic task fields
+// - Fragment B (middle): Spreads Fragment C and adds more task fields
+// - Fragment A (outermost): Spreads Fragment B and adds project fields
+// - Operation: Spreads Fragment A
+
+/**
+ * Fragment C (innermost level): Basic task fields
+ * Demonstrates the innermost fragment in a 3-level composition
+ * Variables: none
+ */
+export const taskBasicFieldsFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskBasicFields on Task {
+    id
+    title
+    completed
+  }`(),
+);
+
+/**
+ * Fragment B (middle level): Extended task fields, spreads Fragment C
+ * Demonstrates middle-level fragment composition using direct interpolation
+ * Variables: $includePriority (optional boolean for @include directive)
+ */
+export const taskExtendedFieldsFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskExtendedFields($includePriority: Boolean) on Task {
+    ...${taskBasicFieldsFragment}
+    priority @include(if: $includePriority)
+    dueDate
+  }`(),
+);
+
+/**
+ * Fragment A (outermost level): Task with project context, spreads Fragment B
+ * Demonstrates outermost fragment composition using direct interpolation
+ * Variables: $includePriority (passed to Fragment B), $includeAssignee (own variable)
+ */
+export const taskWithProjectFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskWithProject($includePriority: Boolean, $includeAssignee: Boolean) on Task {
+    ...${taskExtendedFieldsFragment}
+    assignee @include(if: $includeAssignee) {
+      id
+      name
+      email
+    }
+    project {
+      id
+      title
+      status
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 3.2: Metadata attachment
+// ============================================================================
+
+/**
+ * Fragment with static metadata
+ * Demonstrates attaching static metadata to a fragment using tagged template syntax
+ */
+export const employeeWithStaticMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment EmployeeWithStaticMetadata on Employee {
+    id
+    name
+    email
+    role
+  }`({
+    metadata: {
+      cacheTTL: 300,
+      requiresAuth: true,
+      tags: ["employee", "user-info"],
+    },
+  }),
+);
+
+/**
+ * Fragment with callback metadata
+ * Demonstrates metadata callback that receives variable context
+ */
+export const projectWithCallbackMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment ProjectWithCallbackMetadata($projectId: ID!, $priority: Int) on Project {
+    id
+    title
+    description
+    status
+    priority
+  }`({
+    metadata: ({ $ }: { $: { projectId: string; priority?: number | null } }) => ({
+      cacheKey: `project:${$.projectId}`,
+      isPriorityQuery: $.priority !== undefined,
+      headers: {
+        "X-Project-Id": $.projectId,
+      },
+    }),
+  }),
+);
+
+/**
+ * Fragment with metadata demonstrating variable access
+ * Shows metadata callback accessing fragment variables
+ */
+export const taskWithMetadataFragment = gql.default(({ fragment }) =>
+  fragment`fragment TaskWithMetadata($taskId: ID!, $includeComments: Boolean) on Task {
+    id
+    title
+    completed
+    priority
+    dueDate
+  }`({
+    metadata: ({ $ }: { $: { taskId: string; includeComments?: boolean | null } }) => ({
+      entityType: "task",
+      entityId: $.taskId,
+      includesRelations: $.includeComments === true,
+      cacheStrategy: $.includeComments ? "no-cache" : "cache-first",
+    }),
+  }),
+);

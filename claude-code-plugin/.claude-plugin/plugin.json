@@ -1,0 +1,11 @@
+{
+  "name": "soda-gql-skills",
+  "version": "0.1.0",
+  "description": "Claude Code skills for soda-gql GraphQL development",
+  "skills": [
+    "skills/gql-codegen",
+    "skills/gql-scaffold",
+    "skills/gql-doctor",
+    "skills/gql-guide"
+  ]
+}
