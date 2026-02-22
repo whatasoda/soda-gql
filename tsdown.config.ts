@@ -129,6 +129,27 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   }
 };
 
+// LSP package (bin entry added manually — not using @x-bin.ts to avoid exposing it as a package export)
+const lspConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/lsp", {
+    externals: [
+      "vscode-languageserver",
+      "vscode-languageserver/node",
+      "vscode-languageserver-textdocument",
+      "graphql-language-service",
+    ],
+  });
+  return {
+    ...base,
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: true,
+  };
+})();
+
 export default defineConfig([
   // Core runtime packages
   {
@@ -221,22 +242,7 @@ export default defineConfig([
     clean: true,
   },
 
-  // LSP package
-  {
-    ...configure("@soda-gql/lsp", {
-      externals: [
-        "vscode-languageserver",
-        "vscode-languageserver/node",
-        "vscode-languageserver-textdocument",
-        "graphql-language-service",
-      ],
-    }),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    treeshake: false,
-    clean: true,
-  },
+  lspConfig,
 
   // Transformer packages
   {

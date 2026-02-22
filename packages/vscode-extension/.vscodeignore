@@ -3,6 +3,7 @@ src/
 *.ts
 tsconfig*.json
 build.js
+package-extension.sh
 
 # Development files
 node_modules/

@@ -86,6 +86,7 @@
   },
   "scripts": {
     "build": "node build.js",
-    "package": "vsce package --no-dependencies"
+    "package": "./package-extension.sh",
+    "package:install": "./package-extension.sh -o soda-gql.vsix && code --install-extension soda-gql.vsix && rm soda-gql.vsix"
   }
 }
