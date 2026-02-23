@@ -125,7 +125,7 @@ export const createGqlElementComposer = <
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const transformDocument = adapter?.transformDocument;
-  // Fragment: pure tagged template function (callback builders removed in Phase 3)
+  // Fragment: curried tagged template function — fragment("name", "type")`{ fields }`
   const fragment = createFragmentTaggedTemplate(schema);
   const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
     schema,
@@ -133,7 +133,7 @@ export const createGqlElementComposer = <
     transformDocument,
   );
 
-  // Hybrid context: tagged template functions with .operation and .compat properties
+  // Hybrid context: curried tagged template functions with .operation and .compat properties
   const context = {
     fragment,
     query: Object.assign(createOperationTaggedTemplate(schema, "query", metadataAdapter, transformDocument), {

@@ -173,14 +173,40 @@ const extractFromTaggedTemplate = (
   converter: SwcSpanConverter,
   templates: ExtractedTemplate[],
 ): void => {
-  // Tag must be an identifier matching an operation kind
-  if (tagged.tag.type !== "Identifier") {
+  // Tag can be:
+  // - Identifier: query`...` (old syntax, kept for backwards compat)
+  // - CallExpression: query("name")`...` or fragment("name", "type")`...` (new curried syntax)
+  let kind: string;
+  if (tagged.tag.type === "Identifier") {
+    kind = tagged.tag.value;
+  } else if (tagged.tag.type === "CallExpression") {
+    const tagCall = tagged.tag as CallExpression;
+    if (tagCall.callee.type === "Identifier") {
+      kind = tagCall.callee.value;
+    } else {
+      return;
+    }
+  } else {
     return;
   }
 
-  const kind = tagged.tag.value;
   if (!isOperationKind(kind)) {
     return;
+  }
+
+  // Extract element name and type name from curried call arguments
+  let elementName: string | undefined;
+  let typeName: string | undefined;
+  if (tagged.tag.type === "CallExpression") {
+    const tagCall = tagged.tag as CallExpression;
+    const firstArg = tagCall.arguments[0]?.expression;
+    if (firstArg?.type === "StringLiteral") {
+      elementName = (firstArg as { value: string }).value;
+    }
+    const secondArg = tagCall.arguments[1]?.expression;
+    if (secondArg?.type === "StringLiteral") {
+      typeName = (secondArg as { value: string }).value;
+    }
   }
 
   const { quasis, expressions } = tagged.template;
@@ -231,6 +257,8 @@ const extractFromTaggedTemplate = (
     schemaName,
     kind,
     content,
+    ...(elementName !== undefined ? { elementName } : {}),
+    ...(typeName !== undefined ? { typeName } : {}),
   });
 };
 
@@ -312,6 +340,26 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
  * Index fragment definitions from extracted templates.
  * Parses each fragment template to extract FragmentDefinitionNode for cross-file resolution.
  */
+/**
+ * Reconstruct full GraphQL source from an extracted template.
+ * For curried syntax (new), prepends the definition header from tag call arguments.
+ * For old syntax, returns content as-is.
+ */
+export const reconstructGraphql = (template: ExtractedTemplate): string => {
+  const content = template.content;
+
+  if (template.elementName) {
+    if (template.kind === "fragment" && template.typeName) {
+      // fragment("Name", "Type")`($vars) { ... }` -> fragment Name on Type ($vars) { ... }
+      return `fragment ${template.elementName} on ${template.typeName} ${content}`;
+    }
+    // query("Name")`($vars) { ... }` -> query Name ($vars) { ... }
+    return `${template.kind} ${template.elementName} ${content}`;
+  }
+
+  return content;
+};
+
 const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], source: string): readonly IndexedFragment[] => {
   const fragments: IndexedFragment[] = [];
 
@@ -320,7 +368,9 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
       continue;
     }
 
-    const { preprocessed } = preprocessFragmentArgs(template.content);
+    const reconstructed = reconstructGraphql(template);
+    const headerLen = reconstructed.length - template.content.length;
+    const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
     try {
       const ast = parse(preprocessed, { noLocation: false });
@@ -334,6 +384,7 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
             content: preprocessed,
             contentRange: template.contentRange,
             tsSource: source,
+            headerLen,
           });
         }
       }
@@ -434,18 +485,21 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
             continue;
           }
 
-          const { preprocessed } = preprocessFragmentArgs(template.content);
+          const reconstructed = reconstructGraphql(template);
+          const headerLen = reconstructed.length - template.content.length;
+          const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
           try {
             const ast = parse(preprocessed, { noLocation: false });
             visit(ast, {
               FragmentSpread(node) {
                 if (node.name.value === fragmentName && node.name.loc) {
+                  // Adjust offset from reconstructed space to template-content space
                   locations.push({
                     uri,
                     tsSource: state.source,
                     template,
-                    nameOffset: node.name.loc.start,
+                    nameOffset: node.name.loc.start - headerLen,
                     nameLength: fragmentName.length,
                   });
                 }
@@ -456,11 +510,12 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
             const pattern = new RegExp(`\\.\\.\\.${fragmentName}\\b`, "g");
             let match: RegExpExecArray | null = null;
             while ((match = pattern.exec(preprocessed)) !== null) {
+              // Adjust offset from reconstructed space to template-content space
               locations.push({
                 uri,
                 tsSource: state.source,
                 template,
-                nameOffset: match.index + 3, // skip "..."
+                nameOffset: match.index + 3 - headerLen, // skip "..."
                 nameLength: fragmentName.length,
               });
             }

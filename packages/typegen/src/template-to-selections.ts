@@ -79,6 +79,21 @@ export const convertTemplatesToSelections = (
 };
 
 /**
+ * Reconstruct full GraphQL source from an extracted template.
+ * For curried syntax (new), prepends the definition header from tag call arguments.
+ * For old syntax, returns content as-is.
+ */
+const reconstructGraphql = (template: ExtractedTemplate): string => {
+  if (template.elementName) {
+    if (template.kind === "fragment" && template.typeName) {
+      return `fragment ${template.elementName} on ${template.typeName} ${template.content}`;
+    }
+    return `${template.kind} ${template.elementName} ${template.content}`;
+  }
+  return template.content;
+};
+
+/**
  * Convert a fragment template into FieldSelectionData.
  */
 const convertFragmentTemplate = (
@@ -87,12 +102,13 @@ const convertFragmentTemplate = (
   filePath: string,
 ): { id: CanonicalId; data: FieldSelectionData } | null => {
   const schemaIndex = createSchemaIndexFromSchema(schema);
+  const graphqlSource = reconstructGraphql(template);
 
   // Extract variable definitions from Fragment Arguments syntax
-  const variableDefinitions = extractFragmentVariables(template.content, schemaIndex);
+  const variableDefinitions = extractFragmentVariables(graphqlSource, schemaIndex);
 
   // Preprocess to strip Fragment Arguments
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const { preprocessed } = preprocessFragmentArgs(graphqlSource);
 
   const document = parseGraphql(preprocessed);
   const fragDef = document.definitions.find((d) => d.kind === Kind.FRAGMENT_DEFINITION);
@@ -130,7 +146,8 @@ const convertOperationTemplate = (
   schema: AnyGraphqlSchema,
   filePath: string,
 ): { id: CanonicalId; data: FieldSelectionData } | null => {
-  const document = parseGraphql(template.content);
+  const graphqlSource = reconstructGraphql(template);
+  const document = parseGraphql(graphqlSource);
   const opDef = document.definitions.find((d) => d.kind === Kind.OPERATION_DEFINITION);
   if (!opDef || opDef.kind !== Kind.OPERATION_DEFINITION) {
     return null;

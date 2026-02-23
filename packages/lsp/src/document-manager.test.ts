@@ -49,7 +49,6 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
     expect(t.content).toContain("user(id: $id)");
   });
 
@@ -74,7 +73,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("fragment");
-    expect(t.content).toContain("fragment UserFields");
+    expect(t.content).toContain("$showEmail");
   });
 
   test("handles metadata chaining", () => {
@@ -86,7 +85,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
+    expect(t.content).toContain('user(id: "1")');
   });
 
   test("handles block body with return", () => {
@@ -98,7 +97,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
+    expect(t.content).toContain('user(id: "1")');
   });
 
   test("returns empty templates for file without templates", () => {
@@ -222,6 +221,92 @@ export const GetUser = gql.default(({ query }) => query\`
     const found = dm.findTemplateAtOffset(uri, midOffset);
     expect(found).toBeDefined();
     expect(found!.content).toBe(t.content);
+  });
+
+  describe("curried tagged template extraction", () => {
+    test("extracts elementName from curried query syntax", () => {
+      const dm = createDocumentManager(helper);
+      const source = `import { gql } from "@/graphql-system";\nexport const GetUser = gql.default(({ query }) => query("GetUser")\`($id: ID!) { user(id: $id) { id name } }\`);`;
+      const state = dm.update("/test/curried-query.ts", 1, source);
+
+      expect(state.templates).toHaveLength(1);
+      const t = state.templates[0]!;
+      expect(t.kind).toBe("query");
+      expect(t.elementName).toBe("GetUser");
+      expect(t.typeName).toBeUndefined();
+      expect(t.content).toBe("($id: ID!) { user(id: $id) { id name } }");
+    });
+
+    test("extracts elementName and typeName from curried fragment syntax", () => {
+      const dm = createDocumentManager(helper);
+      const source = `import { gql } from "@/graphql-system";\nexport const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`{ id name email }\`);`;
+      const state = dm.update("/test/curried-fragment.ts", 1, source);
+
+      expect(state.templates).toHaveLength(1);
+      const t = state.templates[0]!;
+      expect(t.kind).toBe("fragment");
+      expect(t.elementName).toBe("UserFields");
+      expect(t.typeName).toBe("User");
+      expect(t.content).toBe("{ id name email }");
+    });
+
+    test("extracts curried mutation syntax", () => {
+      const dm = createDocumentManager(helper);
+      const source = `import { gql } from "@/graphql-system";\nexport const CreateUser = gql.default(({ mutation }) => mutation("CreateUser")\`($input: CreateUserInput!) { createUser(input: $input) { id } }\`);`;
+      const state = dm.update("/test/curried-mutation.ts", 1, source);
+
+      expect(state.templates).toHaveLength(1);
+      const t = state.templates[0]!;
+      expect(t.kind).toBe("mutation");
+      expect(t.elementName).toBe("CreateUser");
+      expect(t.typeName).toBeUndefined();
+    });
+
+    test("curried template with interpolation preserves elementName", () => {
+      const dm = createDocumentManager(helper);
+      const source = `import { gql } from "@/graphql-system";
+import { userFields } from "./fragment";
+
+export const GetUser = gql.default(({ query }) => query("GetUser")\`
+  {
+    user(id: "1") {
+      ...\${userFields}
+      name
+    }
+  }
+\`);`;
+      const state = dm.update("/test/curried-with-interpolation.ts", 1, source);
+
+      expect(state.templates).toHaveLength(1);
+      const t = state.templates[0]!;
+      expect(t.elementName).toBe("GetUser");
+      expect(t.content).toContain("__FRAG_SPREAD_0__");
+      expect(t.content).toContain("name");
+    });
+
+    test("contentRange maps correctly for curried syntax (fixture)", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFixture("simple-query.ts");
+      const uri = resolve(fixturesDir, "simple-query.ts");
+      const state = dm.update(uri, 1, source);
+
+      const t = state.templates[0]!;
+      expect(t.elementName).toBe("GetUser");
+      const extracted = source.slice(t.contentRange.start, t.contentRange.end);
+      expect(extracted).toBe(t.content);
+    });
+
+    test("fragment index works with curried syntax", () => {
+      const dm = createDocumentManager(helper);
+      const fragmentSource = readFixture("fragment-definition.ts");
+      const fragmentUri = resolve(fixturesDir, "fragment-definition.ts");
+      dm.update(fragmentUri, 1, fragmentSource);
+
+      const all = dm.getAllFragments("default");
+      expect(all).toHaveLength(1);
+      expect(all[0]!.fragmentName).toBe("UserFields");
+      expect(all[0]!.headerLen).toBeGreaterThan(0);
+    });
   });
 
   test("remove clears document state", () => {

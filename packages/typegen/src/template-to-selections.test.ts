@@ -236,4 +236,94 @@ describe("convertTemplatesToSelections", () => {
     expect(result.selections.has("/src/a.ts::A" as never)).toBe(true);
     expect(result.selections.has("/src/b.ts::B" as never)).toBe(true);
   });
+
+  describe("curried syntax (new API)", () => {
+    it("converts curried query template", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/queries.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "query",
+              elementName: "GetUser",
+              content: "($id: ID!) { user(id: $id) { id name } }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/queries.ts::GetUser" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("operation");
+      if (selection!.type === "operation") {
+        expect(selection!.operationName).toBe("GetUser");
+        expect(selection!.operationType).toBe("query");
+      }
+    });
+
+    it("converts curried fragment template with type name", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/fragments.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "fragment",
+              elementName: "UserFields",
+              typeName: "User",
+              content: "{ id name }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/fragments.ts::UserFields" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("fragment");
+      if (selection!.type === "fragment") {
+        expect(selection!.key).toBe("UserFields");
+        expect(selection!.typename).toBe("User");
+      }
+    });
+
+    it("converts curried mutation template", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/mutations.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "mutation",
+              elementName: "UpdateUser",
+              content: "($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/mutations.ts::UpdateUser" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("operation");
+      if (selection!.type === "operation") {
+        expect(selection!.operationType).toBe("mutation");
+        expect(selection!.operationName).toBe("UpdateUser");
+      }
+    });
+  });
 });

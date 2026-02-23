@@ -12,7 +12,7 @@ const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicT
 describe("tagged template operation integration", () => {
   describe("query", () => {
     it("creates query operation from tagged template", () => {
-      const GetUser = gql(({ query }) => query`query GetUser($id: ID!) { user(id: $id) { id name } }`());
+      const GetUser = gql(({ query }) => query("GetUser")`($id: ID!) { user(id: $id) { id name } }`());
       expect(GetUser.operationType).toBe("query");
       expect(GetUser.operationName).toBe("GetUser");
       expect(GetUser.variableNames).toEqual(["id"]);
@@ -22,7 +22,7 @@ describe("tagged template operation integration", () => {
     });
 
     it("generates correct document", () => {
-      const GetUser = gql(({ query }) => query`query GetUser { user(id: "1") { id name } }`());
+      const GetUser = gql(({ query }) => query("GetUser")`{ user(id: "1") { id name } }`());
       const printed = print(GetUser.document);
       expect(printed).toContain("query GetUser");
       expect(printed).toContain("id");
@@ -33,7 +33,7 @@ describe("tagged template operation integration", () => {
   describe("mutation", () => {
     it("creates mutation operation from tagged template", () => {
       const UpdateUser = gql(({ mutation }) =>
-        mutation`mutation UpdateUser($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }`(),
+        mutation("UpdateUser")`($id: ID!, $name: String!) { updateUser(id: $id, name: $name) { id name } }`(),
       );
       expect(UpdateUser.operationType).toBe("mutation");
       expect(UpdateUser.operationName).toBe("UpdateUser");
@@ -44,9 +44,7 @@ describe("tagged template operation integration", () => {
 
   describe("subscription", () => {
     it("creates subscription from tagged template", () => {
-      const OnUserUpdated = gql(({ subscription }) =>
-        subscription`subscription OnUserUpdated { userUpdated(userId: "1") { id name } }`(),
-      );
+      const OnUserUpdated = gql(({ subscription }) => subscription("OnUserUpdated")`{ userUpdated(userId: "1") { id name } }`());
       expect(OnUserUpdated.operationType).toBe("subscription");
       expect(OnUserUpdated.operationName).toBe("OnUserUpdated");
     });
@@ -56,7 +54,7 @@ describe("tagged template operation integration", () => {
     it("$ callback receives variable context object", () => {
       // Fragment for spreading
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
           name
         }`(),
@@ -64,7 +62,7 @@ describe("tagged template operation integration", () => {
 
       // Operation with variable and callback interpolation
       const GetUser = gql(({ query }) =>
-        query`query GetUser($userId: ID!) {
+        query("GetUser")`($userId: ID!) {
           user(id: $userId) {
             ...${({ $ }) => {
               // $ is provided as a context object (Record<string, AnyVarRef>)
@@ -83,7 +81,7 @@ describe("tagged template operation integration", () => {
     it("$ callback allows accessing variable refs for fragment spread", () => {
       // Fragment without its own variables - will receive variable assignments via spread
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
           name
         }`(),
@@ -91,7 +89,7 @@ describe("tagged template operation integration", () => {
 
       // Operation that provides $ context to callback
       const GetUser = gql(({ query }) =>
-        query`query GetUser($userId: ID!) {
+        query("GetUser")`($userId: ID!) {
           user(id: "1") {
             ...${({ $ }) => {
               // Access $ to verify it contains the operation's variables
@@ -147,13 +145,13 @@ describe("tagged template operation integration", () => {
       // 3. Template literal type parsing would be extremely complex
 
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser($userId: ID!) {
+        query("GetUser")`($userId: ID!) {
           user(id: $userId) {
             ...${({ $ }) => {
               // $ is Record<string, AnyVarRef> - no compile-time variable name checking
@@ -173,7 +171,7 @@ describe("tagged template operation integration", () => {
   describe("metadata", () => {
     it("handles metadata chaining", () => {
       const GetUser = gql(({ query }) =>
-        query`query GetUser { user(id: "1") { id } }`({
+        query("GetUser")`{ user(id: "1") { id } }`({
           metadata: { headers: { "X-Test": "value" } },
         }),
       );
@@ -181,7 +179,7 @@ describe("tagged template operation integration", () => {
     });
 
     it("metadata is undefined when not provided", () => {
-      const GetUser = gql(({ query }) => query`query GetUser { user(id: "1") { id } }`());
+      const GetUser = gql(({ query }) => query("GetUser")`{ user(id: "1") { id } }`());
       expect(GetUser.metadata).toBeUndefined();
     });
   });
@@ -191,7 +189,7 @@ describe("tagged template operation integration", () => {
       expect(() => {
         gql(({ query }) => {
           const name = "test";
-          return (query as any)`query ${name} { user(id: "1") { id } }`();
+          return (query as any)("TestOp")`${name} { user(id: "1") { id } }`();
         });
       }).toThrow("Tagged templates only accept Fragment instances or callback functions as interpolated values");
     });
@@ -220,14 +218,14 @@ describe("tagged template operation integration", () => {
   describe("interpolation-based fragment spread", () => {
     it("operation with direct fragment interpolation produces correct query", () => {
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
           name
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${userFields}
           }
@@ -246,13 +244,13 @@ describe("tagged template operation integration", () => {
     it("callback interpolation works in operation context", () => {
       // Simple fragment without variables that we'll spread via callback
       const userIdField = gql(({ fragment }) =>
-        fragment`fragment UserIdField on User {
+        fragment("UserIdField", "User")`{
           id
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${() => userIdField.spread({})}
             name
@@ -272,14 +270,14 @@ describe("tagged template operation integration", () => {
     it("variable definitions are merged from interpolated fragments", () => {
       // Fragment with a variable
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields($userId: ID!) on User {
+        fragment("UserFields", "User")`($userId: ID!) {
           id
           name
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${userFields}
           }
@@ -295,19 +293,19 @@ describe("tagged template operation integration", () => {
 
     it("multiple interpolated fragments work correctly", () => {
       const userIdField = gql(({ fragment }) =>
-        fragment`fragment UserIdField on User {
+        fragment("UserIdField", "User")`{
           id
         }`(),
       );
 
       const userNameField = gql(({ fragment }) =>
-        fragment`fragment UserNameField on User {
+        fragment("UserNameField", "User")`{
           name
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${userIdField}
             ...${userNameField}
@@ -322,14 +320,14 @@ describe("tagged template operation integration", () => {
 
     it("generated GraphQL document is valid", () => {
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
           name
         }`(),
       );
 
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${userFields}
           }
@@ -349,7 +347,7 @@ describe("tagged template operation integration", () => {
     it("supports static metadata with interpolated fragments", () => {
       // Fragment with metadata
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields on User {
+        fragment("UserFields", "User")`{
           id
           name
         }`({
@@ -359,7 +357,7 @@ describe("tagged template operation integration", () => {
 
       // Operation with both interpolated fragment and static metadata
       const GetUser = gql(({ query }) =>
-        query`query GetUser {
+        query("GetUser")`{
           user(id: "1") {
             ...${userFields}
           }
@@ -376,7 +374,7 @@ describe("tagged template operation integration", () => {
     it("fragment metadata callback receives $ context from parent variables", () => {
       // Fragment with variables and metadata callback
       const userFields = gql(({ fragment }) =>
-        fragment`fragment UserFields($userId: ID!) on User {
+        fragment("UserFields", "User")`($userId: ID!) {
           id
           name
         }`({

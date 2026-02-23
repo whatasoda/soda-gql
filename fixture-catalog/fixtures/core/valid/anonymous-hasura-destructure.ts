@@ -4,6 +4,6 @@ import { gql } from "../../../graphql-system";
 // Using gql.default instead of gql.hasura (hasura is schema-specific)
 const { $infer } = gql
   .default(({ query }) =>
-    query`query ClientProjectListPage_Query { __typename }`(),
+    query("ClientProjectListPage_Query")`{ __typename }`(),
   )
   .attach([]);

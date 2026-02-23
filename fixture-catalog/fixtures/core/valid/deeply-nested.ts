@@ -4,7 +4,7 @@ class Outer {
   method() {
     const obj = {
       nested: {
-        deep: gql.default(({ fragment }) => fragment`fragment DeepFragment on Employee { id }`()),
+        deep: gql.default(({ fragment }) => fragment("DeepFragment", "Employee")`{ id }`()),
       },
     };
   }

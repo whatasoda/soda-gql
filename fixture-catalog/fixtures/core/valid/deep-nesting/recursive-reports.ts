@@ -4,7 +4,7 @@ import { gql } from "../../../../graphql-system";
  * Recursive relation fixture: Employee → reports → Employee
  */
 export const employeeHierarchyFragment = gql.default(({ fragment }) =>
-  fragment`fragment EmployeeHierarchyFragment on Employee {
+  fragment("EmployeeHierarchyFragment", "Employee")`{
     id
     name
     role
@@ -29,7 +29,7 @@ export const employeeHierarchyFragment = gql.default(({ fragment }) =>
  * Recursive relation query
  */
 export const employeeTreeQuery = gql.default(({ query }) =>
-  query`query EmployeeTree($employeeId: ID!, $reportsLimit: Int) {
+  query("EmployeeTree")`($employeeId: ID!, $reportsLimit: Int) {
     employee(id: $employeeId) {
       id
       name
@@ -58,7 +58,7 @@ export const employeeTreeQuery = gql.default(({ query }) =>
  * Recursive comment replies
  */
 export const commentThreadFragment = gql.default(({ fragment }) =>
-  fragment`fragment CommentThreadFragment on Comment {
+  fragment("CommentThreadFragment", "Comment")`{
     id
     body
     author {

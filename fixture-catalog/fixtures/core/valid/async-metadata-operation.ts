@@ -8,7 +8,7 @@ import { gql } from "../../../graphql-system";
  * packages/builder/test/integration/async-metadata.test.ts with inline sources.)
  */
 export const asyncMetadataQuery = gql.default(({ query }) =>
-  query`query AsyncMetadataQuery($id: ID!) { employee(id: $id) { id name } }`({
+  query("AsyncMetadataQuery")`($id: ID!) { employee(id: $id) { id name } }`({
     metadata: { asyncKey: "asyncValue", timestamp: 12345 },
   }),
 );

@@ -210,3 +210,4 @@ docs/**/run-loop.ts
 # VS Code extension build artifacts
 packages/vscode-extension/dist/
 packages/vscode-extension/*.vsix
+.claude/worktree

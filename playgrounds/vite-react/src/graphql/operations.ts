@@ -28,7 +28,7 @@ export const getEmployeeQuery = gql.default(({ query, $var }) =>
  * Query operation to fetch multiple employees with optional filters
  */
 export const listEmployeesQuery = gql.default(({ query }) =>
-  query`query ListEmployees($departmentId: ID, $limit: Int) {
+  query("ListEmployees")`($departmentId: ID, $limit: Int) {
     employees(departmentId: $departmentId, limit: $limit) {
       id
       name
@@ -42,7 +42,7 @@ export const listEmployeesQuery = gql.default(({ query }) =>
  * Mutation operation to update a task
  */
 export const updateTaskMutation = gql.default(({ mutation }) =>
-  mutation`mutation UpdateTask($taskId: ID!, $title: String, $completed: Boolean) {
+  mutation("UpdateTask")`($taskId: ID!, $title: String, $completed: Boolean) {
     updateTask(id: $taskId, input: { title: $title, completed: $completed }) {
       id
       title
@@ -61,7 +61,7 @@ export const updateTaskMutation = gql.default(({ mutation }) =>
  * Demonstrates selecting scalar fields (ID, String, Boolean, Enum) using tagged template syntax
  */
 export const getTaskBasicQuery = gql.default(({ query }) =>
-  query`query GetTaskBasic($taskId: ID!) {
+  query("GetTaskBasic")`($taskId: ID!) {
     task(id: $taskId) {
       id
       title
@@ -76,7 +76,7 @@ export const getTaskBasicQuery = gql.default(({ query }) =>
  * Demonstrates selecting nested object relationships with their fields
  */
 export const getProjectWithTasksQuery = gql.default(({ query }) =>
-  query`query GetProjectWithTasks($projectId: ID!) {
+  query("GetProjectWithTasks")`($projectId: ID!) {
     project(id: $projectId) {
       id
       title
@@ -98,7 +98,7 @@ export const getProjectWithTasksQuery = gql.default(({ query }) =>
  * Demonstrates using field arguments with variables (limit, filters)
  */
 export const getEmployeeWithFilteredTasksQuery = gql.default(({ query }) =>
-  query`query GetEmployeeWithFilteredTasks($employeeId: ID!, $completed: Boolean, $taskLimit: Int) {
+  query("GetEmployeeWithFilteredTasks")`($employeeId: ID!, $completed: Boolean, $taskLimit: Int) {
     employee(id: $employeeId) {
       id
       name
@@ -120,7 +120,7 @@ export const getEmployeeWithFilteredTasksQuery = gql.default(({ query }) =>
  * Demonstrates selecting deeply nested object relationships
  */
 export const getTeamHierarchyQuery = gql.default(({ query }) =>
-  query`query GetTeamHierarchy($teamId: ID!) {
+  query("GetTeamHierarchy")`($teamId: ID!) {
     team(id: $teamId) {
       id
       name
@@ -147,7 +147,7 @@ export const getTeamHierarchyQuery = gql.default(({ query }) =>
  * Demonstrates mutation with nested input types and field arguments
  */
 export const createProjectMutation = gql.default(({ mutation }) =>
-  mutation`mutation CreateProject($input: CreateProjectInput!) {
+  mutation("CreateProject")`($input: CreateProjectInput!) {
     createProject(input: $input) {
       id
       title
@@ -168,7 +168,7 @@ export const createProjectMutation = gql.default(({ mutation }) =>
  * Demonstrates mutation with required and optional variables
  */
 export const assignTaskMutation = gql.default(({ mutation }) =>
-  mutation`mutation AssignTask($taskId: ID!, $employeeId: ID!) {
+  mutation("AssignTask")`($taskId: ID!, $employeeId: ID!) {
     assignTask(taskId: $taskId, employeeId: $employeeId) {
       id
       title
@@ -186,7 +186,7 @@ export const assignTaskMutation = gql.default(({ mutation }) =>
  * Demonstrates subscription operation with nested field selection
  */
 export const taskUpdatedSubscription = gql.default(({ subscription }) =>
-  subscription`subscription TaskUpdated($taskId: ID!) {
+  subscription("TaskUpdated")`($taskId: ID!) {
     taskUpdated(taskId: $taskId) {
       id
       title
@@ -206,7 +206,7 @@ export const taskUpdatedSubscription = gql.default(({ subscription }) =>
  * Demonstrates subscription with field arguments and nested selection
  */
 export const projectUpdatedSubscription = gql.default(({ subscription }) =>
-  subscription`subscription ProjectUpdated($projectId: ID!) {
+  subscription("ProjectUpdated")`($projectId: ID!) {
     projectUpdated(projectId: $projectId) {
       id
       title
@@ -229,7 +229,7 @@ export const projectUpdatedSubscription = gql.default(({ subscription }) =>
  * Demonstrates using @skip directive with a boolean variable reference
  */
 export const getTaskWithSkipQuery = gql.default(({ query }) =>
-  query`query GetTaskWithSkip($taskId: ID!, $skipAssignee: Boolean!) {
+  query("GetTaskWithSkip")`($taskId: ID!, $skipAssignee: Boolean!) {
     task(id: $taskId) {
       id
       title
@@ -249,7 +249,7 @@ export const getTaskWithSkipQuery = gql.default(({ query }) =>
  * Demonstrates using @include directive with a boolean variable reference
  */
 export const getProjectWithIncludeQuery = gql.default(({ query }) =>
-  query`query GetProjectWithInclude($projectId: ID!, $includeTeam: Boolean!) {
+  query("GetProjectWithInclude")`($projectId: ID!, $includeTeam: Boolean!) {
     project(id: $projectId) {
       id
       title
@@ -272,7 +272,7 @@ export const getProjectWithIncludeQuery = gql.default(({ query }) =>
  * Demonstrates using both @skip and @include directives in the same operation
  */
 export const getEmployeeConditionalQuery = gql.default(({ query }) =>
-  query`query GetEmployeeConditional($employeeId: ID!, $includeTasks: Boolean!, $skipComments: Boolean!) {
+  query("GetEmployeeConditional")`($employeeId: ID!, $includeTasks: Boolean!, $skipComments: Boolean!) {
     employee(id: $employeeId) {
       id
       name
@@ -298,7 +298,7 @@ export const getEmployeeConditionalQuery = gql.default(({ query }) =>
  * Demonstrates using directives on nested fields
  */
 export const getTeamNestedDirectivesQuery = gql.default(({ query }) =>
-  query`query GetTeamNestedDirectives($teamId: ID!, $includeProjects: Boolean!, $skipInactive: Boolean!) {
+  query("GetTeamNestedDirectives")`($teamId: ID!, $includeProjects: Boolean!, $skipInactive: Boolean!) {
     team(id: $teamId) {
       id
       name
@@ -320,7 +320,7 @@ export const getTeamNestedDirectivesQuery = gql.default(({ query }) =>
  * Demonstrates using directives to conditionally select mutation result fields
  */
 export const updateTaskWithDirectivesMutation = gql.default(({ mutation }) =>
-  mutation`mutation UpdateTaskWithDirectives(
+  mutation("UpdateTaskWithDirectives")`(
     $taskId: ID!,
     $title: String,
     $completed: Boolean,
@@ -474,7 +474,7 @@ export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
  * using inline fragments and __typename
  */
 export const searchAllQuery = gql.default(({ query }) =>
-  query`query SearchAll($query: String!, $limit: Int) {
+  query("SearchAll")`($query: String!, $limit: Int) {
     search(query: $query, limit: $limit) {
       __typename
       ... on Employee {
@@ -510,7 +510,7 @@ export const searchAllQuery = gql.default(({ query }) =>
  * to verify that output type includes only selected members
  */
 export const searchPartialQuery = gql.default(({ query }) =>
-  query`query SearchPartial($query: String!, $limit: Int) {
+  query("SearchPartial")`($query: String!, $limit: Int) {
     search(query: $query, limit: $limit) {
       __typename
       ... on Employee {
@@ -543,7 +543,7 @@ export const searchPartialQuery = gql.default(({ query }) =>
  * and __typename discrimination
  */
 export const activityFeedQuery = gql.default(({ query }) =>
-  query`query ActivityFeed($userId: ID!, $since: DateTime, $limit: Int) {
+  query("ActivityFeed")`($userId: ID!, $since: DateTime, $limit: Int) {
     activityFeed(userId: $userId, since: $since, limit: $limit) {
       __typename
       ... on Task {
@@ -642,7 +642,7 @@ export const getTaskWithNestedFragmentsQuery = gql.default(({ query, $var }) =>
  * Demonstrates attaching static metadata to a tagged template query
  */
 export const getEmployeeWithStaticMetadataQuery = gql.default(({ query }) =>
-  query`query GetEmployeeWithStaticMetadata($employeeId: ID!) {
+  query("GetEmployeeWithStaticMetadata")`($employeeId: ID!) {
     employee(id: $employeeId) {
       id
       name
@@ -664,7 +664,7 @@ export const getEmployeeWithStaticMetadataQuery = gql.default(({ query }) =>
  * Demonstrates metadata callback that receives operation variable context
  */
 export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
-  query`query GetProjectWithCallbackMetadata($projectId: ID!, $includeTeam: Boolean!) {
+  query("GetProjectWithCallbackMetadata")`($projectId: ID!, $includeTeam: Boolean!) {
     project(id: $projectId) {
       id
       title

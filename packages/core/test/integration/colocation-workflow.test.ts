@@ -25,9 +25,9 @@ const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicT
 describe("$colocate end-to-end workflow", () => {
   it("combines multiple query fragments with $colocate and parses results", () => {
     // Step 1: Define entity-level tagged template fragments
-    const UserCardFields = gql(({ fragment }) => fragment`fragment UserCardFields on User { id name }`());
+    const UserCardFields = gql(({ fragment }) => fragment("UserCardFields", "User")`{ id name }`());
 
-    const UserIdFields = gql(({ fragment }) => fragment`fragment UserIdFields on User { id }`());
+    const UserIdFields = gql(({ fragment }) => fragment("UserIdFields", "User")`{ id }`());
 
     // Step 2: Define operations that spread entity fragments
     // These represent query-level fragments (resolver units)
@@ -115,7 +115,7 @@ describe("$colocate end-to-end workflow", () => {
 
   it("handles operations with single colocated fragment", () => {
     // Entity fragment
-    const UserFields = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
+    const UserFields = gql(({ fragment }) => fragment("UserFields", "User")`{ id name }`());
 
     // Operation with single colocated fragment
     const GetUser = gql(({ query, $var, $colocate }) =>
@@ -142,7 +142,7 @@ describe("$colocate end-to-end workflow", () => {
   it("handles colocated fragments with nested fields", () => {
     // Entity fragment with nested field selection
     const UserDetailFields = gql(({ fragment }) =>
-      fragment`fragment UserDetailFields on User {
+      fragment("UserDetailFields", "User")`{
         id
         name
       }`(),
@@ -175,9 +175,9 @@ describe("$colocate end-to-end workflow", () => {
 
   it("handles multiple entity fragments in single colocated label", () => {
     // Multiple entity fragments
-    const UserIdFields = gql(({ fragment }) => fragment`fragment UserIdFields on User { id }`());
+    const UserIdFields = gql(({ fragment }) => fragment("UserIdFields", "User")`{ id }`());
 
-    const UserNameFields = gql(({ fragment }) => fragment`fragment UserNameFields on User { name }`());
+    const UserNameFields = gql(({ fragment }) => fragment("UserNameFields", "User")`{ name }`());
 
     // Colocate with multiple fragments spread in same label
     const GetUserDetails = gql(({ query, $var, $colocate }) =>

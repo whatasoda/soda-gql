@@ -6,8 +6,8 @@ const extraArg = { cache: true };
 
 // This call is invalid - extra arguments are ignored
 // @ts-expect-error - intentionally invalid for testing (extra args not allowed by type)
-export const extraArguments = gql.default(({ fragment }) => fragment`fragment ExtraArguments on Employee { id }`(), extraArg);
+export const extraArguments = gql.default(({ fragment }) => fragment("ExtraArguments", "Employee")`{ id }`(), extraArg);
 
 // Multiple extra arguments
 // @ts-expect-error - intentionally invalid for testing (extra args not allowed by type)
-export const multipleExtras = gql.default(({ fragment }) => fragment`fragment MultipleExtras on Employee { name }`(), "option1", "option2");
+export const multipleExtras = gql.default(({ fragment }) => fragment("MultipleExtras", "Employee")`{ name }`(), "option1", "option2");

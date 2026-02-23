@@ -5,8 +5,16 @@
 
 import { getDefinitionQueryResultForFragmentSpread } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { computeLineOffsets, createPositionMapper, type Position, positionToOffset, toIPosition } from "../position-mapping";
+import {
+  computeLineOffsets,
+  createPositionMapper,
+  offsetToPosition,
+  type Position,
+  positionToOffset,
+  toIPosition,
+} from "../position-mapping";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
 import { findFragmentSpreadAtOffset } from "./_utils";
 
@@ -22,7 +30,9 @@ export type HandleDefinitionInput = {
 /** Handle a definition request for a GraphQL template. */
 export const handleDefinition = async (input: HandleDefinitionInput): Promise<Location[]> => {
   const { template, tsSource, tsPosition, externalFragments } = input;
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const reconstructed = reconstructGraphql(template);
+  const headerLen = reconstructed.length - template.content.length;
+  const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
     tsSource,
@@ -35,9 +45,12 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
     return [];
   }
 
-  const offset = positionToOffset(computeLineOffsets(preprocessed), gqlPosition);
+  // Convert from content-relative position to reconstructed-relative offset
+  const contentLineOffsets = computeLineOffsets(template.content);
+  const contentOffset = positionToOffset(contentLineOffsets, gqlPosition);
+  const reconstructedOffset = contentOffset + headerLen;
 
-  const fragmentSpread = findFragmentSpreadAtOffset(preprocessed, offset);
+  const fragmentSpread = findFragmentSpreadAtOffset(preprocessed, reconstructedOffset);
   if (!fragmentSpread) {
     return [];
   }
@@ -60,13 +73,23 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
       // Map GraphQL-relative positions to TS file positions for the target document
       const targetFragment = externalFragments.find((f) => f.uri === def.path);
       if (targetFragment) {
+        // Convert from reconstructed-content space to original-template-content space
+        const targetReconstructedLineOffsets = computeLineOffsets(targetFragment.content);
+        const targetContentLineOffsets = computeLineOffsets(targetFragment.content.slice(targetFragment.headerLen));
+
+        const toOriginalPos = (pos: { line: number; character: number }) => {
+          const offset = positionToOffset(targetReconstructedLineOffsets, pos);
+          const originalOffset = Math.max(0, offset - targetFragment.headerLen);
+          return offsetToPosition(targetContentLineOffsets, originalOffset);
+        };
+
         const targetMapper = createPositionMapper({
           tsSource: targetFragment.tsSource,
           contentStartOffset: targetFragment.contentRange.start,
-          graphqlContent: targetFragment.content,
+          graphqlContent: targetFragment.content.slice(targetFragment.headerLen),
         });
-        const tsStart = targetMapper.graphqlToTs({ line: defPosition.line, character: defPosition.character });
-        const tsEnd = targetMapper.graphqlToTs({ line: endLine, character: endChar });
+        const tsStart = targetMapper.graphqlToTs(toOriginalPos({ line: defPosition.line, character: defPosition.character }));
+        const tsEnd = targetMapper.graphqlToTs(toOriginalPos({ line: endLine, character: endChar }));
         return {
           uri: def.path,
           range: { start: tsStart, end: tsEnd },

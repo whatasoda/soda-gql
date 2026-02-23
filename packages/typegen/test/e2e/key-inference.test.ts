@@ -202,7 +202,7 @@ import { gql, type PrebuiltContext_default } from "../graphql-system/index.prebu
 
 // Test 1: Fragment with key should resolve to prebuilt types
 const userFragment = gql.default(({ fragment }) =>
-  fragment\`fragment UserFields on User { id name }\`()
+  fragment("UserFields", "User")\`{ id name }\`()
 );
 
 // Type assertion: output should be an object type (not PrebuiltEntryNotFound)
@@ -211,7 +211,7 @@ const _testFragmentOutput: FragmentOutput extends { __error: string } ? never : 
 
 // Test 2: Operation with name should resolve to prebuilt types
 const getUser = gql.default(({ query }) =>
-  query\`query GetUser($id: ID!) { user(id: $id) { id name } }\`()
+  query("GetUser")\`($id: ID!) { user(id: $id) { id name } }\`()
 );
 
 // Type assertion: output should be an object type (not PrebuiltEntryNotFound)

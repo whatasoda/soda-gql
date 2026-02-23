@@ -18,6 +18,10 @@ export type ExtractedTemplate = {
   readonly kind: OperationKind;
   /** Raw GraphQL content between backticks. */
   readonly content: string;
+  /** Element name from curried tag call (e.g., "GetUser" from query("GetUser")). */
+  readonly elementName?: string;
+  /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
+  readonly typeName?: string;
 };
 
 /** Per-document state maintained by the document manager. */
@@ -34,9 +38,12 @@ export type IndexedFragment = {
   readonly schemaName: string;
   readonly fragmentName: string;
   readonly definition: FragmentDefinitionNode;
+  /** Reconstructed full GraphQL source (with definition header for curried syntax). */
   readonly content: string;
   readonly contentRange: { readonly start: number; readonly end: number };
   readonly tsSource: string;
+  /** Number of bytes prepended by reconstruction (0 for old syntax). */
+  readonly headerLen: number;
 };
 
 /** A located fragment spread reference within a template. */

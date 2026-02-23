@@ -1,7 +1,7 @@
 import { gql } from "../../../graphql-system";
 
 // Multi-schema: admin schema (should be formatted)
-export const adminFragment = gql.admin(({ fragment }) => fragment`fragment AdminFragment on Task { id title }`());
+export const adminFragment = gql.admin(({ fragment }) => fragment("AdminFragment", "Task")`{ id title }`());
 
 // Multi-schema: default schema (should still work)
 export const defaultQuery = gql.default(({ query }) =>
@@ -13,5 +13,5 @@ export const defaultQuery = gql.default(({ query }) =>
 
 // Multi-schema: nested selections (Task has id, title, completed - no description)
 export const nestedAdmin = gql.admin(({ fragment }) =>
-  fragment`fragment NestedAdmin on Task { id title completed }`(),
+  fragment("NestedAdmin", "Task")`{ id title completed }`(),
 );

@@ -12,12 +12,12 @@ import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 /** Tagged template function type for compat operations. */
 export type CompatTaggedTemplate = (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<TemplateCompatSpec>;
 
+/** Curried compat function type: query.compat("name")`{ fields }` */
+export type CurriedCompatFunction = (operationName: string) => CompatTaggedTemplate;
+
 /**
- * Creates a tagged template function for compat mode operations.
- *
- * Unlike direct mode (`query\`...\`()`), compat mode returns a `GqlDefine<TemplateCompatSpec>`
- * directly — no `()` call needed. The raw GraphQL source is stored for deferred execution
- * via `extend()`.
+ * Creates a curried tagged template function for compat mode operations.
+ * New API: `query.compat("name")\`($vars) { fields }\`` returns GqlDefine<TemplateCompatSpec>.
  *
  * @param schema - The GraphQL schema definition
  * @param operationType - The operation type (query, mutation, subscription)
@@ -25,53 +25,48 @@ export type CompatTaggedTemplate = (strings: TemplateStringsArray, ...values: ne
 export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
   schema: TSchema,
   operationType: OperationType,
-): CompatTaggedTemplate => {
+): CurriedCompatFunction => {
   const operationTypeName = schema.operations[operationType];
   if (operationTypeName === null) {
     throw new Error(`Operation type ${operationType} is not defined in schema roots`);
   }
 
-  return (strings: TemplateStringsArray, ...values: never[]): GqlDefine<TemplateCompatSpec> => {
-    if (values.length > 0) {
-      throw new Error("Tagged templates must not contain interpolated expressions");
-    }
+  return (operationName: string): CompatTaggedTemplate => {
+    return (strings: TemplateStringsArray, ...values: never[]): GqlDefine<TemplateCompatSpec> => {
+      if (values.length > 0) {
+        throw new Error("Tagged templates must not contain interpolated expressions");
+      }
 
-    const source = strings[0] ?? "";
+      const body = strings[0] ?? "";
 
-    let document: import("graphql").DocumentNode;
-    try {
-      document = parseGraphql(source);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`GraphQL parse error in tagged template: ${message}`);
-    }
+      // Construct synthetic GraphQL source from JS args and template body
+      const source = `${operationType} ${operationName} ${body.trim()}`;
 
-    const opDefs = document.definitions.filter((def) => def.kind === Kind.OPERATION_DEFINITION);
-    if (opDefs.length !== 1) {
-      throw new Error(`Expected exactly one operation definition, found ${opDefs.length}`);
-    }
+      let document: import("graphql").DocumentNode;
+      try {
+        document = parseGraphql(source);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`GraphQL parse error in tagged template: ${message}`);
+      }
 
-    // biome-ignore lint/style/noNonNullAssertion: Length checked above
-    const opNode = opDefs[0]!;
-    if (opNode.kind !== Kind.OPERATION_DEFINITION) {
-      throw new Error("Unexpected definition kind");
-    }
+      const opDefs = document.definitions.filter((def) => def.kind === Kind.OPERATION_DEFINITION);
+      if (opDefs.length !== 1) {
+        throw new Error(`Internal error: expected exactly one operation definition in synthesized source`);
+      }
 
-    if (!opNode.name) {
-      throw new Error("Anonymous operations are not allowed in tagged templates");
-    }
+      // biome-ignore lint/style/noNonNullAssertion: Length checked above
+      const opNode = opDefs[0]!;
+      if (opNode.kind !== Kind.OPERATION_DEFINITION) {
+        throw new Error("Unexpected definition kind");
+      }
 
-    if (opNode.operation !== operationType) {
-      throw new Error(`Operation type mismatch: expected "${operationType}", got "${opNode.operation}"`);
-    }
-
-    const operationName = opNode.name.value;
-
-    return GqlDefine.create(() => ({
-      schema,
-      operationType,
-      operationName,
-      graphqlSource: source,
-    }));
+      return GqlDefine.create(() => ({
+        schema,
+        operationType,
+        operationName,
+        graphqlSource: source,
+      }));
+    };
   };
 };

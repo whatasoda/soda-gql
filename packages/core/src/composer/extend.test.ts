@@ -256,7 +256,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
       expect(operation).toBeInstanceOf(Operation);
@@ -266,7 +266,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
       expect(operation.operationType).toBe("query");
@@ -277,7 +277,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
       expect(operation.variableNames).toEqual(["id"]);
@@ -287,7 +287,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
       const printed = print(operation.document);
@@ -300,7 +300,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
       expect(operation.metadata).toBeUndefined();
@@ -310,7 +310,7 @@ describe("createExtendComposer", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat, {
         metadata: () => ({ headers: { "X-Auth": "token" } }),
       });
@@ -324,7 +324,7 @@ describe("createExtendComposer", () => {
 
       let receivedVarRefs: Record<string, unknown> | undefined;
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat, {
         metadata: ({ $ }) => {
           receivedVarRefs = $ as Record<string, unknown>;
@@ -344,7 +344,7 @@ describe("createExtendComposer", () => {
 
       let receivedDocument: unknown;
 
-      const compat = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat, {
         metadata: ({ document }) => {
           receivedDocument = document;
@@ -362,7 +362,7 @@ describe("createExtendComposer", () => {
       const mutationCompat = createCompatTaggedTemplate(schema, "mutation");
       const extend = createExtendComposer(schema);
 
-      const compat = mutationCompat`mutation UpdateUser($id: ID!) { updateUser(id: $id) { id } }`;
+      const compat = mutationCompat("UpdateUser")`($id: ID!) { updateUser(id: $id) { id } }`;
       const operation = extend(compat);
 
       expect(operation.operationType).toBe("mutation");
@@ -374,7 +374,7 @@ describe("createExtendComposer", () => {
       const subscriptionCompat = createCompatTaggedTemplate(schema, "subscription");
       const extend = createExtendComposer(schema);
 
-      const compat = subscriptionCompat`subscription OnUserUpdated { userUpdated { id name } }`;
+      const compat = subscriptionCompat("OnUserUpdated")`{ userUpdated { id name } }`;
       const operation = extend(compat);
 
       expect(operation.operationType).toBe("subscription");

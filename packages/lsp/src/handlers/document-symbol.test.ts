@@ -95,6 +95,53 @@ describe("handleDocumentSymbol", () => {
     expect(symbols[1]!.name).toContain("GetUsers");
   });
 
+  describe("curried tagged template syntax", () => {
+    test("curried query produces symbol with correct name", () => {
+      const content = '{ user(id: "1") { id name } }';
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+      };
+
+      const symbols = handleDocumentSymbol({ templates: [template], tsSource });
+
+      expect(symbols.length).toBeGreaterThan(0);
+      const querySymbol = symbols[0]!;
+      expect(querySymbol.kind).toBe(SymbolKind.Function);
+      expect(querySymbol.name).toContain("GetUser");
+      // Position must be in TS coordinates (line 2), not shifted by synthesized header
+      expect(querySymbol.range.start.line).toBe(2);
+    });
+
+    test("curried fragment produces symbol with correct name", () => {
+      const content = "{ id name email }";
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ fragment }) => fragment("UserFields", "User")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "fragment",
+        content,
+        elementName: "UserFields",
+        typeName: "User",
+      };
+
+      const symbols = handleDocumentSymbol({ templates: [template], tsSource });
+
+      expect(symbols.length).toBeGreaterThan(0);
+      const fragmentSymbol = symbols[0]!;
+      expect(fragmentSymbol.kind).toBe(SymbolKind.Class);
+      expect(fragmentSymbol.name).toContain("UserFields");
+    });
+  });
+
   test("returns empty for files with no templates", () => {
     const symbols = handleDocumentSymbol({ templates: [], tsSource: "const x = 1;" });
     expect(symbols).toHaveLength(0);

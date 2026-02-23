@@ -1,11 +1,11 @@
 import { gql } from "../../../graphql-system";
 
 // Should be formatted - no newline after opening brace
-export const fragment1 = gql.default(({ fragment }) => fragment`fragment Fragment1 on Employee { id name }`());
+export const fragment1 = gql.default(({ fragment }) => fragment("Fragment1", "Employee")`{ id name }`());
 
 // Nested selections also need formatting
 export const fragment2 = gql.default(({ fragment }) =>
-  fragment`fragment Fragment2 on Employee {
+  fragment("Fragment2", "Employee")`{
     id
     tasks {
       id

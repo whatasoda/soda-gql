@@ -5,8 +5,9 @@
 
 import { getOutline } from "graphql-language-service";
 import { type DocumentSymbol, SymbolKind } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type HandleDocumentSymbolInput = {
@@ -48,12 +49,18 @@ const getSymbolName = (tree: OutlineTree): string => {
   return tree.kind;
 };
 
-const convertTree = (tree: OutlineTree, mapper: ReturnType<typeof createPositionMapper>): DocumentSymbol | null => {
+type PositionConverter = (pos: { line: number; character: number }) => { line: number; character: number };
+
+const convertTree = (
+  tree: OutlineTree,
+  toContentPos: PositionConverter,
+  mapper: ReturnType<typeof createPositionMapper>,
+): DocumentSymbol | null => {
   const name = getSymbolName(tree);
   const kind = KIND_MAP[tree.kind] ?? SymbolKind.Variable;
 
-  const startTs = mapper.graphqlToTs(tree.startPosition);
-  const endTs = tree.endPosition ? mapper.graphqlToTs(tree.endPosition) : startTs;
+  const startTs = mapper.graphqlToTs(toContentPos(tree.startPosition));
+  const endTs = tree.endPosition ? mapper.graphqlToTs(toContentPos(tree.endPosition)) : startTs;
 
   const range = {
     start: { line: startTs.line, character: startTs.character },
@@ -62,7 +69,7 @@ const convertTree = (tree: OutlineTree, mapper: ReturnType<typeof createPosition
 
   const children: DocumentSymbol[] = [];
   for (const child of tree.children) {
-    const converted = convertTree(child, mapper);
+    const converted = convertTree(child, toContentPos, mapper);
     if (converted) {
       children.push(converted);
     }
@@ -83,7 +90,9 @@ export const handleDocumentSymbol = (input: HandleDocumentSymbolInput): Document
   const symbols: DocumentSymbol[] = [];
 
   for (const template of templates) {
-    const { preprocessed } = preprocessFragmentArgs(template.content);
+    const reconstructed = reconstructGraphql(template);
+    const headerLen = reconstructed.length - template.content.length;
+    const { preprocessed } = preprocessFragmentArgs(reconstructed);
     const outline = getOutline(preprocessed);
     if (!outline) {
       continue;
@@ -95,8 +104,17 @@ export const handleDocumentSymbol = (input: HandleDocumentSymbolInput): Document
       graphqlContent: template.content,
     });
 
+    // Convert position from reconstructed source to template content
+    const reconstructedLineOffsets = computeLineOffsets(preprocessed);
+    const contentLineOffsets = computeLineOffsets(template.content);
+    const toContentPos: PositionConverter = (pos) => {
+      const offset = positionToOffset(reconstructedLineOffsets, pos);
+      const contentOffset = Math.max(0, offset - headerLen);
+      return offsetToPosition(contentLineOffsets, contentOffset);
+    };
+
     for (const tree of outline.outlineTrees as unknown as OutlineTree[]) {
-      const symbol = convertTree(tree, mapper);
+      const symbol = convertTree(tree, toContentPos, mapper);
       if (symbol) {
         symbols.push(symbol);
       }

@@ -20,7 +20,7 @@ describe("Fragment definition type inference", () => {
   describe("Scalar field selection", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers single scalar field", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserIdFields on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserIdFields", "User")`{ id }`());
 
       // Runtime behavior tests (tagged templates don't carry TypeScript types yet)
       expect(fragment.typename).toBe("User");
@@ -30,7 +30,7 @@ describe("Fragment definition type inference", () => {
 
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers multiple scalar fields", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserBasicFields on User { id name }`());
+      const fragment = gql(({ fragment }) => fragment("UserBasicFields", "User")`{ id name }`());
 
       // Runtime behavior tests
       expect(fragment.typename).toBe("User");
@@ -39,7 +39,7 @@ describe("Fragment definition type inference", () => {
 
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers optional scalar field as nullable", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserEmailFields on User { email }`());
+      const fragment = gql(({ fragment }) => fragment("UserEmailFields", "User")`{ email }`());
 
       // Runtime behavior tests
       expect(fragment.typename).toBe("User");
@@ -48,7 +48,7 @@ describe("Fragment definition type inference", () => {
 
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers Int scalar as number", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserAgeFields on User { age }`());
+      const fragment = gql(({ fragment }) => fragment("UserAgeFields", "User")`{ age }`());
 
       // Runtime behavior tests
       expect(fragment.typename).toBe("User");
@@ -67,7 +67,7 @@ describe("Fragment definition type inference", () => {
   describe("Mixed field types", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers mixed required and optional fields", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserAllFields on User { id name email age }`());
+      const fragment = gql(({ fragment }) => fragment("UserAllFields", "User")`{ id name email age }`());
 
       // Runtime behavior tests
       expect(fragment.typename).toBe("User");
@@ -78,7 +78,7 @@ describe("Fragment definition type inference", () => {
   describe("Fragment input type (variables)", () => {
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers empty input when no variables defined", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserSimpleFields on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserSimpleFields", "User")`{ id }`());
 
       // Runtime behavior tests
       expect(fragment.variableDefinitions).toBeDefined();
@@ -87,7 +87,7 @@ describe("Fragment definition type inference", () => {
 
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers required variable in input", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserVarFields($userId: ID!) on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserVarFields", "User")`($userId: ID!) { id }`());
 
       // Runtime behavior tests
       expect(fragment.variableDefinitions).toBeDefined();
@@ -96,7 +96,7 @@ describe("Fragment definition type inference", () => {
 
     // TODO(Phase 2): Add type-level tests via typegen integration
     it("infers optional variable in input", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserOptionalVarFields($limit: Int) on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserOptionalVarFields", "User")`($limit: Int) { id }`());
 
       // Runtime behavior tests
       expect(fragment.variableDefinitions).toBeDefined();
@@ -106,7 +106,7 @@ describe("Fragment definition type inference", () => {
 
   describe("Tagged template $infer type accuracy", () => {
     it("$infer property is accessible on tagged template fragments", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserFields($showEmail: Boolean!) on User { id name }`());
+      const fragment = gql(({ fragment }) => fragment("UserFields", "User")`($showEmail: Boolean!) { id name }`());
 
       // Type-level assertions that $infer has input and output properties
       type InferMeta = typeof fragment.$infer;
@@ -119,7 +119,7 @@ describe("Fragment definition type inference", () => {
     });
 
     it("$infer.input is defined for fragments without variables", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserSimple on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserSimple", "User")`{ id }`());
 
       // Type-level assertion that input exists (may be void or empty)
       type Input = typeof fragment.$infer.input;
@@ -130,7 +130,7 @@ describe("Fragment definition type inference", () => {
     });
 
     it("$infer.output is object type", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserFields on User { id name }`());
+      const fragment = gql(({ fragment }) => fragment("UserFields", "User")`{ id name }`());
 
       // Type-level assertion that output extends object
       type Output = typeof fragment.$infer.output;
@@ -146,7 +146,7 @@ describe("Fragment definition type inference", () => {
     });
 
     it("typename property is accessible and typed as string", () => {
-      const fragment = gql(({ fragment }) => fragment`fragment UserFields on User { id }`());
+      const fragment = gql(({ fragment }) => fragment("UserFields", "User")`{ id }`());
 
       // Type-level assertion that typename is string
       type TypeName = typeof fragment.typename;

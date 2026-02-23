@@ -30,8 +30,12 @@ export type ExtractedTemplate = {
   readonly schemaName: string;
   /** Operation kind from tag name. */
   readonly kind: OperationKind;
-  /** Raw GraphQL content between backticks. */
+  /** Raw GraphQL content between backticks (may contain __FRAG_SPREAD_N__ placeholders). */
   readonly content: string;
+  /** Element name from curried tag call (e.g., "GetUser" from query("GetUser")). */
+  readonly elementName?: string;
+  /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
+  readonly typeName?: string;
 };
 
 /** Result of extracting templates from a source file. */
@@ -174,32 +178,77 @@ const extractFromTaggedTemplate = (
   schemaName: string,
   templates: ExtractedTemplate[],
 ): void => {
-  // Tag must be an identifier matching an operation kind
-  if (tagged.tag.type !== "Identifier") {
+  // Tag can be:
+  // - Identifier: query`...` (old syntax)
+  // - CallExpression: query("name")`...` or fragment("name", "type")`...` (new curried syntax)
+  let kind: string;
+  let elementName: string | undefined;
+  let typeName: string | undefined;
+
+  if (tagged.tag.type === "Identifier") {
+    kind = tagged.tag.value;
+  } else if (tagged.tag.type === "CallExpression") {
+    const tagCall = tagged.tag as CallExpression;
+    if (tagCall.callee.type === "Identifier") {
+      kind = tagCall.callee.value;
+    } else {
+      return;
+    }
+    // Extract elementName and typeName from call arguments
+    const firstArg = tagCall.arguments[0]?.expression;
+    if (firstArg?.type === "StringLiteral") {
+      elementName = (firstArg as { value: string }).value;
+    }
+    const secondArg = tagCall.arguments[1]?.expression;
+    if (secondArg?.type === "StringLiteral") {
+      typeName = (secondArg as { value: string }).value;
+    }
+  } else {
     return;
   }
 
-  const kind = tagged.tag.value;
   if (!isOperationKind(kind)) {
     return;
   }
 
-  // Skip templates with expressions (interpolation)
-  if (tagged.template.expressions.length > 0) {
+  const { quasis, expressions } = tagged.template;
+
+  // For old syntax (Identifier tag), skip templates with interpolations
+  // For new syntax (CallExpression tag), handle interpolations with placeholders
+  if (tagged.tag.type === "Identifier" && expressions.length > 0) {
     return;
   }
 
-  const quasi = tagged.template.quasis[0];
-  if (!quasi) {
+  if (quasis.length === 0) {
     return;
   }
 
-  const content = quasi.cooked ?? quasi.raw;
+  let content: string;
+  if (expressions.length === 0) {
+    // No interpolations — simple case
+    const quasi = quasis[0];
+    if (!quasi) return;
+    content = quasi.cooked ?? quasi.raw;
+  } else {
+    // Build content with placeholder tokens for interpolations
+    const parts: string[] = [];
+    for (let i = 0; i < quasis.length; i++) {
+      const quasi = quasis[i];
+      if (!quasi) continue;
+      parts.push(quasi.cooked ?? quasi.raw);
+      if (i < expressions.length) {
+        parts.push(`__FRAG_SPREAD_${i}__`);
+      }
+    }
+    content = parts.join("");
+  }
 
   templates.push({
     schemaName,
     kind,
     content,
+    ...(elementName !== undefined ? { elementName } : {}),
+    ...(typeName !== undefined ? { typeName } : {}),
   });
 };
 

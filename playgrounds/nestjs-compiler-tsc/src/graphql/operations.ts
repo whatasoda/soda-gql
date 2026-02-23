@@ -6,7 +6,7 @@ import { gql } from "@/graphql-system";
  * This will be transformed to zero-runtime code by the TypeScript compiler plugin.
  */
 export const getEmployeeQuery = gql.default(({ query }) =>
-  query`query GetEmployee($employeeId: ID!) {
+  query("GetEmployee")`($employeeId: ID!) {
     employee(id: $employeeId) {
       id
       name
@@ -22,7 +22,7 @@ export const getEmployeeQuery = gql.default(({ query }) =>
  * This demonstrates fetching a list of employees with the same fields.
  */
 export const getEmployeesQuery = gql.default(({ query }) =>
-  query`query GetEmployees {
+  query("GetEmployees")`{
     employees {
       id
       name
