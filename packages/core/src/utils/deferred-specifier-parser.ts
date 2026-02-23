@@ -56,10 +56,13 @@ export function parseInputSpecifier(spec: string): ParsedInputSpecifier {
   const hasDefault = spec.endsWith("|D");
   const parts = spec.split("|");
 
-  const kindChar = parts[0]!;
-  const name = parts[1]!;
+  const kindChar = parts[0];
+  const name = parts[1];
+  if (!kindChar || !name) {
+    throw new Error(`Invalid input specifier format: ${spec}`);
+  }
   // Modifier is everything after kind|name| but before any |D suffix
-  const modifier = hasDefault ? parts[2]! : parts.slice(2).join("|");
+  const modifier = hasDefault ? (parts[2] ?? "") : parts.slice(2).join("|");
 
   const kind = INPUT_KIND_MAP[kindChar];
   if (!kind) {
@@ -81,9 +84,12 @@ export function parseInputSpecifier(spec: string): ParsedInputSpecifier {
 export function parseOutputSpecifier(spec: string): ParsedOutputSpecifier {
   const parts = spec.split("|");
 
-  const kindChar = parts[0]!;
-  const name = parts[1]!;
-  const modifier = parts[2]!;
+  const kindChar = parts[0];
+  const name = parts[1];
+  const modifier = parts[2];
+  if (!kindChar || !name || modifier === undefined) {
+    throw new Error(`Invalid output specifier format: ${spec}`);
+  }
 
   const kind = OUTPUT_KIND_MAP[kindChar];
   if (!kind) {

@@ -21,7 +21,7 @@ type SearchAllTypename = SearchAllOutput["__typename"];
 const _verifySearchAllTypename: SearchAllTypename = "Employee"; // "Employee" | "Project" | "Task" | "Comment"
 
 // Verify discriminated union - Employee member
-function handleEmployee(result: SearchAllOutput) {
+function _handleEmployee(result: SearchAllOutput) {
   if (result.__typename === "Employee") {
     // In this branch, result is narrowed to Employee
     const _id: string = result.id;
@@ -32,7 +32,7 @@ function handleEmployee(result: SearchAllOutput) {
 }
 
 // Verify discriminated union - Project member
-function handleProject(result: SearchAllOutput) {
+function _handleProject(result: SearchAllOutput) {
   if (result.__typename === "Project") {
     // In this branch, result is narrowed to Project
     const _id: string = result.id;
@@ -43,7 +43,7 @@ function handleProject(result: SearchAllOutput) {
 }
 
 // Verify discriminated union - Task member
-function handleTask(result: SearchAllOutput) {
+function _handleTask(result: SearchAllOutput) {
   if (result.__typename === "Task") {
     // In this branch, result is narrowed to Task
     const _id: string = result.id;
@@ -54,7 +54,7 @@ function handleTask(result: SearchAllOutput) {
 }
 
 // Verify discriminated union - Comment member
-function handleComment(result: SearchAllOutput) {
+function _handleComment(result: SearchAllOutput) {
   if (result.__typename === "Comment") {
     // In this branch, result is narrowed to Comment
     const _id: string = result.id;
@@ -74,7 +74,7 @@ type SearchPartialTypename = SearchPartialOutput["__typename"];
 const _verifySearchPartialTypename: SearchPartialTypename = "Employee"; // "Employee" | "Project" only
 
 // Verify output type only includes selected members
-function handlePartialSearch(result: SearchPartialOutput) {
+function _handlePartialSearch(result: SearchPartialOutput) {
   if (result.__typename === "Employee") {
     // Employee with nested department
     const _id: string = result.id;
@@ -106,7 +106,7 @@ type ActivityItemTypename = ActivityItemOutput["__typename"];
 const _verifyActivityItemTypename: ActivityItemTypename = "Task"; // "Task" | "Comment" | "Project"
 
 // Verify discriminated union with nested field selection
-function handleActivityItem(item: ActivityItemOutput) {
+function _handleActivityItem(item: ActivityItemOutput) {
   if (item.__typename === "Task") {
     // Task with assignee and project
     const _id: string = item.id;

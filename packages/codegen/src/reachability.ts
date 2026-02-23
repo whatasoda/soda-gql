@@ -104,7 +104,8 @@ const bfs = (
 
   let head = 0;
   while (head < queue.length) {
-    const current = queue[head++]!;
+    const current = queue[head++];
+    if (current === undefined) break;
     const neighbors = adjacency.get(current);
     if (!neighbors) continue;
 
@@ -194,7 +195,8 @@ const computeReachableTypes = (
   // Transitively resolve input types
   let inputHead = 0;
   while (inputHead < inputQueue.length) {
-    const inputName = inputQueue[inputHead++]!;
+    const inputName = inputQueue[inputHead++];
+    if (inputName === undefined) break;
     const inputRecord = schema.inputs.get(inputName);
     if (!inputRecord) continue;
 

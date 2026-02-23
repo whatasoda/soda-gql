@@ -29,9 +29,7 @@ export type ConfigRegistry = {
   readonly reloadAllSchemas: () => Result<void, LspError[]>;
 };
 
-export const createConfigRegistry = (
-  configPaths: readonly string[],
-): Result<ConfigRegistry, LspError> => {
+export const createConfigRegistry = (configPaths: readonly string[]): Result<ConfigRegistry, LspError> => {
   // Sort by path depth descending so deeper configs are checked first
   const sortedPaths = [...configPaths].sort((a, b) => b.length - a.length);
 
@@ -40,10 +38,9 @@ export const createConfigRegistry = (
   for (const configPath of sortedPaths) {
     const configResult = loadConfig(configPath);
     if (configResult.isErr()) {
-      return err(lspErrors.configLoadFailed(
-        `Failed to load config ${configPath}: ${configResult.error.message}`,
-        configResult.error,
-      ));
+      return err(
+        lspErrors.configLoadFailed(`Failed to load config ${configPath}: ${configResult.error.message}`, configResult.error),
+      );
     }
 
     const config = configResult.value;
@@ -74,7 +71,7 @@ export const createConfigRegistry = (
 
     for (const configPath of sortedPaths) {
       const configDir = dirname(configPath);
-      if (dirPath === configDir || dirPath.startsWith(configDir + "/")) {
+      if (dirPath === configDir || dirPath.startsWith(`${configDir}/`)) {
         uriCache.set(dirPath, configPath);
         return configPath;
       }

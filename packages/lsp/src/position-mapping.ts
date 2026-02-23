@@ -40,7 +40,7 @@ export const positionToOffset = (lineOffsets: readonly number[], position: Posit
   if (position.line < 0 || position.line >= lineOffsets.length) {
     return -1;
   }
-  return lineOffsets[position.line]! + position.character;
+  return (lineOffsets[position.line] ?? 0) + position.character;
 };
 
 /** Convert a byte offset to a Position within the source text. */
@@ -50,13 +50,13 @@ export const offsetToPosition = (lineOffsets: readonly number[], offset: number)
   let high = lineOffsets.length - 1;
   while (low < high) {
     const mid = Math.ceil((low + high) / 2);
-    if (lineOffsets[mid]! <= offset) {
+    if ((lineOffsets[mid] ?? 0) <= offset) {
       low = mid;
     } else {
       high = mid - 1;
     }
   }
-  return { line: low, character: offset - lineOffsets[low]! };
+  return { line: low, character: offset - (lineOffsets[low] ?? 0) };
 };
 
 /** Convert a Position to an IPosition compatible with graphql-language-service. */

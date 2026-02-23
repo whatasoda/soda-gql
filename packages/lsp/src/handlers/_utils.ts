@@ -48,7 +48,7 @@ export const findFragmentSpreadByText = (text: string, offset: number): Fragment
     if (offset >= start && offset < end) {
       return {
         kind: "FragmentSpread" as const,
-        name: { kind: "Name" as const, value: match[1]! },
+        name: { kind: "Name" as const, value: match[1] ?? "" },
       } as FragmentSpreadNode;
     }
   }

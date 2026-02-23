@@ -25,7 +25,8 @@ const findMatchingParen = (content: string, openIndex: number): number => {
   let inString: false | '"' | "'" = false;
 
   for (let i = openIndex + 1; i < content.length; i++) {
-    const ch = content[i]!;
+    const ch = content[i];
+    if (ch === undefined) break;
 
     if (inString) {
       if (ch === inString) {
