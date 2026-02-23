@@ -187,4 +187,106 @@ describe("handleDefinition", () => {
 
     expect(locations).toHaveLength(0);
   });
+
+  describe("curried tagged template syntax", () => {
+    test("resolves fragment spread in curried query template", async () => {
+      // Source template uses curried syntax: body-only content + elementName
+      const content = '{ user(id: "1") { ...UserFields } }';
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+      };
+
+      const fragmentText = "fragment UserFields on User { id name }";
+      const externalFragments = [makeFragment("/test/fragments.ts", "default", fragmentText)];
+
+      // Position cursor on "UserFields" in "...UserFields"
+      const spreadIdx = content.indexOf("...UserFields") + 3;
+      const cursorInTs = contentStart + spreadIdx;
+      const lines = tsSource.slice(0, cursorInTs).split("\n");
+      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+      const locations = await handleDefinition({
+        template,
+        tsSource,
+        tsPosition,
+        externalFragments,
+      });
+
+      expect(locations.length).toBeGreaterThan(0);
+      expect(locations[0]!.uri).toBe("/test/fragments.ts");
+    });
+
+    const makeCurriedFragment = (
+      uri: string,
+      schemaName: string,
+      body: string,
+      elementName: string,
+      typeName: string,
+      tsSource: string,
+    ): IndexedFragment => {
+      const header = `fragment ${elementName} on ${typeName} `;
+      const reconstructed = header + body;
+      const ast = parse(reconstructed);
+      const def = ast.definitions[0] as FragmentDefinitionNode;
+      const contentStart = tsSource.indexOf(body);
+      return {
+        uri,
+        schemaName,
+        fragmentName: def.name.value,
+        definition: def,
+        content: reconstructed,
+        contentRange: { start: contentStart, end: contentStart + body.length },
+        tsSource,
+        headerLen: header.length,
+      };
+    };
+
+    test("maps definition position correctly for curried target fragment", async () => {
+      const content = '{ user(id: "1") { ...UserFields } }';
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+      };
+
+      // Target fragment uses curried syntax with non-zero headerLen
+      const fragmentBody = "{ id name }";
+      const fragmentTsSource = [
+        'import { gql } from "@/graphql-system";',
+        "",
+        `export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`${fragmentBody}\`);`,
+      ].join("\n");
+      const externalFragments = [makeCurriedFragment("/test/fragments.ts", "default", fragmentBody, "UserFields", "User", fragmentTsSource)];
+
+      const spreadIdx = content.indexOf("...UserFields") + 3;
+      const cursorInTs = contentStart + spreadIdx;
+      const lines = tsSource.slice(0, cursorInTs).split("\n");
+      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+      const locations = await handleDefinition({
+        template,
+        tsSource,
+        tsPosition,
+        externalFragments,
+      });
+
+      expect(locations.length).toBeGreaterThan(0);
+      const loc = locations[0]!;
+      expect(loc.uri).toBe("/test/fragments.ts");
+      // Definition should point to the fragment body in the TS file (line 2)
+      expect(loc.range.start.line).toBe(2);
+    });
+  });
 });

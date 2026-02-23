@@ -170,6 +170,79 @@ describe("computeTemplateDiagnostics", () => {
     // In this case, no other errors expected for valid query structure
   });
 
+  describe("curried tagged template syntax", () => {
+    test("no diagnostics for valid curried query", () => {
+      const content = '($id: ID!) { user(id: $id) { id name } }';
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+      };
+
+      const diagnostics = computeTemplateDiagnostics({
+        template,
+        schema: defaultSchema,
+        tsSource,
+      });
+
+      expect(diagnostics).toHaveLength(0);
+    });
+
+    test("curried query with unknown field reports diagnostic on correct line", () => {
+      const content = '{ user(id: "1") { id unknownField } }';
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+      };
+
+      const diagnostics = computeTemplateDiagnostics({
+        template,
+        schema: defaultSchema,
+        tsSource,
+      });
+
+      expect(diagnostics.length).toBeGreaterThan(0);
+      expect(diagnostics.some((d) => d.message.includes("unknownField"))).toBe(true);
+      // Template is on line 2 (0-indexed) — position must not be shifted by headerLen
+      const diag = diagnostics.find((d) => d.message.includes("unknownField"));
+      expect(diag!.range.start.line).toBe(2);
+    });
+
+    test("curried fragment validates without false positives", () => {
+      const content = "{ id name email }";
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ fragment }) => fragment("UserFields", "User")\`${content}\`);`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "fragment",
+        content,
+        elementName: "UserFields",
+        typeName: "User",
+      };
+
+      const diagnostics = computeTemplateDiagnostics({
+        template,
+        schema: defaultSchema,
+        tsSource,
+      });
+
+      expect(diagnostics).toHaveLength(0);
+    });
+  });
+
   test("still reports other diagnostics when placeholder present", () => {
     // Template with both placeholder AND an actual error
     const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ unknownField } }';
