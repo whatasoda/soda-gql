@@ -49,7 +49,6 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
     expect(t.content).toContain("user(id: $id)");
   });
 
@@ -74,7 +73,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("fragment");
-    expect(t.content).toContain("fragment UserFields");
+    expect(t.content).toContain("$showEmail");
   });
 
   test("handles metadata chaining", () => {
@@ -86,7 +85,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
+    expect(t.content).toContain('user(id: "1")');
   });
 
   test("handles block body with return", () => {
@@ -98,7 +97,7 @@ describe("createDocumentManager", () => {
     const t = state.templates[0]!;
     expect(t.schemaName).toBe("default");
     expect(t.kind).toBe("query");
-    expect(t.content).toContain("query GetUser");
+    expect(t.content).toContain('user(id: "1")');
   });
 
   test("returns empty templates for file without templates", () => {

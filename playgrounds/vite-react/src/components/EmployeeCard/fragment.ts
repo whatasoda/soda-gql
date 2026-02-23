@@ -6,7 +6,7 @@ import { gql } from "@/graphql-system";
  * Defines the data requirements colocated with the component.
  */
 export const employeeCardFragment = gql.default(({ fragment }) =>
-  fragment`fragment EmployeeCardFragment($employeeId: ID!) on Query {
+  fragment("EmployeeCardFragment", "Query")`($employeeId: ID!) {
     employee(id: $employeeId) {
       id
       name

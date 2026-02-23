@@ -6,5 +6,5 @@ import { gql } from "../../../../graphql-system";
 // @ts-expect-error - intentionally invalid for testing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const userFragment = gql(({ fragment }: any) =>
-  fragment`fragment UserFragment on Employee { id name }`(),
+  fragment("UserFragment", "Employee")`{ id name }`(),
 );

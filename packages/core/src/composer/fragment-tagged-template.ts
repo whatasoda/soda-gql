@@ -269,131 +269,6 @@ function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldN
   return parts[1] ?? typeName;
 }
 
-/**
- * Creates a tagged template function for fragments (legacy inline-header syntax).
- *
- * @param schema - The GraphQL schema definition
- */
-export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(schema: TSchema): FragmentTaggedTemplateFunction {
-  const schemaIndex = createSchemaIndexFromSchema(schema);
-
-  return (
-    strings: TemplateStringsArray,
-    ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
-  ): TemplateResult<AnyFragment> => {
-    // Validate interpolated values are fragments or callbacks
-    for (let i = 0; i < values.length; i++) {
-      const value = values[i];
-      if (!(value instanceof Fragment) && typeof value !== "function") {
-        throw new Error(
-          `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
-            `Received ${typeof value} at position ${i}.`,
-        );
-      }
-    }
-
-    // Build GraphQL source with placeholder fragment spread names for interpolations
-    // This allows us to parse the GraphQL and later replace placeholders with actual fragment fields
-    let rawSource = strings[0] ?? "";
-    const interpolationMap = new Map<
-      string,
-      AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)
-    >();
-
-    for (let i = 0; i < values.length; i++) {
-      const placeholderName = `__INTERPOLATION_${i}__`;
-      interpolationMap.set(
-        placeholderName,
-        values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended),
-      );
-      rawSource += placeholderName + (strings[i + 1] ?? "");
-    }
-
-    // Extract variables from Fragment Arguments syntax before preprocessing
-    let varSpecifiers = extractFragmentVariables(rawSource, schemaIndex);
-
-    // Merge variable definitions from interpolated fragments
-    varSpecifiers = mergeVariableDefinitions(varSpecifiers, interpolationMap);
-
-    // Preprocess to strip Fragment Arguments syntax
-    const { preprocessed } = preprocessFragmentArgs(rawSource);
-
-    // Parse the preprocessed GraphQL
-    let document: import("graphql").DocumentNode;
-    try {
-      document = parseGraphql(preprocessed);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`GraphQL parse error in tagged template: ${message}`);
-    }
-
-    // Validate exactly one fragment definition
-    const fragmentDefs = document.definitions.filter((def) => def.kind === Kind.FRAGMENT_DEFINITION);
-    if (fragmentDefs.length === 0) {
-      throw new Error("Expected a fragment definition, found none");
-    }
-    if (fragmentDefs.length > 1) {
-      throw new Error(`Expected exactly one fragment definition, found ${fragmentDefs.length}`);
-    }
-
-    // biome-ignore lint/style/noNonNullAssertion: Length checked above
-    const fragNode = fragmentDefs[0]!;
-    if (fragNode.kind !== Kind.FRAGMENT_DEFINITION) {
-      throw new Error("Unexpected definition kind");
-    }
-
-    const fragmentName = fragNode.name.value;
-    const onType = fragNode.typeCondition.name.value;
-
-    // Validate onType exists in schema
-    if (!(onType in schema.object)) {
-      throw new Error(`Type "${onType}" is not defined in schema objects`);
-    }
-
-    return (options?: TemplateResultMetadataOptions): AnyFragment => {
-      // Tagged template fragments cannot provide compile-time type inference for field selections
-      // since the GraphQL string is only known at runtime. Type information is generated via typegen.
-      // We explicitly pass the schema type parameter to Fragment.create to at least preserve
-      // typename and variable definition types in the type system.
-      return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
-        typename: onType,
-        key: fragmentName,
-        schemaLabel: schema.label,
-        variableDefinitions: varSpecifiers,
-        // biome-ignore lint/suspicious/noExplicitAny: Runtime-only spread needs dynamic variable types
-        spread: (variables: any) => {
-          const $ = createVarAssignments(varSpecifiers, variables);
-
-          // Handle metadata - can be static value or callback
-          let metadataBuilder: (() => unknown | Promise<unknown>) | null = null;
-          if (options?.metadata !== undefined) {
-            const metadata = options.metadata;
-            if (typeof metadata === "function") {
-              metadataBuilder = () => (metadata as (ctx: { $: unknown }) => unknown | Promise<unknown>)({ $ });
-            } else {
-              metadataBuilder = () => metadata;
-            }
-          }
-
-          recordFragmentUsage({
-            metadataBuilder,
-            path: null,
-          });
-
-          return buildFieldsFromSelectionSet(
-            fragNode.selectionSet,
-            schema,
-            onType,
-            $ as Readonly<Record<string, AnyVarRef>>,
-            interpolationMap,
-          );
-        },
-        // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
-      })) as any;
-    };
-  };
-}
-
 /** Curried fragment function type: fragment("name", "type")`{ fields }` */
 export type CurriedFragmentFunction = (name: string, typeName: string) => FragmentTaggedTemplateFunction;
 
@@ -428,9 +303,7 @@ function buildSyntheticFragmentSource(name: string, typeName: string, body: stri
  *
  * @param schema - The GraphQL schema definition
  */
-export function createCurriedFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(
-  schema: TSchema,
-): CurriedFragmentFunction {
+export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(schema: TSchema): CurriedFragmentFunction {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
   return (fragmentName: string, onType: string): FragmentTaggedTemplateFunction => {

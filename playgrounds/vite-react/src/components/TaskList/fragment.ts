@@ -7,7 +7,7 @@ import { gql } from "@/graphql-system";
  */
 export const taskListFragment = gql
   .default(({ fragment }) =>
-    fragment`fragment TaskListFragment($projectId: ID!, $completed: Boolean) on Query {
+    fragment("TaskListFragment", "Query")`($projectId: ID!, $completed: Boolean) {
       project(id: $projectId) {
         tasks(completed: $completed) {
           id

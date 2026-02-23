@@ -1,3 +1,3 @@
 import { gql } from "../graphql-system";
 
-export const anonymousFragment = gql.default(({ fragment }) => fragment`fragment AnonymousUserFields on User { id }`());
+export const anonymousFragment = gql.default(({ fragment }) => fragment("AnonymousUserFields", "User")`{ id }`());

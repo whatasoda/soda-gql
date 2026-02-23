@@ -5,5 +5,5 @@ import { gql } from "../../../../graphql-system";
 // This call is invalid - optional chaining not supported
 // If gql is undefined, the call would silently return undefined
 export const optionalChaining = gql?.default(({ fragment }) =>
-  fragment`fragment OptionalChaining on Employee { id }`(),
+  fragment("OptionalChaining", "Employee")`{ id }`(),
 );

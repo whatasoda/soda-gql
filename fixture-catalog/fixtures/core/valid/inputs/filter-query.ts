@@ -4,7 +4,7 @@ import { gql } from "../../../../graphql-system";
  * Simple filter input with variable references
  */
 export const filteredProjectsQuery = gql.default(({ query }) =>
-  query`query FilteredProjects($status: ProjectStatus, $minPriority: Int, $limit: Int) {
+  query("FilteredProjects")`($status: ProjectStatus, $minPriority: Int, $limit: Int) {
     projects(filter: { status: { _eq: $status }, priority: { _gte: $minPriority } }, pagination: { limit: $limit }) {
       id
       title
@@ -18,7 +18,7 @@ export const filteredProjectsQuery = gql.default(({ query }) =>
  * Filter with multiple status values via _in
  */
 export const multiStatusFilterQuery = gql.default(({ query }) =>
-  query`query MultiStatusFilter($statuses: [ProjectStatus!], $limit: Int) {
+  query("MultiStatusFilter")`($statuses: [ProjectStatus!], $limit: Int) {
     projects(filter: { status: { _in: $statuses } }, pagination: { limit: $limit }) {
       id
       title
@@ -31,7 +31,7 @@ export const multiStatusFilterQuery = gql.default(({ query }) =>
  * Query with nested field selections (showing filter capability without vars in nested)
  */
 export const nestedFieldQuery = gql.default(({ query }) =>
-  query`query NestedFieldQuery($projectId: ID!) {
+  query("NestedFieldQuery")`($projectId: ID!) {
     project(id: $projectId) {
       id
       title

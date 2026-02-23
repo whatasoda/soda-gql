@@ -13,14 +13,14 @@ const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicT
 describe("tagged template compat integration", () => {
   describe("compat spec creation", () => {
     it("creates compat spec from tagged template", () => {
-      const GetUserCompat = gql(({ query }) => query.compat`query GetUser($id: ID!) { user(id: $id) { id name } }`);
+      const GetUserCompat = gql(({ query }) => query.compat("GetUser")`($id: ID!) { user(id: $id) { id name } }`);
       expect(GetUserCompat).toBeInstanceOf(GqlDefine);
     });
   });
 
   describe("extend compat to operation", () => {
     it("extend compat spec into operation", () => {
-      const GetUserCompat = gql(({ query }) => query.compat`query GetUser($id: ID!) { user(id: $id) { id name } }`);
+      const GetUserCompat = gql(({ query }) => query.compat("GetUser")`($id: ID!) { user(id: $id) { id name } }`);
       const GetUser = gql(({ extend }) => extend(GetUserCompat));
       expect(GetUser.operationType).toBe("query");
       expect(GetUser.operationName).toBe("GetUser");
@@ -30,7 +30,7 @@ describe("tagged template compat integration", () => {
     });
 
     it("extend compat spec with metadata", () => {
-      const GetUserCompat = gql(({ query }) => query.compat`query GetUser($id: ID!) { user(id: $id) { id } }`);
+      const GetUserCompat = gql(({ query }) => query.compat("GetUser")`($id: ID!) { user(id: $id) { id } }`);
       const GetUser = gql(({ extend }) =>
         extend(GetUserCompat, {
           metadata: () => ({ headers: { "X-Auth": "token" } }),
@@ -42,7 +42,7 @@ describe("tagged template compat integration", () => {
 
   describe("compat without variables", () => {
     it("works without variables", () => {
-      const GetUsersCompat = gql(({ query }) => query.compat`query GetUsers { user(id: "1") { id name } }`);
+      const GetUsersCompat = gql(({ query }) => query.compat("GetUsers")`{ user(id: "1") { id name } }`);
       const GetUsers = gql(({ extend }) => extend(GetUsersCompat));
       expect(GetUsers.variableNames).toEqual([]);
     });
@@ -50,9 +50,7 @@ describe("tagged template compat integration", () => {
 
   describe("mutation and subscription compat", () => {
     it("mutation compat works", () => {
-      const UpdateUserCompat = gql(
-        ({ mutation }) => mutation.compat`mutation UpdateUser($id: ID!) { updateUser(id: $id) { id } }`,
-      );
+      const UpdateUserCompat = gql(({ mutation }) => mutation.compat("UpdateUser")`($id: ID!) { updateUser(id: $id) { id } }`);
       const UpdateUser = gql(({ extend }) => extend(UpdateUserCompat));
       expect(UpdateUser.operationType).toBe("mutation");
       expect(UpdateUser.operationName).toBe("UpdateUser");
@@ -60,7 +58,7 @@ describe("tagged template compat integration", () => {
 
     it("subscription compat works", () => {
       const OnUserUpdatedCompat = gql(
-        ({ subscription }) => subscription.compat`subscription OnUserUpdated { userUpdated(userId: "1") { id name } }`,
+        ({ subscription }) => subscription.compat("OnUserUpdated")`{ userUpdated(userId: "1") { id name } }`,
       );
       const OnUserUpdated = gql(({ extend }) => extend(OnUserUpdatedCompat));
       expect(OnUserUpdated.operationType).toBe("subscription");

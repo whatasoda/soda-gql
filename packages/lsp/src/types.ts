@@ -18,6 +18,10 @@ export type ExtractedTemplate = {
   readonly kind: OperationKind;
   /** Raw GraphQL content between backticks. */
   readonly content: string;
+  /** Element name from curried tag call (e.g., "GetUser" from query("GetUser")). */
+  readonly elementName?: string;
+  /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
+  readonly typeName?: string;
 };
 
 /** Per-document state maintained by the document manager. */

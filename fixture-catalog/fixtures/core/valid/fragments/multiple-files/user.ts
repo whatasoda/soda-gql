@@ -1,5 +1,5 @@
 import { gql } from "../../../../../graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on Employee { id name email }`(),
+  fragment("UserFragment", "Employee")`{ id name email }`(),
 );

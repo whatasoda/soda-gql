@@ -48,12 +48,12 @@ describe("createCompatTaggedTemplate", () => {
     const queryCompat = createCompatTaggedTemplate(schema, "query");
 
     it("returns a GqlDefine instance", () => {
-      const result = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const result = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       expect(result).toBeInstanceOf(GqlDefine);
     });
 
     it("GqlDefine.value contains correct spec properties", () => {
-      const result = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+      const result = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const spec = result.value;
       expect(spec.schema).toBe(schema);
       expect(spec.operationType).toBe("query");
@@ -61,15 +61,14 @@ describe("createCompatTaggedTemplate", () => {
       expect(spec.graphqlSource).toContain("query GetUser");
     });
 
-    it("stores raw graphqlSource string", () => {
-      const source = "query GetUser($id: ID!) { user(id: $id) { id name } }";
-      const result = queryCompat`query GetUser($id: ID!) { user(id: $id) { id name } }`;
+    it("stores synthesized graphqlSource string", () => {
+      const result = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const spec = result.value;
-      expect(spec.graphqlSource).toBe(source);
+      expect(spec.graphqlSource).toBe("query GetUser ($id: ID!) { user(id: $id) { id name } }");
     });
 
     it("spec passes isTemplateCompatSpec type guard", () => {
-      const result = queryCompat`query GetUser { user(id: "1") { id } }`;
+      const result = queryCompat("GetUser")`{ user(id: "1") { id } }`;
       expect(isTemplateCompatSpec(result.value)).toBe(true);
     });
   });
@@ -78,7 +77,7 @@ describe("createCompatTaggedTemplate", () => {
     const mutationCompat = createCompatTaggedTemplate(schema, "mutation");
 
     it("produces correct operationType and operationName", () => {
-      const result = mutationCompat`mutation UpdateUser($id: ID!) { updateUser(id: $id) { id } }`;
+      const result = mutationCompat("UpdateUser")`($id: ID!) { updateUser(id: $id) { id } }`;
       const spec = result.value;
       expect(spec.operationType).toBe("mutation");
       expect(spec.operationName).toBe("UpdateUser");
@@ -89,7 +88,7 @@ describe("createCompatTaggedTemplate", () => {
     const subscriptionCompat = createCompatTaggedTemplate(schema, "subscription");
 
     it("produces correct operationType and operationName", () => {
-      const result = subscriptionCompat`subscription OnUserUpdated { userUpdated { id name } }`;
+      const result = subscriptionCompat("OnUserUpdated")`{ userUpdated { id name } }`;
       const spec = result.value;
       expect(spec.operationType).toBe("subscription");
       expect(spec.operationName).toBe("OnUserUpdated");
@@ -100,13 +99,7 @@ describe("createCompatTaggedTemplate", () => {
     const queryCompat = createCompatTaggedTemplate(schema, "query");
 
     it("throws on invalid GraphQL syntax", () => {
-      expect(() => queryCompat`query { invalid syntax!!! }`).toThrow("GraphQL parse error");
-    });
-
-    it("throws on operation type mismatch", () => {
-      expect(() => queryCompat`mutation UpdateUser { updateUser(id: "1") { id } }`).toThrow(
-        'Operation type mismatch: expected "query", got "mutation"',
-      );
+      expect(() => queryCompat("Foo")`{ invalid syntax!!! }`).toThrow("GraphQL parse error");
     });
 
     it("throws when operation type is not defined in schema roots", () => {
@@ -124,22 +117,8 @@ describe("createCompatTaggedTemplate", () => {
       );
     });
 
-    it("throws on anonymous operations", () => {
-      expect(() => queryCompat`query { user(id: "1") { id } }`).toThrow("Anonymous operations are not allowed");
-    });
-
     it("throws on interpolation values", () => {
-      expect(() => (queryCompat as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
-    });
-
-    it("throws when no operation definitions found", () => {
-      expect(() => queryCompat`fragment UserFields on User { id }`).toThrow("Expected exactly one operation definition, found 0");
-    });
-
-    it("throws when multiple operation definitions found", () => {
-      expect(() => queryCompat`query GetUser { user(id: "1") { id } } query GetUser2 { user(id: "2") { id } }`).toThrow(
-        "Expected exactly one operation definition, found 2",
-      );
+      expect(() => (queryCompat("Foo") as any)(["part1", "part2"], "interpolated")).toThrow("interpolated expressions");
     });
   });
 });

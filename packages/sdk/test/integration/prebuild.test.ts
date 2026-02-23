@@ -63,7 +63,7 @@ describe("prebuild integration", () => {
 import { gql } from "../graphql-system";
 
 export const employeeFragment = gql.default(({ fragment }) =>
-  fragment\`fragment EmployeeFragment on Employee { id name }\`()
+  fragment("EmployeeFragment", "Employee")\`{ id name }\`()
 );
 
 export const employeeQuery = gql.default(({ query, $var }) =>

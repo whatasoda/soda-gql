@@ -25,7 +25,7 @@ describe("query-level fragment pattern", () => {
   describe("single entity fragment spread in operation", () => {
     it("spreads tagged template entity fragment in query operation", () => {
       // Entity-level fragment: Reusable field selection on User type
-      const UserCardFields = gql(({ fragment }) => fragment`fragment UserCardFields on User { id name }`());
+      const UserCardFields = gql(({ fragment }) => fragment("UserCardFields", "User")`{ id name }`());
 
       // Query-level composition: Operation that spreads the entity fragment
       // This represents a "resolver unit" - the `user` query field
@@ -50,7 +50,7 @@ describe("query-level fragment pattern", () => {
     it("spreads entity fragment with variables", () => {
       // Entity-level fragment with variables and directive
       const UserConditionalFields = gql(({ fragment }) =>
-        fragment`fragment UserConditionalFields($includeName: Boolean!) on User {
+        fragment("UserConditionalFields", "User")`($includeName: Boolean!) {
           id
           name @include(if: $includeName)
         }`(),
@@ -81,9 +81,9 @@ describe("query-level fragment pattern", () => {
   describe("multiple entity fragments in operation", () => {
     it("spreads multiple entity fragments on same nested field", () => {
       // Multiple entity fragments for the same type
-      const UserIdFields = gql(({ fragment }) => fragment`fragment UserIdFields on User { id }`());
+      const UserIdFields = gql(({ fragment }) => fragment("UserIdFields", "User")`{ id }`());
 
-      const UserNameFields = gql(({ fragment }) => fragment`fragment UserNameFields on User { name }`());
+      const UserNameFields = gql(({ fragment }) => fragment("UserNameFields", "User")`{ name }`());
 
       // Query-level composition: Spreading multiple fragments in the same selection set
       const GetUserDetails = gql(({ query, $var }) =>
@@ -109,7 +109,7 @@ describe("query-level fragment pattern", () => {
   describe("pattern demonstrates resolver unit concept", () => {
     it("operation field represents a resolver unit that can spread entity fragments", () => {
       // Entity-level fragment: Defines the shape of User data needed for a component
-      const UserProfileFragment = gql(({ fragment }) => fragment`fragment UserProfileFragment on User { id name }`());
+      const UserProfileFragment = gql(({ fragment }) => fragment("UserProfileFragment", "User")`{ id name }`());
 
       // Query-level operation: Represents the `user(id: ID!)` resolver call
       // The operation is the "query-level fragment" - it composes entity fragments
@@ -136,7 +136,7 @@ describe("query-level fragment pattern", () => {
 
     it("demonstrates fragment reusability across operations", () => {
       // Shared entity-level fragment
-      const UserBasicFields = gql(({ fragment }) => fragment`fragment UserBasicFields on User { id name }`());
+      const UserBasicFields = gql(({ fragment }) => fragment("UserBasicFields", "User")`{ id name }`());
 
       // First operation using the entity fragment
       const GetUserForCard = gql(({ query, $var }) =>

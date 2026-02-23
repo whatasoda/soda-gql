@@ -57,7 +57,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
 
     // Create tagged template fragment with metadata callback
     const userFragment = gql(({ fragment }) =>
-      fragment`fragment UserFields($userId: ID!) on User { id name }`({
+      fragment("UserFields", "User")`($userId: ID!) { id name }`({
         metadata: ({ $ }: { $: Record<string, unknown> }) => ({
           headers: {
             "X-User-Id": $.userId ? "present" : "absent",
@@ -96,14 +96,14 @@ describe("fragment metadata callbacks in tagged templates", () => {
 
     // Fragment with static metadata
     const userIdFragment = gql(({ fragment }) =>
-      fragment`fragment UserIdFields on User { id }`({
+      fragment("UserIdFields", "User")`{ id }`({
         metadata: { headers: { "X-Static": "value" } },
       }),
     );
 
     // Fragment with callback metadata
     const userNameFragment = gql(({ fragment }) =>
-      fragment`fragment UserNameFields($userId: ID!) on User { name }`({
+      fragment("UserNameFields", "User")`($userId: ID!) { name }`({
         metadata: ({ $ }: { $: Record<string, unknown> }) => ({
           headers: {
             "X-Dynamic": $.userId ? "has-var" : "no-var",
@@ -139,7 +139,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
     const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
     const userFragment = gql(({ fragment }) =>
-      fragment`fragment UserFields on User { id name }`({
+      fragment("UserFields", "User")`{ id name }`({
         metadata: ({ $ }: { $: Record<string, unknown> }) => ({
           custom: {
             variableCount: Object.keys($).length,

@@ -5,7 +5,7 @@ import { gql } from "@/graphql-system";
  * Demonstrates fragment definition with variables and nested field selections
  */
 export const employeeFragment = gql.default(({ fragment }) =>
-  fragment`fragment EmployeeFragment($taskLimit: Int) on Employee {
+  fragment("EmployeeFragment", "Employee")`($taskLimit: Int) {
     id
     name
     email
@@ -23,5 +23,5 @@ export const employeeFragment = gql.default(({ fragment }) =>
  * Simple task fragment without variables
  */
 export const taskFragment = gql.default(({ fragment }) =>
-  fragment`fragment TaskFragment on Task { id title completed priority dueDate }`(),
+  fragment("TaskFragment", "Task")`{ id title completed priority dueDate }`(),
 );

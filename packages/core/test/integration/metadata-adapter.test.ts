@@ -69,7 +69,7 @@ describe("metadata adapter", () => {
       const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
 
       // Create a fragment (no metadata builder — tagged template)
-      const userFragment = gql(({ fragment }) => fragment`fragment UserMetaFields on User { id name }`());
+      const userFragment = gql(({ fragment }) => fragment("UserMetaFields", "User")`{ id name }`());
 
       // Create operation that spreads the fragment
       const operation = gql(({ query, $var }) =>
@@ -154,7 +154,7 @@ describe("metadata adapter", () => {
       });
 
       // Fragment without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) => fragment`fragment UserCustomMetaFields on User { id name }`());
+      const userFragment = gql(({ fragment }) => fragment("UserCustomMetaFields", "User")`{ id name }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -192,7 +192,7 @@ describe("metadata adapter", () => {
       });
 
       // Fragment without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) => fragment`fragment UserCapturingFields on User { id }`());
+      const userFragment = gql(({ fragment }) => fragment("UserCapturingFields", "User")`{ id }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -218,9 +218,9 @@ describe("metadata adapter", () => {
       });
 
       // Fragments without metadata (not supported in tagged templates yet)
-      const userFragment = gql(({ fragment }) => fragment`fragment UserAggregateFields on User { id }`());
+      const userFragment = gql(({ fragment }) => fragment("UserAggregateFields", "User")`{ id }`());
 
-      const postFragment = gql(({ fragment }) => fragment`fragment PostAggregateFields on Post { id title }`());
+      const postFragment = gql(({ fragment }) => fragment("PostAggregateFields", "Post")`{ id title }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({
@@ -268,7 +268,7 @@ describe("metadata adapter", () => {
       });
 
       // Fragment without metadata (tagged template)
-      const userFragment = gql(({ fragment }) => fragment`fragment UserNoMetaFields on User { id }`());
+      const userFragment = gql(({ fragment }) => fragment("UserNoMetaFields", "User")`{ id }`());
 
       const operation = gql(({ query, $var }) =>
         query.operation({

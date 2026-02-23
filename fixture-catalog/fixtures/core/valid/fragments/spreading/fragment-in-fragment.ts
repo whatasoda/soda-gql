@@ -3,13 +3,13 @@ import { gql } from "../../../../../graphql-system";
 /**
  * Base task fragment
  */
-export const taskFragment = gql.default(({ fragment }) => fragment`fragment TaskFragment on Task { id title }`());
+export const taskFragment = gql.default(({ fragment }) => fragment("TaskFragment", "Task")`{ id title }`());
 
 /**
  * Employee fragment with nested task fields (uses tagged template since fragment callback builders were removed)
  */
 export const employeeWithTasksFragment = gql.default(({ fragment }) =>
-  fragment`fragment EmployeeWithTasksFragment($completed: Boolean) on Employee {
+  fragment("EmployeeWithTasksFragment", "Employee")`($completed: Boolean) {
     id
     name
     tasks(completed: $completed) {

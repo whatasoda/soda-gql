@@ -5,7 +5,7 @@ import { gql } from "../../../../graphql-system";
  * Company → Department → Team → Project → Task
  */
 export const companyOverviewQuery = gql.default(({ query }) =>
-  query`query CompanyOverview($companyId: ID!) {
+  query("CompanyOverview")`($companyId: ID!) {
     company(id: $companyId) {
       id
       name
@@ -35,7 +35,7 @@ export const companyOverviewQuery = gql.default(({ query }) =>
  * Deep nesting with field arguments at multiple levels
  */
 export const filteredCompanyQuery = gql.default(({ query }) =>
-  query`query FilteredCompanyOverview($companyId: ID!, $projectStatus: ProjectStatus, $taskCompleted: Boolean, $limit: Int) {
+  query("FilteredCompanyOverview")`($companyId: ID!, $projectStatus: ProjectStatus, $taskCompleted: Boolean, $limit: Int) {
     company(id: $companyId) {
       id
       name

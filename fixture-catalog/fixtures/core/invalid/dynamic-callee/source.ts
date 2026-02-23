@@ -6,12 +6,12 @@ const altGql = null;
 
 // This call is invalid - dynamic expression as callee
 export const dynamicCallee = (altGql || gql).default(({ fragment }) =>
-  fragment`fragment DynamicCallee on Employee { id name }`(),
+  fragment("DynamicCallee", "Employee")`{ id name }`(),
 );
 
 // Conditional expression is also not supported
 const useAlt = false;
 // @ts-expect-error - intentionally invalid: altGql is null
 export const conditionalCallee = (useAlt ? altGql : gql).default(({ fragment }) =>
-  fragment`fragment ConditionalCallee on Employee { id }`(),
+  fragment("ConditionalCallee", "Employee")`{ id }`(),
 );

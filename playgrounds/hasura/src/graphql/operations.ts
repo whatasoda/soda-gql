@@ -135,7 +135,7 @@ export const getOrderItems = gql.default(({ query, $var }) =>
 
 // Aggregation query
 export const getProductsAggregate = gql.default(({ query }) =>
-  query`query GetProductsAggregate {
+  query("GetProductsAggregate")`{
     products_aggregate {
       aggregate {
         count
@@ -175,7 +175,7 @@ export const createProduct = gql.default(({ mutation, $var }) =>
 );
 
 export const updateProduct = gql.default(({ mutation }) =>
-  mutation`mutation UpdateProduct($id: uuid!, $name: String, $isPublished: Boolean) {
+  mutation("UpdateProduct")`($id: uuid!, $name: String, $isPublished: Boolean) {
     update_products_by_pk(pk_columns: { id: $id }, _set: { name: $name, is_published: $isPublished }) {
       id
       name
@@ -186,7 +186,7 @@ export const updateProduct = gql.default(({ mutation }) =>
 );
 
 export const deleteProduct = gql.default(({ mutation }) =>
-  mutation`mutation DeleteProduct($id: uuid!) {
+  mutation("DeleteProduct")`($id: uuid!) {
     delete_products_by_pk(id: $id) {
       id
       name

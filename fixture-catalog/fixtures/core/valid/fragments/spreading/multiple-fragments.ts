@@ -4,14 +4,14 @@ import { gql } from "../../../../../graphql-system";
  * User fragment
  */
 export const simpleUserFragment = gql.default(({ fragment }) =>
-  fragment`fragment SimpleUserFragment on Employee { id name }`(),
+  fragment("SimpleUserFragment", "Employee")`{ id name }`(),
 );
 
 /**
  * Post fragment
  */
 export const simplePostFragment = gql.default(({ fragment }) =>
-  fragment`fragment SimplePostFragment on Task { id title }`(),
+  fragment("SimplePostFragment", "Task")`{ id title }`(),
 );
 
 /**
