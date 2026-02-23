@@ -75,9 +75,7 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
       if (targetFragment) {
         // Convert from reconstructed-content space to original-template-content space
         const targetReconstructedLineOffsets = computeLineOffsets(targetFragment.content);
-        const targetContentLineOffsets = computeLineOffsets(
-          targetFragment.content.slice(targetFragment.headerLen),
-        );
+        const targetContentLineOffsets = computeLineOffsets(targetFragment.content.slice(targetFragment.headerLen));
 
         const toOriginalPos = (pos: { line: number; character: number }) => {
           const offset = positionToOffset(targetReconstructedLineOffsets, pos);

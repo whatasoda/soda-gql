@@ -247,7 +247,7 @@ describe("convertTemplatesToSelections", () => {
               schemaName: "default",
               kind: "query",
               elementName: "GetUser",
-              content: '($id: ID!) { user(id: $id) { id name } }',
+              content: "($id: ID!) { user(id: $id) { id name } }",
             },
           ],
         ],
