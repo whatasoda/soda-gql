@@ -196,4 +196,104 @@ describe("extractTemplatesFromSource", () => {
 
     expect(templates).toHaveLength(1);
   });
+
+  describe("curried syntax (new API)", () => {
+    it("extracts curried query template", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const GetUser = gql.default(({ query }) =>
+          query("GetUser")\`($id: ID!) { user(id: $id) { id name } }\`
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(1);
+      expect(templates[0]!.schemaName).toBe("default");
+      expect(templates[0]!.kind).toBe("query");
+      expect(templates[0]!.elementName).toBe("GetUser");
+      expect(templates[0]!.typeName).toBeUndefined();
+      expect(templates[0]!.content).toContain("user(id: $id)");
+    });
+
+    it("extracts curried fragment template with type name", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const UserFields = gql.default(({ fragment }) =>
+          fragment("UserFields", "User")\`{ id name email }\`()
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(1);
+      expect(templates[0]!.kind).toBe("fragment");
+      expect(templates[0]!.elementName).toBe("UserFields");
+      expect(templates[0]!.typeName).toBe("User");
+      expect(templates[0]!.content).toContain("id name email");
+    });
+
+    it("extracts curried mutation and subscription", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const CreateUser = gql.default(({ mutation }) =>
+          mutation("CreateUser")\`($input: CreateUserInput!) { createUser(input: $input) { id } }\`
+        );
+        export const OnUser = gql.default(({ subscription }) =>
+          subscription("OnUserCreated")\`{ userCreated { id } }\`
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(2);
+      expect(templates[0]!.kind).toBe("mutation");
+      expect(templates[0]!.elementName).toBe("CreateUser");
+      expect(templates[1]!.kind).toBe("subscription");
+      expect(templates[1]!.elementName).toBe("OnUserCreated");
+    });
+
+    it("handles curried template with metadata chaining", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const GetUser = gql.default(({ query }) =>
+          query("GetUser")\`{ user { id } }\`({ metadata: { cache: 60 } })
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(1);
+      expect(templates[0]!.elementName).toBe("GetUser");
+    });
+
+    it("handles curried template with interpolation (fragment spread)", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const GetUser = gql.default(({ query }) =>
+          query("GetUser")\`{ user(id: "1") { ...\${userFields} } }\`
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(1);
+      expect(templates[0]!.elementName).toBe("GetUser");
+      // Interpolation replaced with placeholder
+      expect(templates[0]!.content).toContain("__FRAG_SPREAD_0__");
+    });
+
+    it("old-syntax interpolation is still skipped", () => {
+      const source = `
+        import { gql } from "./graphql-system";
+        export const GetUser = gql.default(({ query }) =>
+          query\`query GetUser { \${someField} }\`
+        );
+      `;
+
+      const { templates } = extractTemplatesFromSource("/src/a.ts", source, helper);
+
+      expect(templates).toHaveLength(0);
+    });
+  });
 });
