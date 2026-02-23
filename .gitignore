@@ -144,7 +144,9 @@ dist/
 
 # IDE files
 .idea/
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 *.swp
 *.swo
 *~
@@ -194,6 +196,8 @@ website/.rspress/
 
 # Generated entry wrapper files (created by scripts/generate-entry-wrappers.ts)
 packages/*/*.js
+!packages/vscode-extension/build.js
+!packages/vscode-extension/package-extension.sh
 packages/*/*.d.ts
 .agent-loops/
 

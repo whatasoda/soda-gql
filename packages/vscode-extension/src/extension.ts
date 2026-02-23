@@ -10,9 +10,8 @@ import { type LanguageClient, type LanguageClientOptions, type ServerOptions, Tr
 let client: LanguageClient | undefined;
 
 export const activate = (context: vscode.ExtensionContext): void => {
-  // The LSP server is implemented in the @soda-gql/lsp package
-  // We use the bin entry point (soda-gql-lsp) to launch the server
-  const serverModule = context.asAbsolutePath(path.join("node_modules", "@soda-gql", "lsp", "dist", "bin.mjs"));
+  // The LSP server is bundled into dist/server.js by build.js
+  const serverModule = context.asAbsolutePath(path.join("dist", "server.js"));
 
   // Server debug options
   const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };

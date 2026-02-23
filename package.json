@@ -32,6 +32,8 @@
     "perf:codegen-typecheck:all": "bun run perf-measures/codegen-typecheck/scripts/run.ts --all --compare",
     "perf:typecheck:generate": "bun run perf-measures/type-check/scripts/run.ts --generate",
     "cleanup": "rm -rf .cache tests/.tmp",
+    "vscode:package": "bun run build && bun run --filter=soda-gql-vscode-extension build && bun run --filter=soda-gql-vscode-extension package",
+    "vscode:install": "bun run build && bun run --filter=soda-gql-vscode-extension build && bun run --filter=soda-gql-vscode-extension package:install",
     "website:dev": "bun run --filter=@soda-gql/website dev",
     "website:build": "bun run --filter=@soda-gql/website build"
   },
