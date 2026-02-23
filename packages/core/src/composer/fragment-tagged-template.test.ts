@@ -4,7 +4,7 @@ import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createVarRefFromVariable, VarRef } from "../types/type-foundation/var-ref";
-import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
+import { createCurriedFragmentTaggedTemplate, createFragmentTaggedTemplate } from "./fragment-tagged-template";
 
 const schema = {
   label: "test" as const,
@@ -629,6 +629,239 @@ describe("createFragmentTaggedTemplate", () => {
       const fields = parentFragment.spread({} as never);
       expect(fields).toHaveProperty("id");
       expect(fields).toHaveProperty("name");
+    });
+  });
+});
+
+describe("createCurriedFragmentTaggedTemplate", () => {
+  const fragment = createCurriedFragmentTaggedTemplate(schema);
+
+  describe("basic fragment creation", () => {
+    it("creates a fragment with correct typename and key", () => {
+      const result = fragment("UserFields", "User")`{ id name }`();
+      expect(result.typename).toBe("User");
+      expect(result.key).toBe("UserFields");
+      expect(result.schemaLabel).toBe("test");
+    });
+
+    it("fragment on Post type resolves correctly", () => {
+      const result = fragment("PostFields", "Post")`{ id title }`();
+      expect(result.typename).toBe("Post");
+      expect(result.key).toBe("PostFields");
+    });
+
+    it("spread function returns correct fields", () => {
+      const result = fragment("UserFields", "User")`{ id name }`();
+      const fields = result.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("allows __typename as an implicit introspection field", () => {
+      const result = fragment("UserWithTypename", "User")`{ __typename id name }`();
+      const fields = result.spread({} as never);
+      expect(fields).toHaveProperty("__typename");
+      expect(fields).toHaveProperty("id");
+    });
+  });
+
+  describe("variable declarations", () => {
+    it("fragment without variables produces empty variableDefinitions", () => {
+      const result = fragment("UserFields", "User")`{ id name }`();
+      expect(result.variableDefinitions).toEqual({});
+    });
+
+    it("fragment with variables extracts VarSpecifier records", () => {
+      const result = fragment("UserFields", "User")`($showEmail: Boolean!) { id }`();
+      expect(result.variableDefinitions).toHaveProperty("showEmail");
+      const showEmail = (result.variableDefinitions as Record<string, any>).showEmail;
+      expect(showEmail.kind).toBe("scalar");
+      expect(showEmail.name).toBe("Boolean");
+      expect(showEmail.modifier).toBe("!");
+    });
+
+    it("fragment with default values extracts defaultValue", () => {
+      const result = fragment("UserFields", "User")`($limit: Int = 10) { id }`();
+      const limit = (result.variableDefinitions as Record<string, any>).limit;
+      expect(limit.kind).toBe("scalar");
+      expect(limit.name).toBe("Int");
+      expect(limit.defaultValue).toEqual({ default: 10 });
+    });
+
+    it("fragment with multiple variables extracts all", () => {
+      const result = fragment("UserFields", "User")`($showEmail: Boolean!, $limit: Int) { id }`();
+      const varDefs = result.variableDefinitions as Record<string, any>;
+      expect(Object.keys(varDefs)).toHaveLength(2);
+      expect(varDefs).toHaveProperty("showEmail");
+      expect(varDefs).toHaveProperty("limit");
+    });
+  });
+
+  describe("variable references in spread", () => {
+    it("spread with VarRef produces args containing the VarRef", () => {
+      const frag = fragment("EmployeeTasks", "Employee")`($completed: Boolean) { tasks(completed: $completed) { id title } }`();
+      const varRef = createVarRefFromVariable("completed");
+      const fields = frag.spread({ completed: varRef } as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      expect(tasksField.args).toBeDefined();
+      const completedArg = tasksField.args.completed;
+      expect(completedArg).toBeInstanceOf(VarRef);
+      const inner = VarRef.getInner(completedArg as VarRef<never>);
+      expect(inner.type).toBe("variable");
+      expect(inner).toEqual({ type: "variable", name: "completed" });
+    });
+
+    it("spread with literal value produces args containing nested-value VarRef", () => {
+      const frag = fragment("EmployeeTasks", "Employee")`($completed: Boolean) { tasks(completed: $completed) { id title } }`();
+      const fields = frag.spread({ completed: true } as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      const completedArg = tasksField.args.completed;
+      expect(completedArg).toBeInstanceOf(VarRef);
+      const inner = VarRef.getInner(completedArg as VarRef<never>);
+      expect(inner.type).toBe("nested-value");
+      expect(inner).toEqual({ type: "nested-value", value: true });
+    });
+  });
+
+  describe("interpolation-based fragment spread", () => {
+    it("direct fragment interpolation spreads fields", () => {
+      const nameFragment = fragment("UserName", "User")`{ name }`();
+      const parentFragment = fragment("UserWithName", "User")`{ id ...${nameFragment} }`();
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+
+    it("callback interpolation receives $ context", () => {
+      const tasksFragment = fragment("EmployeeTasks", "Employee")`($completed: Boolean) { tasks(completed: $completed) { id title } }`();
+
+      const parentFragment = fragment("EmployeeWithTasks", "Employee")`($completed: Boolean) {
+        id
+        name
+        ...${($: { $: Readonly<Record<string, unknown>> }) => tasksFragment.spread({ completed: $.$.completed } as never)}
+      }`();
+
+      const varRef = createVarRefFromVariable("completed");
+      const fields = parentFragment.spread({ completed: varRef } as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+      expect(fields).toHaveProperty("tasks");
+
+      const tasksField = fields.tasks as AnyFieldSelection;
+      expect(tasksField.args.completed).toBeInstanceOf(VarRef);
+    });
+
+    it("multiple interpolated fragments in the same selection set work", () => {
+      const nameFragment = fragment("UserName", "User")`{ name }`();
+      const emailFragment = fragment("UserEmail", "User")`{ email }`();
+
+      const parentFragment = fragment("UserFull", "User")`{
+        id
+        ...${nameFragment}
+        ...${emailFragment}
+      }`();
+
+      const fields = parentFragment.spread({} as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+      expect(fields).toHaveProperty("email");
+    });
+  });
+
+  describe("variable definition auto-merge", () => {
+    it("spread fragment variables are merged into parent", () => {
+      const tasksFragment = fragment("EmployeeTasks", "Employee")`($completed: Boolean) { tasks(completed: $completed) { id title } }`();
+
+      const parentFragment = fragment("EmployeeWithTasks", "Employee")`{
+        id
+        name
+        ...${tasksFragment}
+      }`();
+
+      const varDefs = parentFragment.variableDefinitions as Record<string, any>;
+      expect(varDefs).toHaveProperty("completed");
+      expect(varDefs.completed.kind).toBe("scalar");
+      expect(varDefs.completed.name).toBe("Boolean");
+      expect(varDefs.completed.modifier).toBe("?");
+    });
+
+    it("duplicate variable names with matching types are deduplicated", () => {
+      const userFragment = fragment("UserFields", "User")`($userId: ID!) { id name }`();
+
+      const parentFragment = fragment("ParentFields", "User")`($userId: ID!) {
+        email
+        ...${userFragment}
+      }`();
+
+      const varDefs = parentFragment.variableDefinitions as Record<string, any>;
+      expect(Object.keys(varDefs)).toEqual(["userId"]);
+      expect(varDefs.userId.kind).toBe("scalar");
+      expect(varDefs.userId.name).toBe("ID");
+      expect(varDefs.userId.modifier).toBe("!");
+    });
+
+    it("conflicting variable types produce an error", () => {
+      const childFragment = fragment("ChildFields", "User")`($limit: Int) { id }`();
+
+      expect(() => {
+        fragment("ParentFields", "User")`($limit: String) {
+          name
+          ...${childFragment}
+        }`();
+      }).toThrow("$limit is defined with incompatible types");
+    });
+  });
+
+  describe("metadata callbacks", () => {
+    it("supports static metadata value", () => {
+      const userFragment = fragment("UserFields", "User")`{ id name }`({
+        metadata: { headers: { "X-Custom": "test" } },
+      });
+      expect(userFragment).toBeDefined();
+      expect(userFragment.typename).toBe("User");
+    });
+
+    it("supports metadata callback with variable access", () => {
+      const userFragment = fragment("UserFields", "User")`($userId: ID!) { id name }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => ({
+          headers: { "X-User-Var": $.userId ? "has-userId" : "no-userId" },
+        }),
+      });
+      expect(userFragment).toBeDefined();
+      expect(userFragment.typename).toBe("User");
+
+      const varRef = createVarRefFromVariable("userId");
+      const fields = userFragment.spread({ userId: varRef } as never);
+      expect(fields).toHaveProperty("id");
+      expect(fields).toHaveProperty("name");
+    });
+  });
+
+  describe("error handling", () => {
+    it("throws when type is not found in schema at curried call time", () => {
+      expect(() => fragment("Foo", "NonExistent")).toThrow('Type "NonExistent" is not defined in schema objects');
+    });
+
+    it("throws when interpolated value is not a Fragment or callback", () => {
+      expect(() => (fragment("Foo", "User") as any)(["part1", "part2"], "interpolated")).toThrow(
+        "Tagged templates only accept Fragment instances or callback functions as interpolated values",
+      );
+    });
+
+    it("throws on parse errors in selection set", () => {
+      expect(() => fragment("UserFields", "User")`{ invalid!!! syntax }`).toThrow("GraphQL parse error");
+    });
+
+    it("throws when selecting a field not in the schema", () => {
+      const frag = fragment("Foo", "User")`{ nonexistent }`();
+      expect(() => frag.spread({} as never)).toThrow('Field "nonexistent" is not defined on type "User"');
+    });
+
+    it("throws when fragment spread is used without interpolation", () => {
+      expect(() => {
+        const frag = fragment("Foo", "User")`{ ...SomeFragment }`();
+        frag.spread({} as never);
+      }).toThrow('Fragment spread "...SomeFragment" in tagged template must use interpolation syntax');
     });
   });
 });

@@ -270,7 +270,7 @@ function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldN
 }
 
 /**
- * Creates a tagged template function for fragments.
+ * Creates a tagged template function for fragments (legacy inline-header syntax).
  *
  * @param schema - The GraphQL schema definition
  */
@@ -390,6 +390,156 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
         },
         // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
       })) as any;
+    };
+  };
+}
+
+/** Curried fragment function type: fragment("name", "type")`{ fields }` */
+export type CurriedFragmentFunction = (name: string, typeName: string) => FragmentTaggedTemplateFunction;
+
+/**
+ * Construct a synthetic GraphQL fragment source from JS arguments and template body.
+ * Handles optional variable declarations: `($var: Type!) { fields }` or `{ fields }`.
+ */
+function buildSyntheticFragmentSource(name: string, typeName: string, body: string): string {
+  const trimmed = body.trim();
+  if (trimmed.startsWith("(")) {
+    // Has variable declarations — find the matching closing paren
+    let depth = 0;
+    for (let i = 0; i < trimmed.length; i++) {
+      if (trimmed[i] === "(") depth++;
+      else if (trimmed[i] === ")") {
+        depth--;
+        if (depth === 0) {
+          const varDecls = trimmed.slice(0, i + 1);
+          const selectionSet = trimmed.slice(i + 1).trim();
+          return `fragment ${name}${varDecls} on ${typeName} ${selectionSet}`;
+        }
+      }
+    }
+    throw new Error("Unmatched parenthesis in fragment variable declarations");
+  }
+  return `fragment ${name} on ${typeName} ${trimmed}`;
+}
+
+/**
+ * Creates a curried tagged template function for fragments.
+ * New API: `fragment("name", "type")\`{ fields }\`` returns TemplateResult<AnyFragment>.
+ *
+ * @param schema - The GraphQL schema definition
+ */
+export function createCurriedFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(
+  schema: TSchema,
+): CurriedFragmentFunction {
+  const schemaIndex = createSchemaIndexFromSchema(schema);
+
+  return (fragmentName: string, onType: string): FragmentTaggedTemplateFunction => {
+    // Validate onType exists in schema at curried call time
+    if (!(onType in schema.object)) {
+      throw new Error(`Type "${onType}" is not defined in schema objects`);
+    }
+
+    return (
+      strings: TemplateStringsArray,
+      ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended))[]
+    ): TemplateResult<AnyFragment> => {
+      // Validate interpolated values are fragments or callbacks
+      for (let i = 0; i < values.length; i++) {
+        const value = values[i];
+        if (!(value instanceof Fragment) && typeof value !== "function") {
+          throw new Error(
+            `Tagged templates only accept Fragment instances or callback functions as interpolated values. ` +
+              `Received ${typeof value} at position ${i}.`,
+          );
+        }
+      }
+
+      // Build template body with placeholders for interpolations
+      let body = strings[0] ?? "";
+      const interpolationMap = new Map<
+        string,
+        AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)
+      >();
+
+      for (let i = 0; i < values.length; i++) {
+        const placeholderName = `__INTERPOLATION_${i}__`;
+        interpolationMap.set(
+          placeholderName,
+          values[i] as AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended),
+        );
+        body += placeholderName + (strings[i + 1] ?? "");
+      }
+
+      // Construct synthetic GraphQL source from JS args and template body
+      const rawSource = buildSyntheticFragmentSource(fragmentName, onType, body);
+
+      // Extract variables from Fragment Arguments syntax
+      let varSpecifiers = extractFragmentVariables(rawSource, schemaIndex);
+
+      // Merge variable definitions from interpolated fragments
+      varSpecifiers = mergeVariableDefinitions(varSpecifiers, interpolationMap);
+
+      // Preprocess to strip Fragment Arguments syntax
+      const { preprocessed } = preprocessFragmentArgs(rawSource);
+
+      // Parse the preprocessed GraphQL
+      let document: import("graphql").DocumentNode;
+      try {
+        document = parseGraphql(preprocessed);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`GraphQL parse error in tagged template: ${message}`);
+      }
+
+      // Extract the fragment definition (synthesized source guarantees exactly one)
+      const fragmentDefs = document.definitions.filter((def) => def.kind === Kind.FRAGMENT_DEFINITION);
+      if (fragmentDefs.length !== 1) {
+        throw new Error(`Internal error: expected exactly one fragment definition in synthesized source`);
+      }
+
+      // biome-ignore lint/style/noNonNullAssertion: Length checked above
+      const fragNode = fragmentDefs[0]!;
+      if (fragNode.kind !== Kind.FRAGMENT_DEFINITION) {
+        throw new Error("Unexpected definition kind");
+      }
+
+      return (options?: TemplateResultMetadataOptions): AnyFragment => {
+        return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
+          typename: onType,
+          key: fragmentName,
+          schemaLabel: schema.label,
+          variableDefinitions: varSpecifiers,
+          // biome-ignore lint/suspicious/noExplicitAny: Runtime-only spread needs dynamic variable types
+          spread: (variables: any) => {
+            const $ = createVarAssignments(varSpecifiers, variables);
+
+            // Handle metadata - can be static value or callback
+            let metadataBuilder: (() => unknown | Promise<unknown>) | null = null;
+            if (options?.metadata !== undefined) {
+              const metadata = options.metadata;
+              if (typeof metadata === "function") {
+                metadataBuilder = () => (metadata as (ctx: { $: unknown }) => unknown | Promise<unknown>)({ $ });
+              } else {
+                metadataBuilder = () => metadata;
+              }
+            }
+
+            recordFragmentUsage({
+              metadataBuilder,
+              path: null,
+            });
+
+            return buildFieldsFromSelectionSet(
+              fragNode.selectionSet,
+              schema,
+              onType,
+              $ as Readonly<Record<string, AnyVarRef>>,
+              interpolationMap,
+            );
+          },
+          // biome-ignore lint/suspicious/noExplicitAny: Tagged template fragments bypass full type inference
+        })) as any;
+      };
     };
   };
 }
