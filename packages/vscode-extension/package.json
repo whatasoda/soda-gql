@@ -87,6 +87,6 @@
   "scripts": {
     "build": "node build.js",
     "package": "./package-extension.sh",
-    "package:install": "./package-extension.sh -o soda-gql.vsix && code --install-extension soda-gql.vsix && rm soda-gql.vsix"
+    "package:install": "./package-extension.sh -o soda-gql.vsix && cursor --install-extension soda-gql.vsix && rm soda-gql.vsix"
   }
 }
