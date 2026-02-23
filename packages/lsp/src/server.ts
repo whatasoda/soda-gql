@@ -504,10 +504,11 @@ export const createLspServer = (options?: LspServerOptions) => {
 
     if (graphqlChanged) {
       const result = registry.reloadAllSchemas();
-      if (result.isOk()) {
-        publishDiagnosticsForAllOpen();
-      } else {
-        connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${result.error.message}`);
+      publishDiagnosticsForAllOpen();
+      if (result.isErr()) {
+        for (const error of result.error) {
+          connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${error.message}`);
+        }
       }
     }
   });

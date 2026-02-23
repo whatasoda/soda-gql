@@ -9,8 +9,7 @@
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { findAllConfigFiles } from "../../../config/src/loader";
+import { findAllConfigFiles, type ResolvedSodaGqlConfig } from "@soda-gql/config";
 import type { ConfigContext } from "../../src/config-registry";
 import { createDocumentManager } from "../../src/document-manager";
 import { handleCompletion } from "../../src/handlers/completion";

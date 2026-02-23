@@ -25,8 +25,8 @@ export type ConfigContext = {
 export type ConfigRegistry = {
   readonly resolveForUri: (uri: string) => ConfigContext | undefined;
   readonly getAllContexts: () => readonly ConfigContext[];
-  readonly reloadSchemas: (configPath: string) => Result<void, LspError>;
-  readonly reloadAllSchemas: () => Result<void, LspError>;
+  readonly reloadSchemas: (configPath: string) => Result<void, LspError[]>;
+  readonly reloadAllSchemas: () => Result<void, LspError[]>;
 };
 
 export const createConfigRegistry = (
@@ -74,7 +74,7 @@ export const createConfigRegistry = (
 
     for (const configPath of sortedPaths) {
       const configDir = dirname(configPath);
-      if (dirPath.startsWith(configDir)) {
+      if (dirPath === configDir || dirPath.startsWith(configDir + "/")) {
         uriCache.set(dirPath, configPath);
         return configPath;
       }
@@ -97,19 +97,20 @@ export const createConfigRegistry = (
     reloadSchemas: (configPath: string) => {
       const ctx = contexts.get(configPath);
       if (!ctx) {
-        return err(lspErrors.configLoadFailed(`Config not found: ${configPath}`));
+        return err([lspErrors.configLoadFailed(`Config not found: ${configPath}`)]);
       }
       return ctx.schemaResolver.reloadAll();
     },
 
     reloadAllSchemas: () => {
+      const errors: LspError[] = [];
       for (const ctx of contexts.values()) {
         const result = ctx.schemaResolver.reloadAll();
         if (result.isErr()) {
-          return err(result.error);
+          errors.push(...result.error);
         }
       }
-      return ok(undefined);
+      return errors.length > 0 ? err(errors) : ok(undefined);
     },
   });
 };
