@@ -6,8 +6,9 @@
 import type { FragmentDefinitionNode, GraphQLSchema } from "graphql";
 import { getDiagnostics } from "graphql-language-service";
 import type { Diagnostic } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type ComputeDiagnosticsInput = {
@@ -21,7 +22,9 @@ export type ComputeDiagnosticsInput = {
 /** Compute LSP diagnostics for a single GraphQL template. */
 export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): readonly Diagnostic[] => {
   const { template, schema, tsSource } = input;
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const reconstructed = reconstructGraphql(template);
+  const headerLen = reconstructed.length - template.content.length;
+  const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
     tsSource,
@@ -29,7 +32,7 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
     graphqlContent: template.content,
   });
 
-  // getDiagnostics returns Diagnostic[] with graphql-content-relative positions
+  // getDiagnostics returns positions relative to the reconstructed source
   const gqlDiagnostics = getDiagnostics(
     preprocessed,
     schema,
@@ -41,25 +44,34 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
   // Pattern to detect interpolation placeholder fragments
   const placeholderPattern = /__FRAG_SPREAD_\d+__/;
 
+  // Convert position from reconstructed source to template content
+  const reconstructedLineOffsets = computeLineOffsets(preprocessed);
+  const contentLineOffsets = computeLineOffsets(template.content);
+  const toContentPosition = (pos: { line: number; character: number }) => {
+    const offset = positionToOffset(reconstructedLineOffsets, pos);
+    const contentOffset = Math.max(0, offset - headerLen);
+    return offsetToPosition(contentLineOffsets, contentOffset);
+  };
+
   return gqlDiagnostics
     .filter((diag) => {
       // Suppress diagnostics about placeholder fragments (from interpolation)
-      // These are not real fragment references and will be resolved at runtime
       if (placeholderPattern.test(diag.message)) {
+        return false;
+      }
+      // Suppress diagnostics that point into the synthesized header
+      const offset = positionToOffset(reconstructedLineOffsets, diag.range.start);
+      if (offset < headerLen) {
         return false;
       }
       return true;
     })
     .map((diag): Diagnostic => {
-      // Map GraphQL positions to TS file positions
-      const startTs = mapper.graphqlToTs({
-        line: diag.range.start.line,
-        character: diag.range.start.character,
-      });
-      const endTs = mapper.graphqlToTs({
-        line: diag.range.end.line,
-        character: diag.range.end.character,
-      });
+      // Convert from reconstructed space to content space, then to TS space
+      const startContent = toContentPosition(diag.range.start);
+      const endContent = toContentPosition(diag.range.end);
+      const startTs = mapper.graphqlToTs(startContent);
+      const endTs = mapper.graphqlToTs(endContent);
 
       return {
         range: {

@@ -345,7 +345,7 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
  * For curried syntax (new), prepends the definition header from tag call arguments.
  * For old syntax, returns content as-is.
  */
-const reconstructGraphql = (template: ExtractedTemplate): string => {
+export const reconstructGraphql = (template: ExtractedTemplate): string => {
   const content = template.content;
 
   if (template.elementName) {
@@ -369,6 +369,7 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
     }
 
     const reconstructed = reconstructGraphql(template);
+    const headerLen = reconstructed.length - template.content.length;
     const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
     try {
@@ -383,6 +384,7 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
             content: preprocessed,
             contentRange: template.contentRange,
             tsSource: source,
+            headerLen,
           });
         }
       }
@@ -484,6 +486,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
           }
 
           const reconstructed = reconstructGraphql(template);
+          const headerLen = reconstructed.length - template.content.length;
           const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
           try {
@@ -491,11 +494,12 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
             visit(ast, {
               FragmentSpread(node) {
                 if (node.name.value === fragmentName && node.name.loc) {
+                  // Adjust offset from reconstructed space to template-content space
                   locations.push({
                     uri,
                     tsSource: state.source,
                     template,
-                    nameOffset: node.name.loc.start,
+                    nameOffset: node.name.loc.start - headerLen,
                     nameLength: fragmentName.length,
                   });
                 }
@@ -506,11 +510,12 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
             const pattern = new RegExp(`\\.\\.\\.${fragmentName}\\b`, "g");
             let match: RegExpExecArray | null = null;
             while ((match = pattern.exec(preprocessed)) !== null) {
+              // Adjust offset from reconstructed space to template-content space
               locations.push({
                 uri,
                 tsSource: state.source,
                 template,
-                nameOffset: match.index + 3, // skip "..."
+                nameOffset: match.index + 3 - headerLen, // skip "..."
                 nameLength: fragmentName.length,
               });
             }

@@ -38,9 +38,12 @@ export type IndexedFragment = {
   readonly schemaName: string;
   readonly fragmentName: string;
   readonly definition: FragmentDefinitionNode;
+  /** Reconstructed full GraphQL source (with definition header for curried syntax). */
   readonly content: string;
   readonly contentRange: { readonly start: number; readonly end: number };
   readonly tsSource: string;
+  /** Number of bytes prepended by reconstruction (0 for old syntax). */
+  readonly headerLen: number;
 };
 
 /** A located fragment spread reference within a template. */

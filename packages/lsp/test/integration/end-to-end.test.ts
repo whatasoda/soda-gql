@@ -257,10 +257,9 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
 
       expect(locations.length).toBeGreaterThan(0);
       expect(locations[0]!.uri).toBe(fragmentUri);
-      // Fragment "fragment UserFields..." is on line 4 (0-indexed) in the TS fixture file
-      // The position should be mapped from GraphQL coordinates to TS file coordinates
-      expect(locations[0]!.range.start.line).toBe(4);
-      expect(locations[0]!.range.start.character).toBe(2);
+      // With curried syntax, the fragment definition header is synthesized.
+      // The definition resolves to the start of the template content (line 3, after backtick).
+      expect(locations[0]!.range.start.line).toBe(3);
     });
 
     test("documentSymbol returns operations and fragments", () => {

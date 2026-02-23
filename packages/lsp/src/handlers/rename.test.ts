@@ -18,6 +18,7 @@ const makeFragment = (uri: string, schemaName: string, fragmentText: string): In
     content: preprocessed,
     contentRange: { start: contentStart, end: contentStart + fragmentText.length },
     tsSource,
+    headerLen: 0,
   };
 };
 
