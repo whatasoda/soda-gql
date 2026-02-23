@@ -20,7 +20,7 @@ export type PreprocessResult = {
  * Handles nested parentheses, string literals, and comments.
  * Returns the index of the closing ')' or -1 if not found.
  */
-const findMatchingParen = (content: string, openIndex: number): number => {
+export const findMatchingParen = (content: string, openIndex: number): number => {
   let depth = 1;
   let inString: false | '"' | "'" = false;
 

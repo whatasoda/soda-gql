@@ -6,6 +6,7 @@
 
 import { Kind, parse as parseGraphql, type SelectionSetNode } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema, preprocessFragmentArgs } from "../graphql";
+import { findMatchingParen } from "../graphql/fragment-args-preprocessor";
 import type { SchemaIndex } from "../graphql/schema-index";
 import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
@@ -34,19 +35,12 @@ function extractFragmentArgText(rawSource: string): string | null {
   if (!match) return null;
 
   const openIndex = match.index + match[0].length - 1;
-  let depth = 1;
-  for (let i = openIndex + 1; i < rawSource.length; i++) {
-    if (rawSource[i] === "(") depth++;
-    else if (rawSource[i] === ")") {
-      depth--;
-      if (depth === 0) {
-        const afterParen = rawSource.slice(i + 1).trimStart();
-        if (afterParen.startsWith("on")) {
-          return rawSource.slice(openIndex + 1, i);
-        }
-        return null;
-      }
-    }
+  const closeIndex = findMatchingParen(rawSource, openIndex);
+  if (closeIndex === -1) return null;
+
+  const afterParen = rawSource.slice(closeIndex + 1).trimStart();
+  if (afterParen.startsWith("on")) {
+    return rawSource.slice(openIndex + 1, closeIndex);
   }
   return null;
 }
@@ -280,19 +274,13 @@ function buildSyntheticFragmentSource(name: string, typeName: string, body: stri
   const trimmed = body.trim();
   if (trimmed.startsWith("(")) {
     // Has variable declarations — find the matching closing paren
-    let depth = 0;
-    for (let i = 0; i < trimmed.length; i++) {
-      if (trimmed[i] === "(") depth++;
-      else if (trimmed[i] === ")") {
-        depth--;
-        if (depth === 0) {
-          const varDecls = trimmed.slice(0, i + 1);
-          const selectionSet = trimmed.slice(i + 1).trim();
-          return `fragment ${name}${varDecls} on ${typeName} ${selectionSet}`;
-        }
-      }
+    const closeIndex = findMatchingParen(trimmed, 0);
+    if (closeIndex === -1) {
+      throw new Error("Unmatched parenthesis in fragment variable declarations");
     }
-    throw new Error("Unmatched parenthesis in fragment variable declarations");
+    const varDecls = trimmed.slice(0, closeIndex + 1);
+    const selectionSet = trimmed.slice(closeIndex + 1).trim();
+    return `fragment ${name}${varDecls} on ${typeName} ${selectionSet}`;
   }
   return `fragment ${name} on ${typeName} ${trimmed}`;
 }
