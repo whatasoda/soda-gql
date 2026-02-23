@@ -23,7 +23,7 @@ export type SchemaResolver = {
   readonly getSchema: (schemaName: string) => SchemaEntry | undefined;
   readonly getSchemaNames: () => readonly string[];
   readonly reloadSchema: (schemaName: string) => Result<SchemaEntry, LspError>;
-  readonly reloadAll: () => Result<void, LspError>;
+  readonly reloadAll: () => Result<void, LspError[]>;
 };
 
 /** Wrap buildASTSchema (which throws) in a Result. */
@@ -86,14 +86,16 @@ export const createSchemaResolver = (config: ResolvedSodaGqlConfig): Result<Sche
     },
 
     reloadAll: () => {
+      const errors: LspError[] = [];
       for (const [name, schemaConfig] of Object.entries(config.schemas)) {
         const result = loadAndBuildSchema(name, schemaConfig.schema);
         if (result.isErr()) {
-          return err(result.error);
+          errors.push(result.error);
+        } else {
+          cache.set(name, result.value);
         }
-        cache.set(name, result.value);
       }
-      return ok(undefined);
+      return errors.length > 0 ? err(errors) : ok(undefined);
     },
   };
 

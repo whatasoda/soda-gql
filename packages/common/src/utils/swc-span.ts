@@ -36,7 +36,8 @@ export const createSwcSpanConverter = (source: string): SwcSpanConverter => {
   let bytePos = 0;
 
   for (let charIdx = 0; charIdx < source.length; charIdx++) {
-    const codePoint = source.codePointAt(charIdx)!;
+    const codePoint = source.codePointAt(charIdx);
+    if (codePoint === undefined) break;
     const bytesForCodePoint = codePoint <= 0x7f ? 1 : codePoint <= 0x7ff ? 2 : codePoint <= 0xffff ? 3 : 4;
 
     for (let b = 0; b < bytesForCodePoint; b++) {
@@ -55,6 +56,6 @@ export const createSwcSpanConverter = (source: string): SwcSpanConverter => {
 
   return {
     byteLength,
-    byteOffsetToCharIndex: (byteOffset: number) => byteToChar[byteOffset]!,
+    byteOffsetToCharIndex: (byteOffset: number) => byteToChar[byteOffset] ?? source.length,
   };
 };

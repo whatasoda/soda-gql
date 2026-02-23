@@ -59,7 +59,7 @@ export const handlePrepareRename = (input: HandlePrepareRenameInput): { range: R
 
   // Check fragment spread
   const spread = findFragmentSpreadAtOffset(preprocessed, offset);
-  if (spread && spread.name.value && spread.name.loc) {
+  if (spread?.name.value && spread.name.loc) {
     const gqlLineOffsets = computeLineOffsets(preprocessed);
     const start = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, spread.name.loc.start));
     const end = mapper.graphqlToTs(offsetToPosition(gqlLineOffsets, spread.name.loc.end));

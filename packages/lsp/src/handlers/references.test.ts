@@ -120,7 +120,6 @@ describe("handleReferences", () => {
 
   test("cursor on field name returns empty", () => {
     const queryText = "query Q { user { id } }";
-    const queryUri = "/test/query.ts";
     const queryTsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${queryText}\`);`;
     const contentStart = queryTsSource.indexOf(queryText);
     const fieldIdx = queryText.indexOf("user");
@@ -184,7 +183,6 @@ describe("handleReferences", () => {
 
   test("cursor outside template returns empty", () => {
     const queryText = "query Q { user { ...UserFields } }";
-    const queryUri = "/test/query.ts";
     const queryTsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${queryText}\`);`;
 
     const template: ExtractedTemplate = {

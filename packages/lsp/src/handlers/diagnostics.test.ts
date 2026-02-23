@@ -172,7 +172,7 @@ describe("computeTemplateDiagnostics", () => {
 
   describe("curried tagged template syntax", () => {
     test("no diagnostics for valid curried query", () => {
-      const content = '($id: ID!) { user(id: $id) { id name } }';
+      const content = "($id: ID!) { user(id: $id) { id name } }";
       const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
       const contentStart = tsSource.indexOf(content);
 

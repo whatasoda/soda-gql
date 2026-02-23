@@ -350,7 +350,11 @@ const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeNam
       };
     }
     // Expand shorthand to AnyFieldSelection if needed
-    const selection = isShorthand(value) ? expandShorthand(schema, typeName!, alias) : value;
+    if (isShorthand(value) && !typeName) {
+      throw new Error(`typeName is required for shorthand expansion of field "${alias}"`);
+    }
+    // typeName is guaranteed to be defined here when isShorthand(value) is true
+    const selection = isShorthand(value) ? expandShorthand(schema, typeName as string, alias) : value;
 
     const { args, field, object, union, directives, type } = selection;
     const parsedType = parseOutputField(type);

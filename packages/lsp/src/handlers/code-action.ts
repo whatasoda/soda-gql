@@ -66,9 +66,9 @@ export const handleCodeAction = (input: HandleCodeActionInput): CodeAction[] => 
   const { selections: matchedSelections, parentTypeName } = extractResult;
 
   // Extract the selected fields' source text
-  const firstSel = matchedSelections[0]!;
-  const lastSel = matchedSelections[matchedSelections.length - 1]!;
-  if (!firstSel.loc || !lastSel.loc) {
+  const firstSel = matchedSelections[0];
+  const lastSel = matchedSelections[matchedSelections.length - 1];
+  if (!firstSel?.loc || !lastSel?.loc) {
     return [];
   }
 

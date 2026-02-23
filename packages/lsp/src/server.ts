@@ -4,8 +4,7 @@
  */
 
 import { fileURLToPath } from "node:url";
-import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { loadConfigFrom } from "@soda-gql/config";
+import { findAllConfigFiles, findConfigFile } from "@soda-gql/config";
 import {
   type Connection,
   createConnection,
@@ -18,8 +17,8 @@ import {
   TextDocuments,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import type { DocumentManager } from "./document-manager";
-import { createDocumentManager } from "./document-manager";
+import type { ConfigRegistry } from "./config-registry";
+import { createConfigRegistry } from "./config-registry";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
@@ -30,8 +29,6 @@ import { handleHover } from "./handlers/hover";
 import { handleInlayHint } from "./handlers/inlay-hint";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
-import type { SchemaResolver } from "./schema-resolver";
-import { createSchemaResolver } from "./schema-resolver";
 
 export type LspServerOptions = {
   readonly connection?: Connection;
@@ -41,26 +38,31 @@ export const createLspServer = (options?: LspServerOptions) => {
   const connection = options?.connection ?? createConnection(ProposedFeatures.all);
   const documents = new TextDocuments(TextDocument);
 
-  let schemaResolver: SchemaResolver | undefined;
-  let documentManager: DocumentManager | undefined;
+  let registry: ConfigRegistry | undefined;
 
   const publishDiagnosticsForDocument = (uri: string) => {
-    if (!schemaResolver || !documentManager) {
+    if (!registry) {
       return;
     }
 
-    const state = documentManager.get(uri);
+    const ctx = registry.resolveForUri(uri);
+    if (!ctx) {
+      connection.sendDiagnostics({ uri, diagnostics: [] });
+      return;
+    }
+
+    const state = ctx.documentManager.get(uri);
     if (!state) {
       connection.sendDiagnostics({ uri, diagnostics: [] });
       return;
     }
 
     const allDiagnostics = state.templates.flatMap((template) => {
-      const entry = schemaResolver!.getSchema(template.schemaName);
+      const entry = ctx.schemaResolver.getSchema(template.schemaName);
       if (!entry) {
         return [];
       }
-      const externalFragments = documentManager!.getExternalFragments(uri, template.schemaName).map((f) => f.definition);
+      const externalFragments = ctx.documentManager.getExternalFragments(uri, template.schemaName).map((f) => f.definition);
       return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
     });
 
@@ -83,23 +85,26 @@ export const createLspServer = (options?: LspServerOptions) => {
     // Convert URI to path
     const rootPath = rootUri.startsWith("file://") ? fileURLToPath(rootUri) : rootUri;
 
-    const configResult = loadConfigFrom(rootPath);
-    if (configResult.isErr()) {
-      connection.window.showErrorMessage(`soda-gql LSP: failed to load config: ${configResult.error.message}`);
+    // Discover all config files under the workspace
+    let configPaths = findAllConfigFiles(rootPath);
+
+    if (configPaths.length === 0) {
+      // Fallback: try walking up from rootPath (for when workspace root != config dir)
+      const singleConfigPath = findConfigFile(rootPath);
+      if (!singleConfigPath) {
+        connection.window.showErrorMessage("soda-gql LSP: no config file found");
+        return { capabilities: {} };
+      }
+      configPaths = [singleConfigPath];
+    }
+
+    const registryResult = createConfigRegistry(configPaths);
+    if (registryResult.isErr()) {
+      connection.window.showErrorMessage(`soda-gql LSP: ${registryResult.error.message}`);
       return { capabilities: {} };
     }
 
-    const config = configResult.value;
-    const helper = createGraphqlSystemIdentifyHelper(config);
-
-    const resolverResult = createSchemaResolver(config);
-    if (resolverResult.isErr()) {
-      connection.window.showErrorMessage(`soda-gql LSP: ${resolverResult.error.message}`);
-      return { capabilities: {} };
-    }
-
-    schemaResolver = resolverResult.value;
-    documentManager = createDocumentManager(helper);
+    registry = registryResult.value;
 
     return {
       capabilities: {
@@ -129,27 +134,39 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   documents.onDidChangeContent((change: TextDocumentChangeEvent<TextDocument>) => {
-    if (!documentManager) {
+    if (!registry) {
       return;
     }
-    documentManager.update(change.document.uri, change.document.version, change.document.getText());
+    const ctx = registry.resolveForUri(change.document.uri);
+    if (!ctx) {
+      return;
+    }
+    ctx.documentManager.update(change.document.uri, change.document.version, change.document.getText());
     publishDiagnosticsForDocument(change.document.uri);
   });
 
   documents.onDidClose((change: TextDocumentChangeEvent<TextDocument>) => {
-    if (!documentManager) {
+    if (!registry) {
       return;
     }
-    documentManager.remove(change.document.uri);
+    const ctx = registry.resolveForUri(change.document.uri);
+    if (ctx) {
+      ctx.documentManager.remove(change.document.uri);
+    }
     connection.sendDiagnostics({ uri: change.document.uri, diagnostics: [] });
   });
 
   connection.onCompletion((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
       return [];
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
+      return [];
+    }
+
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       // We need to convert LSP position to offset
       positionToOffset(documents.get(params.textDocument.uri)?.getText() ?? "", params.position),
@@ -159,7 +176,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const entry = schemaResolver.getSchema(template.schemaName);
+    const entry = ctx.schemaResolver.getSchema(template.schemaName);
     if (!entry) {
       return [];
     }
@@ -169,7 +186,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const externalFragments = documentManager
+    const externalFragments = ctx.documentManager
       .getExternalFragments(params.textDocument.uri, template.schemaName)
       .map((f) => f.definition);
 
@@ -183,7 +200,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onHover((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return null;
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return null;
     }
 
@@ -192,7 +214,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return null;
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.position),
     );
@@ -201,7 +223,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return null;
     }
 
-    const entry = schemaResolver.getSchema(template.schemaName);
+    const entry = ctx.schemaResolver.getSchema(template.schemaName);
     if (!entry) {
       return null;
     }
@@ -215,7 +237,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.languages.inlayHint.on((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return [];
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return [];
     }
 
@@ -224,7 +251,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const docState = documentManager.get(params.textDocument.uri);
+    const docState = ctx.documentManager.get(params.textDocument.uri);
     if (!docState || docState.templates.length === 0) {
       return [];
     }
@@ -232,7 +259,7 @@ export const createLspServer = (options?: LspServerOptions) => {
     const allHints: ReturnType<typeof handleInlayHint> = [];
 
     for (const template of docState.templates) {
-      const entry = schemaResolver.getSchema(template.schemaName);
+      const entry = ctx.schemaResolver.getSchema(template.schemaName);
       if (!entry) {
         continue;
       }
@@ -250,7 +277,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onDefinition(async (params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return [];
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return [];
     }
 
@@ -259,7 +291,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.position),
     );
@@ -268,7 +300,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const externalFragments = documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
+    const externalFragments = ctx.documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
 
     return handleDefinition({
       template,
@@ -279,7 +311,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onReferences((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return [];
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return [];
     }
 
@@ -288,7 +325,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.position),
     );
@@ -301,13 +338,18 @@ export const createLspServer = (options?: LspServerOptions) => {
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
-      allFragments: documentManager.getAllFragments(template.schemaName),
-      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
+      allFragments: ctx.documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => ctx.documentManager.findFragmentSpreadLocations(name, template.schemaName),
     });
   });
 
   connection.onPrepareRename((params) => {
-    if (!documentManager) {
+    if (!registry) {
+      return null;
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return null;
     }
 
@@ -316,7 +358,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return null;
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.position),
     );
@@ -333,7 +375,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onRenameRequest((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return null;
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return null;
     }
 
@@ -342,7 +389,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return null;
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.position),
     );
@@ -356,17 +403,22 @@ export const createLspServer = (options?: LspServerOptions) => {
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       newName: params.newName,
-      allFragments: documentManager.getAllFragments(template.schemaName),
-      findSpreadLocations: (name) => documentManager!.findFragmentSpreadLocations(name, template.schemaName),
+      allFragments: ctx.documentManager.getAllFragments(template.schemaName),
+      findSpreadLocations: (name) => ctx.documentManager.findFragmentSpreadLocations(name, template.schemaName),
     });
   });
 
   connection.onDocumentSymbol((params) => {
-    if (!documentManager) {
+    if (!registry) {
       return [];
     }
 
-    const state = documentManager.get(params.textDocument.uri);
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
+      return [];
+    }
+
+    const state = ctx.documentManager.get(params.textDocument.uri);
     if (!state) {
       return [];
     }
@@ -378,11 +430,16 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onDocumentFormatting((params) => {
-    if (!documentManager) {
+    if (!registry) {
       return [];
     }
 
-    const state = documentManager.get(params.textDocument.uri);
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
+      return [];
+    }
+
+    const state = ctx.documentManager.get(params.textDocument.uri);
     if (!state) {
       return [];
     }
@@ -394,7 +451,12 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onCodeAction((params) => {
-    if (!documentManager || !schemaResolver) {
+    if (!registry) {
+      return [];
+    }
+
+    const ctx = registry.resolveForUri(params.textDocument.uri);
+    if (!ctx) {
       return [];
     }
 
@@ -403,7 +465,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const template = documentManager.findTemplateAtOffset(
+    const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
       positionToOffset(doc.getText(), params.range.start),
     );
@@ -412,7 +474,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const entry = schemaResolver.getSchema(template.schemaName);
+    const entry = ctx.schemaResolver.getSchema(template.schemaName);
     if (!entry) {
       return [];
     }
@@ -430,7 +492,7 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onDidChangeWatchedFiles((_params) => {
-    if (!schemaResolver) {
+    if (!registry) {
       return;
     }
 
@@ -441,11 +503,12 @@ export const createLspServer = (options?: LspServerOptions) => {
     );
 
     if (graphqlChanged) {
-      const result = schemaResolver.reloadAll();
-      if (result.isOk()) {
-        publishDiagnosticsForAllOpen();
-      } else {
-        connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${result.error.message}`);
+      const result = registry.reloadAllSchemas();
+      publishDiagnosticsForAllOpen();
+      if (result.isErr()) {
+        for (const error of result.error) {
+          connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${error.message}`);
+        }
       }
     }
   });

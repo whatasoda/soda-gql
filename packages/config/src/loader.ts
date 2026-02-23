@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Result } from "neverthrow";
 import { err } from "neverthrow";
@@ -30,6 +30,51 @@ export function findConfigFile(startDir: string = process.cwd()): string | null 
     currentDir = dirname(currentDir);
   }
   return null;
+}
+
+const SKIP_DIRS = new Set(["node_modules", "dist"]);
+
+/**
+ * Find all config files by walking down from rootDir.
+ * Discovers every soda-gql config file in the directory tree,
+ * skipping node_modules, dist, and dot-prefixed directories.
+ */
+export function findAllConfigFiles(rootDir: string): readonly string[] {
+  const results: string[] = [];
+
+  const walk = (dir: string): void => {
+    for (const filename of DEFAULT_CONFIG_FILENAMES) {
+      const configPath = join(dir, filename);
+      if (existsSync(configPath)) {
+        results.push(configPath);
+        break; // Only one config per directory
+      }
+    }
+
+    let entries: string[];
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (SKIP_DIRS.has(entry) || entry.startsWith(".")) {
+        continue;
+      }
+      const fullPath = join(dir, entry);
+      try {
+        if (statSync(fullPath).isDirectory()) {
+          walk(fullPath);
+        }
+      } catch {
+        // Skip inaccessible entries
+      }
+    }
+  };
+
+  walk(rootDir);
+  return results;
 }
 
 /**

@@ -107,8 +107,9 @@ export const isModifierAssignable = (source: string, target: string): boolean =>
 
   // List level nullability: check each corresponding level
   for (let i = 0; i < srcStruct.lists.length; i++) {
-    const srcList = srcStruct.lists[i]!;
-    const tgtList = tgtListsToCompare[i]!;
+    const srcList = srcStruct.lists[i];
+    const tgtList = tgtListsToCompare[i];
+    if (srcList === undefined || tgtList === undefined) break;
     if (srcList === "[]?" && tgtList === "[]!") return false;
   }
 
@@ -157,8 +158,9 @@ export const mergeModifiers = (a: string, b: string): { ok: true; value: string 
   // Merge each list level (! beats ?)
   const mergedLists: ("[]!" | "[]?")[] = [];
   for (let i = 0; i < structA.lists.length; i++) {
-    const listA = structA.lists[i]!;
-    const listB = structB.lists[i]!;
+    const listA = structA.lists[i];
+    const listB = structB.lists[i];
+    if (listA === undefined || listB === undefined) break;
     mergedLists.push(listA === "[]!" || listB === "[]!" ? "[]!" : "[]?");
   }
 
@@ -405,16 +407,14 @@ export const mergeVariableUsages = (
   variableName: string,
   usages: readonly VariableUsage[],
 ): Result<InferredVariable, GraphqlCompatError> => {
-  if (usages.length === 0) {
-    // This shouldn't happen, but handle defensively
+  const first = usages[0];
+  if (!first) {
     return err({
       code: "GRAPHQL_UNDECLARED_VARIABLE",
       message: `No usages found for variable "${variableName}"`,
       variableName,
     });
   }
-
-  const first = usages[0]!;
 
   // Validate all usages have the same type name
   for (const usage of usages) {
@@ -430,7 +430,9 @@ export const mergeVariableUsages = (
   // Merge minimumModifiers to find candidate
   let candidateModifier = first.minimumModifier;
   for (let i = 1; i < usages.length; i++) {
-    const result = mergeModifiers(candidateModifier, usages[i]!.minimumModifier);
+    const usage = usages[i];
+    if (!usage) break;
+    const result = mergeModifiers(candidateModifier, usage.minimumModifier);
     if (!result.ok) {
       return err({
         code: "GRAPHQL_VARIABLE_MODIFIER_INCOMPATIBLE",

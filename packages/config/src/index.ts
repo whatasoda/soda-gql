@@ -5,7 +5,7 @@ export {
   type SodaGqlConfigContainer,
   validateConfig,
 } from "./helper";
-export { findConfigFile, loadConfig, loadConfigFrom } from "./loader";
+export { findAllConfigFiles, findConfigFile, loadConfig, loadConfigFrom } from "./loader";
 export { normalizeConfig } from "./normalize";
 export type {
   ArtifactConfig,

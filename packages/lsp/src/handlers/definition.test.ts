@@ -268,7 +268,9 @@ describe("handleDefinition", () => {
         "",
         `export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`${fragmentBody}\`);`,
       ].join("\n");
-      const externalFragments = [makeCurriedFragment("/test/fragments.ts", "default", fragmentBody, "UserFields", "User", fragmentTsSource)];
+      const externalFragments = [
+        makeCurriedFragment("/test/fragments.ts", "default", fragmentBody, "UserFields", "User", fragmentTsSource),
+      ];
 
       const spreadIdx = content.indexOf("...UserFields") + 3;
       const cursorInTs = contentStart + spreadIdx;

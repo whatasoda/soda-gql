@@ -71,7 +71,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
       query.operation({
         name: "GetUser",
         variables: { ...$var("userId").ID("!") },
-        metadata: ({ $, fragmentMetadata }) => ({
+        metadata: ({ fragmentMetadata }) => ({
           custom: {
             fragmentCount: fragmentMetadata?.length ?? 0,
             firstFragmentHasHeaders: fragmentMetadata?.[0]?.headers !== undefined,
@@ -148,7 +148,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
       }),
     );
 
-    const operation = gql(({ query, $var }) =>
+    const operation = gql(({ query }) =>
       query.operation({
         name: "GetUsers",
         metadata: ({ fragmentMetadata }) => ({
