@@ -4,7 +4,7 @@
  * @module
  */
 
-import { dirname } from "node:path";
+import { dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createGraphqlSystemIdentifyHelper, type GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { loadConfig, type ResolvedSodaGqlConfig } from "@soda-gql/config";
@@ -71,7 +71,7 @@ export const createConfigRegistry = (configPaths: readonly string[]): Result<Con
 
     for (const configPath of sortedPaths) {
       const configDir = dirname(configPath);
-      if (dirPath === configDir || dirPath.startsWith(`${configDir}/`)) {
+      if (dirPath === configDir || dirPath.startsWith(`${configDir}${sep}`)) {
         uriCache.set(dirPath, configPath);
         return configPath;
       }

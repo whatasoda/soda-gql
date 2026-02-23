@@ -11,7 +11,6 @@ export type LspErrorCode =
   | "SCHEMA_LOAD_FAILED"
   | "SCHEMA_BUILD_FAILED"
   | "SCHEMA_NOT_CONFIGURED"
-  | "NO_CONFIG_FOR_URI"
   | "PARSE_FAILED"
   | "INTERNAL_INVARIANT";
 
@@ -29,7 +28,6 @@ type SchemaBuildFailed = {
   readonly cause?: unknown;
 };
 type SchemaNotConfigured = { readonly code: "SCHEMA_NOT_CONFIGURED"; readonly message: string; readonly schemaName: string };
-type NoConfigForUri = { readonly code: "NO_CONFIG_FOR_URI"; readonly message: string; readonly uri: string };
 type ParseFailed = { readonly code: "PARSE_FAILED"; readonly message: string; readonly uri: string; readonly cause?: unknown };
 type InternalInvariant = {
   readonly code: "INTERNAL_INVARIANT";
@@ -44,7 +42,6 @@ export type LspError =
   | SchemaLoadFailed
   | SchemaBuildFailed
   | SchemaNotConfigured
-  | NoConfigForUri
   | ParseFailed
   | InternalInvariant;
 
@@ -77,12 +74,6 @@ export const lspErrors = {
     code: "SCHEMA_NOT_CONFIGURED",
     message: `Schema "${schemaName}" is not configured in soda-gql.config`,
     schemaName,
-  }),
-
-  noConfigForUri: (uri: string): NoConfigForUri => ({
-    code: "NO_CONFIG_FOR_URI",
-    message: `No soda-gql config found for: ${uri}`,
-    uri,
   }),
 
   parseFailed: (uri: string, message?: string, cause?: unknown): ParseFailed => ({
