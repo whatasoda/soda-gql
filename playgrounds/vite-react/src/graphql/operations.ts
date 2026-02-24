@@ -887,7 +887,26 @@ export const getTaskDualDirectivesQuery = gql.default(({ query }) =>
 );
 
 // ============================================================================
-// Phase 4.6: Coverage gap — default variable values
+// Phase 4.6: Coverage gap — field aliases
+// ============================================================================
+
+/**
+ * Query: Field aliases
+ * Exercises: Field aliasing (renaming fields in the response)
+ */
+export const getEmployeeAliasedQuery = gql.default(({ query }) =>
+  query("GetEmployeeAliased")`($employeeId: ID!) {
+    employee(id: $employeeId) {
+      id
+      fullName: name
+      emailAddress: email
+      jobRole: role
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.7: Coverage gap — default variable values
 // ============================================================================
 
 /**
@@ -907,7 +926,7 @@ export const listProjectsWithDefaultsQuery = gql.default(({ query }) =>
 );
 
 // ============================================================================
-// Phase 4.7: Coverage gap — compat tagged templates
+// Phase 4.8: Coverage gap — compat tagged templates
 // ============================================================================
 
 /**
