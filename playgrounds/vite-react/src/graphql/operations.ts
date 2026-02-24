@@ -659,6 +659,307 @@ export const getEmployeeWithStaticMetadataQuery = gql.default(({ query }) =>
   }),
 );
 
+// ============================================================================
+// Phase 4.1: Coverage gap — additional scalar types and fields
+// ============================================================================
+
+/**
+ * Query: Full task detail with Float and all scalar types
+ * Exercises: Float (estimatedHours), all timestamp fields, comments list
+ */
+export const getTaskFullDetailQuery = gql.default(({ query }) =>
+  query("GetTaskFullDetail")`($taskId: ID!) {
+    task(id: $taskId) {
+      id
+      title
+      completed
+      priority
+      dueDate
+      estimatedHours
+      createdAt
+      updatedAt
+      project {
+        id
+        title
+        status
+        metadata
+      }
+      assignee {
+        id
+        name
+        email
+        role
+        salary
+      }
+      comments(limit: 5) {
+        id
+        body
+        createdAt
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.2: Coverage gap — complex nested input types
+// ============================================================================
+
+/**
+ * Mutation: Transfer employee with TransferEmployeeInput
+ * Exercises: TransferEmployeeInput (nested EmployeeRole enum, optional fields)
+ */
+export const transferEmployeeMutation = gql.default(({ mutation }) =>
+  mutation("TransferEmployee")`($input: TransferEmployeeInput!) {
+    transferEmployee(input: $input) {
+      id
+      name
+      email
+      role
+      department {
+        id
+        name
+      }
+      team {
+        id
+        name
+      }
+    }
+  }`(),
+);
+
+/**
+ * Mutation: Create task with CreateTaskInput
+ * Exercises: CreateTaskInput (DateTime, Float, TaskPriority variables)
+ */
+export const createTaskMutation = gql.default(({ mutation }) =>
+  mutation("CreateTask")`($projectId: ID!, $input: CreateTaskInput!) {
+    createTask(projectId: $projectId, input: $input) {
+      id
+      title
+      priority
+      dueDate
+      estimatedHours
+      assignee {
+        id
+        name
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.3: Coverage gap — additional subscriptions
+// ============================================================================
+
+/**
+ * Subscription: Task created with optional project filter
+ * Exercises: taskCreated subscription, optional variable
+ */
+export const taskCreatedSubscription = gql.default(({ subscription }) =>
+  subscription("TaskCreated")`($projectId: ID) {
+    taskCreated(projectId: $projectId) {
+      id
+      title
+      completed
+      priority
+      dueDate
+      assignee {
+        id
+        name
+      }
+      project {
+        id
+        title
+      }
+    }
+  }`(),
+);
+
+/**
+ * Subscription: Comment added
+ * Exercises: commentAdded subscription, nested author/task fields
+ */
+export const commentAddedSubscription = gql.default(({ subscription }) =>
+  subscription("CommentAdded")`($taskId: ID!) {
+    commentAdded(taskId: $taskId) {
+      id
+      body
+      createdAt
+      author {
+        id
+        name
+      }
+      task {
+        id
+        title
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.4: Coverage gap — recursive relationships
+// ============================================================================
+
+/**
+ * Query: Employee with recursive manager/reports
+ * Exercises: Employee.manager, Employee.reports(limit), Employee.salary (BigInt)
+ */
+export const getEmployeeWithReportsQuery = gql.default(({ query }) =>
+  query("GetEmployeeWithReports")`($employeeId: ID!, $reportsLimit: Int) {
+    employee(id: $employeeId) {
+      id
+      name
+      email
+      role
+      salary
+      manager {
+        id
+        name
+        role
+      }
+      reports(limit: $reportsLimit) {
+        id
+        name
+        email
+        role
+      }
+    }
+  }`(),
+);
+
+/**
+ * Query: Comment with recursive parent/replies
+ * Exercises: Comment.parent, Comment.replies(limit)
+ */
+export const getCommentWithRepliesQuery = gql.default(({ query }) =>
+  query("GetCommentWithReplies")`($commentId: ID!, $repliesLimit: Int) {
+    comment(id: $commentId) {
+      id
+      body
+      createdAt
+      author {
+        id
+        name
+      }
+      parent {
+        id
+        body
+        author {
+          id
+          name
+        }
+      }
+      replies(limit: $repliesLimit) {
+        id
+        body
+        createdAt
+        author {
+          id
+          name
+        }
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.5: Coverage gap — directive edge cases
+// ============================================================================
+
+/**
+ * Query: Dual directives on same field
+ * Exercises: @include + @skip stacked on the same field
+ */
+export const getTaskDualDirectivesQuery = gql.default(({ query }) =>
+  query("GetTaskDualDirectives")`($taskId: ID!, $showAssignee: Boolean!, $hideAssignee: Boolean!) {
+    task(id: $taskId) {
+      id
+      title
+      completed
+      assignee @include(if: $showAssignee) @skip(if: $hideAssignee) {
+        id
+        name
+        email
+      }
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.6: Coverage gap — default variable values
+// ============================================================================
+
+/**
+ * Query: Default variable values in operation
+ * Exercises: Variable default values ($limit: Int = 10)
+ */
+export const listProjectsWithDefaultsQuery = gql.default(({ query }) =>
+  query("ListProjectsWithDefaults")`($limit: Int = 20) {
+    projects(pagination: { limit: $limit }) {
+      id
+      title
+      status
+      priority
+      createdAt
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.7: Coverage gap — compat tagged templates
+// ============================================================================
+
+/**
+ * Compat: Query
+ * Exercises: query.compat tagged template syntax
+ */
+export const getCompanyCompatQuery = gql.default(
+  ({ query }) =>
+    query.compat("GetCompanyCompat")`($companyId: ID!) {
+    company(id: $companyId) {
+      id
+      name
+      industry
+    }
+  }`,
+);
+
+/**
+ * Compat: Mutation
+ * Exercises: mutation.compat tagged template syntax
+ */
+export const updateProjectCompatMutation = gql.default(
+  ({ mutation }) =>
+    mutation.compat("UpdateProjectCompat")`($id: ID!, $input: UpdateProjectInput!) {
+    updateProject(id: $id, input: $input) {
+      id
+      title
+      description
+      status
+    }
+  }`,
+);
+
+/**
+ * Compat: Subscription
+ * Exercises: subscription.compat tagged template syntax
+ */
+export const taskUpdatedCompatSubscription = gql.default(
+  ({ subscription }) =>
+    subscription.compat("TaskUpdatedCompat")`($taskId: ID!) {
+    taskUpdated(taskId: $taskId) {
+      id
+      title
+      completed
+    }
+  }`,
+);
+
+// ============================================================================
+// Phase 3.2: Metadata attachment
+// ============================================================================
+
 /**
  * Query with callback metadata
  * Demonstrates metadata callback that receives operation variable context

@@ -374,6 +374,131 @@ export const taskWithProjectFragment = gql.default(({ fragment }) =>
 );
 
 // ============================================================================
+// Phase 4.1: Coverage gap — additional scalar types
+// ============================================================================
+
+/**
+ * Fragment: Full task detail with Float and all timestamp fields
+ * Exercises: Float (estimatedHours), DateTime (dueDate, createdAt, updatedAt)
+ */
+export const taskFullDetailFragment = gql.default(({ fragment }) =>
+  fragment("TaskFullDetail", "Task")`{
+    id
+    title
+    completed
+    priority
+    dueDate
+    estimatedHours
+    createdAt
+    updatedAt
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.2: Coverage gap — recursive relationships
+// ============================================================================
+
+/**
+ * Fragment: Comment thread with recursive parent/replies
+ * Exercises: Comment.parent, Comment.replies(limit)
+ */
+export const commentThreadFragment = gql.default(({ fragment }) =>
+  fragment("CommentThread", "Comment")`($repliesLimit: Int) {
+    id
+    body
+    createdAt
+    author {
+      id
+      name
+    }
+    parent {
+      id
+      body
+    }
+    replies(limit: $repliesLimit) {
+      id
+      body
+      createdAt
+      author {
+        id
+        name
+      }
+    }
+  }`(),
+);
+
+/**
+ * Fragment: Employee hierarchy with recursive manager and reports
+ * Exercises: Employee.manager, Employee.reports(limit), Employee.salary (BigInt)
+ */
+export const employeeHierarchyFragment = gql.default(({ fragment }) =>
+  fragment("EmployeeHierarchy", "Employee")`($reportsLimit: Int) {
+    id
+    name
+    email
+    role
+    salary
+    manager {
+      id
+      name
+      role
+    }
+    reports(limit: $reportsLimit) {
+      id
+      name
+      role
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.3: Coverage gap — unused relation fields
+// ============================================================================
+
+/**
+ * Fragment: Team members and lead
+ * Exercises: Team.members(limit), Team.lead
+ */
+export const teamMembersFragment = gql.default(({ fragment }) =>
+  fragment("TeamMembers", "Team")`($membersLimit: Int) {
+    id
+    name
+    lead {
+      id
+      name
+      role
+    }
+    members(limit: $membersLimit) {
+      id
+      name
+      email
+      role
+    }
+  }`(),
+);
+
+// ============================================================================
+// Phase 4.4: Coverage gap — default variable values in fragments
+// ============================================================================
+
+/**
+ * Fragment: Project tasks with default limit
+ * Exercises: Default variable values ($taskLimit: Int = 5)
+ */
+export const projectWithDefaultLimitFragment = gql.default(({ fragment }) =>
+  fragment("ProjectWithDefaultLimit", "Project")`($taskLimit: Int = 5) {
+    id
+    title
+    status
+    tasks(limit: $taskLimit) {
+      id
+      title
+      completed
+    }
+  }`(),
+);
+
+// ============================================================================
 // Phase 3.2: Metadata attachment
 // ============================================================================
 
