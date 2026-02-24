@@ -1283,13 +1283,6 @@ function verifyErrorCases(): VerificationResult[] {
 // ---------------------------------------------------------------------------
 
 async function runAiEvaluation(): Promise<void> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.log("\n=== AI Evaluation ===\n");
-    console.log("  SKIP: ANTHROPIC_API_KEY not set. Set it to enable AI evaluation.\n");
-    return;
-  }
-
   // Collect all operation documents for evaluation
   const documents: { name: string; graphql: string }[] = [];
   for (const [name, value] of Object.entries(operations)) {
@@ -1301,7 +1294,7 @@ async function runAiEvaluation(): Promise<void> {
   }
 
   console.log("\n=== AI Evaluation ===\n");
-  console.log(`  Evaluating ${documents.length} documents with Claude...\n`);
+  console.log(`  Evaluating ${documents.length} documents with Claude Code CLI...\n`);
 
   // Build a single prompt with all documents
   const docList = documents.map((d) => `### ${d.name}\n\`\`\`graphql\n${d.graphql}\n\`\`\``).join("\n\n");
@@ -1318,31 +1311,24 @@ Be concise — one line per document, format as "NAME: OK" or "NAME: ISSUE — d
 ${docList}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const { CLAUDECODE: _, ...env } = process.env;
+    const proc = Bun.spawn(["claude", "-p", "--model", "haiku"], {
+      stdin: new Response(prompt),
+      stdout: "pipe",
+      stderr: "pipe",
+      env,
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.log(`  ERROR: AI evaluation failed (${response.status}): ${text}\n`);
+    const [text, stderr, exitCode] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+
+    if (exitCode !== 0) {
+      console.log(`  ERROR: AI evaluation failed: ${stderr}\n`);
       return;
     }
-
-    const data = (await response.json()) as { content: { type: string; text: string }[] };
-    const text = data.content
-      .filter((c) => c.type === "text")
-      .map((c) => c.text)
-      .join("\n");
 
     console.log("  AI Assessment:\n");
     for (const line of text.split("\n")) {
