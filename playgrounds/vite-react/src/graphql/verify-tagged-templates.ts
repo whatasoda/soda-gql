@@ -10,6 +10,9 @@
  * Exit 0 on success, non-zero on failure.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DocumentNode } from "graphql";
 import { print } from "graphql";
 import { gql } from "@/graphql-system";
@@ -1293,22 +1296,41 @@ async function runAiEvaluation(): Promise<void> {
     }
   }
 
+  // Read source files for context
+  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const operationsSrc = readFileSync(resolve(scriptDir, "operations.ts"), "utf-8");
+  const fragmentsSrc = readFileSync(resolve(scriptDir, "fragments.ts"), "utf-8");
+
   console.log("\n=== AI Evaluation ===\n");
   console.log(`  Evaluating ${documents.length} documents with Claude Code CLI...\n`);
 
-  // Build a single prompt with all documents
+  // Build a single prompt with source code and generated output
   const docList = documents.map((d) => `### ${d.name}\n\`\`\`graphql\n${d.graphql}\n\`\`\``).join("\n\n");
-  const prompt = `You are a GraphQL expert reviewing generated query documents for structural correctness.
+  const prompt = `You are reviewing a GraphQL code generation library called soda-gql.
+soda-gql provides a tagged template API and callback builder API to define GraphQL operations and fragments in TypeScript, then generates GraphQL query strings at build time.
 
-For each document below, briefly assess:
-1. Are the field selections appropriate for the operation?
-2. Are variable types correct for their usage?
-3. Do directives make semantic sense?
-4. Any structural issues?
+Your primary focus is evaluating whether soda-gql correctly transforms the TypeScript source definitions into the expected GraphQL output. Specifically:
+1. Does each tagged template / callback builder definition produce the correct GraphQL structure?
+2. Are field selections, variables, directives, and fragment spreads correctly translated?
+3. Are there any cases where soda-gql appears to drop, duplicate, or misplace fields?
+4. Do variable definitions and their types correctly propagate from the source to the output?
 
-Be concise — one line per document, format as "NAME: OK" or "NAME: ISSUE — description".
+Below are the source definitions followed by the generated GraphQL output.
 
-${docList}`;
+## Source: operations.ts
+\`\`\`typescript
+${operationsSrc}
+\`\`\`
+
+## Source: fragments.ts
+\`\`\`typescript
+${fragmentsSrc}
+\`\`\`
+
+## Generated GraphQL Output
+${docList}
+
+Be concise — one line per document, format as "NAME: OK" or "NAME: ISSUE — description".`;
 
   try {
     const { CLAUDECODE: _, ...env } = process.env;
