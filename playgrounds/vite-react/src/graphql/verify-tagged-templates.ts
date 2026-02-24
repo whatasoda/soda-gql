@@ -33,13 +33,800 @@ type VerificationResult = {
 // ---------------------------------------------------------------------------
 
 /** Expected GraphQL strings for operation definitions. */
-export const expectedOperationStrings: Record<string, string> = {};
+export const expectedOperationStrings: Record<string, string> = {
+  activityFeedQuery: `query ActivityFeed($userId: ID!, $since: DateTime, $limit: Int) {
+  activityFeed(userId: $userId, since: $since, limit: $limit) {
+    __typename
+    ... on Task {
+      id
+      title
+      completed
+      priority
+      dueDate
+      assignee {
+        id
+        name
+      }
+      project {
+        id
+        title
+      }
+    }
+    ... on Comment {
+      id
+      body
+      createdAt
+      author {
+        id
+        name
+      }
+      task {
+        id
+        title
+      }
+    }
+    ... on Project {
+      id
+      title
+      description
+      status
+      priority
+      tasks(limit: 5) {
+        id
+        title
+        completed
+      }
+    }
+  }
+}`,
 
-/** Expected GraphQL strings for fragment definitions (when composed into wrapper operations). */
-export const expectedFragmentStrings: Record<string, string> = {};
+  assignTaskMutation: `mutation AssignTask($taskId: ID!, $employeeId: ID!) {
+  assignTask(taskId: $taskId, employeeId: $employeeId) {
+    id
+    title
+    assignee {
+      id
+      name
+      email
+    }
+  }
+}`,
+
+  commentAddedSubscription: `subscription CommentAdded($taskId: ID!) {
+  commentAdded(taskId: $taskId) {
+    id
+    body
+    createdAt
+    author {
+      id
+      name
+    }
+    task {
+      id
+      title
+    }
+  }
+}`,
+
+  createProjectMutation: `mutation CreateProject($input: CreateProjectInput!) {
+  createProject(input: $input) {
+    id
+    title
+    description
+    status
+    priority
+    createdAt
+    team {
+      id
+      name
+    }
+  }
+}`,
+
+  createTaskMutation: `mutation CreateTask($projectId: ID!, $input: CreateTaskInput!) {
+  createTask(projectId: $projectId, input: $input) {
+    id
+    title
+    priority
+    dueDate
+    estimatedHours
+    assignee {
+      id
+      name
+    }
+  }
+}`,
+
+  getCommentWithRepliesQuery: `query GetCommentWithReplies($commentId: ID!, $repliesLimit: Int) {
+  comment(id: $commentId) {
+    id
+    body
+    createdAt
+    author {
+      id
+      name
+    }
+    parent {
+      id
+      body
+      author {
+        id
+        name
+      }
+    }
+    replies(limit: $repliesLimit) {
+      id
+      body
+      createdAt
+      author {
+        id
+        name
+      }
+    }
+  }
+}`,
+
+  getEmployeeAliasedQuery: `query GetEmployeeAliased($employeeId: ID!) {
+  employee(id: $employeeId) {
+    id
+    fullName: name
+    emailAddress: email
+    jobRole: role
+  }
+}`,
+
+  getEmployeeConditionalQuery: `query GetEmployeeConditional($employeeId: ID!, $includeTasks: Boolean!, $skipComments: Boolean!) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+    tasks(limit: 10) @include(if: $includeTasks) {
+      id
+      title
+      completed
+      priority
+    }
+    comments @skip(if: $skipComments) {
+      id
+      body
+      createdAt
+    }
+  }
+}`,
+
+  getEmployeeQuery: `query GetEmployee($employeeId: ID!, $taskLimit: Int) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+    tasks(limit: $taskLimit) {
+      id
+      title
+      completed
+      priority
+    }
+  }
+}`,
+
+  getEmployeeWithFilteredTasksQuery: `query GetEmployeeWithFilteredTasks($employeeId: ID!, $completed: Boolean, $taskLimit: Int) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+    tasks(completed: $completed, limit: $taskLimit) {
+      id
+      title
+      completed
+      priority
+      dueDate
+    }
+  }
+}`,
+
+  getEmployeeWithFragmentMetadataQuery: `query GetEmployeeWithFragmentMetadata($employeeId: ID!) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+  }
+}`,
+
+  getEmployeeWithFragmentQuery: `query GetEmployeeWithFragment($employeeId: ID!, $completed: Boolean, $taskLimit: Int) {
+  employee(id: $employeeId) {
+    id
+    name
+    role
+    tasks(completed: $completed, limit: $taskLimit) {
+      id
+      title
+      completed
+      priority
+      dueDate
+      project {
+        id
+        title
+        status
+      }
+    }
+  }
+}`,
+
+  getEmployeeWithReportsQuery: `query GetEmployeeWithReports($employeeId: ID!, $reportsLimit: Int) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+    salary
+    manager {
+      id
+      name
+      role
+    }
+    reports(limit: $reportsLimit) {
+      id
+      name
+      email
+      role
+    }
+  }
+}`,
+
+  getEmployeeWithStaticMetadataQuery: `query GetEmployeeWithStaticMetadata($employeeId: ID!) {
+  employee(id: $employeeId) {
+    id
+    name
+    email
+    role
+  }
+}`,
+
+  getProjectWithCallbackMetadataQuery: `query GetProjectWithCallbackMetadata($projectId: ID!, $includeTeam: Boolean!) {
+  project(id: $projectId) {
+    id
+    title
+    description
+    status
+    team @include(if: $includeTeam) {
+      id
+      name
+    }
+  }
+}`,
+
+  getProjectWithFragmentCallbackMetadataQuery: `query GetProjectWithFragmentCallbackMetadata($projectId: ID!, $priority: Int) {
+  project(id: $projectId) {
+    id
+    title
+    description
+    status
+    priority
+  }
+}`,
+
+  getProjectWithIncludeQuery: `query GetProjectWithInclude($projectId: ID!, $includeTeam: Boolean!) {
+  project(id: $projectId) {
+    id
+    title
+    description
+    status
+    team @include(if: $includeTeam) {
+      id
+      name
+      department {
+        id
+        name
+      }
+    }
+  }
+}`,
+
+  getProjectWithMultipleFragmentsQuery: `query GetProjectWithMultipleFragments($projectId: ID!, $limit: Int, $includeProject: Boolean!, $skipAssignee: Boolean!) {
+  project(id: $projectId) {
+    id
+    title
+    tasks {
+      id
+      title
+      completed
+      priority
+      dueDate
+      project {
+        id
+        title
+        status
+      }
+      assignee {
+        id
+        name
+        email
+      }
+    }
+  }
+}`,
+
+  getProjectWithTasksQuery: `query GetProjectWithTasks($projectId: ID!) {
+  project(id: $projectId) {
+    id
+    title
+    description
+    status
+    tasks {
+      id
+      title
+      completed
+      priority
+      dueDate
+    }
+  }
+}`,
+
+  getTaskBasicQuery: `query GetTaskBasic($taskId: ID!) {
+  task(id: $taskId) {
+    id
+    title
+    completed
+    priority
+  }
+}`,
+
+  getTaskDualDirectivesQuery: `query GetTaskDualDirectives($taskId: ID!, $showAssignee: Boolean!, $hideAssignee: Boolean!) {
+  task(id: $taskId) {
+    id
+    title
+    completed
+    assignee @include(if: $showAssignee) @skip(if: $hideAssignee) {
+      id
+      name
+      email
+    }
+  }
+}`,
+
+  getTaskFullDetailQuery: `query GetTaskFullDetail($taskId: ID!) {
+  task(id: $taskId) {
+    id
+    title
+    completed
+    priority
+    dueDate
+    estimatedHours
+    createdAt
+    updatedAt
+    project {
+      id
+      title
+      status
+      metadata
+    }
+    assignee {
+      id
+      name
+      email
+      role
+      salary
+    }
+    comments(limit: 5) {
+      id
+      body
+      createdAt
+    }
+  }
+}`,
+
+  getTaskWithNestedFragmentsQuery: `query GetTaskWithNestedFragments($taskId: ID!, $includePriority: Boolean, $includeAssignee: Boolean) {
+  task(id: $taskId) {
+    id
+    title
+    completed
+    priority
+    dueDate
+    assignee {
+      id
+      name
+      email
+    }
+    project {
+      id
+      title
+      status
+    }
+  }
+}`,
+
+  getTaskWithSkipQuery: `query GetTaskWithSkip($taskId: ID!, $skipAssignee: Boolean!) {
+  task(id: $taskId) {
+    id
+    title
+    completed
+    priority
+    assignee @skip(if: $skipAssignee) {
+      id
+      name
+      email
+    }
+  }
+}`,
+
+  getTeamHierarchyQuery: `query GetTeamHierarchy($teamId: ID!) {
+  team(id: $teamId) {
+    id
+    name
+    department {
+      id
+      name
+      company {
+        id
+        name
+        industry
+      }
+    }
+    projects {
+      id
+      title
+      status
+    }
+  }
+}`,
+
+  getTeamNestedDirectivesQuery: `query GetTeamNestedDirectives($teamId: ID!, $includeProjects: Boolean!, $skipInactive: Boolean!) {
+  team(id: $teamId) {
+    id
+    name
+    projects @include(if: $includeProjects) {
+      id
+      title
+      status @skip(if: $skipInactive)
+      tasks {
+        id
+        title
+      }
+    }
+  }
+}`,
+
+  getTeamProjectsWithFragmentQuery: `query GetTeamProjectsWithFragment($teamId: ID!, $projectStatus: ProjectStatus, $limit: Int) {
+  team(id: $teamId) {
+    id
+    name
+    projects(status: $projectStatus, limit: 10) {
+      id
+      title
+      tasks(limit: $limit) {
+        id
+        title
+        completed
+      }
+    }
+  }
+}`,
+
+  listEmployeesQuery: `query ListEmployees($departmentId: ID, $limit: Int) {
+  employees(departmentId: $departmentId, limit: $limit) {
+    id
+    name
+    email
+    role
+  }
+}`,
+
+  listProjectsWithDefaultsQuery: `query ListProjectsWithDefaults($limit: Int = 20) {
+  projects(pagination: {limit: $limit}) {
+    id
+    title
+    status
+    priority
+    createdAt
+  }
+}`,
+
+  projectUpdatedSubscription: `subscription ProjectUpdated($projectId: ID!) {
+  projectUpdated(projectId: $projectId) {
+    id
+    title
+    status
+    tasks(limit: 5) {
+      id
+      title
+      completed
+    }
+  }
+}`,
+
+  searchAllQuery: `query SearchAll($query: String!, $limit: Int) {
+  search(query: $query, limit: $limit) {
+    __typename
+    ... on Employee {
+      id
+      name
+      email
+      role
+    }
+    ... on Project {
+      id
+      title
+      description
+      status
+    }
+    ... on Task {
+      id
+      title
+      completed
+      priority
+    }
+    ... on Comment {
+      id
+      body
+      createdAt
+    }
+  }
+}`,
+
+  searchPartialQuery: `query SearchPartial($query: String!, $limit: Int) {
+  search(query: $query, limit: $limit) {
+    __typename
+    ... on Employee {
+      id
+      name
+      email
+      role
+      department {
+        id
+        name
+      }
+    }
+    ... on Project {
+      id
+      title
+      description
+      status
+      team {
+        id
+        name
+      }
+    }
+  }
+}`,
+
+  taskCreatedSubscription: `subscription TaskCreated($projectId: ID) {
+  taskCreated(projectId: $projectId) {
+    id
+    title
+    completed
+    priority
+    dueDate
+    assignee {
+      id
+      name
+    }
+    project {
+      id
+      title
+    }
+  }
+}`,
+
+  taskUpdatedSubscription: `subscription TaskUpdated($taskId: ID!) {
+  taskUpdated(taskId: $taskId) {
+    id
+    title
+    completed
+    priority
+    updatedAt
+    assignee {
+      id
+      name
+    }
+  }
+}`,
+
+  transferEmployeeMutation: `mutation TransferEmployee($input: TransferEmployeeInput!) {
+  transferEmployee(input: $input) {
+    id
+    name
+    email
+    role
+    department {
+      id
+      name
+    }
+    team {
+      id
+      name
+    }
+  }
+}`,
+
+  updateTaskMutation: `mutation UpdateTask($taskId: ID!, $title: String, $completed: Boolean) {
+  updateTask(id: $taskId, input: {title: $title, completed: $completed}) {
+    id
+    title
+    completed
+    priority
+  }
+}`,
+
+  updateTaskWithDirectivesMutation: `mutation UpdateTaskWithDirectives($taskId: ID!, $title: String, $completed: Boolean, $includeProject: Boolean!, $skipAssignee: Boolean!) {
+  updateTask(id: $taskId, input: {title: $title, completed: $completed}) {
+    id
+    title
+    completed
+    priority
+    project @include(if: $includeProject) {
+      id
+      title
+      status
+    }
+    assignee @skip(if: $skipAssignee) {
+      id
+      name
+    }
+  }
+}`,
+};
+
+/** Expected fragment verification data: typename, key (fragment name), and variable definitions. */
+type ExpectedVarDef = { kind: string; name: string; modifier: "!" | "?"; hasDefault?: boolean };
+type ExpectedFragmentSpec = { typename: string; key: string; vars: Record<string, ExpectedVarDef> };
+export const expectedFragmentSpecs: Record<string, ExpectedFragmentSpec> = {
+  commentFragment: { typename: "Comment", key: "CommentDetail", vars: {} },
+  commentThreadFragment: {
+    typename: "Comment",
+    key: "CommentThread",
+    vars: { repliesLimit: { kind: "scalar", name: "Int", modifier: "?" } },
+  },
+  companyDetailConditionalFragment: {
+    typename: "Company",
+    key: "CompanyDetailConditional",
+    vars: {
+      includeDepartments: { kind: "scalar", name: "Boolean", modifier: "!" },
+      skipEmployees: { kind: "scalar", name: "Boolean", modifier: "!" },
+    },
+  },
+  companyDetailFragment: { typename: "Company", key: "CompanyDetail", vars: {} },
+  departmentFragment: { typename: "Department", key: "DepartmentInfo", vars: {} },
+  employeeByIdFragment: {
+    typename: "Query",
+    key: "EmployeeById",
+    vars: { id: { kind: "scalar", name: "ID", modifier: "!" } },
+  },
+  employeeConditionalFragment: {
+    typename: "Employee",
+    key: "EmployeeConditional",
+    vars: { skipEmail: { kind: "scalar", name: "Boolean", modifier: "!" } },
+  },
+  employeeFragment: {
+    typename: "Employee",
+    key: "EmployeeFragment",
+    vars: { taskLimit: { kind: "scalar", name: "Int", modifier: "?" } },
+  },
+  employeeHierarchyFragment: {
+    typename: "Employee",
+    key: "EmployeeHierarchy",
+    vars: { reportsLimit: { kind: "scalar", name: "Int", modifier: "?" } },
+  },
+  employeesByRoleFragment: {
+    typename: "Company",
+    key: "EmployeesByRole",
+    vars: { role: { kind: "enum", name: "EmployeeRole", modifier: "?" } },
+  },
+  employeeTasksDetailFragment: {
+    typename: "Query",
+    key: "EmployeeTasksDetail",
+    vars: {
+      employeeId: { kind: "scalar", name: "ID", modifier: "!" },
+      completed: { kind: "scalar", name: "Boolean", modifier: "?" },
+      taskLimit: { kind: "scalar", name: "Int", modifier: "?" },
+    },
+  },
+  employeeWithStaticMetadataFragment: { typename: "Employee", key: "EmployeeWithStaticMetadata", vars: {} },
+  filteredProjectsFragment: {
+    typename: "Query",
+    key: "FilteredProjects",
+    vars: { filter: { kind: "input", name: "ProjectFilterInput", modifier: "?" } },
+  },
+  projectBasicFragment: { typename: "Project", key: "ProjectBasic", vars: {} },
+  projectConditionalFragment: {
+    typename: "Project",
+    key: "ProjectConditional",
+    vars: { includeTeam: { kind: "scalar", name: "Boolean", modifier: "!" } },
+  },
+  projectTasksFragment: {
+    typename: "Project",
+    key: "ProjectTasks",
+    vars: { limit: { kind: "scalar", name: "Int", modifier: "?" } },
+  },
+  projectWithCallbackMetadataFragment: {
+    typename: "Project",
+    key: "ProjectWithCallbackMetadata",
+    vars: {
+      projectId: { kind: "scalar", name: "ID", modifier: "!" },
+      priority: { kind: "scalar", name: "Int", modifier: "?" },
+    },
+  },
+  projectWithDefaultLimitFragment: {
+    typename: "Project",
+    key: "ProjectWithDefaultLimit",
+    vars: { taskLimit: { kind: "scalar", name: "Int", modifier: "?", hasDefault: true } },
+  },
+  taskBasicFieldsFragment: { typename: "Task", key: "TaskBasicFields", vars: {} },
+  taskDetailConditionalFragment: {
+    typename: "Task",
+    key: "TaskDetailConditional",
+    vars: {
+      includeProject: { kind: "scalar", name: "Boolean", modifier: "!" },
+      skipAssignee: { kind: "scalar", name: "Boolean", modifier: "!" },
+    },
+  },
+  taskExtendedFieldsFragment: {
+    typename: "Task",
+    key: "TaskExtendedFields",
+    vars: { includePriority: { kind: "scalar", name: "Boolean", modifier: "?" } },
+  },
+  taskFragment: { typename: "Task", key: "TaskFragment", vars: {} },
+  taskFullDetailFragment: { typename: "Task", key: "TaskFullDetail", vars: {} },
+  taskWithMetadataFragment: {
+    typename: "Task",
+    key: "TaskWithMetadata",
+    vars: {
+      taskId: { kind: "scalar", name: "ID", modifier: "!" },
+      includeComments: { kind: "scalar", name: "Boolean", modifier: "?" },
+    },
+  },
+  taskWithProjectFragment: {
+    typename: "Task",
+    key: "TaskWithProject",
+    vars: {
+      includePriority: { kind: "scalar", name: "Boolean", modifier: "?" },
+      includeAssignee: { kind: "scalar", name: "Boolean", modifier: "?" },
+    },
+  },
+  teamMembersFragment: {
+    typename: "Team",
+    key: "TeamMembers",
+    vars: { membersLimit: { kind: "scalar", name: "Int", modifier: "?" } },
+  },
+  teamProjectTasksFragment: {
+    typename: "Team",
+    key: "TeamProjectTasks",
+    vars: {
+      projectStatus: { kind: "enum", name: "ProjectStatus", modifier: "?" },
+      taskLimit: { kind: "scalar", name: "Int", modifier: "?" },
+    },
+  },
+};
 
 /** Expected GraphQL source strings for compat definitions. */
-export const expectedCompatStrings: Record<string, string> = {};
+export const expectedCompatStrings: Record<string, string> = {
+  getCompanyCompatQuery: `query GetCompanyCompat ($companyId: ID!) {
+    company(id: $companyId) {
+      id
+      name
+      industry
+    }
+  }`,
+
+  updateProjectCompatMutation: `mutation UpdateProjectCompat ($id: ID!, $input: UpdateProjectInput!) {
+    updateProject(id: $id, input: $input) {
+      id
+      title
+      description
+      status
+    }
+  }`,
+
+  taskUpdatedCompatSubscription: `subscription TaskUpdatedCompat ($taskId: ID!) {
+    taskUpdated(taskId: $taskId) {
+      id
+      title
+      completed
+    }
+  }`,
+};
 
 // ---------------------------------------------------------------------------
 // Classification helpers
@@ -56,6 +843,7 @@ function isOperation(value: unknown): value is { document: DocumentNode } {
 
 function isFragment(value: unknown): value is {
   typename: string;
+  key: string | undefined;
   variableDefinitions: Record<string, unknown>;
   spread: (...args: unknown[]) => unknown;
 } {
@@ -150,35 +938,82 @@ function verifyOperations(): VerificationResult[] {
   return results;
 }
 
+function verifyFragmentSpec(
+  name: string,
+  actual: {
+    typename: string;
+    key: string | undefined;
+    variableDefinitions: Record<string, unknown>;
+  },
+  expected: ExpectedFragmentSpec,
+): VerificationResult {
+  const errors: string[] = [];
+
+  if (actual.typename !== expected.typename) {
+    errors.push(`typename: expected "${expected.typename}", got "${actual.typename}"`);
+  }
+  if (actual.key !== expected.key) {
+    errors.push(`key: expected "${expected.key}", got "${actual.key}"`);
+  }
+
+  const actualVarNames = Object.keys(actual.variableDefinitions).sort();
+  const expectedVarNames = Object.keys(expected.vars).sort();
+
+  if (actualVarNames.join(",") !== expectedVarNames.join(",")) {
+    errors.push(`variable names: expected [${expectedVarNames.join(", ")}], got [${actualVarNames.join(", ")}]`);
+  } else {
+    for (const varName of expectedVarNames) {
+      const actualVar = actual.variableDefinitions[varName] as {
+        kind?: string;
+        name?: string;
+        modifier?: string;
+        defaultValue?: unknown;
+      };
+      const expectedVar = expected.vars[varName];
+      if (!expectedVar || !actualVar) continue;
+
+      if (actualVar.kind !== expectedVar.kind) {
+        errors.push(`var ${varName}.kind: expected "${expectedVar.kind}", got "${actualVar.kind}"`);
+      }
+      if (actualVar.name !== expectedVar.name) {
+        errors.push(`var ${varName}.name: expected "${expectedVar.name}", got "${actualVar.name}"`);
+      }
+      if (actualVar.modifier !== expectedVar.modifier) {
+        errors.push(`var ${varName}.modifier: expected "${expectedVar.modifier}", got "${actualVar.modifier}"`);
+      }
+      if (expectedVar.hasDefault && actualVar.defaultValue === null) {
+        errors.push(`var ${varName}: expected default value, got null`);
+      }
+      if (!expectedVar.hasDefault && actualVar.defaultValue !== null && actualVar.defaultValue !== undefined) {
+        errors.push(`var ${varName}: expected no default, got ${JSON.stringify(actualVar.defaultValue)}`);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { name, category: "fragment", status: "fail", error: errors.join("; ") };
+  }
+  return { name, category: "fragment", status: "pass" };
+}
+
 function verifyFragments(): VerificationResult[] {
   const results: VerificationResult[] = [];
 
   for (const [name, value] of Object.entries(fragments)) {
     if (isFragment(value)) {
       try {
-        // Verify fragment constructed successfully
-        const typename = value.typename;
-        const varDefs = value.variableDefinitions;
-
-        // Fragment verification: confirm construction and basic properties
-        const summary = `fragment on ${typename}, vars: ${Object.keys(varDefs).join(", ") || "(none)"}`;
-        const expected = expectedFragmentStrings[name];
+        const expected = expectedFragmentSpecs[name];
         if (expected === undefined) {
-          results.push({
-            name,
-            category: "fragment",
-            status: "skip",
-            actual: summary,
-          });
+          const summary = `fragment on ${value.typename}, vars: ${Object.keys(value.variableDefinitions).join(", ") || "(none)"}`;
+          results.push({ name, category: "fragment", status: "skip", actual: summary });
         } else {
-          // In Phase 2, expected strings will contain the composed document output
-          results.push({
-            name,
-            category: "fragment",
-            status: "skip",
-            actual: summary,
-            expected,
-          });
+          results.push(
+            verifyFragmentSpec(
+              name,
+              { typename: value.typename, key: value.key, variableDefinitions: value.variableDefinitions },
+              expected,
+            ),
+          );
         }
       } catch (e) {
         results.push({
