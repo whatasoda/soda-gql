@@ -1279,8 +1279,88 @@ function verifyErrorCases(): VerificationResult[] {
 }
 
 // ---------------------------------------------------------------------------
+// AI evaluation (Phase 3.3) — invoked with --ai-eval flag
+// ---------------------------------------------------------------------------
+
+async function runAiEvaluation(): Promise<void> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.log("\n=== AI Evaluation ===\n");
+    console.log("  SKIP: ANTHROPIC_API_KEY not set. Set it to enable AI evaluation.\n");
+    return;
+  }
+
+  // Collect all operation documents for evaluation
+  const documents: { name: string; graphql: string }[] = [];
+  for (const [name, value] of Object.entries(operations)) {
+    if (isOperation(value)) {
+      documents.push({ name, graphql: print(value.document) });
+    } else if (isCompat(value)) {
+      documents.push({ name, graphql: value.value.graphqlSource });
+    }
+  }
+
+  console.log("\n=== AI Evaluation ===\n");
+  console.log(`  Evaluating ${documents.length} documents with Claude...\n`);
+
+  // Build a single prompt with all documents
+  const docList = documents.map((d) => `### ${d.name}\n\`\`\`graphql\n${d.graphql}\n\`\`\``).join("\n\n");
+  const prompt = `You are a GraphQL expert reviewing generated query documents for structural correctness.
+
+For each document below, briefly assess:
+1. Are the field selections appropriate for the operation?
+2. Are variable types correct for their usage?
+3. Do directives make semantic sense?
+4. Any structural issues?
+
+Be concise — one line per document, format as "NAME: OK" or "NAME: ISSUE — description".
+
+${docList}`;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2048,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.log(`  ERROR: AI evaluation failed (${response.status}): ${text}\n`);
+      return;
+    }
+
+    const data = (await response.json()) as { content: { type: string; text: string }[] };
+    const text = data.content
+      .filter((c) => c.type === "text")
+      .map((c) => c.text)
+      .join("\n");
+
+    console.log("  AI Assessment:\n");
+    for (const line of text.split("\n")) {
+      if (line.trim()) {
+        console.log(`    ${line}`);
+      }
+    }
+    console.log("");
+  } catch (e) {
+    console.log(`  ERROR: AI evaluation failed: ${e instanceof Error ? e.message : String(e)}\n`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
+
+const aiEval = process.argv.includes("--ai-eval");
 
 const operationResults = verifyOperations();
 const fragmentResults = verifyFragments();
@@ -1289,6 +1369,10 @@ const errorResults = verifyErrorCases();
 const allResults = [...operationResults, ...fragmentResults, ...mergingResults, ...errorResults];
 
 const success = report(allResults);
+
+if (aiEval) {
+  await runAiEvaluation();
+}
 
 if (!success) {
   process.exit(1);
