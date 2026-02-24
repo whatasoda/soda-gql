@@ -1224,8 +1224,7 @@ function verifyErrorCases(): VerificationResult[] {
     if (
       msg.includes("nonExistentField") ||
       msg.includes("unknown") ||
-      msg.includes("not found") ||
-      msg.includes("not a function")
+      msg.includes("not found")
     ) {
       results.push({
         name: "errorCase:unknownField",
@@ -1365,6 +1364,48 @@ Be concise — one line per document, format as "NAME: OK" or "NAME: ISSUE — d
 }
 
 // ---------------------------------------------------------------------------
+// Orphaned expected entry detection
+// ---------------------------------------------------------------------------
+
+function verifyNoOrphanedExpected(): VerificationResult[] {
+  const results: VerificationResult[] = [];
+  const operationKeys = new Set(Object.keys(operations));
+  const fragmentKeys = new Set(Object.keys(fragments));
+
+  for (const key of Object.keys(expectedOperationStrings)) {
+    if (!operationKeys.has(key)) {
+      results.push({
+        name: key,
+        category: "operation",
+        status: "fail",
+        error: `Expected entry "${key}" has no matching export in operations`,
+      });
+    }
+  }
+  for (const key of Object.keys(expectedCompatStrings)) {
+    if (!operationKeys.has(key)) {
+      results.push({
+        name: key,
+        category: "compat",
+        status: "fail",
+        error: `Expected entry "${key}" has no matching export in operations`,
+      });
+    }
+  }
+  for (const key of Object.keys(expectedFragmentSpecs)) {
+    if (!fragmentKeys.has(key)) {
+      results.push({
+        name: key,
+        category: "fragment",
+        status: "fail",
+        error: `Expected entry "${key}" has no matching export in fragments`,
+      });
+    }
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -1374,7 +1415,8 @@ const operationResults = verifyOperations();
 const fragmentResults = verifyFragments();
 const mergingResults = verifyVariableMerging();
 const errorResults = verifyErrorCases();
-const allResults = [...operationResults, ...fragmentResults, ...mergingResults, ...errorResults];
+const orphanResults = verifyNoOrphanedExpected();
+const allResults = [...operationResults, ...fragmentResults, ...mergingResults, ...errorResults, ...orphanResults];
 
 const success = report(allResults);
 
