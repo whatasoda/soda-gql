@@ -14,7 +14,7 @@
     }
   },
   "include": ["src/**/*", "fixture-catalog/**/*", "scalars.ts", "soda-gql.config.ts"],
-  "exclude": ["**/graphql-system/*.prebuilt.ts", "**/graphql-system/*.cjs"],
+  "exclude": ["**/graphql-system/*.cjs"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" },
