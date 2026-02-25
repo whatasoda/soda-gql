@@ -52,7 +52,7 @@ export type PrebuiltTypesEmitterOptions = {
    */
   readonly fieldSelections: FieldSelectionsMap;
   /**
-   * Output directory (where prebuilt/types.ts should be written).
+   * Output directory (where types.prebuilt.ts should be written).
    * This should be the same as config.outdir.
    */
   readonly outdir: string;
@@ -432,7 +432,7 @@ export type PrebuiltTypesEmitResult = {
 };
 
 /**
- * Emit prebuilt types to the prebuilt/types.ts file.
+ * Emit prebuilt types to the types.prebuilt.ts file.
  *
  * This function uses a partial failure strategy: if type calculation fails for
  * individual elements (e.g., due to invalid field selections or missing schema
