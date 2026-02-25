@@ -47,7 +47,11 @@ const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[
     const doc = parse(file.content);
     for (const def of doc.definitions) {
       if (isTypeDefinitionNode(def)) {
-        result.push({ filePath: pathToFileURL(file.filePath).href, content: file.content, definition: def as TypeDefinitionNode });
+        result.push({
+          filePath: pathToFileURL(file.filePath).href,
+          content: file.content,
+          definition: def as TypeDefinitionNode,
+        });
       }
     }
   }
@@ -180,7 +184,10 @@ const resolveSchemaDefinition = (
           uri: def.path ?? "",
           range: {
             start: { line: def.position.line, character: def.position.character },
-            end: { line: def.range?.end?.line ?? def.position.line, character: def.range?.end?.character ?? def.position.character },
+            end: {
+              line: def.range?.end?.line ?? def.position.line,
+              character: def.range?.end?.character ?? def.position.character,
+            },
           },
         }),
       ),
