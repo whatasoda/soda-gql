@@ -2,7 +2,7 @@
 
 /**
  * Build script for VS Code extension.
- * Bundles the extension client, LSP server, and TS plugin into dist/.
+ * Bundles the extension client and LSP server into dist/.
  */
 
 import { dirname, join } from "node:path";
@@ -41,27 +41,7 @@ async function buildServer() {
   console.log("✓ LSP server built successfully");
 }
 
-async function buildTsPlugin() {
-  await build({
-    entryPoints: [join(__dirname, "..", "ts-plugin", "src", "index.ts")],
-    bundle: true,
-    outfile: join(__dirname, "dist", "ts-plugin.cjs"),
-    external: ["@swc/core"],
-    format: "cjs",
-    platform: "node",
-    target: "node18",
-    sourcemap: true,
-    minify: false,
-    // D-2: import.meta.url is undefined in CJS; provide __filename-based shim
-    banner: { js: 'var import_meta_url = require("url").pathToFileURL(__filename).href;' },
-    define: { "import.meta.url": "import_meta_url" },
-    // D-1: tsserver expects module.exports = init (function), not module.exports.default
-    footer: { js: "module.exports = module.exports.default || module.exports;" },
-  });
-  console.log("✓ TS plugin built successfully");
-}
-
-Promise.all([buildExtension(), buildServer(), buildTsPlugin()]).catch((err) => {
+Promise.all([buildExtension(), buildServer()]).catch((err) => {
   console.error("Build failed:", err);
   process.exit(1);
 });
