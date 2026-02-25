@@ -9,6 +9,6 @@
     "paths": {}
   },
   "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
-  "exclude": ["node_modules", "dist", "**/graphql-system/*.cjs"],
+  "exclude": ["node_modules", "dist", "**/graphql-system/*.cjs", "**/fragment-in-fragment.ts"],
   "references": []
 }
