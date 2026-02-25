@@ -6,8 +6,16 @@
 import type { FragmentDefinitionNode, GraphQLSchema } from "graphql";
 import { getAutocompleteSuggestions } from "graphql-language-service";
 import type { CompletionItem } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper, type Position, toIPosition } from "../position-mapping";
+import {
+  computeLineOffsets,
+  createPositionMapper,
+  offsetToPosition,
+  type Position,
+  positionToOffset,
+  toIPosition,
+} from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type HandleCompletionInput = {
@@ -23,7 +31,9 @@ export type HandleCompletionInput = {
 /** Handle a completion request for a GraphQL template. */
 export const handleCompletion = (input: HandleCompletionInput): CompletionItem[] => {
   const { template, schema, tsSource, tsPosition } = input;
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const reconstructed = reconstructGraphql(template);
+  const headerLen = reconstructed.length - template.content.length;
+  const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
     tsSource,
@@ -31,10 +41,17 @@ export const handleCompletion = (input: HandleCompletionInput): CompletionItem[]
     graphqlContent: template.content,
   });
 
-  const gqlPosition = mapper.tsToGraphql(tsPosition);
-  if (!gqlPosition) {
+  const contentPos = mapper.tsToGraphql(tsPosition);
+  if (!contentPos) {
     return [];
   }
+
+  // Shift content position to reconstructed position (account for synthesized header)
+  const contentLineOffsets = computeLineOffsets(template.content);
+  const contentOffset = positionToOffset(contentLineOffsets, contentPos);
+  const reconstructedOffset = contentOffset + headerLen;
+  const reconstructedLineOffsets = computeLineOffsets(preprocessed);
+  const gqlPosition = offsetToPosition(reconstructedLineOffsets, reconstructedOffset);
 
   // graphql-language-service expects IPosition with line/character (0-indexed)
   const suggestions = getAutocompleteSuggestions(

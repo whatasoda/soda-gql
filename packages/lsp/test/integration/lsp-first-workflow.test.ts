@@ -56,7 +56,7 @@ describe("LSP-first workflow (without typegen)", () => {
     const source = `import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment\`fragment UserFragment on User {
+  fragment("UserFragment", "User")\`{
     id
     name
     email
@@ -134,7 +134,7 @@ export const userFragment = gql.default(({ fragment }) =>
     const source = `import { gql } from "@/graphql-system";
 
 export const listUsersQuery = gql.default(({ query }) =>
-  query\`query ListUsers {
+  query("ListUsers")\`{
     users {
       id
       name
@@ -199,7 +199,7 @@ export const listUsersQuery = gql.default(({ query }) =>
     const fragmentSource = `import { gql } from "@/graphql-system";
 
 export const userBaseFragment = gql.default(({ fragment }) =>
-  fragment\`fragment UserBase on User {
+  fragment("UserBase", "User")\`{
     id
     name
   }\`(),
@@ -213,7 +213,7 @@ export const userBaseFragment = gql.default(({ fragment }) =>
 import { userBaseFragment } from "./user-base-fragment";
 
 export const userExtendedFragment = gql.default(({ fragment }) =>
-  fragment\`fragment UserExtended on User {
+  fragment("UserExtended", "User")\`{
     \${userBaseFragment}
     email
   }\`(),
@@ -282,7 +282,7 @@ export const userExtendedFragment = gql.default(({ fragment }) =>
     const source = `import { gql } from "@/graphql-system";
 
 export const badFragment = gql.default(({ fragment }) =>
-  fragment\`fragment BadUser on User {
+  fragment("BadUser", "User")\`{
     id
     invalidField
   }\`(),
@@ -317,7 +317,7 @@ export const badFragment = gql.default(({ fragment }) =>
 // Step 4: Write tagged templates with full LSP support
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment\`fragment UserFields on User {
+  fragment("UserFields", "User")\`{
     id
     name
     email
@@ -325,7 +325,7 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 
 export const getUserQuery = gql.default(({ query }) =>
-  query\`query GetUser {
+  query("GetUser")\`{
     user(id: "1") {
       id
       name

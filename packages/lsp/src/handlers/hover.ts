@@ -6,8 +6,16 @@
 import type { GraphQLSchema } from "graphql";
 import { getHoverInformation } from "graphql-language-service";
 import type { Hover, MarkupContent } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper, type Position, toIPosition } from "../position-mapping";
+import {
+  computeLineOffsets,
+  createPositionMapper,
+  offsetToPosition,
+  type Position,
+  positionToOffset,
+  toIPosition,
+} from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type HandleHoverInput = {
@@ -21,7 +29,9 @@ export type HandleHoverInput = {
 /** Handle a hover request for a GraphQL template. */
 export const handleHover = (input: HandleHoverInput): Hover | null => {
   const { template, schema, tsSource, tsPosition } = input;
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const reconstructed = reconstructGraphql(template);
+  const headerLen = reconstructed.length - template.content.length;
+  const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
     tsSource,
@@ -29,10 +39,17 @@ export const handleHover = (input: HandleHoverInput): Hover | null => {
     graphqlContent: template.content,
   });
 
-  const gqlPosition = mapper.tsToGraphql(tsPosition);
-  if (!gqlPosition) {
+  const contentPos = mapper.tsToGraphql(tsPosition);
+  if (!contentPos) {
     return null;
   }
+
+  // Shift content position to reconstructed position (account for synthesized header)
+  const contentLineOffsets = computeLineOffsets(template.content);
+  const contentOffset = positionToOffset(contentLineOffsets, contentPos);
+  const reconstructedOffset = contentOffset + headerLen;
+  const reconstructedLineOffsets = computeLineOffsets(preprocessed);
+  const gqlPosition = offsetToPosition(reconstructedLineOffsets, reconstructedOffset);
 
   const hoverInfo = getHoverInformation(schema, preprocessed, toIPosition(gqlPosition), undefined, {
     useMarkdown: true,

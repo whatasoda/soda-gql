@@ -69,7 +69,7 @@ describe("end-to-end LSP flow", () => {
     const dm = createDocumentManager(helper);
     const source = `import { gql } from "@/graphql-system";
 
-export const Bad = gql.default(({ query }) => query\`query { users { id badField } }\`);`;
+export const Bad = gql.default(({ query }) => query("Bad")\`{ users { id badField } }\`);`;
     const uri = resolve(fixturesDir, "bad-query.ts");
     const state = dm.update(uri, 1, source);
 
@@ -170,7 +170,7 @@ export const Bad = gql.default(({ query }) => query\`query { users { id badField
       const querySource = `import { gql } from "@/graphql-system";
 import { UserFields } from "./fragment-definition";
 
-export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id: "1") { ...UserFields } }\`);`;
+export const GetUser = gql.default(({ query }) => query("GetUser")\`{ user(id: "1") { ...UserFields } }\`);`;
       const queryUri = resolve(fixturesDir, "query-with-fragment.ts");
       const queryState = dm.update(queryUri, 1, querySource);
 
@@ -194,8 +194,8 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       dm.update(fragmentUri, 1, fragmentSource);
 
       // Register a query document with "..." at cursor position
-      const content = 'query GetUser { user(id: "1") { ... } }';
-      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+      const content = '{ user(id: "1") { ... } }';
+      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
       const queryUri = resolve(fixturesDir, "query-spread.ts");
       dm.update(queryUri, 1, querySource);
 
@@ -232,8 +232,8 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       dm.update(fragmentUri, 1, fragmentSource);
 
       // Register a query document that uses the fragment
-      const content = 'query GetUser { user(id: "1") { ...UserFields } }';
-      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+      const content = '{ user(id: "1") { ...UserFields } }';
+      const querySource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
       const queryUri = resolve(fixturesDir, "query-definition.ts");
       dm.update(queryUri, 1, querySource);
 

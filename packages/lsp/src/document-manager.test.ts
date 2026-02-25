@@ -163,8 +163,8 @@ describe("createDocumentManager", () => {
     const source = `import { gql } from "@/graphql-system";
 import { userFields } from "./fragment";
 
-export const GetUser = gql.default(({ query }) => query\`
-  query GetUser {
+export const GetUser = gql.default(({ query }) => query("GetUser")\`
+  {
     user(id: "1") {
       ...\${userFields}
       name
@@ -190,8 +190,8 @@ export const GetUser = gql.default(({ query }) => query\`
     const source = `import { gql } from "@/graphql-system";
 import { userFields, addressFields } from "./fragments";
 
-export const GetUser = gql.default(({ query }) => query\`
-  query GetUser {
+export const GetUser = gql.default(({ query }) => query("GetUser")\`
+  {
     user(id: "1") {
       ...\${userFields}
       address {
@@ -369,7 +369,7 @@ export const GetUser = gql.default(({ query }) => query("GetUser")\`
 
       // Register a document with invalid fragment content
       const badFragmentSource = `import { gql } from "@/graphql-system";
-export const Bad = gql.default(({ fragment }) => fragment\`fragment { invalid\`);`;
+export const Bad = gql.default(({ fragment }) => fragment("Bad", "Unknown")\`{ invalid\`);`;
       const badUri = "/test/bad-fragment.ts";
       dm.update(badUri, 1, badFragmentSource);
       dm.update(queryUri, 1, readFixture("simple-query.ts"));
@@ -430,7 +430,7 @@ export const Bad = gql.default(({ fragment }) => fragment\`fragment { invalid\`)
       const querySource = `import { gql } from "@/graphql-system";
 import { UserFields } from "./fragment-definition";
 
-export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id: "1") { ...UserFields } }\`);`;
+export const GetUser = gql.default(({ query }) => query("GetUser")\`{ user(id: "1") { ...UserFields } }\`);`;
       const queryUri = "/test/query-with-fragment.ts";
       dm.update(queryUri, 1, querySource);
 
@@ -454,9 +454,9 @@ export const GetUser = gql.default(({ query }) => query\`query GetUser { user(id
       const dm = createDocumentManager(helper);
 
       const querySource1 = `import { gql } from "@/graphql-system";
-export const Q1 = gql.default(({ query }) => query\`query Q1 { user(id: "1") { ...UserFields } }\`);`;
+export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...UserFields } }\`);`;
       const querySource2 = `import { gql } from "@/graphql-system";
-export const Q2 = gql.default(({ query }) => query\`query Q2 { users { ...UserFields } }\`);`;
+export const Q2 = gql.default(({ query }) => query("Q2")\`{ users { ...UserFields } }\`);`;
 
       dm.update("/test/q1.ts", 1, querySource1);
       dm.update("/test/q2.ts", 1, querySource2);
@@ -472,7 +472,7 @@ export const Q2 = gql.default(({ query }) => query\`query Q2 { users { ...UserFi
       const dm = createDocumentManager(helper);
 
       const querySource = `import { gql } from "@/graphql-system";
-export const Q1 = gql.default(({ query }) => query\`query Q1 { user(id: "1") { ...UserFields } }\`);`;
+export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...UserFields } }\`);`;
       dm.update("/test/q1.ts", 1, querySource);
 
       const locations = dm.findFragmentSpreadLocations("UserFields", "admin");

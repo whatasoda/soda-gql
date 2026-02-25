@@ -7,8 +7,9 @@ import type { GraphQLObjectType, GraphQLSchema } from "graphql";
 import { getNamedType, isObjectType, Kind, parse, visit } from "graphql";
 import type { InlayHint } from "vscode-languageserver-types";
 import { InlayHintKind } from "vscode-languageserver-types";
+import { reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
-import { createPositionMapper, type Position } from "../position-mapping";
+import { computeLineOffsets, createPositionMapper, offsetToPosition } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
 
 export type HandleInlayHintInput = {
@@ -20,13 +21,16 @@ export type HandleInlayHintInput = {
 /** Handle an inlay hint request for a GraphQL template. */
 export const handleInlayHint = (input: HandleInlayHintInput): InlayHint[] => {
   const { template, schema, tsSource } = input;
-  const { preprocessed } = preprocessFragmentArgs(template.content);
+  const reconstructed = reconstructGraphql(template);
+  const headerLen = reconstructed.length - template.content.length;
+  const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
     tsSource,
     contentStartOffset: template.contentRange.start,
     graphqlContent: template.content,
   });
+  const contentLineOffsets = computeLineOffsets(template.content);
 
   const hints: InlayHint[] = [];
 
@@ -65,14 +69,12 @@ export const handleInlayHint = (input: HandleInlayHintInput): InlayHint[] => {
 
           const typeStr = field.type.toString();
 
-          // Get the position after the field name in the GraphQL content
-          const fieldEndOffset = node.name.loc?.end ?? 0;
-          const gqlPosition: Position = {
-            line: (node.name.loc?.startToken.line ?? 1) - 1,
-            character: fieldEndOffset - (node.name.loc?.startToken.start ?? 0),
-          };
+          // Get the position after the field name, converting from reconstructed to content space
+          const fieldEndOffsetInReconstructed = node.name.loc?.end ?? 0;
+          const fieldEndOffsetInContent = Math.max(0, fieldEndOffsetInReconstructed - headerLen);
+          const contentPosition = offsetToPosition(contentLineOffsets, fieldEndOffsetInContent);
 
-          const tsPosition = mapper.graphqlToTs(gqlPosition);
+          const tsPosition = mapper.graphqlToTs(contentPosition);
           if (tsPosition) {
             hints.push({
               position: tsPosition,

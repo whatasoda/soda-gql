@@ -42,7 +42,7 @@ export type IndexedFragment = {
   readonly content: string;
   readonly contentRange: { readonly start: number; readonly end: number };
   readonly tsSource: string;
-  /** Number of bytes prepended by reconstruction (0 for old syntax). */
+  /** Number of bytes prepended by reconstruction. */
   readonly headerLen: number;
 };
 
