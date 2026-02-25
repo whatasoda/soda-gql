@@ -1,0 +1,44 @@
+{
+  "name": "@soda-gql/ts-plugin",
+  "version": "0.11.26",
+  "description": "TypeScript Language Service Plugin for soda-gql GraphQL completion",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "typescript",
+    "language-service-plugin",
+    "completion",
+    "soda-gql"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/ts-plugin"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@soda-gql/codegen": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "graphql": "^16.11.0",
+    "graphql-language-service": "^5.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "5.*"
+  }
+}

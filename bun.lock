@@ -234,6 +234,19 @@
         "@swc/core": "^1.0.0",
       },
     },
+    "packages/ts-plugin": {
+      "name": "@soda-gql/ts-plugin",
+      "version": "0.11.26",
+      "dependencies": {
+        "@soda-gql/codegen": "workspace:*",
+        "@soda-gql/config": "workspace:*",
+        "graphql": "^16.11.0",
+        "graphql-language-service": "^5.3.0",
+      },
+      "peerDependencies": {
+        "typescript": "5.*",
+      },
+    },
     "packages/tsc": {
       "name": "@soda-gql/tsc",
       "version": "0.11.26",
@@ -1226,6 +1239,8 @@
     "@soda-gql/sdk": ["@soda-gql/sdk@workspace:packages/sdk"],
 
     "@soda-gql/swc": ["@soda-gql/swc@workspace:packages/swc"],
+
+    "@soda-gql/ts-plugin": ["@soda-gql/ts-plugin@workspace:packages/ts-plugin"],
 
     "@soda-gql/tsc": ["@soda-gql/tsc@workspace:packages/tsc"],
 
