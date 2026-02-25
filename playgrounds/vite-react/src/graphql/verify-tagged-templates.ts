@@ -11,7 +11,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DocumentNode } from "graphql";
 import { print } from "graphql";
@@ -1221,11 +1221,7 @@ function verifyErrorCases(): VerificationResult[] {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    if (
-      msg.includes("nonExistentField") ||
-      msg.includes("unknown") ||
-      msg.includes("not found")
-    ) {
+    if (msg.includes("nonExistentField") || msg.includes("unknown") || msg.includes("not found")) {
       results.push({
         name: "errorCase:unknownField",
         category: "operation",

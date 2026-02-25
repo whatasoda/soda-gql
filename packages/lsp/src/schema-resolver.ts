@@ -3,13 +3,20 @@
  * @module
  */
 
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { hashSchema, loadSchema } from "@soda-gql/codegen";
+import { hashSchema } from "@soda-gql/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { buildASTSchema, type DocumentNode, type GraphQLSchema } from "graphql";
+import { buildASTSchema, concatAST, type DocumentNode, type GraphQLSchema, parse } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import type { LspError } from "./errors";
 import { lspErrors } from "./errors";
+
+/** Per-file schema source info for go-to-definition. */
+export type SchemaFileInfo = {
+  readonly filePath: string;
+  readonly content: string;
+};
 
 /** Cached schema entry. */
 export type SchemaEntry = {
@@ -17,6 +24,7 @@ export type SchemaEntry = {
   readonly schema: import("graphql").GraphQLSchema;
   readonly documentNode: DocumentNode;
   readonly hash: string;
+  readonly files: readonly SchemaFileInfo[];
 };
 
 export type SchemaResolver = {
@@ -36,22 +44,29 @@ const safeBuildASTSchema = (schemaName: string, documentNode: DocumentNode): Res
 };
 
 const loadAndBuildSchema = (schemaName: string, schemaPaths: readonly string[]): Result<SchemaEntry, LspError> => {
-  const resolvedPaths = schemaPaths.map((s) => resolve(s));
-  const loadResult = loadSchema(resolvedPaths);
-  if (loadResult.isErr()) {
-    return err(lspErrors.schemaLoadFailed(schemaName, loadResult.error.message));
+  const documents: DocumentNode[] = [];
+  const files: SchemaFileInfo[] = [];
+
+  for (const schemaPath of schemaPaths) {
+    const resolvedPath = resolve(schemaPath);
+    try {
+      const content = readFileSync(resolvedPath, "utf8");
+      documents.push(parse(content));
+      files.push({ filePath: resolvedPath, content });
+    } catch (e) {
+      return err(lspErrors.schemaLoadFailed(schemaName, e instanceof Error ? e.message : String(e)));
+    }
   }
 
-  // Cast needed because codegen may use a different graphql version's DocumentNode
-  const documentNode = loadResult.value as unknown as DocumentNode;
-  const hash = hashSchema(loadResult.value);
+  const documentNode = concatAST(documents);
+  const hash = hashSchema(documentNode as Parameters<typeof hashSchema>[0]);
 
   const buildResult = safeBuildASTSchema(schemaName, documentNode);
   if (buildResult.isErr()) {
     return err(buildResult.error);
   }
 
-  return ok({ name: schemaName, schema: buildResult.value, documentNode, hash });
+  return ok({ name: schemaName, schema: buildResult.value, documentNode, hash, files });
 };
 
 /** Create a schema resolver from config. Loads all schemas eagerly. */

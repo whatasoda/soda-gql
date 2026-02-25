@@ -30,7 +30,7 @@ When using soda-gql with a build plugin (Babel, TypeScript, Vite, etc.), the run
 import { gql } from "@/graphql-system";
 
 export const userQuery = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name

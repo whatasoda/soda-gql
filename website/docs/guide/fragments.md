@@ -36,7 +36,7 @@ Use the `gql.default()` pattern with tagged template syntax to define a fragment
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
     email

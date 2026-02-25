@@ -26,7 +26,6 @@ import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
-import { handleInlayHint } from "./handlers/inlay-hint";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
 
@@ -109,16 +108,15 @@ export const createLspServer = (options?: LspServerOptions) => {
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Full,
-        completionProvider: {
-          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
-        },
         hoverProvider: true,
-        inlayHintProvider: true,
         documentSymbolProvider: true,
         definitionProvider: true,
         referencesProvider: true,
         renameProvider: { prepareProvider: true },
         documentFormattingProvider: true,
+        completionProvider: {
+          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
+        },
         codeActionProvider: {
           codeActionKinds: ["refactor.extract"],
         },
@@ -168,7 +166,6 @@ export const createLspServer = (options?: LspServerOptions) => {
 
     const template = ctx.documentManager.findTemplateAtOffset(
       params.textDocument.uri,
-      // We need to convert LSP position to offset
       positionToOffset(documents.get(params.textDocument.uri)?.getText() ?? "", params.position),
     );
 
@@ -236,46 +233,6 @@ export const createLspServer = (options?: LspServerOptions) => {
     });
   });
 
-  connection.languages.inlayHint.on((params) => {
-    if (!registry) {
-      return [];
-    }
-
-    const ctx = registry.resolveForUri(params.textDocument.uri);
-    if (!ctx) {
-      return [];
-    }
-
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return [];
-    }
-
-    const docState = ctx.documentManager.get(params.textDocument.uri);
-    if (!docState || docState.templates.length === 0) {
-      return [];
-    }
-
-    const allHints: ReturnType<typeof handleInlayHint> = [];
-
-    for (const template of docState.templates) {
-      const entry = ctx.schemaResolver.getSchema(template.schemaName);
-      if (!entry) {
-        continue;
-      }
-
-      const hints = handleInlayHint({
-        template,
-        schema: entry.schema,
-        tsSource: doc.getText(),
-      });
-
-      allHints.push(...hints);
-    }
-
-    return allHints;
-  });
-
   connection.onDefinition(async (params) => {
     if (!registry) {
       return [];
@@ -301,12 +258,15 @@ export const createLspServer = (options?: LspServerOptions) => {
     }
 
     const externalFragments = ctx.documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
+    const entry = ctx.schemaResolver.getSchema(template.schemaName);
 
     return handleDefinition({
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
+      schema: entry?.schema,
+      schemaFiles: entry?.files,
     });
   });
 

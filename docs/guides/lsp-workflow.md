@@ -98,7 +98,7 @@ import { gql } from "@/graphql-system";
 
 // Fragment with LSP completion and diagnostics
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
     email
@@ -121,7 +121,7 @@ Reference fragments in other fragments using interpolation:
 import { gql } from "@/graphql-system";
 
 const userBaseFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserBase on User {
+  fragment("UserBase", "User")`{
     id
     name
   }`(),
@@ -129,7 +129,7 @@ const userBaseFragment = gql.default(({ fragment }) =>
 
 // Spread fragment via interpolation
 export const userWithEmailFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserWithEmail on User {
+  fragment("UserWithEmail", "User")`{
     ...${userBaseFragment}
     email
   }`(),
@@ -204,7 +204,7 @@ The LSP fully supports tagged template syntax for fragments and simple operation
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
   }`(),
@@ -215,7 +215,7 @@ export const userFragment = gql.default(({ fragment }) =>
 
 ```typescript
 export const listUsersQuery = gql.default(({ query }) =>
-  query`query ListUsers {
+  query("ListUsers")`{
     users {
       id
       name
@@ -228,7 +228,7 @@ export const listUsersQuery = gql.default(({ query }) =>
 
 ```typescript
 export const extendedFragment = gql.default(({ fragment }) =>
-  fragment`fragment ExtendedUser on User {
+  fragment("ExtendedUser", "User")`{
     ...${userFragment}
     email
   }`(),

@@ -103,7 +103,7 @@ describe("multi-config integration", () => {
     test("completion in app-a suggests users, not products", () => {
       const source = `import { gql } from "@/graphql-system";
 
-export const GetUsers = gql.default(({ query }) => query\`query { }\`);`;
+export const GetUsers = gql.default(({ query }) => query("GetUsers")\`{ }\`);`;
       const uri = resolve(appADir, "get-users.ts");
       const state = ctxA.documentManager.update(uri, 1, source);
 
@@ -133,7 +133,7 @@ export const GetUsers = gql.default(({ query }) => query\`query { }\`);`;
     test("completion in app-b suggests products, not users", () => {
       const source = `import { gql } from "@/graphql-system";
 
-export const GetProducts = gql.default(({ query }) => query\`query { }\`);`;
+export const GetProducts = gql.default(({ query }) => query("GetProducts")\`{ }\`);`;
       const uri = resolve(appBDir, "get-products.ts");
       const state = ctxB.documentManager.update(uri, 1, source);
 
@@ -168,7 +168,7 @@ export const GetProducts = gql.default(({ query }) => query\`query { }\`);`;
       // Register a fragment in app-a
       const fragmentSource = `import { gql } from "@/graphql-system";
 
-export const UserFields = gql.default(({ fragment }) => fragment\`fragment UserFields on User { id name }\`);`;
+export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`{ id name }\`);`;
       const fragmentUri = resolve(appADir, "user-fields.ts");
       ctxA.documentManager.update(fragmentUri, 1, fragmentSource);
 
@@ -187,7 +187,7 @@ export const UserFields = gql.default(({ fragment }) => fragment\`fragment UserF
 
       const querySource = `import { gql } from "@/graphql-system";
 
-export const Bad = gql.default(({ query }) => query\`query { products { ...ProductFields } }\`);`;
+export const Bad = gql.default(({ query }) => query("Bad")\`{ products { ...ProductFields } }\`);`;
       const queryUri = resolve(appBDir, "bad-query.ts");
       const state = ctxB.documentManager.update(queryUri, 1, querySource);
 

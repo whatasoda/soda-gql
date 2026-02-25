@@ -20,8 +20,8 @@ const defaultSchema = loadTestSchema("default");
 
 describe("computeTemplateDiagnostics", () => {
   test("no diagnostics for valid query", () => {
-    const tsSource = 'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id name } }`);';
-    const content = "query { users { id name } }";
+    const content = "{ users { id name } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("ListUsers")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -29,6 +29,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "ListUsers",
     };
 
     const diagnostics = computeTemplateDiagnostics({
@@ -41,9 +42,8 @@ describe("computeTemplateDiagnostics", () => {
   });
 
   test("reports validation error for unknown field", () => {
-    const tsSource =
-      'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
-    const content = "query { users { id unknownField } }";
+    const content = "{ users { id unknownField } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("ListUsers")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -51,6 +51,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "ListUsers",
     };
 
     const diagnostics = computeTemplateDiagnostics({
@@ -67,9 +68,8 @@ describe("computeTemplateDiagnostics", () => {
 
   test("diagnostic positions are in TS file coordinates", () => {
     // Put the template on line 2 (0-indexed) so we can verify position mapping
-    const tsSource =
-      'import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query`query { users { id unknownField } }`);';
-    const content = "query { users { id unknownField } }";
+    const content = "{ users { id unknownField } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("ListUsers")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -77,6 +77,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "ListUsers",
     };
 
     const diagnostics = computeTemplateDiagnostics({
@@ -93,8 +94,8 @@ describe("computeTemplateDiagnostics", () => {
   });
 
   test("no unknown-fragment error when externalFragments provided", () => {
-    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...UserFields } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -102,6 +103,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     const fragmentAst = parse("fragment UserFields on User { id name }");
@@ -120,8 +122,8 @@ describe("computeTemplateDiagnostics", () => {
   });
 
   test("handles Fragment Arguments without false positives", () => {
-    const content = "fragment UserFields($showEmail: Boolean = false) on User {\n  id\n  name\n}";
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ fragment }) => fragment\`${content}\`);`;
+    const content = "($showEmail: Boolean = false) {\n  id\n  name\n}";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ fragment }) => fragment("UserFields", "User")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -129,6 +131,8 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "fragment",
       content,
+      elementName: "UserFields",
+      typeName: "User",
     };
 
     const diagnostics = computeTemplateDiagnostics({
@@ -145,8 +149,8 @@ describe("computeTemplateDiagnostics", () => {
 
   test("suppresses diagnostics for interpolation placeholders", () => {
     // Simulate a template with interpolation placeholder (from document manager)
-    const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ name } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...__FRAG_SPREAD_0__ name } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -154,6 +158,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     const diagnostics = computeTemplateDiagnostics({
@@ -245,8 +250,8 @@ describe("computeTemplateDiagnostics", () => {
 
   test("still reports other diagnostics when placeholder present", () => {
     // Template with both placeholder AND an actual error
-    const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ unknownField } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...__FRAG_SPREAD_0__ unknownField } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -254,6 +259,7 @@ describe("computeTemplateDiagnostics", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     const diagnostics = computeTemplateDiagnostics({

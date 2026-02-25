@@ -1,29 +1,41 @@
 import { describe, expect, test } from "bun:test";
-import { type FragmentDefinitionNode, parse } from "graphql";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { type DocumentNode, type FragmentDefinitionNode, buildASTSchema, parse } from "graphql";
+import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
 import { handleDefinition } from "./definition";
 
-const makeFragment = (uri: string, schemaName: string, fragmentText: string, tsSource?: string): IndexedFragment => {
-  const ast = parse(fragmentText);
+const makeCurriedFragment = (
+  uri: string,
+  schemaName: string,
+  body: string,
+  elementName: string,
+  typeName: string,
+  tsSource: string,
+): IndexedFragment => {
+  const header = `fragment ${elementName} on ${typeName} `;
+  const reconstructed = header + body;
+  const ast = parse(reconstructed);
   const def = ast.definitions[0] as FragmentDefinitionNode;
-  const source = tsSource ?? fragmentText;
-  const contentStart = source.indexOf(fragmentText);
+  const contentStart = tsSource.indexOf(body);
   return {
     uri,
     schemaName,
     fragmentName: def.name.value,
     definition: def,
-    content: fragmentText,
-    contentRange: { start: contentStart, end: contentStart + fragmentText.length },
-    tsSource: source,
-    headerLen: 0,
+    content: reconstructed,
+    contentRange: { start: contentStart, end: contentStart + body.length },
+    tsSource,
+    headerLen: header.length,
   };
 };
 
 describe("handleDefinition", () => {
   test("resolves fragment spread to definition in external file", async () => {
-    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...UserFields } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -31,13 +43,13 @@ describe("handleDefinition", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     const fragmentUri = "/test/fragments.ts";
-    const fragmentText = "fragment UserFields on User { id name }";
-    const fragmentGraphqlContent = `\n  ${fragmentText}\n`;
-    const fragmentTsSource = `import { gql } from "@/graphql-system";\n\nexport const UserFields = gql.default(({ fragment }) => fragment\`${fragmentGraphqlContent}\`);`;
-    const externalFragments = [makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource)];
+    const fragmentBody = "{ id name }";
+    const fragmentTsSource = `import { gql } from "@/graphql-system";\n\nexport const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`\n  ${fragmentBody}\n\`);`;
+    const externalFragments = [makeCurriedFragment(fragmentUri, "default", fragmentBody, "UserFields", "User", fragmentTsSource)];
 
     // Position cursor on "UserFields" in "...UserFields"
     const spreadIdx = content.indexOf("...UserFields") + 3; // After "..."
@@ -55,16 +67,14 @@ describe("handleDefinition", () => {
     expect(locations.length).toBeGreaterThan(0);
     expect(locations[0]!.uri).toBe(fragmentUri);
 
-    // The fragment GraphQL content starts on line 3 (after import + blank + gql call)
-    // "fragment" keyword is on line 1 of GraphQL content (after leading newline),
-    // which maps to line 3 in the TS file
+    // Fragment body is on line 3 (after import + blank + gql call + newline in template)
     const loc = locations[0]!;
     expect(loc.range.start.line).toBeGreaterThanOrEqual(3);
   });
 
   test("maps definition positions to TypeScript file coordinates", async () => {
-    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...UserFields } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -72,22 +82,22 @@ describe("handleDefinition", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     // Fragment embedded at line 5 in its TS file (after several lines of imports)
-    const fragmentText = "fragment UserFields on User { id name }";
+    const fragmentBody = "{ id name }";
     const fragmentTsSource = [
       'import { gql } from "@/graphql-system";',
       "",
       "// Fragment for user fields",
       "// eslint-disable-next-line",
-      "export const UserFields = gql.default(({ fragment }) => fragment`",
-      `  ${fragmentText}`,
+      'export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")`',
+      `  ${fragmentBody}`,
       "`);",
     ].join("\n");
-    const fragmentGraphqlContent = `\n  ${fragmentText}\n`;
     const fragmentUri = "/test/fragments.ts";
-    const externalFragments = [makeFragment(fragmentUri, "default", fragmentGraphqlContent, fragmentTsSource)];
+    const externalFragments = [makeCurriedFragment(fragmentUri, "default", fragmentBody, "UserFields", "User", fragmentTsSource)];
 
     const spreadIdx = content.indexOf("...UserFields") + 3;
     const cursorInTs = contentStart + spreadIdx;
@@ -104,15 +114,14 @@ describe("handleDefinition", () => {
     expect(locations.length).toBeGreaterThan(0);
     const loc = locations[0]!;
     expect(loc.uri).toBe(fragmentUri);
-    // GraphQL "fragment" keyword is at line 1, char 2 in the GraphQL content
-    // which maps to line 5, char 2 in the TS file (line 5 is where fragment text lives)
+    // Fragment body "{ id name }" is at line 5, char 2 in the TS file
     expect(loc.range.start.line).toBe(5);
     expect(loc.range.start.character).toBe(2);
   });
 
   test("returns empty for positions not on fragment spread", async () => {
-    const content = 'query GetUser { user(id: "1") { id name } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { id name } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -120,6 +129,7 @@ describe("handleDefinition", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     // Position cursor on "id" field, not a fragment spread
@@ -139,8 +149,8 @@ describe("handleDefinition", () => {
   });
 
   test("returns empty when fragment is not found", async () => {
-    const content = 'query GetUser { user(id: "1") { ...UnknownFragment } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...UnknownFragment } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -148,6 +158,7 @@ describe("handleDefinition", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     // Position cursor on "UnknownFragment"
@@ -167,8 +178,8 @@ describe("handleDefinition", () => {
   });
 
   test("returns empty for position outside template", async () => {
-    const content = 'query GetUser { user(id: "1") { ...UserFields } }';
-    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const content = '{ user(id: "1") { ...UserFields } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 
     const template: ExtractedTemplate = {
@@ -176,6 +187,7 @@ describe("handleDefinition", () => {
       schemaName: "default",
       kind: "query",
       content,
+      elementName: "GetUser",
     };
 
     const locations = await handleDefinition({
@@ -188,107 +200,154 @@ describe("handleDefinition", () => {
     expect(locations).toHaveLength(0);
   });
 
-  describe("curried tagged template syntax", () => {
-    test("resolves fragment spread in curried query template", async () => {
-      // Source template uses curried syntax: body-only content + elementName
-      const content = '{ user(id: "1") { ...UserFields } }';
-      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
-      const contentStart = tsSource.indexOf(content);
+  test("maps definition position correctly for curried target fragment on single line", async () => {
+    const content = '{ user(id: "1") { ...UserFields } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
 
-      const template: ExtractedTemplate = {
-        contentRange: { start: contentStart, end: contentStart + content.length },
-        schemaName: "default",
-        kind: "query",
-        content,
-        elementName: "GetUser",
-      };
-
-      const fragmentText = "fragment UserFields on User { id name }";
-      const externalFragments = [makeFragment("/test/fragments.ts", "default", fragmentText)];
-
-      // Position cursor on "UserFields" in "...UserFields"
-      const spreadIdx = content.indexOf("...UserFields") + 3;
-      const cursorInTs = contentStart + spreadIdx;
-      const lines = tsSource.slice(0, cursorInTs).split("\n");
-      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
-
-      const locations = await handleDefinition({
-        template,
-        tsSource,
-        tsPosition,
-        externalFragments,
-      });
-
-      expect(locations.length).toBeGreaterThan(0);
-      expect(locations[0]!.uri).toBe("/test/fragments.ts");
-    });
-
-    const makeCurriedFragment = (
-      uri: string,
-      schemaName: string,
-      body: string,
-      elementName: string,
-      typeName: string,
-      tsSource: string,
-    ): IndexedFragment => {
-      const header = `fragment ${elementName} on ${typeName} `;
-      const reconstructed = header + body;
-      const ast = parse(reconstructed);
-      const def = ast.definitions[0] as FragmentDefinitionNode;
-      const contentStart = tsSource.indexOf(body);
-      return {
-        uri,
-        schemaName,
-        fragmentName: def.name.value,
-        definition: def,
-        content: reconstructed,
-        contentRange: { start: contentStart, end: contentStart + body.length },
-        tsSource,
-        headerLen: header.length,
-      };
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
     };
 
-    test("maps definition position correctly for curried target fragment", async () => {
-      const content = '{ user(id: "1") { ...UserFields } }';
-      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
-      const contentStart = tsSource.indexOf(content);
+    // Target fragment uses curried syntax with body on same line
+    const fragmentBody = "{ id name }";
+    const fragmentTsSource = [
+      'import { gql } from "@/graphql-system";',
+      "",
+      `export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`${fragmentBody}\`);`,
+    ].join("\n");
+    const externalFragments = [
+      makeCurriedFragment("/test/fragments.ts", "default", fragmentBody, "UserFields", "User", fragmentTsSource),
+    ];
 
-      const template: ExtractedTemplate = {
-        contentRange: { start: contentStart, end: contentStart + content.length },
-        schemaName: "default",
-        kind: "query",
-        content,
-        elementName: "GetUser",
-      };
+    const spreadIdx = content.indexOf("...UserFields") + 3;
+    const cursorInTs = contentStart + spreadIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
 
-      // Target fragment uses curried syntax with non-zero headerLen
-      const fragmentBody = "{ id name }";
-      const fragmentTsSource = [
-        'import { gql } from "@/graphql-system";',
-        "",
-        `export const UserFields = gql.default(({ fragment }) => fragment("UserFields", "User")\`${fragmentBody}\`);`,
-      ].join("\n");
-      const externalFragments = [
-        makeCurriedFragment("/test/fragments.ts", "default", fragmentBody, "UserFields", "User", fragmentTsSource),
-      ];
-
-      const spreadIdx = content.indexOf("...UserFields") + 3;
-      const cursorInTs = contentStart + spreadIdx;
-      const lines = tsSource.slice(0, cursorInTs).split("\n");
-      const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
-
-      const locations = await handleDefinition({
-        template,
-        tsSource,
-        tsPosition,
-        externalFragments,
-      });
-
-      expect(locations.length).toBeGreaterThan(0);
-      const loc = locations[0]!;
-      expect(loc.uri).toBe("/test/fragments.ts");
-      // Definition should point to the fragment body in the TS file (line 2)
-      expect(loc.range.start.line).toBe(2);
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments,
     });
+
+    expect(locations.length).toBeGreaterThan(0);
+    const loc = locations[0]!;
+    expect(loc.uri).toBe("/test/fragments.ts");
+    // Definition should point to the fragment body in the TS file (line 2)
+    expect(loc.range.start.line).toBe(2);
+  });
+});
+
+describe("handleDefinition — schema field navigation", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schema = buildASTSchema(parse(schemaSource) as unknown as DocumentNode);
+
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves field name to schema file definition", async () => {
+    const content = "query { users { name } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor in the middle of "name" (offset +2 to be inside the token)
+    const nameIdx = content.indexOf("name") + 2;
+    const cursorInTs = contentStart + nameIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    const loc = locations[0]!;
+    // Should point to the schema file
+    expect(loc.uri).toBe(pathToFileURL(schemaPath).href);
+    // "name" is defined in the User type (line 7 in the schema, 0-indexed)
+    expect(loc.range.start.line).toBeGreaterThanOrEqual(5);
+  });
+
+  test("resolves root query field to schema file", async () => {
+    const content = "query { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor in the middle of "users" (offset +2 to be inside the token)
+    const usersIdx = content.indexOf("users") + 2;
+    const cursorInTs = contentStart + usersIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    const loc = locations[0]!;
+    expect(loc.uri).toBe(pathToFileURL(schemaPath).href);
+    // "users" is in Query type (line 2 in schema, 0-indexed)
+    expect(loc.range.start.line).toBeLessThanOrEqual(3);
+  });
+
+  test("returns empty when not on a recognized element", async () => {
+    const content = "query { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor on "query" keyword (not a field)
+    const cursorInTs = contentStart + 0;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations).toHaveLength(0);
   });
 });

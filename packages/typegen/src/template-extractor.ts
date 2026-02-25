@@ -141,14 +141,14 @@ const extractTemplatesFromCallback = (arrow: ArrowFunctionExpression, schemaName
   const templates: ExtractedTemplate[] = [];
 
   const processExpression = (expr: Node): void => {
-    // Direct tagged template: query`...`
+    // Direct tagged template: query("Name")`...`
     if (expr.type === "TaggedTemplateExpression") {
       const tagged = expr as unknown as TaggedTemplateExpression;
       extractFromTaggedTemplate(tagged, schemaName, templates);
       return;
     }
 
-    // Metadata chaining: query`...`({ metadata: {} })
+    // Metadata chaining: query("Name")`...`({ metadata: {} })
     if (expr.type === "CallExpression") {
       const call = expr as unknown as CallExpression;
       if (call.callee.type === "TaggedTemplateExpression") {
@@ -157,13 +157,13 @@ const extractTemplatesFromCallback = (arrow: ArrowFunctionExpression, schemaName
     }
   };
 
-  // Expression body: ({ query }) => query`...`
+  // Expression body: ({ query }) => query("Name")`...`
   if (arrow.body.type !== "BlockStatement") {
     processExpression(arrow.body);
     return templates;
   }
 
-  // Block body: ({ query }) => { return query`...`; }
+  // Block body: ({ query }) => { return query("Name")`...`; }
   for (const stmt of arrow.body.stmts) {
     if (stmt.type === "ReturnStatement" && stmt.argument) {
       processExpression(stmt.argument);
@@ -179,8 +179,8 @@ const extractFromTaggedTemplate = (
   templates: ExtractedTemplate[],
 ): void => {
   // Tag can be:
-  // - Identifier: query`...` (old syntax)
-  // - CallExpression: query("name")`...` or fragment("name", "type")`...` (new curried syntax)
+  // - CallExpression: query("name")`...` or fragment("name", "type")`...` (curried syntax)
+  // - Identifier: legacy bare-tag form (skipped if it contains interpolations)
   let kind: string;
   let elementName: string | undefined;
   let typeName: string | undefined;
@@ -213,7 +213,7 @@ const extractFromTaggedTemplate = (
 
   const { quasis, expressions } = tagged.template;
 
-  // For old syntax (Identifier tag), skip templates with interpolations
+  // For legacy Identifier tag, skip templates with interpolations
   // For new syntax (CallExpression tag), handle interpolations with placeholders
   if (tagged.tag.type === "Identifier" && expressions.length > 0) {
     return;

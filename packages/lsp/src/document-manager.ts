@@ -134,14 +134,14 @@ const extractTemplatesFromCallback = (
   const templates: ExtractedTemplate[] = [];
 
   const processExpression = (expr: Expression): void => {
-    // Direct tagged template: query`...`
+    // Direct tagged template: query("Name")`...`
     if (expr.type === "TaggedTemplateExpression") {
       const tagged = expr as TaggedTemplateExpression;
       extractFromTaggedTemplate(tagged, schemaName, spanOffset, converter, templates);
       return;
     }
 
-    // Metadata chaining: query`...`({ metadata: {} })
+    // Metadata chaining: query("Name")`...`({ metadata: {} })
     if (expr.type === "CallExpression") {
       const call = expr as CallExpression;
       if (call.callee.type === "TaggedTemplateExpression") {
@@ -150,13 +150,13 @@ const extractTemplatesFromCallback = (
     }
   };
 
-  // Expression body: ({ query }) => query`...`
+  // Expression body: ({ query }) => query("Name")`...`
   if (arrow.body.type !== "BlockStatement") {
     processExpression(arrow.body as Expression);
     return templates;
   }
 
-  // Block body: ({ query }) => { return query`...`; }
+  // Block body: ({ query }) => { return query("Name")`...`; }
   for (const stmt of arrow.body.stmts) {
     if (stmt.type === "ReturnStatement" && stmt.argument) {
       processExpression(stmt.argument);
@@ -173,23 +173,17 @@ const extractFromTaggedTemplate = (
   converter: SwcSpanConverter,
   templates: ExtractedTemplate[],
 ): void => {
-  // Tag can be:
-  // - Identifier: query`...` (old syntax, kept for backwards compat)
-  // - CallExpression: query("name")`...` or fragment("name", "type")`...` (new curried syntax)
-  let kind: string;
-  if (tagged.tag.type === "Identifier") {
-    kind = tagged.tag.value;
-  } else if (tagged.tag.type === "CallExpression") {
-    const tagCall = tagged.tag as CallExpression;
-    if (tagCall.callee.type === "Identifier") {
-      kind = tagCall.callee.value;
-    } else {
-      return;
-    }
-  } else {
+  // Tag must be a CallExpression: query("name")`...` or fragment("name", "type")`...` (curried syntax)
+  if (tagged.tag.type !== "CallExpression") {
     return;
   }
 
+  const tagCall = tagged.tag as CallExpression;
+  if (tagCall.callee.type !== "Identifier") {
+    return;
+  }
+
+  const kind = tagCall.callee.value;
   if (!isOperationKind(kind)) {
     return;
   }
@@ -197,16 +191,13 @@ const extractFromTaggedTemplate = (
   // Extract element name and type name from curried call arguments
   let elementName: string | undefined;
   let typeName: string | undefined;
-  if (tagged.tag.type === "CallExpression") {
-    const tagCall = tagged.tag as CallExpression;
-    const firstArg = tagCall.arguments[0]?.expression;
-    if (firstArg?.type === "StringLiteral") {
-      elementName = (firstArg as { value: string }).value;
-    }
-    const secondArg = tagCall.arguments[1]?.expression;
-    if (secondArg?.type === "StringLiteral") {
-      typeName = (secondArg as { value: string }).value;
-    }
+  const firstArg = tagCall.arguments[0]?.expression;
+  if (firstArg?.type === "StringLiteral") {
+    elementName = (firstArg as { value: string }).value;
+  }
+  const secondArg = tagCall.arguments[1]?.expression;
+  if (secondArg?.type === "StringLiteral") {
+    typeName = (secondArg as { value: string }).value;
   }
 
   const { quasis, expressions } = tagged.template;
@@ -342,8 +333,7 @@ const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpressi
  */
 /**
  * Reconstruct full GraphQL source from an extracted template.
- * For curried syntax (new), prepends the definition header from tag call arguments.
- * For old syntax, returns content as-is.
+ * Prepends the definition header from curried tag call arguments.
  */
 export const reconstructGraphql = (template: ExtractedTemplate): string => {
   const content = template.content;

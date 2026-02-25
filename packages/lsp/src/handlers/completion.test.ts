@@ -112,6 +112,67 @@ describe("handleCompletion", () => {
     expect(items).toHaveLength(0);
   });
 
+  test("returns argument suggestions inside field arguments", () => {
+    // Cursor after "user(" — should suggest `id` argument
+    const content = 'query { user( ) { id } }';
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor after "user(" (inside the argument list)
+    const cursorInContent = content.indexOf("( )") + 1;
+    const cursorInTs = contentStart + cursorInContent;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const items = handleCompletion({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      tsPosition,
+    });
+
+    const labels = items.map((item) => item.label);
+    expect(labels).toContain("id");
+  });
+
+  test("returns directive suggestions after @", () => {
+    // Cursor after "@" on a field — should suggest directives like @skip, @include
+    const content = "query { users { id @ } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor after "@"
+    const cursorInContent = content.indexOf("@ ") + 1;
+    const cursorInTs = contentStart + cursorInContent;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const items = handleCompletion({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      tsPosition,
+    });
+
+    const labels = items.map((item) => item.label);
+    expect(labels).toContain("skip");
+    expect(labels).toContain("include");
+  });
+
   test("provides field completions adjacent to interpolation placeholder", () => {
     // Template with placeholder from interpolation — completion should work for other fields
     const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ name  } }';

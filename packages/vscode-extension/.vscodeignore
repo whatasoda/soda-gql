@@ -2,7 +2,7 @@
 src/
 *.ts
 tsconfig*.json
-build.js
+build.mjs
 package-extension.sh
 
 # Development files

@@ -125,7 +125,7 @@ import { gql } from "@/graphql-system";
 
 // Basic user fragment with field selection
 export const userBasic = gql.default(({ fragment }) =>
-  fragment`fragment UserBasic on User {
+  fragment("UserBasic", "User")`{
     id
     name
   }`(),
@@ -133,7 +133,7 @@ export const userBasic = gql.default(({ fragment }) =>
 
 // User with nested posts selection and fragment variable
 export const userWithPosts = gql.default(({ fragment }) =>
-  fragment`fragment UserWithPosts($categoryId: ID) on User {
+  fragment("UserWithPosts", "User")`($categoryId: ID) {
     id
     name
     posts(categoryId: $categoryId) {
@@ -157,7 +157,7 @@ Operations can use tagged template syntax for standalone queries, or callback bu
 import { gql } from "@/graphql-system";
 
 export const updateUserMutation = gql.default(({ mutation }) =>
-  mutation`mutation UpdateUser($id: ID!, $name: String!) {
+  mutation("UpdateUser")`($id: ID!, $name: String!) {
     updateUser(id: $id, name: $name) {
       id
       name
@@ -226,7 +226,7 @@ describe("userBasic fragment", () => {
 **Before (development)**
 ```typescript
 export const profileQuery = gql.default(({ query }) =>
-  query`query ProfilePageQuery($userId: ID!) {
+  query("ProfilePageQuery")`($userId: ID!) {
     users(id: [$userId]) {
       id
       name

@@ -4,7 +4,6 @@
   "description": "GraphQL language support for soda-gql with tagged template literals",
   "version": "0.11.26",
   "publisher": "soda-gql",
-  "type": "module",
   "private": false,
   "license": "MIT",
   "author": {
@@ -41,27 +40,7 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "graphql",
-        "extensions": [
-          ".graphql",
-          ".gql"
-        ],
-        "aliases": [
-          "GraphQL"
-        ]
-      }
-    ],
     "grammars": [
-      {
-        "language": "graphql",
-        "scopeName": "source.graphql",
-        "path": "./syntaxes/graphql.tmLanguage.json",
-        "embeddedLanguages": {
-          "meta.embedded.block.graphql": "graphql"
-        }
-      },
       {
         "scopeName": "inline.graphql",
         "path": "./syntaxes/graphql.inline.tmLanguage.json",
@@ -85,7 +64,7 @@
     "esbuild": "^0.24.2"
   },
   "scripts": {
-    "build": "node build.js",
+    "build": "node build.mjs",
     "package": "./package-extension.sh",
     "package:install": "./package-extension.sh -o soda-gql.vsix && cursor --install-extension soda-gql.vsix && rm soda-gql.vsix"
   }

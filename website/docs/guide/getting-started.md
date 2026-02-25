@@ -92,7 +92,7 @@ Fragments specify reusable field selections using tagged template syntax:
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
   }`(),
