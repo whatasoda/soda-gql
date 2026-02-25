@@ -20,7 +20,6 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
 import { handleCodeAction } from "./handlers/code-action";
-import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
@@ -109,9 +108,6 @@ export const createLspServer = (options?: LspServerOptions) => {
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Full,
-        completionProvider: {
-          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
-        },
         hoverProvider: true,
         inlayHintProvider: true,
         documentSymbolProvider: true,
@@ -154,49 +150,6 @@ export const createLspServer = (options?: LspServerOptions) => {
       ctx.documentManager.remove(change.document.uri);
     }
     connection.sendDiagnostics({ uri: change.document.uri, diagnostics: [] });
-  });
-
-  connection.onCompletion((params) => {
-    if (!registry) {
-      return [];
-    }
-
-    const ctx = registry.resolveForUri(params.textDocument.uri);
-    if (!ctx) {
-      return [];
-    }
-
-    const template = ctx.documentManager.findTemplateAtOffset(
-      params.textDocument.uri,
-      // We need to convert LSP position to offset
-      positionToOffset(documents.get(params.textDocument.uri)?.getText() ?? "", params.position),
-    );
-
-    if (!template) {
-      return [];
-    }
-
-    const entry = ctx.schemaResolver.getSchema(template.schemaName);
-    if (!entry) {
-      return [];
-    }
-
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return [];
-    }
-
-    const externalFragments = ctx.documentManager
-      .getExternalFragments(params.textDocument.uri, template.schemaName)
-      .map((f) => f.definition);
-
-    return handleCompletion({
-      template,
-      schema: entry.schema,
-      tsSource: doc.getText(),
-      tsPosition: { line: params.position.line, character: params.position.character },
-      externalFragments,
-    });
   });
 
   connection.onHover((params) => {

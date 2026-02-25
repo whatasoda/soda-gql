@@ -33,6 +33,7 @@
     { "path": "./packages/runtime/tsconfig.editor.json" },
     { "path": "./packages/sdk/tsconfig.editor.json" },
     { "path": "./packages/swc/tsconfig.editor.json" },
+    { "path": "./packages/ts-plugin/tsconfig.editor.json" },
     { "path": "./packages/tsc/tsconfig.editor.json" },
     { "path": "./packages/typegen/tsconfig.editor.json" },
     { "path": "./packages/vite-plugin/tsconfig.editor.json" },
