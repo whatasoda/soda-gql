@@ -40,27 +40,7 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "graphql",
-        "extensions": [
-          ".graphql",
-          ".gql"
-        ],
-        "aliases": [
-          "GraphQL"
-        ]
-      }
-    ],
     "grammars": [
-      {
-        "language": "graphql",
-        "scopeName": "source.graphql",
-        "path": "./syntaxes/graphql.tmLanguage.json",
-        "embeddedLanguages": {
-          "meta.embedded.block.graphql": "graphql"
-        }
-      },
       {
         "scopeName": "inline.graphql",
         "path": "./syntaxes/graphql.inline.tmLanguage.json",

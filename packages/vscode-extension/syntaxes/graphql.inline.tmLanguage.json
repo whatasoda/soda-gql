@@ -14,7 +14,27 @@
       },
       "patterns": [
         {
-          "include": "source.graphql#graphql-content"
+          "name": "keyword.operation.graphql",
+          "match": "\\b(query|mutation|subscription|fragment|type|interface|enum|union|input|scalar|schema|extend|implements)\\b"
+        },
+        {
+          "name": "storage.type.graphql",
+          "match": "\\b(Int|Float|String|Boolean|ID)\\b"
+        },
+        {
+          "name": "comment.line.graphql",
+          "match": "#.*$"
+        },
+        {
+          "name": "string.quoted.double.graphql",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.graphql",
+              "match": "\\\\."
+            }
+          ]
         }
       ]
     }
