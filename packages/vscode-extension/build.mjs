@@ -22,6 +22,7 @@ async function buildExtension() {
     target: "node18",
     sourcemap: true,
     minify: false,
+    conditions: ["@soda-gql"],
   });
   console.log("✓ Extension client built successfully");
 }
@@ -37,6 +38,7 @@ async function buildServer() {
     target: "node18",
     sourcemap: true,
     minify: false,
+    conditions: ["@soda-gql"],
   });
   console.log("✓ LSP server built successfully");
 }
