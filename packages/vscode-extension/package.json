@@ -53,6 +53,12 @@
         ]
       }
     ],
+    "typescriptServerPlugins": [
+      {
+        "name": "./dist/ts-plugin",
+        "enableForWorkspaceTypeScriptVersions": true
+      }
+    ],
     "grammars": [
       {
         "language": "graphql",
