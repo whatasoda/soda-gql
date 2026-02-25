@@ -37,7 +37,7 @@ Fragments define reusable field selections for a specific GraphQL type using tag
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
     email
@@ -51,7 +51,7 @@ Operations define complete GraphQL queries, mutations, or subscriptions. Use tag
 
 ```typescript
 export const getUserQuery = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name

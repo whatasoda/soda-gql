@@ -2,7 +2,7 @@
 
 ## Important Finding: Tagged Templates Reject Interpolation
 
-**Both `query\`...\`` and `fragment\`...\`` tagged templates throw an error if any `${...}` interpolated expressions are used.**
+**Both `query("Name")\`...\`` and `fragment("Name", "Type")\`...\`` tagged templates throw an error if any `${...}` interpolated expressions are used.**
 
 This means that fragment spreading **cannot** be done with tagged template syntax and **must** use callback builder syntax.
 
@@ -11,7 +11,7 @@ This means that fragment spreading **cannot** be done with tagged template synta
 **Intended syntax (from VISION.md):**
 ```typescript
 // ❌ This does NOT work - tagged templates reject ${...} interpolation
-query`query GetData {
+query("GetData")`{
   ...${someFragment}
 }`
 ```
@@ -34,7 +34,7 @@ gql.default(({ query }) =>
 **Intended syntax (from VISION.md):**
 ```typescript
 // ❌ This does NOT work - tagged templates reject ${...} interpolation
-query`query GetData($var: Type!) {
+query("GetData")`($var: Type!) {
   ...${({ $ }) => fragment.spread({ var: $.var })}
 }`
 ```
@@ -66,7 +66,7 @@ gql.default(({ query, $var }) =>
 ```typescript
 // Fragment declares what variables it needs
 const myFragment = gql.default(({ fragment }) =>
-  fragment`fragment MyFragment($limit: Int, $filter: String) on Query {
+  fragment("MyFragment", "Query")`($limit: Int, $filter: String) {
     items(limit: $limit, filter: $filter) { id }
   }`()
 );
@@ -104,7 +104,7 @@ const myQuery = gql.default(({ query, $var }) =>
 
 For fragment spreading, you **MUST** use callback builder syntax because:
 - Tagged templates reject any `${...}` interpolated expressions
-- Operations with fragment spreads cannot use `query\`...\`` syntax
+- Operations with fragment spreads cannot use `query("Name")\`...\`` syntax
 - The `fields: ({ $ }) => (...)` callback provides the `$` context for variable passing
 
 ## See Also
