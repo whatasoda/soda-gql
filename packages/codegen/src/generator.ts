@@ -1285,112 +1285,16 @@ ${typeDeclarations}
 };
 
 /**
- * Generate the enhanced `index.ts` module with prebuilt-style typing.
+ * Generate the `index.ts` module that re-exports from `_internal`
+ * and constructs the `gql` object from individual `__gql_*` exports.
  *
- * This replaces the simple re-export with a module that:
- * - Re-exports types and internal values from `_internal`
- * - Imports `__gql_*` composers and casts them with prebuilt types
- * - Exports `gql` object with `GqlComposer_*` typing
- * - Exports `PrebuiltContext_*` types
+ * The `gql` object preserves the original inferred types from schema inference.
+ * PrebuiltContext types will be integrated once the type resolution strategy
+ * is redesigned to match the tagged template runtime API.
  */
 export const generateIndexModule = (schemaNames: string[]): string => {
-  // Internal imports: __gql_ composers (runtime values, not re-exported)
   const gqlImports = schemaNames.map((name) => `__gql_${name}`).join(", ");
-
-  // PrebuiltTypes imports
-  const prebuiltTypeImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
-
-  // Generic types (schema-independent)
-  const genericTypes = `\
-type GenericFieldFactory = (
-  ...args: unknown[]
-) => (nest: (tools: GenericFieldsBuilderTools) => AnyFields) => AnyFields;
-
-type GenericFieldsBuilderTools = {
-  readonly f: Record<string, GenericFieldFactory>;
-  readonly $: Record<string, unknown>;
-};`;
-
-  // Per-schema type definitions
-  const perSchemaTypes = schemaNames
-    .map(
-      (name) => `\
-type ResolveFragmentAtBuilder_${name}<
-  TKey extends string | undefined
-> = TKey extends keyof PrebuiltTypes_${name}["fragments"]
-  ? Fragment<
-      PrebuiltTypes_${name}["fragments"][TKey]["typename"],
-      PrebuiltTypes_${name}["fragments"][TKey]["input"] extends infer TInput
-        ? TInput extends void ? void : Partial<TInput & object>
-        : void,
-      Partial<AnyFields>,
-      PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
-    >
-  : TKey extends undefined
-    ? Fragment<"(unknown)", PrebuiltEntryNotFound<"(undefined)", "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<"(undefined)", "fragment">>
-    : Fragment<"(unknown)", PrebuiltEntryNotFound<TKey & string, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey & string, "fragment">>;
-
-type ResolveOperationAtBuilder_${name}<
-  TOperationType extends OperationType,
-  TName extends string
-> = TName extends keyof PrebuiltTypes_${name}["operations"]
-  ? Operation<
-      TOperationType,
-      TName,
-      string[],
-      PrebuiltTypes_${name}["operations"][TName]["input"] & AnyConstAssignableInput,
-      Partial<AnyFields>,
-      PrebuiltTypes_${name}["operations"][TName]["output"] & object
-    >
-  : Operation<
-      TOperationType,
-      TName,
-      string[],
-      PrebuiltEntryNotFound<TName, "operation">,
-      Partial<AnyFields>,
-      PrebuiltEntryNotFound<TName, "operation">
-    >;
-
-type PrebuiltFragmentBuilder_${name} = <TKey extends string | undefined = undefined>(
-  options: {
-    key?: TKey;
-    fields: (tools: GenericFieldsBuilderTools) => AnyFields;
-    variables?: Record<string, unknown>;
-    metadata?: unknown;
-  }
-) => ResolveFragmentAtBuilder_${name}<TKey>;
-
-type PrebuiltOperationBuilder_${name}<TOperationType extends OperationType> = <TName extends string>(
-  options: {
-    name: TName;
-    fields: (tools: GenericFieldsBuilderTools) => AnyFields;
-    variables?: Record<string, unknown>;
-    metadata?: unknown;
-  }
-) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
-
-export type PrebuiltContext_${name} = {
-  readonly fragment: { [K: string]: PrebuiltFragmentBuilder_${name} };
-  readonly query: { readonly operation: PrebuiltOperationBuilder_${name}<"query"> };
-  readonly mutation: { readonly operation: PrebuiltOperationBuilder_${name}<"mutation"> };
-  readonly subscription: { readonly operation: PrebuiltOperationBuilder_${name}<"subscription"> };
-  readonly $var: unknown;
-  readonly $dir: StandardDirectives;
-  readonly $colocate: unknown;
-};
-
-type GqlComposer_${name} = {
-  <TResult>(composeElement: (context: PrebuiltContext_${name}) => TResult): TResult;
-  readonly $schema: AnyGraphqlSchema;
-};`,
-    )
-    .join("\n\n");
-
-  // gql object entries with type cast
-  const gqlEntries = schemaNames.map((name) => `  ${name}: __gql_${name} as unknown as GqlComposer_${name}`).join(",\n");
-
-  // gql object type
-  const gqlType = schemaNames.map((name) => `${name}: GqlComposer_${name}`).join("; ");
+  const gqlEntries = schemaNames.map((name) => `  ${name}: __gql_${name}`).join(",\n");
 
   return `\
 /**
@@ -1401,23 +1305,8 @@ type GqlComposer_${name} = {
 
 export * from "./_internal";
 import { ${gqlImports} } from "./_internal";
-import type { ${prebuiltTypeImports} } from "./types.prebuilt";
-import type {
-  AnyConstAssignableInput,
-  AnyFields,
-  AnyGraphqlSchema,
-  Fragment,
-  Operation,
-  OperationType,
-  PrebuiltEntryNotFound,
-  StandardDirectives,
-} from "@soda-gql/core";
 
-${genericTypes}
-
-${perSchemaTypes}
-
-export const gql: { ${gqlType} } = {
+export const gql = {
 ${gqlEntries}
 };
 `;

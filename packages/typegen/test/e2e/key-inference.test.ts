@@ -198,7 +198,7 @@ describe("typegen key inference E2E", () => {
         // Create a type-check file in src directory (covered by tsconfig.json)
         const typeCheckFile = join(workspace.workspaceRoot, "src", "type-check.ts");
         const typeCheckContent = `
-import { gql, type PrebuiltContext_default } from "../graphql-system/index.prebuilt";
+import { gql, type PrebuiltContext_default } from "../graphql-system";
 
 // Test 1: Fragment with key should resolve to prebuilt types
 const userFragment = gql.default(({ fragment }) =>
