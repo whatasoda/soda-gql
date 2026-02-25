@@ -40,7 +40,7 @@ Fragments define reusable field selections for GraphQL types using tagged templa
 import { gql } from "@/graphql-system";
 
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment on User {
+  fragment("UserFragment", "User")`{
     id
     name
     email
