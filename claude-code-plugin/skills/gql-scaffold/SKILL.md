@@ -85,7 +85,7 @@ Does it need field aliases?
 **Tagged template fragment:**
 ```typescript
 const userFields = gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User { id name email }`(),
+  fragment("UserFields", "User")`{ id name email }`(),
 );
 ```
 
@@ -116,7 +116,7 @@ Does it need any of: aliases, $colocate, metadata callbacks?
 **Tagged template operation (simple):**
 ```typescript
 const getUserQuery = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name
@@ -147,7 +147,7 @@ const getUserQuery = gql.default(({ query, $var }) =>
 ```typescript
 // ✅ Tagged template interpolation works
 const extendedFields = gql.default(({ fragment }) =>
-  fragment`fragment ExtendedUser on User {
+  fragment("ExtendedUser", "User")`{
     ...${userBasicFields}
     createdAt
     updatedAt
@@ -179,7 +179,7 @@ const query = gql.default(({ query }) =>
 **Fragment with variables:**
 ```typescript
 const userConditional = gql.default(({ fragment }) =>
-  fragment`fragment UserConditional($includeEmail: Boolean!) on User {
+  fragment("UserConditional", "User")`($includeEmail: Boolean!) {
     id
     name
     email @include(if: $includeEmail)
@@ -219,7 +219,7 @@ Use these templates based on the decision tree outcome:
 import { gql } from '<outdir-path>';
 
 export const <name>Fragment = gql.default(({ fragment }) =>
-  fragment`fragment <Name>Fragment on <TypeName> {
+  fragment("<Name>Fragment", "<TypeName>")`{
     <field1>
     <field2>
     <nestedField> {
@@ -236,7 +236,7 @@ export const <name>Fragment = gql.default(({ fragment }) =>
 import { gql } from '<outdir-path>';
 
 export const <name>Fragment = gql.default(({ fragment }) =>
-  fragment`fragment <Name>Fragment($<var1>: <Type1>!, $<var2>: <Type2>) on <TypeName> {
+  fragment("<Name>Fragment", "<TypeName>")`($<var1>: <Type1>!, $<var2>: <Type2>) {
     <field1>
     <field2> @include(if: $<var1>)
     <field3> @skip(if: $<var2>)
@@ -252,7 +252,7 @@ import { gql } from '<outdir-path>';
 import { <baseFragment> } from './<baseFragmentFile>';
 
 export const <name>Fragment = gql.default(({ fragment }) =>
-  fragment`fragment <Name>Fragment on <TypeName> {
+  fragment("<Name>Fragment", "<TypeName>")`{
     ...${<baseFragment>}
     <additionalField1>
     <additionalField2>
@@ -267,7 +267,7 @@ export const <name>Fragment = gql.default(({ fragment }) =>
 import { gql } from '<outdir-path>';
 
 export const <name>Query = gql.default(({ query }) =>
-  query`query <OperationName>($<var1>: <Type1>!, $<var2>: <Type2>) {
+  query("<OperationName>")`($<var1>: <Type1>!, $<var2>: <Type2>) {
     <rootField>(<arg1>: $<var1>, <arg2>: $<var2>) {
       <field1>
       <field2>
@@ -343,7 +343,7 @@ export const <name>Query = gql.default(({ query, $var }) =>
 import { gql } from '<outdir-path>';
 
 export const <name>Mutation = gql.default(({ mutation }) =>
-  mutation`mutation <OperationName>($<inputVar>: <InputType>!) {
+  mutation("<OperationName>")`($<inputVar>: <InputType>!) {
     <mutationField>(input: $<inputVar>) {
       <resultField1>
       <resultField2>
@@ -578,7 +578,7 @@ When generating code for union types, use standard GraphQL inline fragments in t
 
 ```typescript
 const searchQuery = gql.default(({ query }) =>
-  query`query Search($term: String!) {
+  query("Search")`($term: String!) {
     search(term: $term) {
       __typename
       ... on User {
@@ -603,7 +603,7 @@ For component colocation patterns, metadata is passed as an argument to the temp
 **Static metadata:**
 ```typescript
 const componentFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserCard on User { id name }`({
+  fragment("UserCard", "User")`{ id name }`({
     metadata: { component: "UserCard", cacheTTL: 300 },
   }),
 );
@@ -612,7 +612,7 @@ const componentFragment = gql.default(({ fragment }) =>
 **Callback metadata (receives `$` context):**
 ```typescript
 const componentFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserCard($userId: ID!) on User { id name }`({
+  fragment("UserCard", "User")`($userId: ID!) { id name }`({
     metadata: ({ $ }: { $: { userId: string } }) => ({
       cacheKey: `user:${$.userId}`,
     }),
@@ -655,7 +655,7 @@ Before completing this skill, ensure:
 import { gql } from '<outdir-path>';
 
 export const userBasicFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserBasic on User { id name email }`(),
+  fragment("UserBasic", "User")`{ id name email }`(),
 );
 ```
 
@@ -708,7 +708,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 import { gql } from '<outdir-path>';
 
 export const updateTaskMutation = gql.default(({ mutation }) =>
-  mutation`mutation UpdateTask($taskId: ID!, $title: String, $completed: Boolean) {
+  mutation("UpdateTask")`($taskId: ID!, $title: String, $completed: Boolean) {
     updateTask(id: $taskId, input: { title: $title, completed: $completed }) {
       id
       title
