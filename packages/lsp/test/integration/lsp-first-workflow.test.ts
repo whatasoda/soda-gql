@@ -6,8 +6,7 @@
  * 1. Diagnostics on tagged templates
  * 2. Completion for field selections
  * 3. Hover for type information
- * 4. Inlay hints for field types
- * 5. Interpolation-based fragment spreads
+ * 4. Interpolation-based fragment spreads
  */
 
 import { describe, expect, test } from "bun:test";
@@ -18,7 +17,6 @@ import { createDocumentManager } from "../../src/document-manager";
 import { handleCompletion } from "../../src/handlers/completion";
 import { computeTemplateDiagnostics } from "../../src/handlers/diagnostics";
 import { handleHover } from "../../src/handlers/hover";
-import { handleInlayHint } from "../../src/handlers/inlay-hint";
 import { createSchemaResolver } from "../../src/schema-resolver";
 
 const fixturesDir = resolve(import.meta.dir, "../fixtures");
@@ -49,7 +47,7 @@ describe("LSP-first workflow (without typegen)", () => {
   const helper = createGraphqlSystemIdentifyHelper(config);
   const schemaResolver = createSchemaResolver(config)._unsafeUnwrap();
 
-  test("tagged template fragments receive diagnostics, completion, hover, and inlay hints", () => {
+  test("tagged template fragments receive diagnostics, completion, and hover", () => {
     const dm = createDocumentManager(helper);
 
     // Simulate user writing a tagged template fragment after codegen schema
@@ -114,18 +112,6 @@ export const userFragment = gql.default(({ fragment }) =>
     // Hover contents can be MarkupContent, MarkedString, or MarkedString[]
     // For this test, we just verify hover is available (detailed content tested in unit tests)
 
-    // 4. Inlay hints: displays field types
-    const inlayHints = handleInlayHint({
-      template,
-      schema: entry.schema,
-      tsSource: source,
-    });
-
-    expect(inlayHints.length).toBeGreaterThan(0);
-    const idHint = inlayHints.find((h) => h.label === ": ID!");
-    expect(idHint).toBeDefined();
-    const nameHint = inlayHints.find((h) => h.label === ": String!");
-    expect(nameHint).toBeDefined();
   });
 
   test("tagged template operations work without typegen", () => {
@@ -384,13 +370,6 @@ export const getUserQuery = gql.default(({ query }) =>
       });
       expect(hoverResult).not.toBeNull();
 
-      // 4. Support inlay hints
-      const inlayHints = handleInlayHint({
-        template,
-        schema: entry.schema,
-        tsSource: workflowSource,
-      });
-      expect(inlayHints.length).toBeGreaterThan(0);
     }
   });
 });
