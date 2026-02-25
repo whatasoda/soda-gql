@@ -134,14 +134,14 @@ const extractTemplatesFromCallback = (
   const templates: ExtractedTemplate[] = [];
 
   const processExpression = (expr: Expression): void => {
-    // Direct tagged template: query`...`
+    // Direct tagged template: query("Name")`...`
     if (expr.type === "TaggedTemplateExpression") {
       const tagged = expr as TaggedTemplateExpression;
       extractFromTaggedTemplate(tagged, schemaName, spanOffset, converter, templates);
       return;
     }
 
-    // Metadata chaining: query`...`({ metadata: {} })
+    // Metadata chaining: query("Name")`...`({ metadata: {} })
     if (expr.type === "CallExpression") {
       const call = expr as CallExpression;
       if (call.callee.type === "TaggedTemplateExpression") {
@@ -150,13 +150,13 @@ const extractTemplatesFromCallback = (
     }
   };
 
-  // Expression body: ({ query }) => query`...`
+  // Expression body: ({ query }) => query("Name")`...`
   if (arrow.body.type !== "BlockStatement") {
     processExpression(arrow.body as Expression);
     return templates;
   }
 
-  // Block body: ({ query }) => { return query`...`; }
+  // Block body: ({ query }) => { return query("Name")`...`; }
   for (const stmt of arrow.body.stmts) {
     if (stmt.type === "ReturnStatement" && stmt.argument) {
       processExpression(stmt.argument);
