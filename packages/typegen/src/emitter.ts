@@ -384,16 +384,24 @@ const generateTypesCode = (
       lines.push("");
     }
 
-    // Generate fragments type
-    const fragmentEntries = fragments
+    // Generate fragments type (deduplicate by key — last occurrence wins)
+    const deduplicatedFragments = new Map<string, PrebuiltFragmentEntry>();
+    for (const f of fragments) {
+      deduplicatedFragments.set(f.key, f);
+    }
+    const fragmentEntries = Array.from(deduplicatedFragments.values())
       .sort((a, b) => a.key.localeCompare(b.key))
       .map(
         (f) =>
           `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`,
       );
 
-    // Generate operations type
-    const operationEntries = operations
+    // Generate operations type (deduplicate by key — last occurrence wins)
+    const deduplicatedOperations = new Map<string, PrebuiltOperationEntry>();
+    for (const o of operations) {
+      deduplicatedOperations.set(o.key, o);
+    }
+    const operationEntries = Array.from(deduplicatedOperations.values())
       .sort((a, b) => a.key.localeCompare(b.key))
       .map((o) => `    readonly "${o.key}": { readonly input: ${o.inputType}; readonly output: ${o.outputType} };`);
 

@@ -1294,7 +1294,89 @@ ${typeDeclarations}
  */
 export const generateIndexModule = (schemaNames: string[]): string => {
   const gqlImports = schemaNames.map((name) => `__gql_${name}`).join(", ");
-  const gqlEntries = schemaNames.map((name) => `  ${name}: __gql_${name}`).join(",\n");
+  const prebuiltImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
+  const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
+  const directiveImports = schemaNames.map((name) => `__directiveMethods_${name}`).join(", ");
+
+  const perSchemaTypes = schemaNames
+    .map(
+      (name) => `
+type ResolveFragmentAtBuilder_${name}<TKey extends string> =
+  TKey extends keyof PrebuiltTypes_${name}["fragments"]
+    ? Fragment<
+        PrebuiltTypes_${name}["fragments"][TKey]["typename"],
+        PrebuiltTypes_${name}["fragments"][TKey]["input"] extends void
+          ? void
+          : Partial<PrebuiltTypes_${name}["fragments"][TKey]["input"] & object>,
+        Partial<AnyFields>,
+        PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
+      >
+    : Fragment<"(unknown)", PrebuiltEntryNotFound<TKey, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey, "fragment">>;
+
+type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TName extends string> =
+  TName extends keyof PrebuiltTypes_${name}["operations"]
+    ? Operation<
+        TOperationType,
+        TName,
+        string[],
+        PrebuiltTypes_${name}["operations"][TName]["input"] & AnyConstAssignableInput,
+        Partial<AnyFields>,
+        PrebuiltTypes_${name}["operations"][TName]["output"] & object
+      >
+    : Operation<
+        TOperationType,
+        TName,
+        string[],
+        PrebuiltEntryNotFound<TName, "operation">,
+        Partial<AnyFields>,
+        PrebuiltEntryNotFound<TName, "operation">
+      >;
+
+type PrebuiltCurriedFragment_${name} = <TKey extends string>(
+  name: TKey,
+  typeName: string,
+) => (...args: unknown[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>;
+
+type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
+  operationName: TName,
+) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+
+type GenericFieldFactory_${name} = Record<string, (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>)>;
+type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, unknown>> };
+
+type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
+  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: unknown },
+) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+
+export type PrebuiltContext_${name} = {
+  readonly fragment: PrebuiltCurriedFragment_${name};
+  readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"query">;
+    readonly compat: (...args: unknown[]) => unknown;
+  };
+  readonly mutation: PrebuiltCurriedOperation_${name}<"mutation"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"mutation">;
+    readonly compat: (...args: unknown[]) => unknown;
+  };
+  readonly subscription: PrebuiltCurriedOperation_${name}<"subscription"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"subscription">;
+    readonly compat: (...args: unknown[]) => unknown;
+  };
+  readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
+  readonly extend: (...args: unknown[]) => AnyOperation;
+  readonly $var: VarBuilder<Schema_${name}>;
+  readonly $dir: typeof __directiveMethods_${name};
+  readonly $colocate: unknown;
+};
+
+type GqlComposer_${name} = {
+  <TResult>(composeElement: (context: PrebuiltContext_${name}) => TResult): TResult;
+  readonly $schema: AnyGraphqlSchema;
+};`,
+    )
+    .join("\n");
+
+  const gqlEntries = schemaNames.map((name) => `  ${name}: __gql_${name} as unknown as GqlComposer_${name}`).join(",\n");
 
   return `\
 /**
@@ -1305,6 +1387,12 @@ export const generateIndexModule = (schemaNames: string[]): string => {
 
 export * from "./_internal";
 import { ${gqlImports} } from "./_internal";
+import type { ${schemaTypeImports} } from "./_internal";
+import { ${directiveImports} } from "./_internal";
+import type { ${prebuiltImports} } from "./types.prebuilt";
+import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, VarBuilder } from "@soda-gql/core";
+import { GqlDefine } from "@soda-gql/core";
+${perSchemaTypes}
 
 export const gql = {
 ${gqlEntries}

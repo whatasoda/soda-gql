@@ -19,7 +19,7 @@
     "schemas/**/*.ts"
   ],
   "exclude": [
-    "graphql-system/*.prebuilt.ts",
-    "graphql-system/*.cjs"
+    "graphql-system/*.cjs",
+    "fixtures/**/fragment-in-fragment.ts"
   ]
 }

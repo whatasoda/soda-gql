@@ -11,6 +11,8 @@ export default defineConfig({
     // Duplicates of GetUser (keep sample.ts)
     "!./fixtures/**/attach-chaining.ts",
     "!./fixtures/**/basic-spread.ts",
+    // Fragment-in-fragment uses Fragment Arguments that the template scanner can't extract
+    "!./fixtures/**/fragment-in-fragment.ts",
     "!./fixtures/**/operations.ts",
     // Duplicates of ProfilePageQuery (keep top-level-definitions.ts)
     "!./fixtures/**/imported-binding-refs.ts",
