@@ -43,18 +43,18 @@ describe("positionToOffset / offsetToPosition", () => {
 describe("createPositionMapper", () => {
   test("maps TS position to GraphQL position for multi-line template", () => {
     // Simulates:
-    // line 0: const q = gql.default(({ query }) => query`
-    // line 1:   query GetUser {
+    // line 0: const q = gql.default(({ query }) => query("GetUser")`
+    // line 1:   {
     // line 2:     user { id }
     // line 3:   }
     // line 4: `);
-    const tsSource = "const q = gql.default(({ query }) => query`\n  query GetUser {\n    user { id }\n  }\n`);";
-    const contentStartOffset = 43; // position after the backtick on line 0
-    const graphqlContent = "\n  query GetUser {\n    user { id }\n  }\n";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`\n  {\n    user { id }\n  }\n`);';
+    const contentStartOffset = 54; // position after the backtick on line 0
+    const graphqlContent = "\n  {\n    user { id }\n  }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
-    // TS line 1, char 2 ("query") -> GraphQL line 1, char 2
+    // TS line 1, char 2 ("{") -> GraphQL line 1, char 2
     const gqlPos = mapper.tsToGraphql({ line: 1, character: 2 });
     expect(gqlPos).toEqual({ line: 1, character: 2 });
 
@@ -64,9 +64,9 @@ describe("createPositionMapper", () => {
   });
 
   test("maps GraphQL position back to TS position", () => {
-    const tsSource = "const q = gql.default(({ query }) => query`\n  query GetUser {\n    user { id }\n  }\n`);";
-    const contentStartOffset = 43;
-    const graphqlContent = "\n  query GetUser {\n    user { id }\n  }\n";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`\n  {\n    user { id }\n  }\n`);';
+    const contentStartOffset = 54;
+    const graphqlContent = "\n  {\n    user { id }\n  }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
@@ -76,9 +76,9 @@ describe("createPositionMapper", () => {
   });
 
   test("round-trip: tsToGraphql -> graphqlToTs preserves position", () => {
-    const tsSource = "const q = gql.default(({ query }) => query`\n  query GetUser {\n    user { id }\n  }\n`);";
-    const contentStartOffset = 43;
-    const graphqlContent = "\n  query GetUser {\n    user { id }\n  }\n";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`\n  {\n    user { id }\n  }\n`);';
+    const contentStartOffset = 54;
+    const graphqlContent = "\n  {\n    user { id }\n  }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
@@ -90,9 +90,9 @@ describe("createPositionMapper", () => {
   });
 
   test("returns null for position before template", () => {
-    const tsSource = "const q = gql.default(({ query }) => query`\nquery { user }\n`);";
-    const contentStartOffset = 43;
-    const graphqlContent = "\nquery { user }\n";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`\n{ user }\n`);';
+    const contentStartOffset = 54;
+    const graphqlContent = "\n{ user }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
@@ -102,9 +102,9 @@ describe("createPositionMapper", () => {
   });
 
   test("returns null for position after template", () => {
-    const tsSource = "const q = gql.default(({ query }) => query`\nquery { user }\n`);";
-    const contentStartOffset = 43;
-    const graphqlContent = "\nquery { user }\n";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`\n{ user }\n`);';
+    const contentStartOffset = 54;
+    const graphqlContent = "\n{ user }\n";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
@@ -114,18 +114,18 @@ describe("createPositionMapper", () => {
   });
 
   test("single-line template mapping", () => {
-    const tsSource = "const q = gql.default(({ query }) => query`query { user { id } }`);";
-    const contentStartOffset = 43;
-    const graphqlContent = "query { user { id } }";
+    const tsSource = 'const q = gql.default(({ query }) => query("GetUser")`{ user { id } }`);';
+    const contentStartOffset = 54;
+    const graphqlContent = "{ user { id } }";
 
     const mapper = createPositionMapper({ tsSource, contentStartOffset, graphqlContent });
 
-    // TS line 0, char 43 -> GraphQL line 0, char 0
-    const gqlPos = mapper.tsToGraphql({ line: 0, character: 43 });
+    // TS line 0, char 54 -> GraphQL line 0, char 0
+    const gqlPos = mapper.tsToGraphql({ line: 0, character: 54 });
     expect(gqlPos).toEqual({ line: 0, character: 0 });
 
-    // TS line 0, char 49 -> GraphQL line 0, char 6 ("{ user")
-    const gqlPos2 = mapper.tsToGraphql({ line: 0, character: 49 });
+    // TS line 0, char 60 -> GraphQL line 0, char 6
+    const gqlPos2 = mapper.tsToGraphql({ line: 0, character: 60 });
     expect(gqlPos2).toEqual({ line: 0, character: 6 });
   });
 });

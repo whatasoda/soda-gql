@@ -71,8 +71,11 @@ const replaceWithSpaces = (content: string, start: number, end: number): string 
   return result;
 };
 
-// Pattern: fragment Name( at word boundary, not followed by "on"
+// Pattern: fragment Name( at word boundary — old reconstructed format (args before "on Type")
 const FRAGMENT_DEF_PATTERN = /\bfragment\s+(\w+)\s*\(/g;
+
+// Pattern: fragment Name on Type ( — curried reconstructed format (args after "on Type")
+const FRAGMENT_DEF_CURRIED_PATTERN = /\bfragment\s+\w+\s+on\s+\w+\s*\(/g;
 
 // Pattern: ...FragmentName(
 const FRAGMENT_SPREAD_PATTERN = /\.\.\.(\w+)\s*\(/g;
@@ -111,6 +114,26 @@ export const preprocessFragmentArgs = (content: string): PreprocessResult => {
     modified = true;
     // Reset regex since we modified the string (positions may shift)
     FRAGMENT_DEF_PATTERN.lastIndex = 0;
+  }
+
+  // Pass 1b: Fragment definition arguments (curried reconstructed format: fragment Name on Type ($args) { ... })
+  FRAGMENT_DEF_CURRIED_PATTERN.lastIndex = 0;
+  while ((match = FRAGMENT_DEF_CURRIED_PATTERN.exec(result)) !== null) {
+    const openParenIndex = match.index + match[0].length - 1;
+    const closeParenIndex = findMatchingParen(result, openParenIndex);
+    if (closeParenIndex === -1) {
+      continue;
+    }
+
+    // Verify this is followed by "{" (fragment body)
+    const afterParen = result.slice(closeParenIndex + 1).trimStart();
+    if (!afterParen.startsWith("{")) {
+      continue;
+    }
+
+    result = replaceWithSpaces(result, openParenIndex, closeParenIndex);
+    modified = true;
+    FRAGMENT_DEF_CURRIED_PATTERN.lastIndex = 0;
   }
 
   // Pass 2: Fragment spread arguments

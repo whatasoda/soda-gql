@@ -93,6 +93,15 @@ fragment B($y: String = "hi") on Bar {
     expect(result.preprocessed.length).toBe(content.length);
   });
 
+  test("strips fragment definition arguments in curried reconstructed format", () => {
+    const content = "fragment UserProfile on User ($showEmail: Boolean = false) {\n  id\n  name\n}";
+    const result = preprocessFragmentArgs(content);
+    expect(result.modified).toBe(true);
+    expect(result.preprocessed).toContain("fragment UserProfile on User");
+    expect(result.preprocessed).not.toContain("$showEmail: Boolean");
+    expect(result.preprocessed.length).toBe(content.length);
+  });
+
   test("does not strip field arguments", () => {
     const content = `query {
   user(id: "123") {
