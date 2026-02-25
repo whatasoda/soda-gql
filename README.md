@@ -127,7 +127,7 @@ import { gql } from "@/graphql-system";
 
 // Define a reusable fragment
 export const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFragment($categoryId: ID) on User {
+  fragment("UserFragment", "User")`($categoryId: ID) {
     id
     name
     posts(categoryId: $categoryId) {
@@ -139,7 +139,7 @@ export const userFragment = gql.default(({ fragment }) =>
 
 // Build a complete operation
 export const listUsersQuery = gql.default(({ query }) =>
-  query`query ListUsers($categoryId: ID) {
+  query("ListUsers")`($categoryId: ID) {
     users {
       id
       name
