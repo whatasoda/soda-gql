@@ -38,11 +38,6 @@ export type RunTypegenOptions = {
    * Resolved soda-gql configuration.
    */
   readonly config: ResolvedSodaGqlConfig;
-  /**
-   * Skip the esbuild bundling step. Useful in watch mode for faster feedback.
-   * When true, only .ts files are generated; .cjs bundle is not updated.
-   */
-  readonly skipBundle?: boolean;
 };
 
 const extensionMap: Record<string, string> = {

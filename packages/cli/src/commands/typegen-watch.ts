@@ -21,10 +21,6 @@ export type TypegenWatchOptions = {
    * Resolved soda-gql configuration.
    */
   readonly config: ResolvedSodaGqlConfig;
-  /**
-   * Whether to bundle output (default: false for faster watch feedback).
-   */
-  readonly bundle?: boolean;
 };
 
 type WatchState = {
@@ -41,7 +37,6 @@ const executeRegenerate = async (
   config: ResolvedSodaGqlConfig,
   state: WatchState,
   changedPaths: readonly string[],
-  options: { bundle?: boolean },
 ): Promise<void> => {
   // Prevent concurrent runs - accumulate paths for deferred execution
   if (state.isRunning) {
@@ -73,7 +68,6 @@ const executeRegenerate = async (
   try {
     const result = await runTypegen({
       config,
-      skipBundle: !options.bundle,
     });
 
     const elapsed = Date.now() - startTime;
@@ -110,7 +104,7 @@ const executeRegenerate = async (
       state.pendingRun = false;
       const pathsToReport = [...state.pendingPaths];
       state.pendingPaths.clear();
-      setTimeout(() => executeRegenerate(config, state, pathsToReport, options), 50);
+      setTimeout(() => executeRegenerate(config, state, pathsToReport), 50);
     }
   }
 
@@ -120,11 +114,7 @@ const executeRegenerate = async (
 /**
  * Create a debounced regenerate function that accumulates changed paths.
  */
-const createDebouncedRegenerate = (
-  config: ResolvedSodaGqlConfig,
-  state: WatchState,
-  options: { bundle?: boolean },
-): ((paths: readonly string[]) => void) => {
+const createDebouncedRegenerate = (config: ResolvedSodaGqlConfig, state: WatchState): ((paths: readonly string[]) => void) => {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let changedPaths = new Set<string>();
 
@@ -145,7 +135,7 @@ const createDebouncedRegenerate = (
       changedPaths = new Set();
       timeout = null;
 
-      executeRegenerate(config, state, pathsToReport, options);
+      executeRegenerate(config, state, pathsToReport);
     }, DEBOUNCE_MS);
   };
 };
@@ -156,11 +146,11 @@ const createDebouncedRegenerate = (
  * This function watches source files and regenerates prebuilt types on changes.
  * It runs indefinitely until SIGINT/SIGTERM is received.
  *
- * @param options - Watch options including config and bundle flag
+ * @param options - Watch options including config
  * @returns Never returns (runs indefinitely)
  */
 export const runTypegenWatch = async (options: TypegenWatchOptions): Promise<never> => {
-  const { config, bundle } = options;
+  const { config } = options;
 
   const state: WatchState = {
     isRunning: false,
@@ -170,7 +160,7 @@ export const runTypegenWatch = async (options: TypegenWatchOptions): Promise<nev
   };
 
   // Create debounced regenerate function
-  const regenerate = createDebouncedRegenerate(config, state, { bundle });
+  const regenerate = createDebouncedRegenerate(config, state);
 
   // Setup watcher
   const watcher = chokidar.watch([...config.include], {
@@ -203,12 +193,9 @@ export const runTypegenWatch = async (options: TypegenWatchOptions): Promise<nev
   // Initial run
   console.log("[typegen] Starting watch mode...");
   console.log(`  Watching: ${config.include.join(", ")}`);
-  if (!bundle) {
-    console.log("  Bundling: skipped (use --bundle to enable)");
-  }
   console.log("");
 
-  await executeRegenerate(config, state, [], { bundle });
+  await executeRegenerate(config, state, []);
 
   // Keep alive indefinitely
   await new Promise(() => {});

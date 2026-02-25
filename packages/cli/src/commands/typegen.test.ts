@@ -8,7 +8,6 @@ describe("typegen args parsing", () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.watch).toBeUndefined();
-      expect(result.value.bundle).toBeUndefined();
       expect(result.value.config).toBeUndefined();
     }
   });
@@ -18,23 +17,6 @@ describe("typegen args parsing", () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.watch).toBe(true);
-    }
-  });
-
-  it("parses --bundle flag", () => {
-    const result = parseArgs(["--bundle"], TypegenArgsSchema);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value.bundle).toBe(true);
-    }
-  });
-
-  it("parses --watch --bundle combination", () => {
-    const result = parseArgs(["--watch", "--bundle"], TypegenArgsSchema);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value.watch).toBe(true);
-      expect(result.value.bundle).toBe(true);
     }
   });
 
@@ -61,16 +43,6 @@ describe("typegen args parsing", () => {
     expect(result.isOk()).toBe(true);
     if (result.isOk()) {
       expect(result.value.watch).toBe(true);
-    }
-  });
-
-  it("parses -w shorthand with other flags", () => {
-    const aliases = { w: "watch" };
-    const result = parseArgs(["-w", "--bundle"], TypegenArgsSchema, aliases);
-    expect(result.isOk()).toBe(true);
-    if (result.isOk()) {
-      expect(result.value.watch).toBe(true);
-      expect(result.value.bundle).toBe(true);
     }
   });
 
