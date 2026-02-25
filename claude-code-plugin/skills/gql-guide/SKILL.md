@@ -66,7 +66,7 @@ import { gql } from "<outdir-path>"; // e.g. "@/graphql-system"
 
 // Fragment with tagged template
 const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User {
+  fragment("UserFields", "User")`{
     id
     name
     email
@@ -75,7 +75,7 @@ const userFragment = gql.default(({ fragment }) =>
 
 // Operation with tagged template
 const getUserQuery = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name
@@ -106,10 +106,10 @@ const getUserQuery = gql.default(({ query }) =>
 ### Key Constraint
 
 **Both tagged templates reject interpolation with values:**
-- `fragment\`field: ${value}\`` → ❌ Throws error
-- `query\`query { field(id: ${id}) }\`` → ❌ Throws error
+- `fragment("Name", "Type")\`${value}\`` → ❌ Throws error
+- `query("Name")\`{ field(id: ${id}) }\`` → ❌ Throws error
 
-The only valid interpolation is fragment-to-fragment spreading: `fragment\`... ...${otherFragment} ...\``.
+The only valid interpolation is fragment-to-fragment spreading: `fragment("Name", "Type")\`...${otherFragment} ...\``.
 
 Operations with fragment spreads MUST use callback builder syntax with `.spread()` instead of tagged template interpolation.
 
@@ -124,7 +124,7 @@ Operations with fragment spreads MUST use callback builder syntax with `.spread(
 ```typescript
 // playgrounds/vite-react/src/graphql/fragments.ts
 const userFields = gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User {
+  fragment("UserFields", "User")`{
     id
     name
     email
@@ -137,7 +137,7 @@ const userFields = gql.default(({ fragment }) =>
 ```typescript
 // playgrounds/vite-react/src/graphql/operations.ts
 const simpleQuery = gql.default(({ query }) =>
-  query`query GetUsers {
+  query("GetUsers")`{
     users {
       id
       name
@@ -169,7 +169,7 @@ const userQuery = gql.default(({ query, $var }) =>
 ✅ **Simple fragment with tagged template:**
 ```typescript
 const fields = gql.default(({ fragment }) =>
-  fragment`fragment UserBasic on User {
+  fragment("UserBasic", "User")`{
     id
     name
     email
@@ -180,7 +180,7 @@ const fields = gql.default(({ fragment }) =>
 ✅ **Fragment spreading another fragment (tagged template):**
 ```typescript
 const extendedFields = gql.default(({ fragment }) =>
-  fragment`fragment ExtendedUser on User {
+  fragment("ExtendedUser", "User")`{
     ...${userFields}
     createdAt
     updatedAt
@@ -192,7 +192,7 @@ const extendedFields = gql.default(({ fragment }) =>
 ```typescript
 // This will FAIL - cannot use tagged template interpolation for fragment spreads in operations
 const badQuery = gql.default(({ query }) =>
-  query`query {
+  query("BadQuery")`{
     user {
       ${userFields}
     }
@@ -253,7 +253,7 @@ Fragments define reusable field selections with type safety. They can be spread 
 **Simple fragment:**
 ```typescript
 const userBasic = gql.default(({ fragment }) =>
-  fragment`fragment UserBasic on User {
+  fragment("UserBasic", "User")`{
     id
     name
     email
@@ -264,7 +264,7 @@ const userBasic = gql.default(({ fragment }) =>
 **Fragment with variables:**
 ```typescript
 const userConditional = gql.default(({ fragment }) =>
-  fragment`fragment ConditionalUser($includeEmail: Boolean!) on User {
+  fragment("ConditionalUser", "User")`($includeEmail: Boolean!) {
     id
     name
     email @include(if: $includeEmail)
@@ -275,7 +275,7 @@ const userConditional = gql.default(({ fragment }) =>
 **Fragment spreading (Fragment → Fragment):**
 ```typescript
 const userExtended = gql.default(({ fragment }) =>
-  fragment`fragment ExtendedUser on User {
+  fragment("ExtendedUser", "User")`{
     ...${userBasic}
     createdAt
     updatedAt
@@ -306,10 +306,10 @@ const getUserQuery = gql.default(({ query, $var }) =>
 ✅ **Fragment composition via tagged template:**
 ```typescript
 const baseFields = gql.default(({ fragment }) =>
-  fragment`fragment UserBase on User { id name }`(),
+  fragment("UserBase", "User")`{ id name }`(),
 );
 const extendedFields = gql.default(({ fragment }) =>
-  fragment`fragment UserExtended on User {
+  fragment("UserExtended", "User")`{
     ...${baseFields}
     email
   }`(),
@@ -338,7 +338,7 @@ const getUserQuery = gql.default(({ query, $var }) =>
 ```typescript
 // Fragment declares $includeEmail
 const frag = gql.default(({ fragment }) =>
-  fragment`fragment F($includeEmail: Boolean!) on User {
+  fragment("F", "User")`($includeEmail: Boolean!) {
     id name email @include(if: $includeEmail)
   }`(),
 );
@@ -393,7 +393,7 @@ Operations define the GraphQL query/mutation/subscription structure with variabl
 **Simple query (tagged template):**
 ```typescript
 const getUsers = gql.default(({ query }) =>
-  query`query GetUsers {
+  query("GetUsers")`{
     users {
       id
       name
@@ -405,7 +405,7 @@ const getUsers = gql.default(({ query }) =>
 **Query with variables (tagged template):**
 ```typescript
 const getUser = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name
@@ -435,7 +435,7 @@ const getUserWithFragment = gql.default(({ query, $var }) =>
 **Mutation (tagged template):**
 ```typescript
 const createUser = gql.default(({ mutation }) =>
-  mutation`mutation CreateUser($input: CreateUserInput!) {
+  mutation("CreateUser")`($input: CreateUserInput!) {
     createUser(input: $input) {
       id
       name
@@ -449,7 +449,7 @@ const createUser = gql.default(({ mutation }) =>
 ✅ **Simple query (tagged template):**
 ```typescript
 const getUserQuery = gql.default(({ query }) =>
-  query`query GetUser($id: ID!) {
+  query("GetUser")`($id: ID!) {
     user(id: $id) {
       id
       name
@@ -504,7 +504,7 @@ Union handling uses standard GraphQL inline fragment syntax (`... on TypeName { 
 
 ```typescript
 const searchQuery = gql.default(({ query }) =>
-  query`query Search($term: String!) {
+  query("Search")`($term: String!) {
     search(term: $term) {
       __typename
       ... on User {
@@ -531,7 +531,7 @@ const searchQuery = gql.default(({ query }) =>
 **Union field selection (tagged template):**
 ```typescript
 const searchQuery = gql.default(({ query }) =>
-  query`query Search($term: String!) {
+  query("Search")`($term: String!) {
     search(term: $term) {
       __typename
       ... on User {
@@ -552,10 +552,10 @@ const searchQuery = gql.default(({ query }) =>
 **Union with fragment spread (callback builder):**
 ```typescript
 const userFields = gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User { id name email }`(),
+  fragment("UserFields", "User")`{ id name email }`(),
 );
 const postFields = gql.default(({ fragment }) =>
-  fragment`fragment PostFields on Post { id title content }`(),
+  fragment("PostFields", "Post")`{ id title content }`(),
 );
 
 const searchQuery = gql.default(({ query, $var }) =>
@@ -578,7 +578,7 @@ const searchQuery = gql.default(({ query, $var }) =>
 ✅ **Always include __typename:**
 ```typescript
 const q = gql.default(({ query }) =>
-  query`query Search($term: String!) {
+  query("Search")`($term: String!) {
     search(term: $term) {
       __typename
       ... on TypeA { id fieldA }
@@ -591,7 +591,7 @@ const q = gql.default(({ query }) =>
 ✅ **Exhaustive member handling:**
 ```typescript
 const q = gql.default(({ query }) =>
-  query`query SearchAll($term: String!) {
+  query("SearchAll")`($term: String!) {
     search(term: $term) {
       __typename
       ... on User { id name }
@@ -625,7 +625,7 @@ GraphQL directives modify field behavior (@include, @skip) or provide metadata f
 **Tagged template with static values:**
 ```typescript
 gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User {
+  fragment("UserFields", "User")`{
     id
     name
     email @include(if: true)
@@ -636,7 +636,7 @@ gql.default(({ fragment }) =>
 **Tagged template with variables:**
 ```typescript
 gql.default(({ fragment }) =>
-  fragment`fragment ConditionalUser($includeEmail: Boolean!) on User {
+  fragment("ConditionalUser", "User")`($includeEmail: Boolean!) {
     id
     name
     email @include(if: $includeEmail)
@@ -653,7 +653,7 @@ gql.default(({ fragment }) =>
 **@include directive:**
 ```typescript
 const conditionalFields = gql.default(({ fragment }) =>
-  fragment`fragment ConditionalUser($showEmail: Boolean!) on User {
+  fragment("ConditionalUser", "User")`($showEmail: Boolean!) {
     id
     name
     email @include(if: $showEmail)
@@ -664,7 +664,7 @@ const conditionalFields = gql.default(({ fragment }) =>
 **@skip directive:**
 ```typescript
 const fields = gql.default(({ fragment }) =>
-  fragment`fragment SkipEmail($hideEmail: Boolean!) on User {
+  fragment("SkipEmail", "User")`($hideEmail: Boolean!) {
     id
     name
     email @skip(if: $hideEmail)
@@ -676,7 +676,7 @@ const fields = gql.default(({ fragment }) =>
 ```typescript
 // Assuming schema has: directive @sensitive on FIELD_DEFINITION
 const userFields = gql.default(({ fragment }) =>
-  fragment`fragment SensitiveUser on User {
+  fragment("SensitiveUser", "User")`{
     id
     name
     socialSecurityNumber @sensitive
@@ -689,7 +689,7 @@ const userFields = gql.default(({ fragment }) =>
 ✅ **Conditional field inclusion (callback builder with fragment spread):**
 ```typescript
 const detailsFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserDetails($includeDetails: Boolean!) on User {
+  fragment("UserDetails", "User")`($includeDetails: Boolean!) {
     bio @include(if: $includeDetails)
     website @include(if: $includeDetails)
   }`(),
@@ -732,7 +732,7 @@ soda-gql allows attaching metadata to fragments and operations for build-time pr
 
 ```typescript
 const frag = gql.default(({ fragment }) =>
-  fragment`fragment UserFields on User {
+  fragment("UserFields", "User")`{
     id
     name
   }`({
@@ -745,7 +745,7 @@ const frag = gql.default(({ fragment }) =>
 
 ```typescript
 const frag = gql.default(({ fragment }) =>
-  fragment`fragment UserFields($userId: ID!) on User {
+  fragment("UserFields", "User")`($userId: ID!) {
     id
     name
   }`({
@@ -766,7 +766,7 @@ const frag = gql.default(({ fragment }) =>
 **Static fragment metadata:**
 ```typescript
 const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserCard on User {
+  fragment("UserCard", "User")`{
     id
     name
     email
@@ -779,7 +779,7 @@ const userFragment = gql.default(({ fragment }) =>
 **Callback metadata with variables:**
 ```typescript
 const userFragment = gql.default(({ fragment }) =>
-  fragment`fragment CachedUser($userId: ID!) on User {
+  fragment("CachedUser", "User")`($userId: ID!) {
     id
     name
     email
@@ -815,7 +815,7 @@ const q = gql.default(({ query, $var }) =>
 ✅ **Component mapping:**
 ```typescript
 gql.default(({ fragment }) =>
-  fragment`fragment UserProfile on User { id name }`({
+  fragment("UserProfile", "User")`{ id name }`({
     metadata: { component: "UserProfile" },
   }),
 );
@@ -824,7 +824,7 @@ gql.default(({ fragment }) =>
 ✅ **Dynamic cache key:**
 ```typescript
 gql.default(({ fragment }) =>
-  fragment`fragment CachedUser($id: ID!) on User { id name }`({
+  fragment("CachedUser", "User")`($id: ID!) { id name }`({
     metadata: ({ $ }: { $: { id: string } }) => ({
       cacheKey: `user:${$.id}`,
     }),
@@ -1061,7 +1061,7 @@ const userQuery = gql.default(({ query, $var }) =>
 ```typescript
 // UserCard.tsx
 export const userCardFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserCardFields on User {
+  fragment("UserCardFields", "User")`{
     id
     name
     email
@@ -1091,7 +1091,7 @@ Colocation enables:
 ```typescript
 // UserProfile.tsx
 const userProfileFragment = gql.default(({ fragment }) =>
-  fragment`fragment UserProfile on User {
+  fragment("UserProfile", "User")`{
     id
     name
     email
