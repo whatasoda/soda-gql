@@ -45,13 +45,18 @@ async function buildTsPlugin() {
   await build({
     entryPoints: [join(__dirname, "..", "ts-plugin", "src", "index.ts")],
     bundle: true,
-    outfile: join(__dirname, "dist", "ts-plugin.js"),
+    outfile: join(__dirname, "dist", "ts-plugin.cjs"),
     external: ["@swc/core"],
     format: "cjs",
     platform: "node",
     target: "node18",
     sourcemap: true,
     minify: false,
+    // D-2: import.meta.url is undefined in CJS; provide __filename-based shim
+    banner: { js: 'var import_meta_url = require("url").pathToFileURL(__filename).href;' },
+    define: { "import.meta.url": "import_meta_url" },
+    // D-1: tsserver expects module.exports = init (function), not module.exports.default
+    footer: { js: "module.exports = module.exports.default || module.exports;" },
   });
   console.log("✓ TS plugin built successfully");
 }

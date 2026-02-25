@@ -55,7 +55,7 @@
     ],
     "typescriptServerPlugins": [
       {
-        "name": "./dist/ts-plugin",
+        "name": "./dist/ts-plugin.cjs",
         "enableForWorkspaceTypeScriptVersions": true
       }
     ],
