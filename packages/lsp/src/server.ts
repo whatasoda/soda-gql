@@ -300,12 +300,15 @@ export const createLspServer = (options?: LspServerOptions) => {
     }
 
     const externalFragments = ctx.documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
+    const entry = ctx.schemaResolver.getSchema(template.schemaName);
 
     return handleDefinition({
       template,
       tsSource: doc.getText(),
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
+      schema: entry?.schema,
+      schemaFiles: entry?.files,
     });
   });
 

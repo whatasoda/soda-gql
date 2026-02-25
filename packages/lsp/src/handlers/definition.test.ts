@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { type FragmentDefinitionNode, parse } from "graphql";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { type DocumentNode, type FragmentDefinitionNode, buildASTSchema, parse } from "graphql";
+import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
 import { handleDefinition } from "./definition";
 
@@ -237,5 +241,113 @@ describe("handleDefinition", () => {
     expect(loc.uri).toBe("/test/fragments.ts");
     // Definition should point to the fragment body in the TS file (line 2)
     expect(loc.range.start.line).toBe(2);
+  });
+});
+
+describe("handleDefinition — schema field navigation", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schema = buildASTSchema(parse(schemaSource) as unknown as DocumentNode);
+
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves field name to schema file definition", async () => {
+    const content = "query { users { name } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor in the middle of "name" (offset +2 to be inside the token)
+    const nameIdx = content.indexOf("name") + 2;
+    const cursorInTs = contentStart + nameIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    const loc = locations[0]!;
+    // Should point to the schema file
+    expect(loc.uri).toBe(pathToFileURL(schemaPath).href);
+    // "name" is defined in the User type (line 7 in the schema, 0-indexed)
+    expect(loc.range.start.line).toBeGreaterThanOrEqual(5);
+  });
+
+  test("resolves root query field to schema file", async () => {
+    const content = "query { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor in the middle of "users" (offset +2 to be inside the token)
+    const usersIdx = content.indexOf("users") + 2;
+    const cursorInTs = contentStart + usersIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    const loc = locations[0]!;
+    expect(loc.uri).toBe(pathToFileURL(schemaPath).href);
+    // "users" is in Query type (line 2 in schema, 0-indexed)
+    expect(loc.range.start.line).toBeLessThanOrEqual(3);
+  });
+
+  test("returns empty when not on a recognized element", async () => {
+    const content = "query { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+    };
+
+    // Position cursor on "query" keyword (not a field)
+    const cursorInTs = contentStart + 0;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations).toHaveLength(0);
   });
 });
