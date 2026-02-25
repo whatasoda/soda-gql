@@ -3,18 +3,15 @@
  *
  * Orchestrates the prebuilt type generation process:
  * 1. Load schemas from generated CJS bundle
- * 2. Generate index.prebuilt.ts
- * 3. Build artifact to evaluate elements
- * 4. Extract field selections from builder
- * 5. Scan source files for tagged templates and merge selections
- * 6. Emit types.prebuilt.ts
- * 7. Bundle prebuilt module
+ * 2. Build artifact to evaluate elements
+ * 3. Extract field selections from builder
+ * 4. Scan source files for tagged templates and merge selections
+ * 5. Emit types.prebuilt.ts
  *
  * @module
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import {
   createBuilderService,
@@ -26,12 +23,9 @@ import {
 } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { build } from "esbuild";
-import { type DocumentNode, parse } from "graphql";
 import { err, ok } from "neverthrow";
 import { emitPrebuiltTypes } from "./emitter";
 import { typegenErrors } from "./errors";
-import { generatePrebuiltModule } from "./prebuilt-generator";
 import { scanSourceFiles } from "./template-scanner";
 import { convertTemplatesToSelections } from "./template-to-selections";
 import type { TypegenResult, TypegenSuccess } from "./types";
@@ -44,11 +38,6 @@ export type RunTypegenOptions = {
    * Resolved soda-gql configuration.
    */
   readonly config: ResolvedSodaGqlConfig;
-  /**
-   * Pre-loaded schema documents. When provided, skips re-parsing from files.
-   * Keys are schema names, values are parsed DocumentNode instances.
-   */
-  readonly schemaDocuments?: ReadonlyMap<string, DocumentNode>;
   /**
    * Skip the esbuild bundling step. Useful in watch mode for faster feedback.
    * When true, only .ts files are generated; .cjs bundle is not updated.
@@ -107,68 +96,14 @@ const toImportSpecifier = (fromPath: string, targetPath: string, options?: Impor
 };
 
 /**
- * Bundle the prebuilt module to CJS format.
- */
-const bundlePrebuiltModule = async (sourcePath: string): Promise<{ cjsPath: string }> => {
-  const sourceExt = extname(sourcePath);
-  const baseName = sourcePath.slice(0, -sourceExt.length);
-  const cjsPath = `${baseName}.cjs`;
-
-  await build({
-    entryPoints: [sourcePath],
-    outfile: cjsPath,
-    format: "cjs",
-    platform: "node",
-    bundle: true,
-    external: ["@soda-gql/core", "@soda-gql/runtime"],
-    sourcemap: false,
-    minify: false,
-    treeShaking: false,
-  });
-
-  return { cjsPath };
-};
-
-/**
- * Write a TypeScript module to disk.
- */
-const writeModule = async (path: string, content: string): Promise<void> => {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, content, "utf-8");
-};
-
-/**
- * Load GraphQL schema documents from schema paths.
- * This is needed for generatePrebuiltModule which expects DocumentNode.
- */
-const loadSchemaDocuments = (schemasConfig: ResolvedSodaGqlConfig["schemas"]): Map<string, DocumentNode> => {
-  const documents = new Map<string, DocumentNode>();
-
-  for (const [name, schemaConfig] of Object.entries(schemasConfig)) {
-    const schemaPaths = Array.isArray(schemaConfig.schema) ? schemaConfig.schema : [schemaConfig.schema];
-
-    // Concatenate all schema files
-    let combinedSource = "";
-    for (const schemaPath of schemaPaths) {
-      combinedSource += `${readFileSync(schemaPath, "utf-8")}\n`;
-    }
-
-    documents.set(name, parse(combinedSource));
-  }
-
-  return documents;
-};
-
-/**
  * Run the typegen process.
  *
  * This function:
  * 1. Loads schemas from the generated CJS bundle
- * 2. Generates index.prebuilt.ts using generatePrebuiltModule
- * 3. Creates a BuilderService and builds the artifact
- * 4. Extracts field selections from the artifact
+ * 2. Creates a BuilderService and builds the artifact
+ * 3. Extracts field selections from the artifact
+ * 4. Scans source files for tagged templates and merges selections
  * 5. Emits types.prebuilt.ts using emitPrebuiltTypes
- * 6. Bundles the prebuilt module
  *
  * @param options - Typegen options including config
  * @returns Result containing success data or error
@@ -192,42 +127,11 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   }
   const schemas = schemasResult.value;
 
-  // Step 3: Load schema documents and generate index.prebuilt.ts
-  const schemaDocuments = options.schemaDocuments ? new Map(options.schemaDocuments) : loadSchemaDocuments(config.schemas);
-  const prebuiltIndexPath = join(outdir, "index.prebuilt.ts");
+  // Calculate import path for types.prebuilt.ts to _internal-injects.ts
+  const prebuiltTypesPath = join(outdir, "types.prebuilt.ts");
+  const injectsModulePath = toImportSpecifier(prebuiltTypesPath, join(outdir, "_internal-injects.ts"), importSpecifierOptions);
 
-  // Calculate import paths from index.prebuilt.ts to internal modules
-  const internalModulePath = toImportSpecifier(prebuiltIndexPath, join(outdir, "_internal.ts"), importSpecifierOptions);
-  const injectsModulePath = toImportSpecifier(prebuiltIndexPath, join(outdir, "_internal-injects.ts"), importSpecifierOptions);
-
-  // Build injection config for generatePrebuiltModule
-  const injection = new Map<string, { hasAdapter?: boolean }>();
-  for (const [schemaName, schemaConfig] of Object.entries(config.schemas)) {
-    injection.set(schemaName, {
-      hasAdapter: !!schemaConfig.inject.adapter,
-    });
-  }
-
-  const prebuilt = generatePrebuiltModule(schemaDocuments, {
-    internalModulePath,
-    injectsModulePath,
-    injection,
-  });
-
-  // Write index.prebuilt.ts
-  try {
-    await writeModule(prebuiltIndexPath, prebuilt.indexCode);
-  } catch (error) {
-    return err(
-      typegenErrors.emitFailed(
-        prebuiltIndexPath,
-        `Failed to write prebuilt index: ${error instanceof Error ? error.message : String(error)}`,
-        error,
-      ),
-    );
-  }
-
-  // Step 4: Build artifact using BuilderService
+  // Step 3: Build artifact using BuilderService
   const builderService = createBuilderService({
     config,
   });
@@ -238,7 +142,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return err(typegenErrors.buildFailed(`Builder failed: ${artifactResult.error.message}`, artifactResult.error));
   }
 
-  // Step 5: Extract field selections from intermediate elements
+  // Step 4: Extract field selections from intermediate elements
   const intermediateElements = builderService.getIntermediateElements();
   if (!intermediateElements) {
     return err(typegenErrors.buildFailed("No intermediate elements available after build", undefined));
@@ -247,7 +151,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const fieldSelectionsResult = extractFieldSelections(intermediateElements as Record<CanonicalId, IntermediateArtifactElement>);
   const { selections: builderSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
-  // Step 5b: Scan source files for tagged templates and merge selections
+  // Step 4b: Scan source files for tagged templates and merge selections
   const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
   const scanResult = scanSourceFiles({
     include: [...config.include],
@@ -288,8 +192,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   const scanWarnings = [...scanResult.warnings, ...templateSelections.warnings];
 
-  // Step 6: Emit types.prebuilt.ts
-  // Reuse injectsModulePath from step 3 (same directory, same relative path)
+  // Step 5: Emit types.prebuilt.ts
   const emitResult = await emitPrebuiltTypes({
     schemas,
     fieldSelections,
@@ -301,22 +204,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return err(emitResult.error);
   }
 
-  const { path: prebuiltTypesPath, warnings: emitWarnings } = emitResult.value;
-
-  // Step 7: Bundle prebuilt module (skip if skipBundle is true)
-  if (!options.skipBundle) {
-    try {
-      await bundlePrebuiltModule(prebuiltIndexPath);
-    } catch (error) {
-      return err(
-        typegenErrors.bundleFailed(
-          prebuiltIndexPath,
-          `Failed to bundle prebuilt module: ${error instanceof Error ? error.message : String(error)}`,
-          error,
-        ),
-      );
-    }
-  }
+  const { warnings: emitWarnings } = emitResult.value;
 
   // Count fragments and operations
   let fragmentCount = 0;
@@ -332,7 +220,6 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const allWarnings = [...extractWarnings, ...scanWarnings, ...emitWarnings];
 
   return ok({
-    prebuiltIndexPath,
     prebuiltTypesPath,
     fragmentCount,
     operationCount,

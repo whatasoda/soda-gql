@@ -39,12 +39,7 @@ export type TypegenOptions = {
  */
 export type TypegenSuccess = {
   /**
-   * Path to the generated prebuilt/index.ts file.
-   */
-  readonly prebuiltIndexPath: string;
-
-  /**
-   * Path to the generated prebuilt/types.ts file.
+   * Path to the generated types.prebuilt.ts file.
    */
   readonly prebuiltTypesPath: string;
 

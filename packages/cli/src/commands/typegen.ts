@@ -35,7 +35,6 @@ const parseTypegenArgs = (argv: readonly string[]): CliResult<ParsedCommand> => 
 };
 
 type TypegenSuccessData = {
-  prebuiltIndexPath: string;
   prebuiltTypesPath: string;
   fragmentCount: number;
   operationCount: number;
@@ -45,7 +44,6 @@ type TypegenSuccessData = {
 const formatSuccess = (data: TypegenSuccessData): string => {
   const lines: string[] = [];
   lines.push(`Generated prebuilt types:`);
-  lines.push(`  Index: ${data.prebuiltIndexPath}`);
   lines.push(`  Types: ${data.prebuiltTypesPath}`);
   lines.push(`  Fragments: ${data.fragmentCount}, Operations: ${data.operationCount}`);
 
@@ -123,7 +121,6 @@ export const typegenCommand = async (argv: readonly string[]): Promise<TypegenCo
   }
 
   const data: TypegenSuccessData = {
-    prebuiltIndexPath: result.value.prebuiltIndexPath,
     prebuiltTypesPath: result.value.prebuiltTypesPath,
     fragmentCount: result.value.fragmentCount,
     operationCount: result.value.operationCount,

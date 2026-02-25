@@ -13,9 +13,6 @@ export { emitPrebuiltTypes } from "./emitter";
 export type { TypegenError, TypegenErrorCode, TypegenSpecificError } from "./errors";
 // Error types and helpers
 export { formatTypegenError, typegenErrors } from "./errors";
-export type { PrebuiltGeneratedModule, PrebuiltGeneratorOptions } from "./prebuilt-generator";
-// Prebuilt module generator
-export { generatePrebuiltModule } from "./prebuilt-generator";
 export type { RunTypegenOptions } from "./runner";
 
 // Main runner
