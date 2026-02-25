@@ -82,14 +82,14 @@ SCOPE: Convert packages/core/src/composer/*.test.ts callback builder usage
 - [ ] Task 4.3.3: Convert operation.document-transform.test.ts
 - [ ] Task 4.3.4: Session gate — bun run test
 
-### Session 4.4: Playgrounds + prebuilt-generator (~10 files)
+### Session 4.4: Playgrounds (~10 files)
 MAX_COMMITS: 4
-SCOPE: Convert all playground callback syntax + assess prebuilt-generator
+SCOPE: Convert all playground callback syntax
 
 - [ ] Task 4.4.1: Convert playgrounds/hasura/src/graphql/ (fragments.ts: 17 defs, operations.ts: 14 defs)
 - [ ] Task 4.4.2: Convert playgrounds/vite-react/ (fragments, operations, component fragments)
 - [ ] Task 4.4.3: Convert playgrounds/nextjs-webpack/, expo-metro/, nestjs-compiler-tsc/
-- [ ] Task 4.4.4: Assess and update prebuilt-generator context types if needed
+- [x] Task 4.4.4: Prebuilt type generation moved to codegen `generateIndexModule()`
 - [ ] Task 4.4.5: Session gate — bun run test
 
 ### Session 4.5: Documentation + final phase gate

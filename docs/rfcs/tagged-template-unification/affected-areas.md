@@ -53,7 +53,7 @@
 
 **Modifications:**
 - `src/runner.ts` — new pipeline: extract templates from source → parse GraphQL → calculate types
-- `src/prebuilt-generator.ts` — simplify callback-builder resolution types
+- Prebuilt type generation moved to codegen `generateIndexModule()`
 
 **New:**
 - Template extraction (reuse LSP's `document-manager.ts` SWC-based pattern)
