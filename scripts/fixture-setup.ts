@@ -7,6 +7,7 @@
  * @module
  */
 
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig } from "@soda-gql/config";
 import { runCodegen } from "@soda-gql/codegen";
@@ -46,6 +47,15 @@ const setupTarget = async (label: string, configPath: string) => {
 };
 
 const main = async () => {
+  // Clean up orphaned prebuilt artifacts from the old directory structure
+  const orphanedFiles = [
+    join(rootDir, "fixture-catalog/graphql-system/index.prebuilt.ts"),
+    join(rootDir, "fixture-catalog/graphql-system/index.prebuilt.cjs"),
+  ];
+  for (const file of orphanedFiles) {
+    rmSync(file, { force: true });
+  }
+
   // Shared fixture-catalog (used by package tests)
   await setupTarget("fixture-catalog", join(rootDir, "fixture-catalog/soda-gql.config.ts"));
 
