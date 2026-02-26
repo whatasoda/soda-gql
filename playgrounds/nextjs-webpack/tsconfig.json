@@ -17,7 +17,7 @@
     "plugins": [{ "name": "next" }],
     "types": ["node", "react", "react-dom"],
     "paths": {
-      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"],
+      "@/graphql-system": ["./src/graphql-system/index.ts"],
       "@/*": ["./src/*"]
     }
   },

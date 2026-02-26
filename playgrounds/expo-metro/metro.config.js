@@ -5,4 +5,4 @@ const { withSodaGql } = require("@soda-gql/metro-plugin");
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);
 
-module.exports = withSodaGql(config, { configPath: "./fixture-catalog/soda-gql.config.ts" });
+module.exports = withSodaGql(config, { configPath: "./soda-gql.config.ts" });
