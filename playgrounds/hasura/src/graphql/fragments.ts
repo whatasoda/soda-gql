@@ -34,14 +34,6 @@ export const UserProfileFragment = gql.default(({ fragment }) =>
   )`($condition: user_profiles_bool_exp!) { id user_id website location birthday is_private created_at }`(),
 );
 
-// Fragment with conditional spread — uses callback interpolation for spread with args
-gql.default(({ fragment }) =>
-  fragment("UserProfileConditional", "user_profiles")`($condition: user_profiles_bool_exp!) {
-    ...${({ $ }) => UserProfileFragment.spread({ condition: { _or: [$.condition] } })}
-    id
-  }`(),
-);
-
 // Post fragment
 export const PostFragment = gql.default(({ fragment }) =>
   fragment("PostFragment", "posts")`{ id author_id content is_published published_at view_count created_at }`(),
