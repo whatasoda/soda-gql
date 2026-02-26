@@ -20,8 +20,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
+      "@/graphql-system": ["./src/graphql-system/index.ts"]
     }
   },
-  "include": ["src", "fixture-catalog", "inject-module"]
+  "include": ["src"]
 }
