@@ -11,7 +11,7 @@
       "@/graphql-system": ["./src/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "scalars.ts", "soda-gql.config.ts"],
   "exclude": ["**/graphql-system/*.cjs"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },

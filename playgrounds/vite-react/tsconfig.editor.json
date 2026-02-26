@@ -10,10 +10,10 @@
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "paths": {
-      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
+      "@/graphql-system": ["./src/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "fixture-catalog/**/*", "scalars.ts", "soda-gql.config.ts"],
+  "include": ["src/**/*", "scalars.ts", "soda-gql.config.ts"],
   "exclude": ["**/graphql-system/*.cjs", "**/fragment-in-fragment.ts"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
