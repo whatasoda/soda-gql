@@ -8,10 +8,10 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
+      "@/graphql-system": ["./src/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "fixture-catalog/graphql-system/**/*", "fixture-catalog/schemas/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["**/graphql-system/*.cjs"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
