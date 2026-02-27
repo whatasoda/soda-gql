@@ -1388,7 +1388,7 @@ type GqlComposer_${name} = {
 export * from "./_internal";
 import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
-import { ${directiveImports} } from "./_internal";
+import type { ${directiveImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
 import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, VarBuilder, GqlDefine } from "@soda-gql/core";
 ${perSchemaTypes}
