@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
@@ -271,9 +271,10 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     return err(indexWriteResult.error);
   }
 
-  // Write types.prebuilt.ts stub if it doesn't already exist
+  // Write types.prebuilt.ts stub — additive patching for new schemas
   const prebuiltStubPath = join(dirname(outPath), "types.prebuilt.ts");
   if (!existsSync(prebuiltStubPath)) {
+    // File doesn't exist: write full stub
     const prebuiltStubCode = generatePrebuiltStub(schemaNames);
     const prebuiltWriteResult = await writeModule(prebuiltStubPath, prebuiltStubCode).match(
       () => Promise.resolve(ok(undefined)),
@@ -282,6 +283,25 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
 
     if (prebuiltWriteResult.isErr()) {
       return err(prebuiltWriteResult.error);
+    }
+  } else {
+    // File exists: check for missing schema stubs and append
+    const existingContent = readFileSync(prebuiltStubPath, "utf-8");
+    const existingNames = new Set<string>();
+    for (const match of existingContent.matchAll(/export type PrebuiltTypes_(\w+)/g)) {
+      const name = match[1];
+      if (name) existingNames.add(name);
+    }
+    const missingNames = schemaNames.filter((name) => !existingNames.has(name));
+    if (missingNames.length > 0) {
+      const missingStubs = generatePrebuiltStub(missingNames);
+      // Extract only the type declarations (skip the header comment)
+      const stubDeclarations = missingStubs.replace(/^\/\*\*[\s\S]*?\*\/\n\n/, "");
+      const updatedContent = existingContent.trimEnd() + "\n\n" + stubDeclarations;
+      const patchResult = writeModule(prebuiltStubPath, updatedContent);
+      if (patchResult.isErr()) {
+        return err(patchResult.error);
+      }
     }
   }
 
