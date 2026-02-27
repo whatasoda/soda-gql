@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { normalize, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 
+import picomatch from "picomatch";
+
 import type { BuilderError } from "../types";
 import { scanGlob } from "../utils/glob";
 
@@ -34,6 +36,18 @@ export const resolveEntryPaths = (entries: readonly string[], exclude: readonly 
       // Treat as glob pattern
       globPatterns.push(entry);
     }
+  }
+
+  // Filter direct paths against exclude patterns (both literal and glob)
+  if (exclude.length > 0 && directPaths.length > 0) {
+    const excludePatterns = exclude.map((p) => {
+      const raw = p.startsWith("!") ? p.slice(1) : p;
+      return normalize(resolve(raw)).replace(/\\/g, "/");
+    });
+    const isExcluded = picomatch(excludePatterns);
+    const filtered = directPaths.filter((p) => !isExcluded(p));
+    directPaths.length = 0;
+    directPaths.push(...filtered);
   }
 
   // Append exclude patterns as negation globs

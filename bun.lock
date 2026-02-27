@@ -70,6 +70,7 @@
         "@swc/types": "^0.1.6",
         "fast-glob": "^3.3.3",
         "neverthrow": "^8.1.1",
+        "picomatch": "^4.0.3",
         "typescript": "^5.0.0",
         "xxhash-wasm": "^1.1.0",
         "zod": "^4.1.11",

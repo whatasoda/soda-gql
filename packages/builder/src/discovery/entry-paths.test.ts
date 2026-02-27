@@ -107,19 +107,27 @@ describe("resolveEntryPaths", () => {
       const paths = result._unsafeUnwrap();
       // Direct path should be included
       expect(paths).toContain(toPosix(directPath));
-      // Note: direct paths are not affected by exclude patterns
-      // (exclude only applies to glob results)
+      // Direct paths are also filtered by exclude patterns
     });
 
-    test("direct paths are not filtered by exclude patterns", () => {
+    test("direct paths are filtered by exclude patterns", () => {
       setup();
       const directPath = join(fixtureRoot, "excluded.ts");
       const result = resolveEntryPaths([directPath], [join(fixtureRoot, "excluded.ts")]);
 
+      expect(result.isErr()).toBe(true);
+      expect(result._unsafeUnwrapErr().code).toBe("ENTRY_NOT_FOUND");
+    });
+
+    test("direct paths are filtered by glob-style exclude patterns", () => {
+      setup();
+      const directPath = join(fixtureRoot, "excluded.ts");
+      const result = resolveEntryPaths([directPath, join(fixtureRoot, "a.ts")], [join(fixtureRoot, "**/excluded*")]);
+
       expect(result.isOk()).toBe(true);
       const paths = result._unsafeUnwrap();
-      // Direct paths bypass exclude filtering
-      expect(paths).toContain(toPosix(directPath));
+      expect(paths).not.toContain(toPosix(directPath));
+      expect(paths).toContain(toPosix(join(fixtureRoot, "a.ts")));
     });
   });
 });
