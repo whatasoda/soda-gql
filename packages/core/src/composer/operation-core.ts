@@ -26,6 +26,14 @@ import { createVarRefs } from "./input";
 /**
  * Parameters for building an operation artifact.
  * Used by both operation and extend composers.
+ *
+ * Supports two modes:
+ * - **Field factory mode** (default): Uses `fieldsFactory` to evaluate fields and build document.
+ * - **Pre-built document mode**: Uses `prebuiltDocument` and `prebuiltVariableNames` to skip
+ *   field evaluation and document building. Fragment usages are empty (GraphQL-level fragment
+ *   spreads in the AST don't participate in soda-gql metadata pipeline).
+ *
+ * These modes are mutually exclusive: when `prebuiltDocument` is set, `fieldsFactory` is ignored.
  */
 export type OperationCoreParams<
   TSchema extends AnyGraphqlSchema,
@@ -48,6 +56,14 @@ export type OperationCoreParams<
     TVarDefinitions,
     TFields
   >;
+
+  /**
+   * Pre-built DocumentNode to use directly, skipping field evaluation and document building.
+   * When set, `fieldsFactory` is ignored and fragment usages are empty.
+   */
+  readonly prebuiltDocument?: import("graphql").DocumentNode;
+  /** Variable names for pre-built document mode. Defaults to `[]` when `prebuiltDocument` is set. */
+  readonly prebuiltVariableNames?: string[];
 
   // Metadata handling
   readonly adapter: TAdapter;
@@ -97,7 +113,7 @@ export type OperationArtifactResult<
  * @param params - Operation building parameters
  * @returns Operation artifact or Promise of artifact (if async metadata)
  *
- * @internal Used by operation.ts and extend.ts
+ * @internal Used by operation.ts, extend.ts, and operation-tagged-template.ts
  */
 export const buildOperationArtifact = <
   TSchema extends AnyGraphqlSchema,
@@ -123,35 +139,57 @@ export const buildOperationArtifact = <
     operationName,
     variables,
     fieldsFactory,
+    prebuiltDocument,
+    prebuiltVariableNames,
     adapter,
     metadata: metadataBuilder,
     transformDocument: operationTransformDocument,
     adapterTransformDocument,
   } = params;
 
-  // 1. Create tools
+  // Create variable refs (needed for both field factory and metadata builder)
   const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
-  const f = createFieldFactories(schema, operationTypeName);
 
-  // 2. Evaluate fields with fragment tracking
-  const { result: fields, usages: fragmentUsages } = withFragmentUsageCollection(() => fieldsFactory({ f, $ }));
+  let document: import("graphql").DocumentNode;
+  let variableNames: (keyof TVarDefinitions & string)[];
+  let fields: TFields;
+  type FragmentUsage = ReturnType<typeof withFragmentUsageCollection>["usages"];
+  let fragmentUsages: FragmentUsage;
 
-  // 3. Build document
-  const document = buildDocument<
-    TSchema,
-    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
-    TFields,
-    TVarDefinitions
-  >({
-    operationName,
-    operationType,
-    operationTypeName,
-    variables,
-    fields,
-    schema,
-  });
+  if (prebuiltDocument) {
+    // Pre-built document mode: skip field eval + doc build.
+    // GraphQL-level ...FragmentName exists in AST but doesn't participate
+    // in soda-gql metadata pipeline (resolved by GraphQL runtime).
+    document = prebuiltDocument;
+    variableNames = (prebuiltVariableNames ?? []) as (keyof TVarDefinitions & string)[];
+    fields = {} as TFields;
+    fragmentUsages = [];
+  } else {
+    // Field factory mode: full field eval + doc build
+    const f = createFieldFactories(schema, operationTypeName);
 
-  const variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
+    // Evaluate fields with fragment tracking
+    const collected = withFragmentUsageCollection(() => fieldsFactory({ f, $ }));
+    fields = collected.result;
+    fragmentUsages = collected.usages;
+
+    // Build document
+    document = buildDocument<
+      TSchema,
+      TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
+      TFields,
+      TVarDefinitions
+    >({
+      operationName,
+      operationType,
+      operationTypeName,
+      variables,
+      fields,
+      schema,
+    });
+
+    variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
+  }
 
   // 4. Check if any fragment has a metadata builder
   const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);

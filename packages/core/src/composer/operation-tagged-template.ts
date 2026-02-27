@@ -17,15 +17,33 @@ import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 
-/** Callable result from tagged template - resolves to Operation or Fragment. */
-export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyFragment> = (
-  options?: TemplateResultMetadataOptions,
-) => TElement;
-
-/** Options for TemplateResult resolution. */
-export type TemplateResultMetadataOptions = {
+/** Options for fragment TemplateResult resolution. */
+export type FragmentTemplateMetadataOptions = {
   metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
 };
+
+/** Options for operation TemplateResult resolution — receives full metadata pipeline context. */
+export type OperationTemplateMetadataOptions = {
+  metadata?:
+    | unknown
+    | ((context: {
+        $: Readonly<Record<string, unknown>>;
+        document: import("graphql").DocumentNode;
+        fragmentMetadata: unknown;
+        schemaLevel: unknown;
+      }) => unknown | Promise<unknown>);
+};
+
+/** @deprecated Use `FragmentTemplateMetadataOptions` or `OperationTemplateMetadataOptions` instead. */
+export type TemplateResultMetadataOptions = FragmentTemplateMetadataOptions;
+
+/** Callable result from tagged template - resolves to Operation or Fragment. */
+export type TemplateResult<
+  TElement extends AnyOperationOf<OperationType> | AnyFragment,
+  TOptions = TElement extends AnyOperationOf<OperationType>
+    ? OperationTemplateMetadataOptions
+    : FragmentTemplateMetadataOptions,
+> = (options?: TOptions) => TElement;
 
 /** Tagged template function type for operations. */
 export type OperationTaggedTemplateFunction<TOperationType extends OperationType = OperationType> = (
@@ -132,7 +150,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       // Determine root type name based on operation type
       const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
-      return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
+      return (options?: OperationTemplateMetadataOptions): AnyOperationOf<TOperationType> => {
         // When there are no interpolations, use the parsed AST directly
         if (interpolationMap.size === 0) {
           return Operation.create(() => ({

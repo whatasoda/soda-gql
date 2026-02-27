@@ -18,7 +18,7 @@ import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
-import type { TemplateResult, TemplateResultMetadataOptions } from "./operation-tagged-template";
+import type { FragmentTemplateMetadataOptions, TemplateResult } from "./operation-tagged-template";
 
 /** Tagged template function type for fragments. */
 export type FragmentTaggedTemplateFunction = (
@@ -364,7 +364,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
         throw new Error("Unexpected definition kind");
       }
 
-      return (options?: TemplateResultMetadataOptions): AnyFragment => {
+      return (options?: FragmentTemplateMetadataOptions): AnyFragment => {
         return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
           typename: onType,
           key: fragmentName,

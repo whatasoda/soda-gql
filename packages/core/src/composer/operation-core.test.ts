@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { print } from "graphql";
+import { parse as parseGraphql, print } from "graphql";
 import { basicTestSchema } from "../../test/fixtures";
 import type { OperationMetadata } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
@@ -388,6 +388,155 @@ describe("buildOperationArtifact", () => {
 
       const printed = print(artifact.document);
       expect(printed).toContain("subscription OnUserUpdated");
+    });
+  });
+
+  describe("pre-built document mode", () => {
+    const prebuiltDocument = parseGraphql('query GetUser($id: ID!) { user(id: $id) { id name } }');
+
+    it("uses provided document directly", () => {
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, unknown>;
+      expect(artifact.operationName).toBe("GetUser");
+      expect(artifact.variableNames).toEqual(["id"]);
+      const printed = print(artifact.document);
+      expect(printed).toContain("query GetUser");
+      expect(printed).toContain("$id: ID!");
+    });
+
+    it("defaults variableNames to empty array when prebuiltVariableNames not provided", () => {
+      const doc = parseGraphql('query GetUsers { user(id: "1") { id } }');
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUsers",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument: doc,
+        adapter: defaultMetadataAdapter,
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUsers", {}, any, unknown>;
+      expect(artifact.variableNames).toEqual([]);
+    });
+
+    it("returns undefined metadata on fast path", () => {
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, unknown>;
+      expect(artifact.metadata).toBeUndefined();
+    });
+
+    it("evaluates sync metadata builder with pre-built document", () => {
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+        metadata: ({ document }) => ({
+          custom: { docKind: document.kind },
+        }),
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, OperationMetadata>;
+      expect(artifact.metadata).toEqual({ custom: { docKind: "Document" } });
+    });
+
+    it("evaluates async metadata builder with pre-built document", async () => {
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+        metadata: async ({ document }) => ({
+          custom: { asyncDocKind: document.kind },
+        }),
+      });
+
+      expect(result).toBeInstanceOf(Promise);
+      const artifact = await result;
+      expect(artifact.metadata).toEqual({ custom: { asyncDocKind: "Document" } });
+    });
+
+    it("applies adapter-level transform with pre-built document", () => {
+      let adapterTransformCalled = false;
+
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+        adapterTransformDocument: ({ document, operationName }) => {
+          adapterTransformCalled = true;
+          expect(operationName).toBe("GetUser");
+          return document;
+        },
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      expect(adapterTransformCalled).toBe(true);
+    });
+
+    it("fragment usages are empty in pre-built mode", () => {
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        fieldsFactory: null as never,
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+        metadata: ({ fragmentMetadata }) => ({
+          custom: { fragmentCount: fragmentMetadata?.length ?? 0 },
+        }),
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, OperationMetadata>;
+      expect(artifact.metadata).toEqual({ custom: { fragmentCount: 0 } });
     });
   });
 });
