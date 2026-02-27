@@ -19,7 +19,7 @@ import type {
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-import { createVarRefs } from "./input";
+import { isPromiseLike } from "../utils/promise";
 
 import { buildOperationArtifact } from "./operation-core";
 
@@ -127,7 +127,7 @@ export const createExtendComposer = <
 
 /**
  * Builds an Operation from a TemplateCompatSpec by parsing the raw GraphQL source.
- * This bypasses buildOperationArtifact since we have a DocumentNode, not a fieldsBuilder.
+ * Delegates to buildOperationArtifact with pre-built document mode.
  */
 const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyMetadataAdapter>(
   schema: TSchema,
@@ -162,67 +162,31 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
 
   // 3. Build VarSpecifiers from variable definitions
   const schemaIndex = createSchemaIndexFromSchema(spec.schema);
-  const variables = buildVarSpecifiers(opDef.variableDefinitions ?? [], schemaIndex);
-  const variableNames = Object.keys(variables);
+  const varSpecifiers = buildVarSpecifiers(opDef.variableDefinitions ?? [], schemaIndex);
 
-  // 4. Create var refs for metadata builder (BuiltVarSpecifier is structurally compatible with VarSpecifier at runtime)
-  const $ = createVarRefs(variables as unknown as VariableDefinitions);
+  // 4. Determine root type name
+  const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
-  // 5. Handle metadata
-  const metadataBuilder = options?.metadata;
-  const operationTransformDocument = options?.transformDocument;
-
-  // Fast path: no metadata
-  if (!metadataBuilder && !adapterTransformDocument && !operationTransformDocument) {
-    return Operation.create(() => ({
+  // 5. Delegate to buildOperationArtifact with pre-built document mode
+  // biome-ignore lint/suspicious/noExplicitAny: Tagged template compat bypasses full type inference
+  return Operation.create((() => {
+    const artifact = buildOperationArtifact({
+      schema,
       operationType,
+      operationTypeName,
       operationName,
-      schemaLabel: schema.label,
-      variableNames,
-      documentSource: () => ({}) as never,
-      document: document as never,
-      metadata: undefined,
-      // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
-    })) as any;
-  }
-
-  // No fragment metadata for tagged template compat path
-  const aggregated = adapter.aggregateFragmentMetadata([]);
-
-  // Build operation metadata
-  const operationMetadata = metadataBuilder?.({
-    $,
-    document,
-    fragmentMetadata: aggregated,
-    schemaLevel: adapter.schemaLevel,
-    // biome-ignore lint/suspicious/noExplicitAny: Metadata builder generic params
-  } as any);
-
-  // Apply document transforms
-  let finalDocument = operationTransformDocument
-    ? operationTransformDocument({ document, metadata: operationMetadata } as never)
-    : document;
-
-  if (adapterTransformDocument) {
-    finalDocument = adapterTransformDocument({
-      document: finalDocument,
-      operationName,
-      operationType,
-      variableNames,
-      schemaLevel: adapter.schemaLevel,
-      fragmentMetadata: aggregated,
-      // biome-ignore lint/suspicious/noExplicitAny: Adapter transform generic params
-    } as any);
-  }
-
-  return Operation.create(() => ({
-    operationType,
-    operationName,
-    schemaLabel: schema.label,
-    variableNames,
-    documentSource: () => ({}) as never,
-    document: finalDocument as never,
-    metadata: operationMetadata,
-    // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
-  })) as any;
+      variables: varSpecifiers as unknown as VariableDefinitions,
+      fieldsFactory: null as never,
+      prebuiltDocument: document,
+      prebuiltVariableNames: Object.keys(varSpecifiers),
+      adapter,
+      metadata: options?.metadata,
+      transformDocument: options?.transformDocument,
+      adapterTransformDocument,
+    });
+    if (isPromiseLike(artifact)) {
+      return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
+    }
+    return { ...artifact, documentSource: () => ({}) as never };
+  }) as never) as any;
 };
