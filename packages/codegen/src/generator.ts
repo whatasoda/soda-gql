@@ -1263,8 +1263,8 @@ export const generatePrebuiltStub = (schemaNames: string[]): string => {
   const typeDeclarations = schemaNames
     .map(
       (name) => `export type PrebuiltTypes_${name} = {
-  readonly fragments: Record<string, never>;
-  readonly operations: Record<string, never>;
+  readonly fragments: {};
+  readonly operations: {};
 };`,
     )
     .join("\n\n");

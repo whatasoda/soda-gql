@@ -31,8 +31,8 @@ export type PrebuiltTypeRegistry = {
  * Empty registry type for when no prebuilt types are available.
  */
 export type EmptyPrebuiltTypeRegistry = {
-  readonly fragments: Record<string, never>;
-  readonly operations: Record<string, never>;
+  readonly fragments: {};
+  readonly operations: {};
 };
 
 /**
