@@ -1,7 +1,7 @@
 import type { InferExecutionResultProjection, NormalizedError } from "@soda-gql/colocation-tools";
 import type { taskListProjection } from "./fragment";
 
-type Task = { id: string; title: string; completed: boolean; priority: string };
+type Task = { id: string; title: string; completed: boolean; priority: string | null | undefined };
 
 type Props = {
   result: InferExecutionResultProjection<typeof taskListProjection>;

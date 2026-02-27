@@ -158,8 +158,9 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const templateSelections = convertTemplatesToSelections(scanResult.templates, schemas);
 
   // Merge builder and template selections into a combined map.
-  // Template selections are authoritative: when both the builder and template scanner
-  // find elements in the same file, prefer the template selection to avoid duplicates.
+  // Template selections are authoritative for elements found by both scanners.
+  // Deduplication is per-element (file + GraphQL name), not per-file, so that
+  // callback-builder operations in files that also contain tagged templates are preserved.
   // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
   // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
   const extractFilePart = (id: string): string => {
@@ -171,14 +172,21 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return filePart;
   };
 
-  const templateFiles = new Set<string>();
-  for (const id of templateSelections.selections.keys()) {
-    templateFiles.add(extractFilePart(id));
+  const extractElementName = (data: FieldSelectionData): string | undefined =>
+    data.type === "fragment" ? data.key : data.operationName;
+
+  // Build set of (file, elementName) pairs from template selections
+  const templateElements = new Set<string>();
+  for (const [id, data] of templateSelections.selections) {
+    const name = extractElementName(data);
+    if (name) templateElements.add(`${extractFilePart(id)}::${name}`);
   }
 
   const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
   for (const [id, data] of builderSelections) {
-    if (templateFiles.has(extractFilePart(id))) continue; // template scanner wins
+    // Only skip builder elements that were also found by the template scanner
+    const name = extractElementName(data);
+    if (name && templateElements.has(`${extractFilePart(id)}::${name}`)) continue;
     fieldSelections.set(id, data);
   }
   for (const [id, data] of templateSelections.selections) {

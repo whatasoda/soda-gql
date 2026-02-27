@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "noUncheckedIndexedAccess": false,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro/tsconfig.tsbuildinfo",

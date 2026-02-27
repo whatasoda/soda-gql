@@ -323,7 +323,7 @@ const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName
       formatters,
     });
 
-    lines.push(`type Input_${schemaName}_${inputName} = ${typeString};`);
+    lines.push(`export type Input_${schemaName}_${inputName} = ${typeString};`);
   }
 
   return lines;

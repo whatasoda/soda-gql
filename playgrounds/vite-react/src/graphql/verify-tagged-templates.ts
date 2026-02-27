@@ -1212,6 +1212,7 @@ function verifyErrorCases(): VerificationResult[] {
       }`(),
     );
     // Field validation happens inside spread() — trigger it
+    // @ts-expect-error — BadFieldFragment has invalid fields so type resolution fails
     badFrag.spread();
     results.push({
       name: "errorCase:unknownField",

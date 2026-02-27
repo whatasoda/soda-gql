@@ -1307,7 +1307,7 @@ type ResolveFragmentAtBuilder_${name}<TKey extends string> =
         PrebuiltTypes_${name}["fragments"][TKey]["typename"],
         PrebuiltTypes_${name}["fragments"][TKey]["input"] extends void
           ? void
-          : Partial<PrebuiltTypes_${name}["fragments"][TKey]["input"] & object>,
+          : Partial<PrebuiltTypes_${name}["fragments"][TKey]["input"] & AnyConstAssignableInput>,
         Partial<AnyFields>,
         PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
       >
@@ -1342,31 +1342,31 @@ type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <T
 ) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
 
 type GenericFieldFactory_${name} = Record<string, (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>)>;
-type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, unknown>> };
+type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
 
 type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
-  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: unknown },
+  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: (tools: { readonly $: Readonly<Record<string, never>>; readonly fragmentMetadata: unknown[] | undefined }) => Record<string, unknown> },
 ) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
 
 export type PrebuiltContext_${name} = {
   readonly fragment: PrebuiltCurriedFragment_${name};
   readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
     readonly operation: PrebuiltCallbackOperation_${name}<"query">;
-    readonly compat: (...args: unknown[]) => unknown;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly mutation: PrebuiltCurriedOperation_${name}<"mutation"> & {
     readonly operation: PrebuiltCallbackOperation_${name}<"mutation">;
-    readonly compat: (...args: unknown[]) => unknown;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly subscription: PrebuiltCurriedOperation_${name}<"subscription"> & {
     readonly operation: PrebuiltCallbackOperation_${name}<"subscription">;
-    readonly compat: (...args: unknown[]) => unknown;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly extend: (...args: unknown[]) => AnyOperation;
   readonly $var: VarBuilder<Schema_${name}>;
   readonly $dir: typeof __directiveMethods_${name};
-  readonly $colocate: unknown;
+  readonly $colocate: <T extends Record<string, unknown>>(projections: T) => T;
 };
 
 type GqlComposer_${name} = {

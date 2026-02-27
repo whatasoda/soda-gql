@@ -297,7 +297,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       const missingStubs = generatePrebuiltStub(missingNames);
       // Extract only the type declarations (skip the header comment)
       const stubDeclarations = missingStubs.replace(/^\/\*\*[\s\S]*?\*\/\n\n/, "");
-      const updatedContent = existingContent.trimEnd() + "\n\n" + stubDeclarations;
+      const updatedContent = `${existingContent.trimEnd()}\n\n${stubDeclarations}`;
       const patchResult = writeModule(prebuiltStubPath, updatedContent);
       if (patchResult.isErr()) {
         return err(patchResult.error);
