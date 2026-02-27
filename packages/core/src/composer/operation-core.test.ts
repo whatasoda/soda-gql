@@ -392,7 +392,7 @@ describe("buildOperationArtifact", () => {
   });
 
   describe("pre-built document mode", () => {
-    const prebuiltDocument = parseGraphql('query GetUser($id: ID!) { user(id: $id) { id name } }');
+    const prebuiltDocument = parseGraphql("query GetUser($id: ID!) { user(id: $id) { id name } }");
 
     it("uses provided document directly", () => {
       const result = buildOperationArtifact({
@@ -408,7 +408,7 @@ describe("buildOperationArtifact", () => {
       });
 
       expect(result).not.toBeInstanceOf(Promise);
-      const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, unknown>;
+      const artifact = result as any;
       expect(artifact.operationName).toBe("GetUser");
       expect(artifact.variableNames).toEqual(["id"]);
       const printed = print(artifact.document);
@@ -491,7 +491,7 @@ describe("buildOperationArtifact", () => {
 
       expect(result).toBeInstanceOf(Promise);
       const artifact = await result;
-      expect(artifact.metadata).toEqual({ custom: { asyncDocKind: "Document" } });
+      expect((artifact as any).metadata).toEqual({ custom: { asyncDocKind: "Document" } });
     });
 
     it("applies adapter-level transform with pre-built document", () => {

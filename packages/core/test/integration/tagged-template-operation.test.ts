@@ -169,7 +169,7 @@ describe("tagged template operation integration", () => {
   });
 
   describe("metadata", () => {
-    it("handles metadata chaining", () => {
+    it("handles static metadata", () => {
       const GetUser = gql(({ query }) =>
         query("GetUser")`{ user(id: "1") { id } }`({
           metadata: { headers: { "X-Test": "value" } },
@@ -181,6 +181,55 @@ describe("tagged template operation integration", () => {
     it("metadata is undefined when not provided", () => {
       const GetUser = gql(({ query }) => query("GetUser")`{ user(id: "1") { id } }`());
       expect(GetUser.metadata).toBeUndefined();
+    });
+
+    it("metadata callback receives variable refs via $", () => {
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`($id: ID!) { user(id: $id) { id } }`({
+          metadata: ({ $ }: { $: Record<string, unknown> }) => ({
+            hasIdVar: $.id !== undefined,
+          }),
+        }),
+      );
+
+      expect(GetUser.metadata).toEqual({ hasIdVar: true });
+    });
+
+    it("metadata callback receives document context", () => {
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id } }`({
+          metadata: ({ document }: { document: { kind: string } }) => ({
+            docKind: document.kind,
+          }),
+        }),
+      );
+
+      expect(GetUser.metadata).toEqual({ docKind: "Document" });
+    });
+
+    it("metadata callback with interpolated fragment spread aggregates fragment metadata", () => {
+      // Fragment with metadata callback
+      const userFields = gql(({ fragment }) =>
+        fragment("UserMetaFields", "User")`{ id name }`({
+          metadata: { source: "user-fragment" },
+        }),
+      );
+
+      // Operation with metadata callback that accesses fragmentMetadata
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            ...${userFields}
+          }
+        }`({
+          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      // Fragment metadata is aggregated via the metadata pipeline
+      expect(GetUser.metadata).toEqual({ fragmentCount: 1 });
     });
   });
 

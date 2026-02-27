@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
+import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createOperationTaggedTemplate } from "./operation-tagged-template";
 
@@ -103,7 +104,7 @@ describe("createOperationTaggedTemplate", () => {
   describe("metadata", () => {
     const query = createOperationTaggedTemplate(schema, "query");
 
-    it("passes metadata through when provided", () => {
+    it("passes static metadata through when provided", () => {
       const result = query("GetUser")`{ user(id: "1") { id } }`({
         metadata: { headers: { "X-Test": "1" } },
       });
@@ -113,6 +114,65 @@ describe("createOperationTaggedTemplate", () => {
     it("metadata is undefined when not provided", () => {
       const result = query("GetUser")`{ user(id: "1") { id } }`();
       expect(result.metadata).toBeUndefined();
+    });
+
+    it("metadata callback receives { $ } context", () => {
+      const queryWithAdapter = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter);
+      let receivedContext: Record<string, unknown> | undefined;
+
+      const result = queryWithAdapter("GetUser")`($id: ID!) { user(id: $id) { id } }`({
+        metadata: ({ $ }: { $: Record<string, unknown> }) => {
+          receivedContext = $;
+          return { hasVarRef: $.id !== undefined };
+        },
+      });
+
+      expect(result.metadata).toEqual({ hasVarRef: true });
+      expect(receivedContext).toBeDefined();
+      expect(receivedContext).toHaveProperty("id");
+    });
+
+    it("metadata callback receives { document } context", () => {
+      const queryWithAdapter = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter);
+      let receivedDocKind: string | undefined;
+
+      const result = queryWithAdapter("GetUser")`{ user(id: "1") { id } }`({
+        metadata: ({ document }: { document: { kind: string } }) => {
+          receivedDocKind = document.kind;
+          return { docKind: document.kind };
+        },
+      });
+
+      // Access metadata to trigger lazy evaluation
+      expect(result.metadata).toEqual({ docKind: "Document" });
+      expect(receivedDocKind).toBe("Document");
+    });
+
+    it("metadata callback receives { fragmentMetadata } context", () => {
+      const queryWithAdapter = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter);
+
+      const result = queryWithAdapter("GetUser")`{ user(id: "1") { id } }`({
+        metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+          fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+        }),
+      });
+
+      // No interpolated fragments, so fragmentMetadata is empty array
+      expect(result.metadata).toEqual({ fragmentCount: 0 });
+    });
+
+    it("adapter adapterTransformDocument is applied", () => {
+      let transformCalled = false;
+      const queryWithTransform = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter, ({ document }) => {
+        transformCalled = true;
+        return document;
+      });
+
+      const result = queryWithTransform("GetUser")`{ user(id: "1") { id } }`({});
+
+      // Accessing document triggers lazy evaluation including transforms
+      expect(result.document).toBeDefined();
+      expect(transformCalled).toBe(true);
     });
   });
 });

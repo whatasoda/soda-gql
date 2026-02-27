@@ -153,7 +153,7 @@ describe("metadata adapter", () => {
         inputTypeMethods,
       });
 
-      // Fragment without metadata (not supported in tagged templates yet)
+      // Fragment without metadata options (metadata requires explicit options at definition time)
       const userFragment = gql(({ fragment }) => fragment("UserCustomMetaFields", "User")`{ id name }`());
 
       const operation = gql(({ query, $var }) =>
@@ -191,7 +191,7 @@ describe("metadata adapter", () => {
         inputTypeMethods,
       });
 
-      // Fragment without metadata (not supported in tagged templates yet)
+      // Fragment without metadata options (metadata requires explicit options at definition time)
       const userFragment = gql(({ fragment }) => fragment("UserCapturingFields", "User")`{ id }`());
 
       const operation = gql(({ query, $var }) =>
@@ -217,7 +217,7 @@ describe("metadata adapter", () => {
         inputTypeMethods,
       });
 
-      // Fragments without metadata (not supported in tagged templates yet)
+      // Fragments without metadata options (metadata requires explicit options at definition time)
       const userFragment = gql(({ fragment }) => fragment("UserAggregateFields", "User")`{ id }`());
 
       const postFragment = gql(({ fragment }) => fragment("PostAggregateFields", "Post")`{ id title }`());
@@ -240,7 +240,7 @@ describe("metadata adapter", () => {
         }),
       );
 
-      // No fragment headers (metadata not supported in tagged templates yet)
+      // No fragment headers (metadata requires explicit options at definition time)
       expect(operation.metadata).toEqual({
         allHeaders: {},
       });

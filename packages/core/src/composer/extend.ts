@@ -168,7 +168,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
   // 5. Delegate to buildOperationArtifact with pre-built document mode
-  // biome-ignore lint/suspicious/noExplicitAny: Tagged template compat bypasses full type inference
   return Operation.create((() => {
     const artifact = buildOperationArtifact({
       schema,
@@ -188,5 +187,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
       return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
     }
     return { ...artifact, documentSource: () => ({}) as never };
+    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
   }) as never) as any;
 };

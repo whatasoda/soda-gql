@@ -42,9 +42,7 @@ export type TemplateResultMetadataOptions = FragmentTemplateMetadataOptions;
 /** Callable result from tagged template - resolves to Operation or Fragment. */
 export type TemplateResult<
   TElement extends AnyOperationOf<OperationType> | AnyFragment,
-  TOptions = TElement extends AnyOperationOf<OperationType>
-    ? OperationTemplateMetadataOptions
-    : FragmentTemplateMetadataOptions,
+  TOptions = TElement extends AnyOperationOf<OperationType> ? OperationTemplateMetadataOptions : FragmentTemplateMetadataOptions,
 > = (options?: TOptions) => TElement;
 
 /** Tagged template function type for operations. */
@@ -174,7 +172,6 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
 
         if (interpolationMap.size === 0) {
           // No interpolations: use pre-built document mode
-          // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
           return Operation.create((() => {
             const artifact = buildOperationArtifact({
               schema,
@@ -193,11 +190,11 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
               return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
             }
             return { ...artifact, documentSource: () => ({}) as never };
+            // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
           }) as never) as any;
         }
 
         // Interpolations present: use fieldsFactory mode for fragment usage tracking
-        // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
         return Operation.create((() => {
           const artifact = buildOperationArtifact({
             schema,
@@ -223,6 +220,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
             return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
           }
           return artifact;
+          // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with fieldsFactory mode
         }) as never) as any;
       };
     };
