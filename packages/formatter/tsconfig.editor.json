@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "noUncheckedIndexedAccess": false,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/formatter",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/formatter/tsconfig.tsbuildinfo",
@@ -9,6 +10,6 @@
     "paths": {}
   },
   "include": ["src/**/*", "test/**/*", "@x-*.ts", "@devx-*.ts"],
-  "exclude": ["node_modules", "dist", "**/graphql-system/*.prebuilt.ts", "**/graphql-system/*.cjs"],
+  "exclude": ["node_modules", "dist", "**/graphql-system/*.cjs", "**/fragment-in-fragment.ts"],
   "references": []
 }

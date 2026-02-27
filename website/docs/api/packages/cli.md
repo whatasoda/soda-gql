@@ -28,7 +28,6 @@ bun run soda-gql codegen
 |--------|-------------|
 | `--config <path>` | Path to config file (default: `soda-gql.config.ts`) |
 | `--emit-inject-template <path>` | Generate scalar/adapter template file |
-| `--prebuilt` | Generate prebuilt types module alongside regular output |
 
 #### Subcommand: `codegen graphql`
 

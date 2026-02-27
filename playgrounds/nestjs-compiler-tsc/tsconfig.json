@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": false,
     "types": ["node"],
     "paths": {
-      "@/graphql-system": ["./fixture-catalog/graphql-system"]
+      "@/graphql-system": ["./src/graphql-system"]
     }
   },
   "include": ["src/**/*"],

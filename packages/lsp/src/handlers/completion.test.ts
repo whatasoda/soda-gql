@@ -114,7 +114,7 @@ describe("handleCompletion", () => {
 
   test("returns argument suggestions inside field arguments", () => {
     // Cursor after "user(" — should suggest `id` argument
-    const content = 'query { user( ) { id } }';
+    const content = "query { user( ) { id } }";
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

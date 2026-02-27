@@ -9,12 +9,7 @@ import type { BuilderError } from "@soda-gql/builder";
 /**
  * Error codes specific to typegen operations.
  */
-export type TypegenErrorCode =
-  | "TYPEGEN_CODEGEN_REQUIRED"
-  | "TYPEGEN_SCHEMA_LOAD_FAILED"
-  | "TYPEGEN_BUILD_FAILED"
-  | "TYPEGEN_EMIT_FAILED"
-  | "TYPEGEN_BUNDLE_FAILED";
+export type TypegenErrorCode = "TYPEGEN_CODEGEN_REQUIRED" | "TYPEGEN_SCHEMA_LOAD_FAILED" | "TYPEGEN_BUILD_FAILED";
 
 /**
  * Typegen-specific error type.
@@ -34,18 +29,6 @@ export type TypegenSpecificError =
   | {
       readonly code: "TYPEGEN_BUILD_FAILED";
       readonly message: string;
-      readonly cause?: unknown;
-    }
-  | {
-      readonly code: "TYPEGEN_EMIT_FAILED";
-      readonly message: string;
-      readonly path: string;
-      readonly cause?: unknown;
-    }
-  | {
-      readonly code: "TYPEGEN_BUNDLE_FAILED";
-      readonly message: string;
-      readonly path: string;
       readonly cause?: unknown;
     };
 
@@ -76,20 +59,6 @@ export const typegenErrors = {
     message,
     cause,
   }),
-
-  emitFailed: (path: string, message: string, cause?: unknown): TypegenSpecificError => ({
-    code: "TYPEGEN_EMIT_FAILED",
-    message,
-    path,
-    cause,
-  }),
-
-  bundleFailed: (path: string, message: string, cause?: unknown): TypegenSpecificError => ({
-    code: "TYPEGEN_BUNDLE_FAILED",
-    message,
-    path,
-    cause,
-  }),
 } as const;
 
 /**
@@ -107,10 +76,6 @@ export const formatTypegenError = (error: TypegenError): string => {
       break;
     case "TYPEGEN_SCHEMA_LOAD_FAILED":
       lines.push(`  Schemas: ${error.schemaNames.join(", ")}`);
-      break;
-    case "TYPEGEN_EMIT_FAILED":
-    case "TYPEGEN_BUNDLE_FAILED":
-      lines.push(`  Path: ${error.path}`);
       break;
   }
 

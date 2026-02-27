@@ -129,7 +129,7 @@ describe("soda-gql codegen CLI", () => {
       const internalExists = await Bun.file(internalFile).exists();
       expect(internalExists).toBe(true);
       const internalContents = await Bun.file(internalFile).text();
-      expect(internalContents).toContain("export const gql");
+      expect(internalContents).toContain("export { gql_default as __gql_default }");
       // Scalar import should come from _internal-injects.ts
       expect(internalContents).toContain('import { scalar_default } from "./_internal-injects"');
 

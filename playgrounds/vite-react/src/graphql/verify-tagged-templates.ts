@@ -1212,6 +1212,7 @@ function verifyErrorCases(): VerificationResult[] {
       }`(),
     );
     // Field validation happens inside spread() — trigger it
+    // @ts-expect-error — BadFieldFragment has invalid fields so type resolution fails
     badFrag.spread();
     results.push({
       name: "errorCase:unknownField",
@@ -1405,21 +1406,23 @@ function verifyNoOrphanedExpected(): VerificationResult[] {
 // Main
 // ---------------------------------------------------------------------------
 
-const aiEval = process.argv.includes("--ai-eval");
+if (import.meta.main) {
+  const aiEval = process.argv.includes("--ai-eval");
 
-const operationResults = verifyOperations();
-const fragmentResults = verifyFragments();
-const mergingResults = verifyVariableMerging();
-const errorResults = verifyErrorCases();
-const orphanResults = verifyNoOrphanedExpected();
-const allResults = [...operationResults, ...fragmentResults, ...mergingResults, ...errorResults, ...orphanResults];
+  const operationResults = verifyOperations();
+  const fragmentResults = verifyFragments();
+  const mergingResults = verifyVariableMerging();
+  const errorResults = verifyErrorCases();
+  const orphanResults = verifyNoOrphanedExpected();
+  const allResults = [...operationResults, ...fragmentResults, ...mergingResults, ...errorResults, ...orphanResults];
 
-const success = report(allResults);
+  const success = report(allResults);
 
-if (aiEval) {
-  await runAiEvaluation();
-}
+  if (aiEval) {
+    await runAiEvaluation();
+  }
 
-if (!success) {
-  process.exit(1);
+  if (!success) {
+    process.exit(1);
+  }
 }

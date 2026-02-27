@@ -247,8 +247,8 @@ export const createBuilderSession = (options: {
     { type: "skip"; artifact: BuilderArtifact } | { type: "build"; input: BuildGenInput; currentScan: FileScan },
     BuilderError
   > => {
-    // 1. Resolve entry paths
-    const entryPathsResult = resolveEntryPaths(Array.from(entrypoints));
+    // 1. Resolve entry paths (apply config.exclude as negation globs)
+    const entryPathsResult = resolveEntryPaths(Array.from(entrypoints), config.exclude);
     if (entryPathsResult.isErr()) {
       return err(entryPathsResult.error);
     }

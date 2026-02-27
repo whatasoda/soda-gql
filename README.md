@@ -261,7 +261,7 @@ When bundling with tools like tsdown, rollup-plugin-dts, or other bundlers that 
 
 #### Enabling Prebuilt Types
 
-Generate prebuilt module alongside the regular output:
+Generate the prebuilt type registry alongside the regular output:
 
 ```bash
 # First generate the GraphQL system
@@ -271,15 +271,16 @@ bun run soda-gql codegen schema
 bun run soda-gql typegen
 ```
 
-This creates additional files in your output directory:
+This produces the following output structure:
 
 ```
 {config.outdir}/
-├── index.ts           # Regular module with full type inference
-└── prebuilt/
-    ├── index.ts       # Prebuilt module using type registry
-    └── types.ts       # Type definitions for fragments/operations
+├── _internal.ts       # Schema composers and internal definitions
+├── index.ts           # Main module with prebuilt type resolution
+└── types.prebuilt.ts  # Pre-calculated type registry (populated by typegen)
 ```
+
+The `index.ts` module automatically references the `types.prebuilt.ts` registry — no path aliases or import changes needed.
 
 #### Using Fragment Keys
 
@@ -297,44 +298,7 @@ export const userFragment = gql.default(({ fragment }) =>
 
 Operations are automatically keyed by their `name` property.
 
-#### Bundler Configuration
-
-Configure your bundler to use the prebuilt module via path aliases. Replace `<outdir>` with your codegen output directory (e.g., `./src/graphql-system`):
-
-**tsdown / tsconfig.json:**
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "<outdir>": ["<outdir>/prebuilt"]
-    }
-  }
-}
-```
-
-**Vite:**
-```typescript
-export default {
-  resolve: {
-    alias: {
-      "<outdir>": "<outdir>/prebuilt"
-    }
-  }
-}
-```
-
-**Webpack:**
-```typescript
-module.exports = {
-  resolve: {
-    alias: {
-      "<outdir>": "<outdir>/prebuilt"
-    }
-  }
-}
-```
-
-The same source code works in both modes - type inference happens at development time (regular mode), while bundled output uses prebuilt types.
+For detailed documentation, see [Prebuilt Types Guide](./website/docs/guide/prebuilt-types.md).
 
 ### For Contributors
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { type DocumentNode, type FragmentDefinitionNode, buildASTSchema, parse } from "graphql";
+import { buildASTSchema, type DocumentNode, type FragmentDefinitionNode, parse } from "graphql";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
 import { handleDefinition } from "./definition";

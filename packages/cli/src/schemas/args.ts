@@ -35,7 +35,6 @@ export const InitArgsSchema = z.object({
 export const TypegenArgsSchema = z.object({
   config: z.string().optional(),
   watch: z.boolean().optional(),
-  bundle: z.boolean().optional(),
 });
 
 /**

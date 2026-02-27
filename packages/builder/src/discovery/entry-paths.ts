@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { normalize, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 
+import picomatch from "picomatch";
+
 import type { BuilderError } from "../types";
 import { scanGlob } from "../utils/glob";
 
@@ -12,8 +14,9 @@ import { scanGlob } from "../utils/glob";
  * Uses Node.js normalize() + backslash replacement to match normalizePath from @soda-gql/common.
  *
  * @param entries - Include patterns (glob or direct paths). Supports negation patterns (e.g., "!./path/to/exclude.ts")
+ * @param exclude - Exclude patterns from config.exclude. Converted to negation globs for filtering.
  */
-export const resolveEntryPaths = (entries: readonly string[]) => {
+export const resolveEntryPaths = (entries: readonly string[], exclude: readonly string[] = []) => {
   // Separate direct file paths from glob patterns
   const directPaths: string[] = [];
   const globPatterns: string[] = [];
@@ -33,6 +36,23 @@ export const resolveEntryPaths = (entries: readonly string[]) => {
       // Treat as glob pattern
       globPatterns.push(entry);
     }
+  }
+
+  // Filter direct paths against exclude patterns (both literal and glob)
+  if (exclude.length > 0 && directPaths.length > 0) {
+    const excludePatterns = exclude.map((p) => {
+      const raw = p.startsWith("!") ? p.slice(1) : p;
+      return normalize(resolve(raw)).replace(/\\/g, "/");
+    });
+    const isExcluded = picomatch(excludePatterns);
+    const filtered = directPaths.filter((p) => !isExcluded(p));
+    directPaths.length = 0;
+    directPaths.push(...filtered);
+  }
+
+  // Append exclude patterns as negation globs
+  for (const pattern of exclude) {
+    globPatterns.push(pattern.startsWith("!") ? pattern : `!${pattern}`);
   }
 
   // Scan all glob patterns together (important for negation patterns to work)

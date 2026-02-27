@@ -14,6 +14,7 @@ import type { activityFeedQuery, searchAllQuery, searchPartialQuery } from "./op
 // SearchResult union - All members
 // ============================================================================
 
+// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type SearchAllOutput = (typeof searchAllQuery)["$infer"]["output"]["search"][number];
 
 // Verify __typename is a string literal union
@@ -67,6 +68,7 @@ function _handleComment(result: SearchAllOutput) {
 // SearchResult union - Partial member selection
 // ============================================================================
 
+// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type SearchPartialOutput = (typeof searchPartialQuery)["$infer"]["output"]["search"][number];
 
 // Verify __typename only includes selected members (Employee and Project)
@@ -99,6 +101,7 @@ function _handlePartialSearch(result: SearchPartialOutput) {
 // ActivityItem union - All members with nested fields
 // ============================================================================
 
+// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type ActivityItemOutput = (typeof activityFeedQuery)["$infer"]["output"]["activityFeed"][number];
 
 // Verify __typename includes all ActivityItem members

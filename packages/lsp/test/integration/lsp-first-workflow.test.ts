@@ -111,7 +111,6 @@ export const userFragment = gql.default(({ fragment }) =>
     expect(hoverResult).not.toBeNull();
     // Hover contents can be MarkupContent, MarkedString, or MarkedString[]
     // For this test, we just verify hover is available (detailed content tested in unit tests)
-
   });
 
   test("tagged template operations work without typegen", () => {
@@ -369,7 +368,6 @@ export const getUserQuery = gql.default(({ query }) =>
         tsPosition: hoverTsPosition,
       });
       expect(hoverResult).not.toBeNull();
-
     }
   });
 });

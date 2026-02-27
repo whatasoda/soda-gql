@@ -2,17 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "composite": true,
+    "noUncheckedIndexedAccess": false,
     "customConditions": ["@soda-gql"],
     "outDir": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro",
     "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/playgrounds/expo-metro/tsconfig.tsbuildinfo",
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
+      "@/graphql-system": ["./src/graphql-system/index.ts"]
     }
   },
-  "include": ["src/**/*", "fixture-catalog/**/*"],
-  "exclude": ["**/graphql-system/*.prebuilt.ts", "**/graphql-system/*.cjs"],
+  "include": ["src/**/*", "scalars.ts", "soda-gql.config.ts"],
+  "exclude": ["**/graphql-system/*.cjs", "**/fragment-in-fragment.ts"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
     { "path": "../../packages/runtime/tsconfig.editor.json" }

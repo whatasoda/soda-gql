@@ -22,7 +22,6 @@ describe("fixture-catalog typegen integration", () => {
   test("graphql-system directory exists and contains required files", () => {
     expect(existsSync(graphqlSystemDir)).toBe(true);
     expect(existsSync(join(graphqlSystemDir, "index.ts"))).toBe(true);
-    expect(existsSync(join(graphqlSystemDir, "index.prebuilt.ts"))).toBe(true);
     expect(existsSync(join(graphqlSystemDir, "types.prebuilt.ts"))).toBe(true);
   });
 

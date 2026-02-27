@@ -186,9 +186,8 @@ describe("typegen key inference E2E", () => {
     });
 
     // This test verifies that prebuilt type inference works correctly.
-    // The prebuilt-generator now generates minimal Context types that preserve
+    // Codegen generates PrebuiltContext types in index.ts that preserve
     // TKey for fragments and TOperationName for operations.
-    // TODO: Update prebuilt-generator to emit tagged template types for fragment/query context
     test.skip(
       "prebuilt module compiles with correct type resolution",
       async () => {
@@ -198,7 +197,7 @@ describe("typegen key inference E2E", () => {
         // Create a type-check file in src directory (covered by tsconfig.json)
         const typeCheckFile = join(workspace.workspaceRoot, "src", "type-check.ts");
         const typeCheckContent = `
-import { gql, type PrebuiltContext_default } from "../graphql-system/index.prebuilt";
+import { gql, type PrebuiltContext_default } from "../graphql-system";
 
 // Test 1: Fragment with key should resolve to prebuilt types
 const userFragment = gql.default(({ fragment }) =>
