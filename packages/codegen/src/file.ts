@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { err, ok } from "neverthrow";
 
@@ -13,6 +13,21 @@ export const removeDirectory = (dirPath: string) => {
     const message = error instanceof Error ? error.message : String(error);
     return err<void, CodegenError>({
       code: "REMOVE_FAILED",
+      message,
+      outPath: targetPath,
+    });
+  }
+};
+
+export const readModule = (filePath: string) => {
+  const targetPath = resolve(filePath);
+  try {
+    const content = readFileSync(targetPath, "utf-8");
+    return ok<string, CodegenError>(content);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return err<string, CodegenError>({
+      code: "READ_FAILED",
       message,
       outPath: targetPath,
     });

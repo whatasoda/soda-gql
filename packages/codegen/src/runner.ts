@@ -1,10 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
-import { removeDirectory, writeModule } from "./file";
+import { readModule, removeDirectory, writeModule } from "./file";
 import { generateIndexModule, generateMultiSchemaModule, generatePrebuiltStub } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
@@ -286,7 +286,11 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
     }
   } else {
     // File exists: check for missing schema stubs and append
-    const existingContent = readFileSync(prebuiltStubPath, "utf-8");
+    const readResult = readModule(prebuiltStubPath);
+    if (readResult.isErr()) {
+      return err(readResult.error);
+    }
+    const existingContent = readResult.value;
     const existingNames = new Set<string>();
     for (const match of existingContent.matchAll(/export type PrebuiltTypes_(\w+)/g)) {
       const name = match[1];
