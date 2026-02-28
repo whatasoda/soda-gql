@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# @swc/core is resolved from the user's workspace node_modules at runtime via NODE_PATH.
+# @swc/core is resolved from each soda-gql.config.ts location at runtime via createRequire.
 # No platform-specific binaries need to be bundled in the VSIX.
 
 # Remove stale node_modules from dist (defense-in-depth; .vscodeignore also excludes)

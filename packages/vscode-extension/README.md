@@ -36,10 +36,12 @@ cursor --install-extension soda-gql.vsix
 
 ## Getting Started
 
-1. Ensure your project has a `soda-gql.config.ts` at the workspace root
+1. Ensure your project has a `soda-gql.config.ts` (at the workspace root or in a nested package for monorepos)
 2. Install the extension
 3. Open a TypeScript file containing soda-gql tagged templates
 4. The LSP server starts automatically and provides diagnostics, completions, and hover
+
+> **Note:** The extension requires workspace trust for LSP features. In untrusted workspaces, only syntax highlighting is available.
 
 ## Supported Syntax
 

@@ -56,6 +56,9 @@ export const activate = (context: vscode.ExtensionContext): void => {
   if (vscode.workspace.isTrusted) {
     startClient();
   } else {
+    vscode.window.showInformationMessage(
+      "soda-gql: Workspace trust is required for LSP features. Syntax highlighting is still available.",
+    );
     context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => startClient()));
   }
 };
