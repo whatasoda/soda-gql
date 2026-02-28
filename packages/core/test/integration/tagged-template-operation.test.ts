@@ -345,12 +345,16 @@ describe("tagged template operation integration", () => {
       );
 
       const cbOp = gql(({ query }) =>
-        query("GetUser")`{
-          user(id: "1") {
-            ...${cbFragFields}
-          }
-        }`({
-          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+              ...cbFragFields.spread(),
+            })),
+          }),
+          metadata: ({ fragmentMetadata }) => ({
             fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
           }),
         }),
@@ -369,6 +373,31 @@ describe("tagged template operation integration", () => {
       );
 
       expect(cbOp.metadata).toEqual(ttOp.metadata);
+    });
+
+    it("union selection produces identical documents between callback-builder and tagged-template", () => {
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "Search",
+          fields: ({ f }) => ({
+            ...f.search()({
+              Article: ({ f }) => ({ ...f.id(), ...f.title() }),
+              Video: ({ f }) => ({ ...f.id(), ...f.duration() }),
+            }),
+          }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(print(cbOp.document)).toEqual(print(ttOp.document));
     });
   });
 
@@ -665,6 +694,42 @@ describe("tagged template operation integration", () => {
       expect(printed).toContain("... on Article");
       expect(printed).toContain("... on Video");
       expect(printed).toContain("name");
+    });
+
+    it("rejects inline fragment with non-member type (interpolation path)", () => {
+      expect(() => {
+        const videoFields = gql(({ fragment }) =>
+          fragment("VideoFields", "Video")`{ id duration }`(),
+        );
+
+        const op = gql(({ query }) =>
+          query("Search")`{
+            search {
+              ... on User { id }
+              ... on Video { ...${videoFields} }
+            }
+          }`(),
+        );
+        void op.document;
+      }).toThrow('not a member of union "SearchResult"');
+    });
+
+    it("rejects unknown field in union member (interpolation path)", () => {
+      expect(() => {
+        const videoFields = gql(({ fragment }) =>
+          fragment("VideoFields", "Video")`{ id duration }`(),
+        );
+
+        const op = gql(({ query }) =>
+          query("Search")`{
+            search {
+              ... on Article { id nonExistentField }
+              ... on Video { ...${videoFields} }
+            }
+          }`(),
+        );
+        void op.document;
+      }).toThrow();
     });
 
     it("preserves variable arguments in interpolation path", () => {
