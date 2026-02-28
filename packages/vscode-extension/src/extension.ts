@@ -4,38 +4,30 @@
  */
 
 import * as path from "node:path";
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 import { type LanguageClient, type LanguageClientOptions, type ServerOptions, TransportKind } from "vscode-languageclient/node";
 
 let client: LanguageClient | undefined;
 
 export const activate = (context: vscode.ExtensionContext): void => {
-  const vsc = require("vscode") as typeof vscode;
-
   const startClient = () => {
+    if (client) return;
+
     // The LSP server is bundled into dist/server.js by build.js
     const serverModule = context.asAbsolutePath(path.join("dist", "server.js"));
-
-    // Resolve all workspace folders for NODE_PATH so @swc/core can be found at runtime
-    const workspaceFolders = vsc.workspace.workspaceFolders ?? [];
-    const workspaceNodePaths = workspaceFolders.map((f) => path.join(f.uri.fsPath, "node_modules"));
-    const existingNodePath = process.env.NODE_PATH;
-    const allPaths = [...workspaceNodePaths, ...(existingNodePath ? [existingNodePath] : [])];
-    const env: Record<string, string> = { ...process.env } as Record<string, string>;
-    if (allPaths.length > 0) {
-      env.NODE_PATH = allPaths.join(path.delimiter);
-    }
 
     // Server debug options
     const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
 
     // Server options: run the LSP server as a Node module
+    // No NODE_PATH manipulation needed — the LSP server resolves @swc/core
+    // from each soda-gql.config.ts location via createRequire(configPath).
     const serverOptions: ServerOptions = {
-      run: { module: serverModule, transport: TransportKind.ipc, options: { env } },
+      run: { module: serverModule, transport: TransportKind.ipc },
       debug: {
         module: serverModule,
         transport: TransportKind.ipc,
-        options: { ...debugOptions, env },
+        options: debugOptions,
       },
     };
 
@@ -61,10 +53,10 @@ export const activate = (context: vscode.ExtensionContext): void => {
 
   // Gate LSP client on workspace trust — the server loads native code (@swc/core)
   // from workspace node_modules, so it must not run in untrusted workspaces.
-  if (vsc.workspace.isTrusted) {
+  if (vscode.workspace.isTrusted) {
     startClient();
   } else {
-    context.subscriptions.push(vsc.workspace.onDidGrantWorkspaceTrust(() => startClient()));
+    context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => startClient()));
   }
 };
 

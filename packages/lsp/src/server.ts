@@ -19,6 +19,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
+import { lspErrors } from "./errors";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
@@ -28,7 +29,6 @@ import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
-import { lspErrors } from "./errors";
 
 export type LspServerOptions = {
   readonly connection?: Connection;

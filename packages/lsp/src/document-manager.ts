@@ -3,6 +3,7 @@
  * @module
  */
 
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
@@ -36,6 +37,8 @@ export type DocumentManager = {
 type SwcLoaderOptions = {
   /** Override parseSync for testing. Pass null to simulate SWC unavailable. */
   readonly parseSync?: typeof import("@swc/core").parseSync | null;
+  /** Config file path used as the base for createRequire resolution of @swc/core. */
+  readonly resolveFrom?: string;
 };
 
 const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
@@ -377,10 +380,7 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
 };
 
 /** Create a document manager that tracks open documents and extracts templates. */
-export const createDocumentManager = (
-  helper: GraphqlSystemIdentifyHelper,
-  swcOptions?: SwcLoaderOptions,
-): DocumentManager => {
+export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOptions?: SwcLoaderOptions): DocumentManager => {
   // Per-instance SWC state (avoids cross-instance contamination in multi-config setups)
   let parseSyncFn: typeof import("@swc/core").parseSync | null =
     swcOptions?.parseSync !== undefined ? (swcOptions.parseSync ?? null) : null;
@@ -391,7 +391,13 @@ export const createDocumentManager = (
     if (!swcLoadAttempted) {
       swcLoadAttempted = true;
       try {
-        parseSyncFn = require("@swc/core").parseSync;
+        const localRequire = createRequire(swcOptions?.resolveFrom ?? import.meta.url);
+        const candidate = localRequire("@swc/core")?.parseSync;
+        if (typeof candidate === "function") {
+          parseSyncFn = candidate;
+        } else {
+          swcUnavailable = true;
+        }
       } catch {
         swcUnavailable = true;
       }
@@ -454,7 +460,9 @@ export const createDocumentManager = (
         ...(swcUnavailable ? { swcUnavailable: true as const } : {}),
       };
       cache.set(uri, state);
-      if (!swcUnavailable) {
+      if (swcUnavailable) {
+        fragmentIndex.delete(uri);
+      } else {
         fragmentIndex.set(uri, indexFragments(uri, templates, source));
       }
       return state;

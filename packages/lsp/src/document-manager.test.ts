@@ -501,6 +501,16 @@ export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...U
       expect(state.templates.length).toBeGreaterThan(0);
     });
 
+    test("resolveFrom option is accepted without affecting degraded behavior", () => {
+      const dm = createDocumentManager(helper, { resolveFrom: resolve(fixturesDir, "package.json") });
+      const source = readFixture("simple-query.ts");
+      const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
+
+      // resolveFrom provides a resolution base for @swc/core; when SWC is available, it works normally
+      expect(state.swcUnavailable).toBeUndefined();
+      expect(state.templates.length).toBeGreaterThan(0);
+    });
+
     test("SWC unavailability is isolated per instance", () => {
       const unavailable = createDocumentManager(helper, { parseSync: null });
       const available = createDocumentManager(helper);

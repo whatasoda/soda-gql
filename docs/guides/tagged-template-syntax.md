@@ -7,7 +7,7 @@ This guide covers the two API syntaxes for defining GraphQL operations and fragm
 soda-gql provides two syntax styles for defining GraphQL elements:
 
 1. **Tagged templates** — Write GraphQL directly as template literals. Concise, readable, and familiar to developers who know GraphQL syntax.
-2. **Callback builders** — Programmatic field selection using TypeScript functions. Required for advanced features like field aliases, directives, and `$colocate`.
+2. **Callback builders** — Programmatic field selection using TypeScript functions. Required for advanced features like field directives, `$colocate`, and `$var`.
 
 Both syntaxes produce identical runtime artifacts and can be mixed freely within a project.
 
@@ -301,7 +301,7 @@ const GetUser = gql.default(({ extend }) =>
 | `$colocate` query composition | No | Yes |
 | `$var` helper for variable definitions | No | Yes |
 
-> **Note**: Field directives (`@skip`, `@include`) written in tagged template syntax are parsed by GraphQL but silently ignored during field selection construction. No error is raised. If you need directive behavior, use the callback builder syntax.
+> **Note**: Field-level directives (`@skip`, `@include`) on regular fields are parsed by GraphQL but silently ignored during field selection construction — no error is raised. However, directives on inline fragments (`... on Type @skip(...)`) throw an explicit error. If you need field directive behavior, use the callback builder syntax.
 
 ## When to Use Which
 
