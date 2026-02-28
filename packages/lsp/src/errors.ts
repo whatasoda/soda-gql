@@ -95,6 +95,6 @@ export const lspErrors = {
 
   swcResolutionFailed: (message?: string): SwcResolutionFailed => ({
     code: "SWC_RESOLUTION_FAILED",
-    message: message ?? "@swc/core not found. Install @soda-gql/builder in your project and restart the LSP server to enable template extraction.",
+    message: message ?? "@swc/core not found. Install @soda-gql/builder (which provides @swc/core) in your project and restart the LSP server to enable template extraction.",
   }),
 } as const;

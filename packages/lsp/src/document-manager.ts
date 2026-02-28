@@ -390,17 +390,23 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
   const getParseSync = (): typeof import("@swc/core").parseSync | null => {
     if (!swcLoadAttempted) {
       swcLoadAttempted = true;
-      try {
-        const localRequire = createRequire(swcOptions?.resolveFrom ?? import.meta.url);
-        const candidate = localRequire("@swc/core")?.parseSync;
-        if (typeof candidate === "function") {
-          parseSyncFn = candidate;
-        } else {
-          swcUnavailable = true;
+      // Try resolveFrom first (project-local), then fall back to LSP package location
+      const resolveBases = swcOptions?.resolveFrom
+        ? [swcOptions.resolveFrom, import.meta.url]
+        : [import.meta.url];
+      for (const base of resolveBases) {
+        try {
+          const localRequire = createRequire(base);
+          const candidate = localRequire("@swc/core")?.parseSync;
+          if (typeof candidate === "function") {
+            parseSyncFn = candidate;
+            return parseSyncFn;
+          }
+        } catch {
+          // Try next base
         }
-      } catch {
-        swcUnavailable = true;
       }
+      swcUnavailable = true;
     }
     return parseSyncFn;
   };
