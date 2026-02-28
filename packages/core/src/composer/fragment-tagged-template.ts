@@ -156,6 +156,17 @@ export function buildFieldsFromSelectionSet(
                 );
                 unionInput[memberName] = ({ f: _f }: { f: unknown }) => memberFields;
               } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
+                if (sel.alias) {
+                  throw new Error(
+                    `Aliases on __typename in union selections are not supported in tagged templates. ` +
+                      `Use "__typename" without an alias.`,
+                  );
+                }
+                if (sel.directives?.length) {
+                  throw new Error(
+                    `Directives on __typename in union selections are not supported in tagged templates.`,
+                  );
+                }
                 hasTypename = true;
               } else {
                 // Track unsupported selections for deferred error reporting

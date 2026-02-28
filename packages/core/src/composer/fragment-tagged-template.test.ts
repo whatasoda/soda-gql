@@ -688,6 +688,30 @@ describe("createFragmentTaggedTemplate", () => {
       }).toThrow('Union field "search" requires at least __typename or inline fragment syntax');
     });
 
+    it("rejects __typename with alias in union selection", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            t: __typename
+            ... on Article { id }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow("Aliases on __typename in union selections are not supported in tagged templates");
+    });
+
+    it("rejects __typename with directives in union selection", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            __typename @skip(if: true)
+            ... on Article { id }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow("Directives on __typename in union selections are not supported in tagged templates");
+    });
+
     it("rejects top-level inline fragments", () => {
       expect(() => {
         const frag = fragment("UserFields", "User")`{
