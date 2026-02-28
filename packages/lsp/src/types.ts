@@ -30,6 +30,8 @@ export type DocumentState = {
   readonly version: number;
   readonly source: string;
   readonly templates: readonly ExtractedTemplate[];
+  /** Set when @swc/core could not be loaded; template extraction is skipped. */
+  readonly swcUnavailable?: true;
 };
 
 /** A fragment definition indexed from a workspace document. */

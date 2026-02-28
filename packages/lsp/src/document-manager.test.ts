@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { createDocumentManager } from "./document-manager";
+import { __resetSwcLoading, __setSwcUnavailable, createDocumentManager } from "./document-manager";
 
 const fixturesDir = resolve(import.meta.dir, "../test/fixtures");
 
@@ -477,6 +477,34 @@ export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...U
 
       const locations = dm.findFragmentSpreadLocations("UserFields", "admin");
       expect(locations).toHaveLength(0);
+    });
+  });
+
+  describe("SWC unavailable degraded path", () => {
+    test("returns swcUnavailable: true and empty templates when SWC is not loadable", () => {
+      __setSwcUnavailable();
+      try {
+        const dm = createDocumentManager(helper);
+        const source = readFixture("simple-query.ts");
+        const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
+
+        expect(state.swcUnavailable).toBe(true);
+        expect(state.templates).toHaveLength(0);
+        expect(state.uri).toBe(resolve(fixturesDir, "simple-query.ts"));
+        expect(state.version).toBe(1);
+      } finally {
+        __resetSwcLoading();
+      }
+    });
+
+    test("normal operation returns no swcUnavailable flag", () => {
+      __resetSwcLoading();
+      const dm = createDocumentManager(helper);
+      const source = readFixture("simple-query.ts");
+      const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
+
+      expect(state.swcUnavailable).toBeUndefined();
+      expect(state.templates.length).toBeGreaterThan(0);
     });
   });
 });

@@ -698,9 +698,7 @@ describe("tagged template operation integration", () => {
 
     it("rejects inline fragment with non-member type (interpolation path)", () => {
       expect(() => {
-        const videoFields = gql(({ fragment }) =>
-          fragment("VideoFields", "Video")`{ id duration }`(),
-        );
+        const videoFields = gql(({ fragment }) => fragment("VideoFields", "Video")`{ id duration }`());
 
         const op = gql(({ query }) =>
           query("Search")`{
@@ -716,9 +714,7 @@ describe("tagged template operation integration", () => {
 
     it("rejects unknown field in union member (interpolation path)", () => {
       expect(() => {
-        const videoFields = gql(({ fragment }) =>
-          fragment("VideoFields", "Video")`{ id duration }`(),
-        );
+        const videoFields = gql(({ fragment }) => fragment("VideoFields", "Video")`{ id duration }`());
 
         const op = gql(({ query }) =>
           query("Search")`{

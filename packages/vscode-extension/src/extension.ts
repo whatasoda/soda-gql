@@ -13,16 +13,23 @@ export const activate = (context: vscode.ExtensionContext): void => {
   // The LSP server is bundled into dist/server.js by build.js
   const serverModule = context.asAbsolutePath(path.join("dist", "server.js"));
 
+  // Resolve workspace root to set NODE_PATH for @swc/core resolution
+  const { workspace } = require("vscode") as typeof vscode;
+  const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const env = workspaceRoot
+    ? { ...process.env, NODE_PATH: path.join(workspaceRoot, "node_modules") }
+    : { ...process.env };
+
   // Server debug options
   const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
 
   // Server options: run the LSP server as a Node module
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
+    run: { module: serverModule, transport: TransportKind.ipc, options: { env } },
     debug: {
       module: serverModule,
       transport: TransportKind.ipc,
-      options: debugOptions,
+      options: { ...debugOptions, env },
     },
   };
 

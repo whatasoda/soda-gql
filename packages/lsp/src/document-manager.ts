@@ -6,7 +6,6 @@
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
-import { parseSync } from "@swc/core";
 import type {
   ArrowFunctionExpression,
   CallExpression,
@@ -34,15 +33,49 @@ export type DocumentManager = {
   readonly findFragmentSpreadLocations: (fragmentName: string, schemaName: string) => readonly FragmentSpreadLocation[];
 };
 
+/** Lazy-loaded @swc/core parseSync — loaded on first use to tolerate missing installations. */
+let _parseSyncFn: typeof import("@swc/core").parseSync | null = null;
+let _swcLoadAttempted = false;
+let _swcUnavailable = false;
+
+const getParseSync = (): typeof import("@swc/core").parseSync | null => {
+  if (!_swcLoadAttempted) {
+    _swcLoadAttempted = true;
+    try {
+      _parseSyncFn = require("@swc/core").parseSync;
+    } catch {
+      _swcUnavailable = true;
+    }
+  }
+  return _parseSyncFn;
+};
+
+/** Reset SWC loading state (for testing). */
+export const __resetSwcLoading = (): void => {
+  _parseSyncFn = null;
+  _swcLoadAttempted = false;
+  _swcUnavailable = false;
+};
+
+/** Force SWC unavailable state (for testing degraded path). */
+export const __setSwcUnavailable = (): void => {
+  _parseSyncFn = null;
+  _swcLoadAttempted = true;
+  _swcUnavailable = true;
+};
+
 /** Wrap SWC parseSync (which throws) to return null on failure. */
-const safeParseSync = (source: string, tsx: boolean): ReturnType<typeof parseSync> | null => {
+const safeParseSync = (source: string, tsx: boolean): Module | null => {
+  const parseSync = getParseSync();
+  if (!parseSync) return null;
   try {
-    return parseSync(source, {
+    const result = parseSync(source, {
       syntax: "typescript",
       tsx,
       decorators: false,
       dynamicImport: true,
     });
+    return result.type === "Module" ? result : null;
   } catch {
     return null;
   }
@@ -395,7 +428,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
     const isTsx = uri.endsWith(".tsx");
 
     const program = safeParseSync(source, isTsx);
-    if (!program || program.type !== "Module") {
+    if (!program) {
       return [];
     }
 
@@ -418,9 +451,17 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
   return {
     update: (uri, version, source) => {
       const templates = extractTemplates(uri, source);
-      const state: DocumentState = { uri, version, source, templates };
+      const state: DocumentState = {
+        uri,
+        version,
+        source,
+        templates,
+        ...(_swcUnavailable ? { swcUnavailable: true as const } : {}),
+      };
       cache.set(uri, state);
-      fragmentIndex.set(uri, indexFragments(uri, templates, source));
+      if (!_swcUnavailable) {
+        fragmentIndex.set(uri, indexFragments(uri, templates, source));
+      }
       return state;
     },
 

@@ -60,6 +60,28 @@ const privatePackageJsonSchema = z.object({
   private: z.literal(true),
 });
 
+// Whitelist of non-scoped public packages with separate packaging (e.g., VSCode extensions)
+const NON_SCOPED_PUBLIC_PACKAGES = new Set(["soda-gql-vscode-extension"]);
+
+// Schema for non-scoped public packages (lighter validation — these have separate packaging pipelines)
+const nonScopedPublicPackageJsonSchema = z.object({
+  name: z.string().refine((n) => NON_SCOPED_PUBLIC_PACKAGES.has(n)),
+  version: z.string(),
+  description: z.string().min(1),
+  private: z.literal(false),
+  license: z.literal("MIT"),
+  author: z.object({
+    name: z.literal("Shota Hatada"),
+    email: z.literal("shota.hatada@whatasoda.me"),
+    url: z.literal("https://github.com/whatasoda"),
+  }),
+  repository: z.object({
+    type: z.literal("git"),
+    url: z.literal("https://github.com/whatasoda/soda-gql.git"),
+    directory: z.string().regex(/^packages\//),
+  }),
+});
+
 type PackageEntry = {
   name: string;
   packageSourceDir: string;
@@ -97,6 +119,13 @@ const prepare = async () => {
         if (parsedPrivate.success) {
           console.log(`Removing private package from dist: ${packageEntry.name}`);
           await $`rm -rf ${packageDistDir}`;
+          continue;
+        }
+
+        // Check if this is a non-scoped public package (e.g., VSCode extension with separate packaging)
+        const parsedNonScoped = nonScopedPublicPackageJsonSchema.safeParse(rawPackageJson);
+        if (parsedNonScoped.success) {
+          console.log(`Validated non-scoped public package (separate packaging): ${packageEntry.name}`);
           continue;
         }
 
