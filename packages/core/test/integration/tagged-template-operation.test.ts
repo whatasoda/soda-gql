@@ -666,5 +666,25 @@ describe("tagged template operation integration", () => {
       expect(printed).toContain("... on Video");
       expect(printed).toContain("name");
     });
+
+    it("preserves variable arguments in interpolation path", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{
+          id
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`($id: ID!) {
+          user(id: $id) {
+            ...${userFields}
+          }
+        }`(),
+      );
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("user(id: $id)");
+    });
   });
 });

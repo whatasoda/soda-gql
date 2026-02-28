@@ -14,7 +14,6 @@ import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
-import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
@@ -200,13 +199,12 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
               operationTypeName,
               operationName,
               variables: varSpecifiers,
-              fieldsFactory: () => {
-                const varAssignments = createVarAssignments(varSpecifiers, {} as never);
+              fieldsFactory: ({ $ }) => {
                 return buildFieldsFromSelectionSet(
                   opNode.selectionSet,
                   schema,
                   operationTypeName,
-                  varAssignments as Readonly<Record<string, AnyVarRef>>,
+                  $ as Readonly<Record<string, AnyVarRef>>,
                   interpolationMap,
                 );
               },
