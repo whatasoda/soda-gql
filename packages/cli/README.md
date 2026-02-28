@@ -97,7 +97,7 @@ Analyzes your TypeScript source files and generates prebuilt type definitions fo
 | `--config <path>` | Path to config file |
 | `--watch`, `-w` | Watch for file changes and regenerate incrementally |
 
-**Watch mode** (`--watch` / `-w`) monitors your source files for changes and regenerates types automatically. It uses 150ms debounce to batch rapid changes, incremental builds for fast regeneration, and automatic error recovery — a failed build does not stop the watcher.
+**Watch mode** (`--watch` / `-w`) monitors your source files for changes and regenerates types automatically. It uses 150ms debounce to batch rapid changes, automatic rebuilds on each change, and automatic error recovery — a failed build does not stop the watcher.
 
 ```bash
 # One-time generation
