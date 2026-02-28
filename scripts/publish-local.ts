@@ -73,7 +73,14 @@ const checkPublishStatus = async (version: string, publishDir: string): Promise<
   for (const pkg of packages) {
     if (!pkg.isDirectory()) continue;
 
-    const pkgName = `@soda-gql/${pkg.name}`;
+    const pkgDir = path.join(publishDir, pkg.name);
+    const pkgJson = JSON.parse(await Bun.file(path.join(pkgDir, "package.json")).text());
+    const pkgName: string = pkgJson.name;
+
+    if (!pkgName.startsWith("@soda-gql/")) {
+      console.log(`Skipping non-scoped package: ${pkgName}`);
+      continue;
+    }
 
     try {
       // Check if this version is already published
@@ -141,8 +148,14 @@ const publishPackages = async ({ version, publishDir, dryRun, otp }: PublishOpti
   for (const pkg of packages) {
     if (!pkg.isDirectory()) continue;
 
-    const pkgName = `@soda-gql/${pkg.name}`;
     const pkgDir = path.join(publishDir, pkg.name);
+    const pkgJson = JSON.parse(await Bun.file(path.join(pkgDir, "package.json")).text());
+    const pkgName: string = pkgJson.name;
+
+    if (!pkgName.startsWith("@soda-gql/")) {
+      console.log(`Skipping non-scoped package: ${pkgName}`);
+      continue;
+    }
 
     if (status.alreadyPublished.includes(pkgName)) {
       console.log(`Skipping ${pkgName} (already published)`);

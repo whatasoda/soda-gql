@@ -119,8 +119,19 @@ jobs:
 
             # Skip non-scoped packages (e.g., vscode extension has separate distribution)
             if [[ "$PKG_NAME" != @soda-gql/* ]]; then
-              echo "Skipping non-scoped package ${PKG_NAME}"
-              continue
+              # Fail on unknown non-scoped packages; only whitelisted ones are expected
+              KNOWN_NON_SCOPED=("soda-gql-vscode-extension")
+              KNOWN=false
+              for known in "${KNOWN_NON_SCOPED[@]}"; do
+                if [ "$PKG_NAME" = "$known" ]; then KNOWN=true; break; fi
+              done
+              if [ "$KNOWN" = "true" ]; then
+                echo "Skipping whitelisted non-scoped package ${PKG_NAME}"
+                continue
+              else
+                echo "::error::Unknown non-scoped package in dist: ${PKG_NAME}"
+                exit 1
+              fi
             fi
 
             # Skip if already published
