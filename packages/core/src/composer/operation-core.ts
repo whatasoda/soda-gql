@@ -89,6 +89,7 @@ type PrebuiltDocumentParams<
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends VariableDefinitions,
+  // biome-ignore lint/correctness/noUnusedVariables: TFields required for union type compatibility with FieldsFactoryParams
   TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
@@ -359,7 +360,6 @@ export const wrapArtifactAsOperation = <TOperationType extends OperationType>(
     | Promise<OperationArtifactResult<TOperationType, string, VariableDefinitions, AnyFieldsExtended, unknown>>,
   overrideDocumentSource: boolean,
 ): AnyOperationOf<TOperationType> => {
-  // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with dynamic artifact
   return Operation.create((() => {
     const artifact = artifactFactory();
     if (overrideDocumentSource) {
@@ -372,5 +372,6 @@ export const wrapArtifactAsOperation = <TOperationType extends OperationType>(
       return artifact;
     }
     return artifact;
+    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with dynamic artifact
   }) as never) as any;
 };
