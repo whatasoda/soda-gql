@@ -296,10 +296,12 @@ const GetUser = gql.default(({ extend }) =>
 | Static metadata | Yes | Yes |
 | Metadata callbacks | Yes | Yes |
 | Fragment metadata aggregation | Yes | Yes |
-| Field aliases | No | Yes |
+| Field aliases | Yes | Yes |
 | Field directives (`@skip`, `@include`) | No | Yes |
 | `$colocate` query composition | No | Yes |
 | `$var` helper for variable definitions | No | Yes |
+
+> **Note**: Field directives (`@skip`, `@include`) written in tagged template syntax are parsed by GraphQL but silently ignored during field selection construction. No error is raised. If you need directive behavior, use the callback builder syntax.
 
 ## When to Use Which
 
@@ -308,11 +310,10 @@ const GetUser = gql.default(({ extend }) =>
 - Writing standard queries, mutations, or subscriptions
 - Defining fragments with simple field selections
 - You want concise, readable GraphQL that looks like the query language
-- Your operations don't need field aliases or directives
+- Your operations don't need field directives
 
 ### Use Callback Builders When
 
-- You need **field aliases** (e.g., `f.id(null, { alias: "userId" })`)
 - You need **field directives** (e.g., `$dir.skip({ if: true })`)
 - You need **`$colocate`** for composing multiple query fragments
 - You need **`$var`** for typed variable definitions
