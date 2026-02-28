@@ -172,44 +172,46 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
         if (interpolationMap.size === 0) {
           // No interpolations: use pre-built document mode
           return wrapArtifactAsOperation(
-            () => buildOperationArtifact({
-              schema,
-              operationType,
-              operationTypeName,
-              operationName,
-              variables: varSpecifiers,
-              prebuiltDocument: document,
-              prebuiltVariableNames: Object.keys(varSpecifiers),
-              adapter: resolvedAdapter,
-              metadata: resolvedMetadata,
-              adapterTransformDocument,
-            }),
+            () =>
+              buildOperationArtifact({
+                schema,
+                operationType,
+                operationTypeName,
+                operationName,
+                variables: varSpecifiers,
+                prebuiltDocument: document,
+                prebuiltVariableNames: Object.keys(varSpecifiers),
+                adapter: resolvedAdapter,
+                metadata: resolvedMetadata,
+                adapterTransformDocument,
+              }),
             true,
           );
         }
 
         // Interpolations present: use fieldsFactory mode for fragment usage tracking
         return wrapArtifactAsOperation(
-          () => buildOperationArtifact({
-            schema,
-            operationType,
-            operationTypeName,
-            operationName,
-            variables: varSpecifiers,
-            fieldsFactory: () => {
-              const varAssignments = createVarAssignments(varSpecifiers, {} as never);
-              return buildFieldsFromSelectionSet(
-                opNode.selectionSet,
-                schema,
-                operationTypeName,
-                varAssignments as Readonly<Record<string, AnyVarRef>>,
-                interpolationMap,
-              );
-            },
-            adapter: resolvedAdapter,
-            metadata: resolvedMetadata,
-            adapterTransformDocument,
-          }),
+          () =>
+            buildOperationArtifact({
+              schema,
+              operationType,
+              operationTypeName,
+              operationName,
+              variables: varSpecifiers,
+              fieldsFactory: () => {
+                const varAssignments = createVarAssignments(varSpecifiers, {} as never);
+                return buildFieldsFromSelectionSet(
+                  opNode.selectionSet,
+                  schema,
+                  operationTypeName,
+                  varAssignments as Readonly<Record<string, AnyVarRef>>,
+                  interpolationMap,
+                );
+              },
+              adapter: resolvedAdapter,
+              metadata: resolvedMetadata,
+              adapterTransformDocument,
+            }),
           false,
         );
       };

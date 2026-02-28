@@ -121,9 +121,7 @@ export function buildFieldsFromSelectionSet(
 
           if (parsedType.kind === "union") {
             // Union field: collect InlineFragmentNodes, build NestedUnionFieldsBuilder input
-            const hasInlineFragments = selection.selectionSet.selections.some(
-              (s) => s.kind === Kind.INLINE_FRAGMENT,
-            );
+            const hasInlineFragments = selection.selectionSet.selections.some((s) => s.kind === Kind.INLINE_FRAGMENT);
             if (!hasInlineFragments) {
               throw new Error(
                 `Union field "${fieldName}" requires inline fragment syntax (... on Type { fields }) in tagged templates`,
@@ -136,14 +134,10 @@ export function buildFieldsFromSelectionSet(
             for (const sel of selection.selectionSet.selections) {
               if (sel.kind === Kind.INLINE_FRAGMENT) {
                 if (sel.directives?.length) {
-                  throw new Error(
-                    "Directives on inline fragments are not supported in tagged templates",
-                  );
+                  throw new Error("Directives on inline fragments are not supported in tagged templates");
                 }
                 if (!sel.typeCondition) {
-                  throw new Error(
-                    "Inline fragments without type conditions are not supported in tagged templates",
-                  );
+                  throw new Error("Inline fragments without type conditions are not supported in tagged templates");
                 }
                 const memberName = sel.typeCondition.name.value;
                 // Validate member is part of the union
@@ -156,7 +150,7 @@ export function buildFieldsFromSelectionSet(
                 if (memberName in unionInput) {
                   throw new Error(
                     `Duplicate inline fragment for union member "${memberName}" in tagged template. ` +
-                    `Merge selections into a single "... on ${memberName} { ... }" block.`,
+                      `Merge selections into a single "... on ${memberName} { ... }" block.`,
                   );
                 }
                 const memberFields = buildFieldsFromSelectionSet(
@@ -171,10 +165,7 @@ export function buildFieldsFromSelectionSet(
                 hasTypename = true;
               } else {
                 // Non-__typename fields and fragment spreads at union level are not supported
-                const desc =
-                  sel.kind === Kind.FIELD
-                    ? `Field "${sel.name.value}"`
-                    : "Fragment spread";
+                const desc = sel.kind === Kind.FIELD ? `Field "${sel.name.value}"` : "Fragment spread";
                 throw new Error(
                   `${desc} alongside inline fragments in union selection is not supported in tagged templates. Use per-member inline fragments instead.`,
                 );
@@ -185,9 +176,7 @@ export function buildFieldsFromSelectionSet(
               (unionInput as Record<string, unknown>).__typename = true;
             }
 
-            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
-              unionInput,
-            );
+            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(unionInput);
             Object.assign(result, fieldResult);
           } else {
             // Object field: existing path

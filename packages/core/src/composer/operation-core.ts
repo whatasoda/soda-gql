@@ -202,7 +202,15 @@ export const buildOperationArtifact = <
     fragmentUsages = [];
   } else {
     // Field factory mode: full field eval + doc build
-    const { fieldsFactory } = params as FieldsFactoryParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>;
+    const { fieldsFactory } = params as FieldsFactoryParams<
+      TSchema,
+      TOperationType,
+      TOperationName,
+      TVarDefinitions,
+      TFields,
+      TOperationMetadata,
+      TAdapter
+    >;
     const f = createFieldFactories(schema, operationTypeName);
 
     // Evaluate fields with fragment tracking

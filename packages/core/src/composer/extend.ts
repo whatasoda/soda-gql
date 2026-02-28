@@ -169,19 +169,20 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   // 5. Delegate to buildOperationArtifact with pre-built document mode
   // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
   return wrapArtifactAsOperation(
-    () => buildOperationArtifact({
-      schema,
-      operationType,
-      operationTypeName,
-      operationName,
-      variables: varSpecifiers as unknown as VariableDefinitions,
-      prebuiltDocument: document,
-      prebuiltVariableNames: Object.keys(varSpecifiers),
-      adapter,
-      metadata: options?.metadata,
-      transformDocument: options?.transformDocument,
-      adapterTransformDocument,
-    }),
+    () =>
+      buildOperationArtifact({
+        schema,
+        operationType,
+        operationTypeName,
+        operationName,
+        variables: varSpecifiers as unknown as VariableDefinitions,
+        prebuiltDocument: document,
+        prebuiltVariableNames: Object.keys(varSpecifiers),
+        adapter,
+        metadata: options?.metadata,
+        transformDocument: options?.transformDocument,
+        adapterTransformDocument,
+      }),
     true,
   ) as any;
 };
