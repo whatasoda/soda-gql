@@ -83,6 +83,7 @@ bun typecheck
 | [Performance Profiling](./docs/guides/performance-profiling.md) | Performance measurement and optimization |
 | [Performance Reference](./docs/reference/perf-measures.md) | Benchmark command quick reference |
 | [Memory Optimization Lessons](./docs/guides/memory-optimization-lessons.md) | V8 memory optimization patterns and anti-patterns |
+| [Tagged Template Syntax](./docs/guides/tagged-template-syntax.md) | Tagged template vs callback builder syntax guide |
 
 ### Documentation Standards
 

@@ -276,6 +276,6 @@ If you see false errors on `...${frag}` patterns:
 
 ## Next Steps
 
-- See [Tagged Template Guide](./tagged-template-guide.md) for syntax details
+- See [Tagged Template Syntax Guide](./tagged-template-syntax.md) for syntax details
 - See [Fragment Composition](./fragment-composition.md) for advanced patterns
 - See [Main README](../../README.md) for full feature overview
