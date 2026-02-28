@@ -107,7 +107,7 @@ bun run soda-gql typegen
 bun run soda-gql typegen --watch
 ```
 
-> **Note:** The `--bundle` flag has been removed from the `codegen schema` command. Schema codegen now always produces unbundled output.
+> **Note:** Schema codegen always generates a CommonJS bundle (`.cjs`) alongside TypeScript source files for runtime module loading. No `--bundle` flag is needed.
 
 ### CLI Options
 
