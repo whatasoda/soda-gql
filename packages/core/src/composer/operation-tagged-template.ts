@@ -5,7 +5,7 @@
 
 import { Kind, parse as parseGraphql } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
-import { Fragment, Operation } from "../types/element";
+import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyOperationOf } from "../types/element/operation";
 import type { AnyFieldsExtended } from "../types/fragment";
@@ -13,11 +13,10 @@ import type { AnyMetadataAdapter, DocumentTransformer } from "../types/metadata"
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
-import { isPromiseLike } from "../utils/promise";
 import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
-import { buildOperationArtifact } from "./operation-core";
+import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
 /** Options for fragment TemplateResult resolution. */
 export type FragmentTemplateMetadataOptions = {
@@ -172,8 +171,8 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
 
         if (interpolationMap.size === 0) {
           // No interpolations: use pre-built document mode
-          return Operation.create((() => {
-            const artifact = buildOperationArtifact({
+          return wrapArtifactAsOperation(
+            () => buildOperationArtifact({
               schema,
               operationType,
               operationTypeName,
@@ -184,18 +183,14 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
               adapter: resolvedAdapter,
               metadata: resolvedMetadata,
               adapterTransformDocument,
-            });
-            if (isPromiseLike(artifact)) {
-              return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
-            }
-            return { ...artifact, documentSource: () => ({}) as never };
-            // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
-          }) as never) as any;
+            }),
+            true,
+          );
         }
 
         // Interpolations present: use fieldsFactory mode for fragment usage tracking
-        return Operation.create((() => {
-          const artifact = buildOperationArtifact({
+        return wrapArtifactAsOperation(
+          () => buildOperationArtifact({
             schema,
             operationType,
             operationTypeName,
@@ -214,13 +209,9 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
             adapter: resolvedAdapter,
             metadata: resolvedMetadata,
             adapterTransformDocument,
-          });
-          if (isPromiseLike(artifact)) {
-            return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
-          }
-          return artifact;
-          // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with fieldsFactory mode
-        }) as never) as any;
+          }),
+          false,
+        );
       };
     };
   };

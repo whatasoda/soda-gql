@@ -4,7 +4,8 @@
  * @internal
  */
 
-import type { FieldsBuilder } from "../types/element";
+import { type FieldsBuilder, Operation } from "../types/element";
+import type { AnyOperationOf } from "../types/element/operation";
 import type { AnyFieldsExtended, DeclaredVariables } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
@@ -331,4 +332,37 @@ export const buildOperationArtifact = <
   }
 
   return createArtifact({ metadata: operationMetadataResult });
+};
+
+/**
+ * Wraps a buildOperationArtifact call into an Operation.create() invocation,
+ * handling both sync and async artifact results.
+ *
+ * @param artifactFactory - Factory that produces the artifact (may return Promise for async metadata)
+ * @param overrideDocumentSource - When true, overrides documentSource to return empty object.
+ *   Required for pre-built document mode where fields = {} and the real documentSource is meaningless.
+ *   Must be false for fieldsFactory mode to preserve real field selections.
+ *
+ * @internal Used by extend.ts and operation-tagged-template.ts
+ */
+export const wrapArtifactAsOperation = <TOperationType extends OperationType>(
+  artifactFactory: () =>
+    | OperationArtifactResult<TOperationType, string, VariableDefinitions, AnyFieldsExtended, unknown>
+    | Promise<OperationArtifactResult<TOperationType, string, VariableDefinitions, AnyFieldsExtended, unknown>>,
+  overrideDocumentSource: boolean,
+): AnyOperationOf<TOperationType> => {
+  // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with dynamic artifact
+  return Operation.create((() => {
+    const artifact = artifactFactory();
+    if (overrideDocumentSource) {
+      if (isPromiseLike(artifact)) {
+        return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
+      }
+      return { ...artifact, documentSource: () => ({}) as never };
+    }
+    if (isPromiseLike(artifact)) {
+      return artifact;
+    }
+    return artifact;
+  }) as never) as any;
 };

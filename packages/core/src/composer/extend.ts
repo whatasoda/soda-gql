@@ -19,9 +19,8 @@ import type {
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-import { isPromiseLike } from "../utils/promise";
 
-import { buildOperationArtifact } from "./operation-core";
+import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
 /**
  * Options for extending a compat spec into a full operation.
@@ -168,8 +167,9 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
   // 5. Delegate to buildOperationArtifact with pre-built document mode
-  return Operation.create((() => {
-    const artifact = buildOperationArtifact({
+  // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
+  return wrapArtifactAsOperation(
+    () => buildOperationArtifact({
       schema,
       operationType,
       operationTypeName,
@@ -181,11 +181,7 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
       metadata: options?.metadata,
       transformDocument: options?.transformDocument,
       adapterTransformDocument,
-    });
-    if (isPromiseLike(artifact)) {
-      return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
-    }
-    return { ...artifact, documentSource: () => ({}) as never };
-    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
-  }) as never) as any;
+    }),
+    true,
+  ) as any;
 };
