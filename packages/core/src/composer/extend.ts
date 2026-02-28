@@ -109,6 +109,7 @@ export const createExtendComposer = <
     type DefineResult = Parameters<typeof Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>[0];
     return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>((() =>
       buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType,
         operationTypeName,
@@ -170,6 +171,7 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   return wrapArtifactAsOperation(
     () =>
       buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType,
         operationTypeName,

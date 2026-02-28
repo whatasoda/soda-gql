@@ -11,6 +11,7 @@ describe("buildOperationArtifact", () => {
   describe("basic operation building", () => {
     it("builds artifact with correct operationType", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -31,6 +32,7 @@ describe("buildOperationArtifact", () => {
 
     it("builds artifact with correct operationName", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -51,6 +53,7 @@ describe("buildOperationArtifact", () => {
 
     it("builds artifact with correct schemaLabel", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -79,6 +82,7 @@ describe("buildOperationArtifact", () => {
       };
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -99,6 +103,7 @@ describe("buildOperationArtifact", () => {
 
     it("builds valid GraphQL document", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -127,6 +132,7 @@ describe("buildOperationArtifact", () => {
   describe("fast path (no metadata, no transform)", () => {
     it("returns sync result when no metadata or transform", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -149,6 +155,7 @@ describe("buildOperationArtifact", () => {
   describe("metadata handling", () => {
     it("evaluates sync metadata builder", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -174,6 +181,7 @@ describe("buildOperationArtifact", () => {
 
     it("evaluates async metadata builder", async () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -201,6 +209,7 @@ describe("buildOperationArtifact", () => {
       let receivedDocumentKind: string | undefined;
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -233,6 +242,7 @@ describe("buildOperationArtifact", () => {
       let receivedVarRef: unknown;
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -260,6 +270,7 @@ describe("buildOperationArtifact", () => {
       let transformCalled = false;
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -287,6 +298,7 @@ describe("buildOperationArtifact", () => {
       let adapterTransformCalled = false;
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -314,6 +326,7 @@ describe("buildOperationArtifact", () => {
       const callOrder: string[] = [];
 
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -344,6 +357,7 @@ describe("buildOperationArtifact", () => {
   describe("mutation and subscription", () => {
     it("builds mutation artifact", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "mutation",
         operationTypeName: "Mutation",
@@ -368,6 +382,7 @@ describe("buildOperationArtifact", () => {
 
     it("builds subscription artifact", () => {
       const result = buildOperationArtifact({
+        mode: "fieldsFactory",
         schema,
         operationType: "subscription",
         operationTypeName: "Subscription",
@@ -396,6 +411,7 @@ describe("buildOperationArtifact", () => {
 
     it("uses provided document directly", () => {
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -419,6 +435,7 @@ describe("buildOperationArtifact", () => {
     it("defaults variableNames to empty array when prebuiltVariableNames not provided", () => {
       const doc = parseGraphql('query GetUsers { user(id: "1") { id } }');
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -436,6 +453,7 @@ describe("buildOperationArtifact", () => {
 
     it("returns undefined metadata on fast path", () => {
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -454,6 +472,7 @@ describe("buildOperationArtifact", () => {
 
     it("evaluates sync metadata builder with pre-built document", () => {
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -475,6 +494,7 @@ describe("buildOperationArtifact", () => {
 
     it("evaluates async metadata builder with pre-built document", async () => {
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -498,6 +518,7 @@ describe("buildOperationArtifact", () => {
       let adapterTransformCalled = false;
 
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -520,6 +541,7 @@ describe("buildOperationArtifact", () => {
 
     it("fragment usages are empty in pre-built mode", () => {
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",
@@ -543,6 +565,7 @@ describe("buildOperationArtifact", () => {
       const callOrder: string[] = [];
 
       const result = buildOperationArtifact({
+        mode: "prebuilt",
         schema,
         operationType: "query",
         operationTypeName: "Query",

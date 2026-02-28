@@ -174,6 +174,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
           return wrapArtifactAsOperation(
             () =>
               buildOperationArtifact({
+                mode: "prebuilt",
                 schema,
                 operationType,
                 operationTypeName,
@@ -193,6 +194,7 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
         return wrapArtifactAsOperation(
           () =>
             buildOperationArtifact({
+              mode: "fieldsFactory",
               schema,
               operationType,
               operationTypeName,

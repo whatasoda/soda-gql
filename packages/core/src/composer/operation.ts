@@ -80,6 +80,7 @@ export const createOperationComposerFactory = <
       >[0];
       return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>((() =>
         buildOperationArtifact({
+          mode: "fieldsFactory",
           schema,
           operationType,
           operationTypeName,

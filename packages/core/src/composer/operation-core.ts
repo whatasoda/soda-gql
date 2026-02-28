@@ -68,6 +68,7 @@ type FieldsFactoryParams<
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 > = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
+  readonly mode: "fieldsFactory";
   readonly fieldsFactory: FieldsBuilder<
     TSchema,
     TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
@@ -94,6 +95,7 @@ type PrebuiltDocumentParams<
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 > = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
+  readonly mode: "prebuilt";
   readonly prebuiltDocument: import("graphql").DocumentNode;
   readonly prebuiltVariableNames?: string[];
   readonly fieldsFactory?: never;
@@ -193,7 +195,7 @@ export const buildOperationArtifact = <
   type FragmentUsage = ReturnType<typeof withFragmentUsageCollection>["usages"];
   let fragmentUsages: FragmentUsage;
 
-  if ("prebuiltDocument" in params && params.prebuiltDocument) {
+  if (params.mode === "prebuilt") {
     // Pre-built document mode: skip field eval + doc build.
     // GraphQL-level ...FragmentName exists in AST but doesn't participate
     // in soda-gql metadata pipeline (resolved by GraphQL runtime).
@@ -203,15 +205,7 @@ export const buildOperationArtifact = <
     fragmentUsages = [];
   } else {
     // Field factory mode: full field eval + doc build
-    const { fieldsFactory } = params as FieldsFactoryParams<
-      TSchema,
-      TOperationType,
-      TOperationName,
-      TVarDefinitions,
-      TFields,
-      TOperationMetadata,
-      TAdapter
-    >;
+    const { fieldsFactory } = params;
     const f = createFieldFactories(schema, operationTypeName);
 
     // Evaluate fields with fragment tracking
