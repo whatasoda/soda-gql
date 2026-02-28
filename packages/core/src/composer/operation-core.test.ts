@@ -538,5 +538,32 @@ describe("buildOperationArtifact", () => {
       const artifact = result as OperationArtifactResult<"query", "GetUser", {}, any, OperationMetadata>;
       expect(artifact.metadata).toEqual({ custom: { fragmentCount: 0 } });
     });
+
+    it("applies operation transform before adapter transform in pre-built mode", () => {
+      const callOrder: string[] = [];
+
+      const result = buildOperationArtifact({
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: {},
+        prebuiltDocument,
+        prebuiltVariableNames: ["id"],
+        adapter: defaultMetadataAdapter,
+        metadata: () => ({ tag: "test" }),
+        transformDocument: ({ document }) => {
+          callOrder.push("operation");
+          return document;
+        },
+        adapterTransformDocument: ({ document }) => {
+          callOrder.push("adapter");
+          return document;
+        },
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      expect(callOrder).toEqual(["operation", "adapter"]);
+    });
   });
 });

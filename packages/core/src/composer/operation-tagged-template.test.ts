@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
+import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
+import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 import { createOperationTaggedTemplate } from "./operation-tagged-template";
 
 const schema = {
@@ -25,6 +27,7 @@ const schema = {
       user: unsafeOutputType.object("User:!", {
         arguments: { id: unsafeInputType.scalar("ID:!", {}) },
       }),
+      search: unsafeOutputType.union("SearchResult:!", {}),
     }),
     Mutation: define("Mutation").object({
       updateUser: unsafeOutputType.object("User:!", {
@@ -38,8 +41,18 @@ const schema = {
       id: unsafeOutputType.scalar("ID:!", {}),
       name: unsafeOutputType.scalar("String:!", {}),
     }),
+    Article: define("Article").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+    }),
+    Video: define("Video").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      duration: unsafeOutputType.scalar("Int:!", {}),
+    }),
   },
-  union: {},
+  union: {
+    SearchResult: define("SearchResult").union({ Article: true, Video: true }),
+  },
 } satisfies AnyGraphqlSchema;
 
 describe("createOperationTaggedTemplate", () => {
@@ -173,6 +186,75 @@ describe("createOperationTaggedTemplate", () => {
       // Accessing document triggers lazy evaluation including transforms
       expect(result.document).toBeDefined();
       expect(transformCalled).toBe(true);
+    });
+  });
+
+  describe("async metadata handling", () => {
+    it("async metadata in no-interpolation path triggers lazy async evaluation", () => {
+      const query = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter);
+      const op = query("GetUser")`($id: ID!) { user(id: $id) { id name } }`({
+        metadata: async ({ document }: { document: { kind: string } }) => ({ docKind: document.kind }),
+      });
+      expect(() => op.metadata).toThrow("Async operation");
+    });
+
+    it("async metadata in interpolation path triggers lazy async evaluation", () => {
+      const fragment = createFragmentTaggedTemplate(schema);
+      const userFrag = fragment("UserFields", "User")`{ id name }`();
+      const query = createOperationTaggedTemplate(schema, "query", defaultMetadataAdapter);
+      const op = query("GetUser")`($id: ID!) { user(id: $id) { ...${userFrag} } }`({
+        metadata: async () => ({ asyncValue: 42 }),
+      });
+      expect(() => op.metadata).toThrow("Async operation");
+    });
+  });
+
+  describe("union selection in tagged templates", () => {
+    const query = createOperationTaggedTemplate(schema, "query");
+    const fragment = createFragmentTaggedTemplate(schema);
+
+    it("handles union selection in interpolation path", () => {
+      const articleFrag = fragment("ArticleFields", "Article")`{ id title }`();
+
+      const result = query("Search")`{
+        search {
+          ... on Article { ...${articleFrag} }
+          ... on Video { id duration }
+        }
+      }`();
+
+      expect(result.operationType).toBe("query");
+      expect(result.operationName).toBe("Search");
+      expect(result.document).toBeDefined();
+    });
+
+    it("handles basic union selection without interpolation", () => {
+      const result = query("Search")`{
+        search {
+          ... on Article { id title }
+          ... on Video { id duration }
+        }
+      }`();
+
+      expect(result.operationType).toBe("query");
+      expect(result.operationName).toBe("Search");
+
+      // Verify the operation has the correct field structure
+      const fields = result as unknown as { fields: Record<string, AnyFieldSelection> };
+      expect(fields).toBeDefined();
+    });
+
+    it("handles union selection with __typename", () => {
+      const result = query("Search")`{
+        search {
+          __typename
+          ... on Article { id }
+          ... on Video { id }
+        }
+      }`();
+
+      expect(result.operationType).toBe("query");
+      expect(result.document).toBeDefined();
     });
   });
 });

@@ -397,5 +397,19 @@ describe("createExtendComposer", () => {
       expect(operation.operationType).toBe("query");
       expect(operation.operationName).toBe("DirectCreate");
     });
+
+    it("async metadata in template compat spec triggers lazy async evaluation", () => {
+      const queryCompat = createCompatTaggedTemplate(schema, "query");
+      const extend = createExtendComposer(schema);
+
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
+      const operation = extend(compat, {
+        metadata: async ({ document }: { document: { kind: string } }) => ({
+          asyncDocKind: document.kind,
+        }),
+      });
+
+      expect(() => operation.metadata).toThrow("Async operation");
+    });
   });
 });
