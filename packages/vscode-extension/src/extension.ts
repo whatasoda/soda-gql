@@ -16,9 +16,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
   // Resolve workspace root to set NODE_PATH for @swc/core resolution
   const { workspace } = require("vscode") as typeof vscode;
   const workspaceRoot = workspace.workspaceFolders?.[0]?.uri.fsPath;
-  const env = workspaceRoot
-    ? { ...process.env, NODE_PATH: path.join(workspaceRoot, "node_modules") }
-    : { ...process.env };
+  const env = workspaceRoot ? { ...process.env, NODE_PATH: path.join(workspaceRoot, "node_modules") } : { ...process.env };
 
   // Server debug options
   const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };

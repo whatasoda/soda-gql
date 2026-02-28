@@ -12,7 +12,8 @@ export type LspErrorCode =
   | "SCHEMA_BUILD_FAILED"
   | "SCHEMA_NOT_CONFIGURED"
   | "PARSE_FAILED"
-  | "INTERNAL_INVARIANT";
+  | "INTERNAL_INVARIANT"
+  | "SWC_RESOLUTION_FAILED";
 
 type ConfigLoadFailed = { readonly code: "CONFIG_LOAD_FAILED"; readonly message: string; readonly cause?: unknown };
 type SchemaLoadFailed = {
@@ -35,6 +36,7 @@ type InternalInvariant = {
   readonly context?: string;
   readonly cause?: unknown;
 };
+type SwcResolutionFailed = { readonly code: "SWC_RESOLUTION_FAILED"; readonly message: string };
 
 /** Structured error type for all LSP operations. */
 export type LspError =
@@ -43,7 +45,8 @@ export type LspError =
   | SchemaBuildFailed
   | SchemaNotConfigured
   | ParseFailed
-  | InternalInvariant;
+  | InternalInvariant
+  | SwcResolutionFailed;
 
 /** Helper type for LSP operation results. */
 export type LspResult<T> = Result<T, LspError>;
@@ -88,5 +91,10 @@ export const lspErrors = {
     message,
     context,
     cause,
+  }),
+
+  swcResolutionFailed: (message?: string): SwcResolutionFailed => ({
+    code: "SWC_RESOLUTION_FAILED",
+    message: message ?? "@swc/core not found. Install @soda-gql/builder in your project to enable template extraction.",
   }),
 } as const;
