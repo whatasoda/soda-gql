@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { print } from "graphql";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
@@ -225,7 +225,11 @@ describe("createOperationTaggedTemplate", () => {
 
       expect(result.operationType).toBe("query");
       expect(result.operationName).toBe("Search");
-      expect(result.document).toBeDefined();
+      const printed = print(result.document);
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
     });
 
     it("handles basic union selection without interpolation", () => {
@@ -238,10 +242,11 @@ describe("createOperationTaggedTemplate", () => {
 
       expect(result.operationType).toBe("query");
       expect(result.operationName).toBe("Search");
-
-      // Verify the operation has the correct field structure
-      const fields = result as unknown as { fields: Record<string, AnyFieldSelection> };
-      expect(fields).toBeDefined();
+      const printed = print(result.document);
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
     });
 
     it("handles union selection with __typename", () => {
@@ -254,7 +259,67 @@ describe("createOperationTaggedTemplate", () => {
       }`();
 
       expect(result.operationType).toBe("query");
-      expect(result.document).toBeDefined();
+      const printed = print(result.document);
+      expect(printed).toContain("__typename");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+    });
+
+    it("handles __typename-only union selection", () => {
+      const result = query("Search")`{
+        search {
+          __typename
+        }
+      }`();
+
+      expect(result.operationType).toBe("query");
+      const printed = print(result.document);
+      expect(printed).toContain("__typename");
+      expect(printed).toContain("search");
+    });
+
+    it("rejects duplicate inline fragments for same union member (interpolation path)", () => {
+      const videoFrag = fragment("VideoFields", "Video")`{ id duration }`();
+
+      expect(() => {
+        const op = query("Search")`{
+          search {
+            ... on Article { id }
+            ... on Article { title }
+            ... on Video { ...${videoFrag} }
+          }
+        }`();
+        // Access document to trigger lazy evaluation
+        void op.document;
+      }).toThrow('Duplicate inline fragment for union member "Article"');
+    });
+
+    it("rejects inline fragment with non-member type (interpolation path)", () => {
+      const videoFrag = fragment("VideoFields", "Video")`{ id duration }`();
+
+      expect(() => {
+        const op = query("Search")`{
+          search {
+            ... on User { id }
+            ... on Video { ...${videoFrag} }
+          }
+        }`();
+        void op.document;
+      }).toThrow('Type "User" is not a member of union "SearchResult"');
+    });
+
+    it("rejects directives on inline fragments (interpolation path)", () => {
+      const videoFrag = fragment("VideoFields", "Video")`{ id duration }`();
+
+      expect(() => {
+        const op = query("Search")`{
+          search {
+            ... on Article @skip(if: true) { id }
+            ... on Video { ...${videoFrag} }
+          }
+        }`();
+        void op.document;
+      }).toThrow("Directives on inline fragments are not supported in tagged templates");
     });
   });
 });
