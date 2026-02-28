@@ -33,52 +33,9 @@ export type DocumentManager = {
   readonly findFragmentSpreadLocations: (fragmentName: string, schemaName: string) => readonly FragmentSpreadLocation[];
 };
 
-/** Lazy-loaded @swc/core parseSync — loaded on first use to tolerate missing installations. */
-let _parseSyncFn: typeof import("@swc/core").parseSync | null = null;
-let _swcLoadAttempted = false;
-let _swcUnavailable = false;
-
-const getParseSync = (): typeof import("@swc/core").parseSync | null => {
-  if (!_swcLoadAttempted) {
-    _swcLoadAttempted = true;
-    try {
-      _parseSyncFn = require("@swc/core").parseSync;
-    } catch {
-      _swcUnavailable = true;
-    }
-  }
-  return _parseSyncFn;
-};
-
-/** Reset SWC loading state (for testing). */
-export const __resetSwcLoading = (): void => {
-  _parseSyncFn = null;
-  _swcLoadAttempted = false;
-  _swcUnavailable = false;
-};
-
-/** Force SWC unavailable state (for testing degraded path). */
-export const __setSwcUnavailable = (): void => {
-  _parseSyncFn = null;
-  _swcLoadAttempted = true;
-  _swcUnavailable = true;
-};
-
-/** Wrap SWC parseSync (which throws) to return null on failure. */
-const safeParseSync = (source: string, tsx: boolean): Module | null => {
-  const parseSync = getParseSync();
-  if (!parseSync) return null;
-  try {
-    const result = parseSync(source, {
-      syntax: "typescript",
-      tsx,
-      decorators: false,
-      dynamicImport: true,
-    });
-    return result.type === "Module" ? result : null;
-  } catch {
-    return null;
-  }
+type SwcLoaderOptions = {
+  /** Override parseSync for testing. Pass null to simulate SWC unavailable. */
+  readonly parseSync?: typeof import("@swc/core").parseSync | null;
 };
 
 const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
@@ -420,7 +377,45 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
 };
 
 /** Create a document manager that tracks open documents and extracts templates. */
-export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): DocumentManager => {
+export const createDocumentManager = (
+  helper: GraphqlSystemIdentifyHelper,
+  swcOptions?: SwcLoaderOptions,
+): DocumentManager => {
+  // Per-instance SWC state (avoids cross-instance contamination in multi-config setups)
+  let parseSyncFn: typeof import("@swc/core").parseSync | null =
+    swcOptions?.parseSync !== undefined ? (swcOptions.parseSync ?? null) : null;
+  let swcLoadAttempted = swcOptions?.parseSync !== undefined;
+  let swcUnavailable = swcOptions?.parseSync === null;
+
+  const getParseSync = (): typeof import("@swc/core").parseSync | null => {
+    if (!swcLoadAttempted) {
+      swcLoadAttempted = true;
+      try {
+        parseSyncFn = require("@swc/core").parseSync;
+      } catch {
+        swcUnavailable = true;
+      }
+    }
+    return parseSyncFn;
+  };
+
+  /** Wrap SWC parseSync (which throws) to return null on failure. */
+  const safeParseSync = (source: string, tsx: boolean): Module | null => {
+    const parseSync = getParseSync();
+    if (!parseSync) return null;
+    try {
+      const result = parseSync(source, {
+        syntax: "typescript",
+        tsx,
+        decorators: false,
+        dynamicImport: true,
+      });
+      return result.type === "Module" ? result : null;
+    } catch {
+      return null;
+    }
+  };
+
   const cache = new Map<string, DocumentState>();
   const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
@@ -456,10 +451,10 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
         version,
         source,
         templates,
-        ...(_swcUnavailable ? { swcUnavailable: true as const } : {}),
+        ...(swcUnavailable ? { swcUnavailable: true as const } : {}),
       };
       cache.set(uri, state);
-      if (!_swcUnavailable) {
+      if (!swcUnavailable) {
         fragmentIndex.set(uri, indexFragments(uri, templates, source));
       }
       return state;

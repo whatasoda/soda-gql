@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { __resetSwcLoading, __setSwcUnavailable, createDocumentManager } from "./document-manager";
+import { createDocumentManager } from "./document-manager";
 
 const fixturesDir = resolve(import.meta.dir, "../test/fixtures");
 
@@ -482,29 +482,38 @@ export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...U
 
   describe("SWC unavailable degraded path", () => {
     test("returns swcUnavailable: true and empty templates when SWC is not loadable", () => {
-      __setSwcUnavailable();
-      try {
-        const dm = createDocumentManager(helper);
-        const source = readFixture("simple-query.ts");
-        const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
+      const dm = createDocumentManager(helper, { parseSync: null });
+      const source = readFixture("simple-query.ts");
+      const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
 
-        expect(state.swcUnavailable).toBe(true);
-        expect(state.templates).toHaveLength(0);
-        expect(state.uri).toBe(resolve(fixturesDir, "simple-query.ts"));
-        expect(state.version).toBe(1);
-      } finally {
-        __resetSwcLoading();
-      }
+      expect(state.swcUnavailable).toBe(true);
+      expect(state.templates).toHaveLength(0);
+      expect(state.uri).toBe(resolve(fixturesDir, "simple-query.ts"));
+      expect(state.version).toBe(1);
     });
 
     test("normal operation returns no swcUnavailable flag", () => {
-      __resetSwcLoading();
       const dm = createDocumentManager(helper);
       const source = readFixture("simple-query.ts");
       const state = dm.update(resolve(fixturesDir, "simple-query.ts"), 1, source);
 
       expect(state.swcUnavailable).toBeUndefined();
       expect(state.templates.length).toBeGreaterThan(0);
+    });
+
+    test("SWC unavailability is isolated per instance", () => {
+      const unavailable = createDocumentManager(helper, { parseSync: null });
+      const available = createDocumentManager(helper);
+      const source = readFixture("simple-query.ts");
+      const uri = resolve(fixturesDir, "simple-query.ts");
+
+      const stateA = unavailable.update(uri, 1, source);
+      const stateB = available.update(uri, 1, source);
+
+      expect(stateA.swcUnavailable).toBe(true);
+      expect(stateA.templates).toHaveLength(0);
+      expect(stateB.swcUnavailable).toBeUndefined();
+      expect(stateB.templates.length).toBeGreaterThan(0);
     });
   });
 });

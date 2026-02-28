@@ -28,6 +28,7 @@ import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
+import { lspErrors } from "./errors";
 
 export type LspServerOptions = {
   readonly connection?: Connection;
@@ -495,7 +496,7 @@ export const checkSwcUnavailable = (
 ): void => {
   if (swcUnavailable && !state.shown) {
     state.shown = true;
-    showError("soda-gql LSP: @swc/core not found in your workspace. Install @soda-gql/builder to enable template extraction.");
+    showError(`soda-gql LSP: ${lspErrors.swcResolutionFailed().message}`);
   }
 };
 
