@@ -175,7 +175,6 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
       operationTypeName,
       operationName,
       variables: varSpecifiers as unknown as VariableDefinitions,
-      fieldsFactory: null as never,
       prebuiltDocument: document,
       prebuiltVariableNames: Object.keys(varSpecifiers),
       adapter,

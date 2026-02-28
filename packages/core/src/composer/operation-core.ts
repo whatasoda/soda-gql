@@ -24,48 +24,22 @@ import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs } from "./input";
 
 /**
- * Parameters for building an operation artifact.
- * Used by both operation and extend composers.
- *
- * Supports two modes:
- * - **Field factory mode** (default): Uses `fieldsFactory` to evaluate fields and build document.
- * - **Pre-built document mode**: Uses `prebuiltDocument` and `prebuiltVariableNames` to skip
- *   field evaluation and document building. Fragment usages are empty (GraphQL-level fragment
- *   spreads in the AST don't participate in soda-gql metadata pipeline).
- *
- * These modes are mutually exclusive: when `prebuiltDocument` is set, `fieldsFactory` is ignored.
+ * Shared base parameters for building an operation artifact.
+ * @internal
  */
-export type OperationCoreParams<
+type OperationCoreParamsBase<
   TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends VariableDefinitions,
-  TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 > = {
-  // Required
   readonly schema: TSchema;
   readonly operationType: TOperationType;
   readonly operationTypeName: TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
   readonly operationName: TOperationName;
   readonly variables: TVarDefinitions;
-  readonly fieldsFactory: FieldsBuilder<
-    TSchema,
-    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
-    TVarDefinitions,
-    TFields
-  >;
-
-  /**
-   * Pre-built DocumentNode to use directly, skipping field evaluation and document building.
-   * When set, `fieldsFactory` is ignored and fragment usages are empty.
-   */
-  readonly prebuiltDocument?: import("graphql").DocumentNode;
-  /** Variable names for pre-built document mode. Defaults to `[]` when `prebuiltDocument` is set. */
-  readonly prebuiltVariableNames?: string[];
-
-  // Metadata handling
   readonly adapter: TAdapter;
   readonly metadata?: MetadataBuilder<
     DeclaredVariables<TSchema, TVarDefinitions>,
@@ -79,6 +53,70 @@ export type OperationCoreParams<
     ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"]
   >;
 };
+
+/**
+ * Field factory mode: evaluates fields and builds document at runtime.
+ * @internal
+ */
+type FieldsFactoryParams<
+  TSchema extends AnyGraphqlSchema,
+  TOperationType extends OperationType,
+  TOperationName extends string,
+  TVarDefinitions extends VariableDefinitions,
+  TFields extends AnyFieldsExtended,
+  TOperationMetadata,
+  TAdapter extends AnyMetadataAdapter,
+> = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
+  readonly fieldsFactory: FieldsBuilder<
+    TSchema,
+    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
+    TVarDefinitions,
+    TFields
+  >;
+  readonly prebuiltDocument?: never;
+  readonly prebuiltVariableNames?: never;
+};
+
+/**
+ * Pre-built document mode: uses pre-parsed DocumentNode directly.
+ * Fragment usages are empty (GraphQL-level fragment spreads in the AST
+ * don't participate in soda-gql metadata pipeline).
+ * @internal
+ */
+type PrebuiltDocumentParams<
+  TSchema extends AnyGraphqlSchema,
+  TOperationType extends OperationType,
+  TOperationName extends string,
+  TVarDefinitions extends VariableDefinitions,
+  TFields extends AnyFieldsExtended,
+  TOperationMetadata,
+  TAdapter extends AnyMetadataAdapter,
+> = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
+  readonly prebuiltDocument: import("graphql").DocumentNode;
+  readonly prebuiltVariableNames?: string[];
+  readonly fieldsFactory?: never;
+};
+
+/**
+ * Parameters for building an operation artifact.
+ * Used by both operation and extend composers.
+ *
+ * Discriminated union of two mutually exclusive modes:
+ * - **Field factory mode**: Uses `fieldsFactory` to evaluate fields and build document.
+ * - **Pre-built document mode**: Uses `prebuiltDocument` and `prebuiltVariableNames` to skip
+ *   field evaluation and document building.
+ */
+export type OperationCoreParams<
+  TSchema extends AnyGraphqlSchema,
+  TOperationType extends OperationType,
+  TOperationName extends string,
+  TVarDefinitions extends VariableDefinitions,
+  TFields extends AnyFieldsExtended,
+  TOperationMetadata,
+  TAdapter extends AnyMetadataAdapter,
+> =
+  | FieldsFactoryParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>
+  | PrebuiltDocumentParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>;
 
 /**
  * Result type from buildOperationArtifact.
@@ -138,9 +176,6 @@ export const buildOperationArtifact = <
     operationTypeName,
     operationName,
     variables,
-    fieldsFactory,
-    prebuiltDocument,
-    prebuiltVariableNames,
     adapter,
     metadata: metadataBuilder,
     transformDocument: operationTransformDocument,
@@ -156,16 +191,17 @@ export const buildOperationArtifact = <
   type FragmentUsage = ReturnType<typeof withFragmentUsageCollection>["usages"];
   let fragmentUsages: FragmentUsage;
 
-  if (prebuiltDocument) {
+  if ("prebuiltDocument" in params && params.prebuiltDocument) {
     // Pre-built document mode: skip field eval + doc build.
     // GraphQL-level ...FragmentName exists in AST but doesn't participate
     // in soda-gql metadata pipeline (resolved by GraphQL runtime).
-    document = prebuiltDocument;
-    variableNames = (prebuiltVariableNames ?? []) as (keyof TVarDefinitions & string)[];
+    document = params.prebuiltDocument;
+    variableNames = (params.prebuiltVariableNames ?? []) as (keyof TVarDefinitions & string)[];
     fields = {} as TFields;
     fragmentUsages = [];
   } else {
     // Field factory mode: full field eval + doc build
+    const { fieldsFactory } = params as FieldsFactoryParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>;
     const f = createFieldFactories(schema, operationTypeName);
 
     // Evaluate fields with fragment tracking

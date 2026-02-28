@@ -401,7 +401,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
@@ -424,7 +424,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUsers",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument: doc,
         adapter: defaultMetadataAdapter,
       });
@@ -441,7 +441,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
@@ -459,7 +459,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
@@ -480,7 +480,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
@@ -503,7 +503,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
@@ -525,7 +525,7 @@ describe("buildOperationArtifact", () => {
         operationTypeName: "Query",
         operationName: "GetUser",
         variables: {},
-        fieldsFactory: null as never,
+
         prebuiltDocument,
         prebuiltVariableNames: ["id"],
         adapter: defaultMetadataAdapter,
