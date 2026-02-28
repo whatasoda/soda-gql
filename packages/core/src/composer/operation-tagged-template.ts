@@ -5,27 +5,43 @@
 
 import { Kind, parse as parseGraphql } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
-import { Fragment, Operation } from "../types/element";
+import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyOperationOf } from "../types/element/operation";
 import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyMetadataAdapter, DocumentTransformer } from "../types/metadata";
+import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
-import { buildDocument } from "./build-document";
 import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
-import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
+import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
-/** Callable result from tagged template - resolves to Operation or Fragment. */
-export type TemplateResult<TElement extends AnyOperationOf<OperationType> | AnyFragment> = (
-  options?: TemplateResultMetadataOptions,
-) => TElement;
-
-/** Options for TemplateResult resolution. */
-export type TemplateResultMetadataOptions = {
+/** Options for fragment TemplateResult resolution. */
+export type FragmentTemplateMetadataOptions = {
   metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
 };
+
+/** Options for operation TemplateResult resolution — receives full metadata pipeline context. */
+export type OperationTemplateMetadataOptions = {
+  metadata?:
+    | unknown
+    | ((context: {
+        $: Readonly<Record<string, unknown>>;
+        document: import("graphql").DocumentNode;
+        fragmentMetadata: unknown;
+        schemaLevel: unknown;
+      }) => unknown | Promise<unknown>);
+};
+
+/** @deprecated Use `FragmentTemplateMetadataOptions` or `OperationTemplateMetadataOptions` instead. */
+export type TemplateResultMetadataOptions = FragmentTemplateMetadataOptions;
+
+/** Callable result from tagged template - resolves to Operation or Fragment. */
+export type TemplateResult<
+  TElement extends AnyOperationOf<OperationType> | AnyFragment,
+  TOptions = TElement extends AnyOperationOf<OperationType> ? OperationTemplateMetadataOptions : FragmentTemplateMetadataOptions,
+> = (options?: TOptions) => TElement;
 
 /** Tagged template function type for operations. */
 export type OperationTaggedTemplateFunction<TOperationType extends OperationType = OperationType> = (
@@ -51,20 +67,35 @@ function buildSyntheticOperationSource(operationType: OperationType, operationNa
 }
 
 /**
+ * Resolves a metadata option from OperationTemplateMetadataOptions into a MetadataBuilder
+ * compatible with buildOperationArtifact.
+ *
+ * - `undefined` → `undefined` (no metadata)
+ * - Raw value → `() => value` (static metadata)
+ * - Callback → forwarded directly (receives full pipeline context)
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Private helper bridging untyped template options to typed MetadataBuilder
+const resolveMetadataOption = (metadataOption: OperationTemplateMetadataOptions["metadata"]): any => {
+  if (metadataOption === undefined) return undefined;
+  if (typeof metadataOption === "function") return metadataOption;
+  return () => metadataOption;
+};
+
+/**
  * Creates a curried tagged template function for a specific operation type.
  * New API: `query("name")\`($var: Type!) { fields }\`` returns TemplateResult<Operation>.
  *
  * @param schema - The GraphQL schema definition
  * @param operationType - The operation type (query, mutation, subscription)
- * @param _metadataAdapter - Optional metadata adapter (reserved for future use)
- * @param _transformDocument - Optional document transformer (reserved for future use)
+ * @param metadataAdapter - Optional metadata adapter for metadata aggregation
+ * @param adapterTransformDocument - Optional document transformer from adapter
  */
 export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
   operationType: TOperationType,
-  _metadataAdapter?: AnyMetadataAdapter,
+  metadataAdapter?: AnyMetadataAdapter,
   // biome-ignore lint/suspicious/noExplicitAny: DocumentTransformer generic params not needed here
-  _transformDocument?: DocumentTransformer<any, any>,
+  adapterTransformDocument?: DocumentTransformer<any, any>,
 ): CurriedOperationFunction<TOperationType> => {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
@@ -132,51 +163,57 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       // Determine root type name based on operation type
       const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
-      return (options?: TemplateResultMetadataOptions): AnyOperationOf<TOperationType> => {
-        // When there are no interpolations, use the parsed AST directly
+      const resolvedAdapter = metadataAdapter ?? defaultMetadataAdapter;
+
+      return (options?: OperationTemplateMetadataOptions): AnyOperationOf<TOperationType> => {
+        const resolvedMetadata = resolveMetadataOption(options?.metadata);
+
         if (interpolationMap.size === 0) {
-          return Operation.create(() => ({
-            operationType,
-            operationName,
-            schemaLabel: schema.label,
-            variableNames: Object.keys(varSpecifiers),
-            documentSource: () => ({}) as never,
-            document: document as never,
-            metadata: options?.metadata,
-            // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
-          })) as any;
+          // No interpolations: use pre-built document mode
+          return wrapArtifactAsOperation(
+            () =>
+              buildOperationArtifact({
+                mode: "prebuilt",
+                schema,
+                operationType,
+                operationTypeName,
+                operationName,
+                variables: varSpecifiers,
+                prebuiltDocument: document,
+                prebuiltVariableNames: Object.keys(varSpecifiers),
+                adapter: resolvedAdapter,
+                metadata: resolvedMetadata,
+                adapterTransformDocument,
+              }),
+            true,
+          );
         }
 
-        // Build fields from selection set, resolving interpolated fragments
-        const $ = createVarAssignments(varSpecifiers, {} as never);
-        const fields = buildFieldsFromSelectionSet(
-          opNode.selectionSet,
-          schema,
-          operationTypeName,
-          $ as Readonly<Record<string, AnyVarRef>>,
-          interpolationMap,
+        // Interpolations present: use fieldsFactory mode for fragment usage tracking
+        return wrapArtifactAsOperation(
+          () =>
+            buildOperationArtifact({
+              mode: "fieldsFactory",
+              schema,
+              operationType,
+              operationTypeName,
+              operationName,
+              variables: varSpecifiers,
+              fieldsFactory: ({ $ }) => {
+                return buildFieldsFromSelectionSet(
+                  opNode.selectionSet,
+                  schema,
+                  operationTypeName,
+                  $ as Readonly<Record<string, AnyVarRef>>,
+                  interpolationMap,
+                );
+              },
+              adapter: resolvedAdapter,
+              metadata: resolvedMetadata,
+              adapterTransformDocument,
+            }),
+          false,
         );
-
-        // Build the TypedDocumentNode from the resolved fields
-        const builtDocument = buildDocument({
-          operationName,
-          operationType,
-          operationTypeName,
-          variables: varSpecifiers,
-          fields,
-          schema,
-        });
-
-        return Operation.create(() => ({
-          operationType,
-          operationName,
-          schemaLabel: schema.label,
-          variableNames: Object.keys(varSpecifiers),
-          documentSource: () => fields,
-          document: builtDocument as never,
-          metadata: options?.metadata,
-          // biome-ignore lint/suspicious/noExplicitAny: Tagged template operations bypass full type inference
-        })) as any;
       };
     };
   };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import { type BasicTestSchema, basicTestSchema } from "../../test/fixtures";
-import { GqlDefine, Operation } from "../types/element";
+import { GqlDefine, GqlElement, Operation } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
 import { createCompatComposer } from "./compat";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
@@ -396,6 +396,77 @@ describe("createExtendComposer", () => {
 
       expect(operation.operationType).toBe("query");
       expect(operation.operationName).toBe("DirectCreate");
+    });
+
+    it("async metadata in template compat spec triggers lazy async evaluation", () => {
+      const queryCompat = createCompatTaggedTemplate(schema, "query");
+      const extend = createExtendComposer(schema);
+
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
+      const operation = extend(compat, {
+        metadata: async ({ document }: { document: { kind: string } }) => ({
+          asyncDocKind: document.kind,
+        }),
+      });
+
+      expect(() => operation.metadata).toThrow("Async operation");
+    });
+
+    it("async metadata resolves correctly via evaluation generator", async () => {
+      const queryCompat = createCompatTaggedTemplate(schema, "query");
+      const extend = createExtendComposer(schema);
+
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
+      const operation = extend(compat, {
+        metadata: async ({ document }: { document: { kind: string } }) => ({
+          docKind: document.kind,
+        }),
+      });
+
+      // Synchronous access should throw for async metadata
+      expect(() => operation.metadata).toThrow("Async operation");
+
+      // Resolve async metadata via evaluation generator
+      const gen = GqlElement.createEvaluationGenerator(operation);
+      let result = gen.next();
+      while (!result.done) {
+        await result.value;
+        result = gen.next();
+      }
+
+      expect(operation.metadata).toEqual({ docKind: "Document" });
+    });
+
+    it("template compat documentSource returns empty object", () => {
+      const queryCompat = createCompatTaggedTemplate(schema, "query");
+      const extend = createExtendComposer(schema);
+
+      const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
+      const operation = extend(compat);
+
+      // Template compat uses prebuilt document mode, so documentSource returns {}
+      expect(operation.documentSource()).toEqual({});
+    });
+
+    it("callback compat documentSource returns real field selections", () => {
+      const queryCompat = createCompatComposer<Schema, "query">(schema, "query");
+      const extend = createExtendComposer<Schema>(schema);
+
+      const compat = queryCompat({
+        name: "GetUser",
+        fields: ({ f }) => ({
+          ...f.user({ id: "1" })(({ f }) => ({
+            ...f.id(),
+            ...f.name(),
+          })),
+        }),
+      });
+
+      const operation = extend(compat);
+      const source = operation.documentSource();
+
+      // Callback compat uses fieldsFactory mode, so documentSource returns real fields
+      expect(source).toHaveProperty("user");
     });
   });
 });

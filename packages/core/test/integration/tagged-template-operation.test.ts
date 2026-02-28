@@ -169,7 +169,7 @@ describe("tagged template operation integration", () => {
   });
 
   describe("metadata", () => {
-    it("handles metadata chaining", () => {
+    it("handles static metadata", () => {
       const GetUser = gql(({ query }) =>
         query("GetUser")`{ user(id: "1") { id } }`({
           metadata: { headers: { "X-Test": "value" } },
@@ -182,6 +182,55 @@ describe("tagged template operation integration", () => {
       const GetUser = gql(({ query }) => query("GetUser")`{ user(id: "1") { id } }`());
       expect(GetUser.metadata).toBeUndefined();
     });
+
+    it("metadata callback receives variable refs via $", () => {
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`($id: ID!) { user(id: $id) { id } }`({
+          metadata: ({ $ }: { $: Record<string, unknown> }) => ({
+            hasIdVar: $.id !== undefined,
+          }),
+        }),
+      );
+
+      expect(GetUser.metadata).toEqual({ hasIdVar: true });
+    });
+
+    it("metadata callback receives document context", () => {
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id } }`({
+          metadata: ({ document }: { document: { kind: string } }) => ({
+            docKind: document.kind,
+          }),
+        }),
+      );
+
+      expect(GetUser.metadata).toEqual({ docKind: "Document" });
+    });
+
+    it("metadata callback with interpolated fragment spread aggregates fragment metadata", () => {
+      // Fragment with metadata callback
+      const userFields = gql(({ fragment }) =>
+        fragment("UserMetaFields", "User")`{ id name }`({
+          metadata: { source: "user-fragment" },
+        }),
+      );
+
+      // Operation with metadata callback that accesses fragmentMetadata
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            ...${userFields}
+          }
+        }`({
+          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      // Fragment metadata is aggregated via the metadata pipeline
+      expect(GetUser.metadata).toEqual({ fragmentCount: 1 });
+    });
   });
 
   describe("error handling", () => {
@@ -192,6 +241,163 @@ describe("tagged template operation integration", () => {
           return (query as any)("TestOp")`${name} { user(id: "1") { id } }`();
         });
       }).toThrow("Tagged templates only accept Fragment instances or callback functions as interpolated values");
+    });
+  });
+
+  describe("metadata pipeline parity: callback-builder vs tagged-template", () => {
+    it("static metadata is identical between callback-builder and tagged-template", () => {
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+            })),
+          }),
+          metadata: () => ({ headers: { "X-Source": "test" } }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id name } }`({
+          metadata: () => ({ headers: { "X-Source": "test" } }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+      expect(print(cbOp.document)).toEqual(print(ttOp.document));
+    });
+
+    it("metadata callback receives document with same kind", () => {
+      let cbDocKind: string | undefined;
+      let ttDocKind: string | undefined;
+
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+            })),
+          }),
+          metadata: ({ document }) => {
+            cbDocKind = document.kind;
+            return {};
+          },
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id } }`({
+          metadata: ({ document }: { document: { kind: string } }) => {
+            ttDocKind = document.kind;
+            return {};
+          },
+        }),
+      );
+
+      // Access metadata to trigger lazy evaluation
+      void cbOp.metadata;
+      void ttOp.metadata;
+
+      expect(cbDocKind).toBe("Document");
+      expect(ttDocKind).toBe("Document");
+      expect(cbDocKind).toEqual(ttDocKind);
+    });
+
+    it("variable-parameterized operations produce matching metadata", () => {
+      const cbOp = gql(({ query, $var }) =>
+        query.operation({
+          name: "GetUser",
+          variables: { ...$var("userId").ID("!") },
+          fields: ({ f, $ }) => ({
+            ...f.user({ id: $.userId })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+            })),
+          }),
+          metadata: ({ $ }) => ({ hasUserId: $.userId !== undefined }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`($userId: ID!) { user(id: $userId) { id name } }`({
+          metadata: ({ $ }: { $: Record<string, unknown> }) => ({ hasUserId: $.userId !== undefined }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+      expect<string[]>(cbOp.variableNames).toEqual(ttOp.variableNames as string[]);
+    });
+
+    it("fragment metadata aggregation works through both paths", () => {
+      const cbFragFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{ id name }`({
+          metadata: { source: "fragment" },
+        }),
+      );
+
+      const ttFragFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{ id name }`({
+          metadata: { source: "fragment" },
+        }),
+      );
+
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+              ...cbFragFields.spread(),
+            })),
+          }),
+          metadata: ({ fragmentMetadata }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            ...${ttFragFields}
+          }
+        }`({
+          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+    });
+
+    it("union selection produces identical documents between callback-builder and tagged-template", () => {
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "Search",
+          fields: ({ f }) => ({
+            ...f.search()({
+              Article: ({ f }) => ({ ...f.id(), ...f.title() }),
+              Video: ({ f }) => ({ ...f.id(), ...f.duration() }),
+            }),
+          }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(print(cbOp.document)).toEqual(print(ttOp.document));
     });
   });
 
@@ -389,6 +595,161 @@ describe("tagged template operation integration", () => {
       expect(fields).toBeDefined();
       expect(fields).toHaveProperty("id");
       expect(fields).toHaveProperty("name");
+    });
+  });
+
+  describe("union selection", () => {
+    it("creates operation with inline fragment union selection", () => {
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      expect(Search.operationName).toBe("Search");
+
+      const printed = print(Search.document);
+      expect(printed).toContain("query Search");
+      expect(printed).toContain("search");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
+    });
+
+    it("union selection with __typename", () => {
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            __typename
+            ... on Article { id }
+            ... on Video { id }
+          }
+        }`(),
+      );
+
+      const printed = print(Search.document);
+      expect(printed).toContain("__typename");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+    });
+
+    it("union selection with fragment spread inside member", () => {
+      const articleFields = gql(({ fragment }) =>
+        fragment("ArticleFields", "Article")`{
+          id
+          title
+        }`(),
+      );
+
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { ...${articleFields} }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      const printed = print(Search.document);
+      expect(printed).toContain("query Search");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("id");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
+    });
+
+    it("union selection combined with other interpolations", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{
+          id
+          name
+        }`(),
+      );
+
+      const Search = gql(({ query }) =>
+        query("SearchAndUser")`($userId: ID!) {
+          user(id: $userId) {
+            ...${userFields}
+          }
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      expect(Search.operationName).toBe("SearchAndUser");
+      expect(Search.variableNames).toContain("userId");
+
+      const printed = print(Search.document);
+      expect(printed).toContain("$userId: ID!");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("name");
+    });
+
+    it("rejects inline fragment with non-member type (interpolation path)", () => {
+      expect(() => {
+        const videoFields = gql(({ fragment }) =>
+          fragment("VideoFields", "Video")`{ id duration }`(),
+        );
+
+        const op = gql(({ query }) =>
+          query("Search")`{
+            search {
+              ... on User { id }
+              ... on Video { ...${videoFields} }
+            }
+          }`(),
+        );
+        void op.document;
+      }).toThrow('not a member of union "SearchResult"');
+    });
+
+    it("rejects unknown field in union member (interpolation path)", () => {
+      expect(() => {
+        const videoFields = gql(({ fragment }) =>
+          fragment("VideoFields", "Video")`{ id duration }`(),
+        );
+
+        const op = gql(({ query }) =>
+          query("Search")`{
+            search {
+              ... on Article { id nonExistentField }
+              ... on Video { ...${videoFields} }
+            }
+          }`(),
+        );
+        void op.document;
+      }).toThrow();
+    });
+
+    it("preserves variable arguments in interpolation path", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{
+          id
+          name
+        }`(),
+      );
+
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`($id: ID!) {
+          user(id: $id) {
+            ...${userFields}
+          }
+        }`(),
+      );
+
+      const printed = print(GetUser.document);
+      expect(printed).toContain("user(id: $id)");
     });
   });
 });

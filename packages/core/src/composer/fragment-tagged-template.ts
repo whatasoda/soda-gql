@@ -14,11 +14,12 @@ import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
+import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
-import type { TemplateResult, TemplateResultMetadataOptions } from "./operation-tagged-template";
+import type { FragmentTemplateMetadataOptions, TemplateResult } from "./operation-tagged-template";
 
 /** Tagged template function type for fragments. */
 export type FragmentTaggedTemplateFunction = (
@@ -110,25 +111,117 @@ export function buildFieldsFromSelectionSet(
       const extras = alias !== fieldName ? { alias } : undefined;
 
       if (selection.selectionSet) {
-        // Object field — factory returns a curried function
+        // Object/union field — factory returns a curried function
         const curried = factory(args, extras);
         if (typeof curried === "function") {
-          // Drive nested builder with recursive field building
-          const nestedFields = buildFieldsFromSelectionSet(
-            selection.selectionSet,
-            schema,
-            resolveFieldTypeName(schema, typeName, fieldName),
-            varAssignments,
-            interpolationMap,
-          );
-          const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
-            ({ f: nestedFactories }: { f: unknown }) => {
-              // Ignore the provided factories; use pre-built fields
-              void nestedFactories;
-              return nestedFields;
-            },
-          );
-          Object.assign(result, fieldResult);
+          // Detect union type via field specifier
+          const typeDef = schema.object[typeName];
+          const fieldSpec = typeDef?.fields[fieldName] as import("../types/type-foundation").DeferredOutputField;
+          const parsedType = parseOutputField(fieldSpec);
+
+          if (parsedType.kind === "union") {
+            // Union field: collect InlineFragmentNodes, build NestedUnionFieldsBuilder input
+            const unionInput: Record<string, unknown> = {};
+            let hasTypename = false;
+            const unsupportedSelections: string[] = [];
+
+            for (const sel of selection.selectionSet.selections) {
+              if (sel.kind === Kind.INLINE_FRAGMENT) {
+                if (sel.directives?.length) {
+                  throw new Error("Directives on inline fragments are not supported in tagged templates");
+                }
+                if (!sel.typeCondition) {
+                  throw new Error("Inline fragments without type conditions are not supported in tagged templates");
+                }
+                const memberName = sel.typeCondition.name.value;
+                // Validate member is part of the union
+                const unionDef = schema.union[parsedType.name];
+                if (!unionDef?.types[memberName]) {
+                  throw new Error(
+                    `Type "${memberName}" is not a member of union "${parsedType.name}" in tagged template inline fragment`,
+                  );
+                }
+                if (memberName in unionInput) {
+                  throw new Error(
+                    `Duplicate inline fragment for union member "${memberName}" in tagged template. ` +
+                      `Merge selections into a single "... on ${memberName} { ... }" block.`,
+                  );
+                }
+                const memberFields = buildFieldsFromSelectionSet(
+                  sel.selectionSet,
+                  schema,
+                  memberName,
+                  varAssignments,
+                  interpolationMap,
+                );
+                unionInput[memberName] = ({ f: _f }: { f: unknown }) => memberFields;
+              } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
+                if (sel.alias) {
+                  throw new Error(
+                    `Aliases on __typename in union selections are not supported in tagged templates. ` +
+                      `Use "__typename" without an alias.`,
+                  );
+                }
+                if (sel.directives?.length) {
+                  throw new Error(
+                    `Directives on __typename in union selections are not supported in tagged templates.`,
+                  );
+                }
+                hasTypename = true;
+              } else {
+                // Track unsupported selections for deferred error reporting
+                const desc = sel.kind === Kind.FIELD ? `Field "${sel.name.value}"` : "Fragment spread";
+                unsupportedSelections.push(desc);
+              }
+            }
+
+            // Post-loop validation
+            const hasInlineFragments = Object.keys(unionInput).length > 0;
+
+            if (unsupportedSelections.length > 0) {
+              if (hasInlineFragments) {
+                // Unsupported selections alongside real inline fragments
+                throw new Error(
+                  `${unsupportedSelections[0]} alongside inline fragments in union selection is not supported in tagged templates. Use per-member inline fragments instead.`,
+                );
+              }
+              // No inline fragments at all — require them
+              throw new Error(
+                `Union field "${fieldName}" requires at least __typename or inline fragment syntax (... on Type { fields }) in tagged templates`,
+              );
+            }
+
+            // Must have at least __typename or an inline fragment
+            if (!hasInlineFragments && !hasTypename) {
+              throw new Error(
+                `Union field "${fieldName}" requires at least __typename or inline fragment syntax (... on Type { fields }) in tagged templates`,
+              );
+            }
+
+            if (hasTypename) {
+              (unionInput as Record<string, unknown>).__typename = true;
+            }
+
+            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(unionInput);
+            Object.assign(result, fieldResult);
+          } else {
+            // Object field: existing path
+            const nestedFields = buildFieldsFromSelectionSet(
+              selection.selectionSet,
+              schema,
+              resolveFieldTypeName(schema, typeName, fieldName),
+              varAssignments,
+              interpolationMap,
+            );
+            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
+              ({ f: nestedFactories }: { f: unknown }) => {
+                // Ignore the provided factories; use pre-built fields
+                void nestedFactories;
+                return nestedFields;
+              },
+            );
+            Object.assign(result, fieldResult);
+          }
         } else {
           Object.assign(result, curried);
         }
@@ -173,8 +266,12 @@ export function buildFieldsFromSelectionSet(
             `Use \`...@\${fragment}\` instead of \`...FragmentName\`.`,
         );
       }
+    } else if (selection.kind === Kind.INLINE_FRAGMENT) {
+      throw new Error(
+        "Inline fragments (... on Type) at the top level are not supported in tagged templates. " +
+          "Use inline fragments only inside union field selections.",
+      );
     }
-    // InlineFragment nodes are not supported in tagged template fragments
   }
 
   return result as AnyFieldsExtended;
@@ -364,7 +461,7 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
         throw new Error("Unexpected definition kind");
       }
 
-      return (options?: TemplateResultMetadataOptions): AnyFragment => {
+      return (options?: FragmentTemplateMetadataOptions): AnyFragment => {
         return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
           typename: onType,
           key: fragmentName,
