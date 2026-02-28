@@ -158,7 +158,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 );
 ```
 
-You can also use the callback builder syntax when you need variables, arguments, or other advanced features:
+You can also use the callback builder syntax when you need advanced features like field directives, `$colocate`, or `$var`:
 
 ```typescript
 export const getUserQuery = gql.default(({ query, $var }) =>

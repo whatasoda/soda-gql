@@ -154,12 +154,12 @@ export const listUsersQuery = gql.default(({ query }) =>
 
 #### Callback Builder Syntax (Advanced Features)
 
-Use callback builders when you need features like fragment spreads in operations, field aliases, metadata callbacks, or `$colocate`:
+Use callback builders when you need features like field directives (`@skip`, `@include`), `$colocate`, or `$var`:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Fragment with field alias (callback builder only)
+// Fragment with field alias and $var (callback builder for $var)
 export const userFragment = gql.default(({ fragment, $var }) =>
   fragment.User({
     variables: { ...$var("categoryId").ID("?") },
@@ -174,7 +174,7 @@ export const userFragment = gql.default(({ fragment, $var }) =>
   }),
 );
 
-// Operation with fragment spread (callback builder only)
+// Operation with fragment spread and $var (callback builder for $var)
 export const profileQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "ProfileQuery",
@@ -196,9 +196,9 @@ export const profileQuery = gql.default(({ query, $var }) =>
 | Variables and arguments | Yes | Yes |
 | Nested object selections | Yes | Yes |
 | Fragment spreads in fragments | Yes (`${otherFragment}`) | Yes (`.spread()`) |
-| Fragment spreads in operations | — | Yes (`.spread()`) |
-| Field aliases | — | Yes |
-| Metadata callbacks | — | Yes |
+| Fragment spreads in operations | Yes (`...${frag}`) | Yes (`.spread()`) |
+| Field aliases | Yes | Yes |
+| Metadata callbacks | Yes | Yes |
 | `$colocate` | — | Yes |
 | Document transforms | — | Yes |
 
