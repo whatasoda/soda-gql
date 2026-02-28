@@ -125,7 +125,8 @@ const prepare = async () => {
         // Check if this is a non-scoped public package (e.g., VSCode extension with separate packaging)
         const parsedNonScoped = nonScopedPublicPackageJsonSchema.safeParse(rawPackageJson);
         if (parsedNonScoped.success) {
-          console.log(`Validated non-scoped public package (separate packaging): ${packageEntry.name}`);
+          console.log(`Removing non-scoped public package from npm dist (separate packaging): ${packageEntry.name}`);
+          await $`rm -rf ${packageDistDir}`;
           continue;
         }
 

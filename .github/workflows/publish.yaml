@@ -24,7 +24,9 @@ jobs:
           for pkg_json in packages/*/package.json; do
             if [ -f "$pkg_json" ]; then
               IS_PRIVATE=$(jq -r '.private // false' "$pkg_json")
-              if [ "$IS_PRIVATE" = "false" ]; then
+              ACTUAL_NAME=$(jq -r '.name' "$pkg_json")
+              # Only include @soda-gql/-scoped public packages (skip non-scoped like vscode extension)
+              if [ "$IS_PRIVATE" = "false" ] && [[ "$ACTUAL_NAME" == @soda-gql/* ]]; then
                 PKG_NAME=$(basename "$(dirname "$pkg_json")")
                 PACKAGES+=("$PKG_NAME")
               fi
@@ -114,6 +116,12 @@ jobs:
           for dir in dist/*/; do
             PKG_NAME=$(jq -r '.name' "${dir}package.json")
             PKG_VERSION=$(jq -r '.version' "${dir}package.json")
+
+            # Skip non-scoped packages (e.g., vscode extension has separate distribution)
+            if [[ "$PKG_NAME" != @soda-gql/* ]]; then
+              echo "Skipping non-scoped package ${PKG_NAME}"
+              continue
+            fi
 
             # Skip if already published
             if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then
