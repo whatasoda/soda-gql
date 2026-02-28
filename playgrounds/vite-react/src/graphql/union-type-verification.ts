@@ -14,7 +14,6 @@ import type { activityFeedQuery, searchAllQuery, searchPartialQuery } from "./op
 // SearchResult union - All members
 // ============================================================================
 
-// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type SearchAllOutput = (typeof searchAllQuery)["$infer"]["output"]["search"][number];
 
 // Verify __typename is a string literal union
@@ -38,7 +37,7 @@ function _handleProject(result: SearchAllOutput) {
     // In this branch, result is narrowed to Project
     const _id: string = result.id;
     const _title: string = result.title;
-    const _description: string | null = result.description;
+    const _description: string | null | undefined = result.description;
     const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = result.status;
   }
 }
@@ -50,7 +49,7 @@ function _handleTask(result: SearchAllOutput) {
     const _id: string = result.id;
     const _title: string = result.title;
     const _completed: boolean = result.completed;
-    const _priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null = result.priority;
+    const _priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null | undefined = result.priority;
   }
 }
 
@@ -68,7 +67,6 @@ function _handleComment(result: SearchAllOutput) {
 // SearchResult union - Partial member selection
 // ============================================================================
 
-// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type SearchPartialOutput = (typeof searchPartialQuery)["$infer"]["output"]["search"][number];
 
 // Verify __typename only includes selected members (Employee and Project)
@@ -83,13 +81,13 @@ function _handlePartialSearch(result: SearchPartialOutput) {
     const _name: string = result.name;
     const _email: string = result.email;
     const _role: "ENGINEER" | "MANAGER" | "DIRECTOR" | "EXECUTIVE" | "INTERN" = result.role;
-    const _deptId: string = result.department.id;
-    const _deptName: string = result.department.name;
+    const _deptId: string | undefined = result.department?.id;
+    const _deptName: string | undefined = result.department?.name;
   } else if (result.__typename === "Project") {
     // Project with nested team
     const _id: string = result.id;
     const _title: string = result.title;
-    const _description: string | null = result.description;
+    const _description: string | null | undefined = result.description;
     const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = result.status;
     const _teamId: string = result.team.id;
     const _teamName: string = result.team.name;
@@ -101,7 +99,6 @@ function _handlePartialSearch(result: SearchPartialOutput) {
 // ActivityItem union - All members with nested fields
 // ============================================================================
 
-// @ts-expect-error — typegen does not yet emit union member types for inline fragments
 type ActivityItemOutput = (typeof activityFeedQuery)["$infer"]["output"]["activityFeed"][number];
 
 // Verify __typename includes all ActivityItem members
@@ -115,8 +112,8 @@ function _handleActivityItem(item: ActivityItemOutput) {
     const _id: string = item.id;
     const _title: string = item.title;
     const _completed: boolean = item.completed;
-    const _priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null = item.priority;
-    const _dueDate: string | null = item.dueDate;
+    const _priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT" | null | undefined = item.priority;
+    const _dueDate: string | null | undefined = item.dueDate;
     if (item.assignee) {
       const _assigneeId: string = item.assignee.id;
       const _assigneeName: string = item.assignee.name;
@@ -138,9 +135,9 @@ function _handleActivityItem(item: ActivityItemOutput) {
     // Project with nested tasks
     const _id: string = item.id;
     const _title: string = item.title;
-    const _description: string | null = item.description;
+    const _description: string | null | undefined = item.description;
     const _status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED" | "CANCELLED" = item.status;
-    const _priority: number | null = item.priority;
+    const _priority: number | null | undefined = item.priority;
     const _tasks: Array<{ id: string; title: string; completed: boolean }> = item.tasks;
   }
 }
