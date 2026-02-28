@@ -22,7 +22,9 @@ const schema = {
   enum: {},
   input: {},
   object: {
-    Query: define("Query").object({}),
+    Query: define("Query").object({
+      search: unsafeOutputType.union("SearchResult:!", {}),
+    }),
     Mutation: define("Mutation").object({}),
     Subscription: define("Subscription").object({}),
     User: define("User").object({
@@ -46,8 +48,18 @@ const schema = {
       title: unsafeOutputType.scalar("String:!", {}),
       done: unsafeOutputType.scalar("Boolean:!", {}),
     }),
+    Article: define("Article").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+    }),
+    Video: define("Video").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      duration: unsafeOutputType.scalar("Int:!", {}),
+    }),
   },
-  union: {},
+  union: {
+    SearchResult: define("SearchResult").union({ Article: true, Video: true }),
+  },
 } satisfies AnyGraphqlSchema;
 
 describe("createFragmentTaggedTemplate", () => {
@@ -570,6 +582,110 @@ describe("createFragmentTaggedTemplate", () => {
       const fields = parentFragment.spread({} as never);
       expect(fields).toHaveProperty("id");
       expect(fields).toHaveProperty("name");
+    });
+  });
+
+  describe("union selection in tagged templates", () => {
+    it("handles basic union selection with inline fragments", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article { id title }
+          ... on Video { id duration }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      expect(fields).toHaveProperty("search");
+      const searchField = fields.search as AnyFieldSelection;
+      expect(searchField.union).not.toBeNull();
+      expect(searchField.object).toBeNull();
+      expect(searchField.union?.selections).toHaveProperty("Article");
+      expect(searchField.union?.selections).toHaveProperty("Video");
+    });
+
+    it("handles __typename in union selection", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          __typename
+          ... on Article { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      expect(searchField.union?.__typename).toBe(true);
+    });
+
+    it("handles fragment spread inside union member", () => {
+      const articleFrag = fragment("ArticleFields", "Article")`{ id title }`();
+
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article { ...${articleFrag} }
+          ... on Video { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      expect(searchField.union?.selections).toHaveProperty("Article");
+      const articleSelection = searchField.union?.selections.Article as Record<string, unknown>;
+      expect(articleSelection).toHaveProperty("id");
+      expect(articleSelection).toHaveProperty("title");
+    });
+
+    it("rejects directives on inline fragments", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            ... on Article @skip(if: true) { id }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow("Directives on inline fragments are not supported in tagged templates");
+    });
+
+    it("rejects non-__typename fields alongside inline fragments", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            id
+            ... on Article { title }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow("alongside inline fragments in union selection is not supported");
+    });
+
+    it("rejects inline fragment with non-member type", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            ... on User { id }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow('Type "User" is not a member of union "SearchResult"');
+    });
+
+    it("rejects union field without inline fragments", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            id
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow('Union field "search" requires inline fragment syntax');
+    });
+
+    it("rejects duplicate inline fragments for same union member", () => {
+      expect(() => {
+        const frag = fragment("SearchFields", "Query")`{
+          search {
+            ... on Article { id }
+            ... on Article { title }
+          }
+        }`();
+        frag.spread({} as never);
+      }).toThrow('Duplicate inline fragment for union member "Article"');
     });
   });
 });

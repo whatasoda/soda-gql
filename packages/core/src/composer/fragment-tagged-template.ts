@@ -14,6 +14,7 @@ import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
+import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { createFieldFactories } from "./fields-builder";
 import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
@@ -110,25 +111,102 @@ export function buildFieldsFromSelectionSet(
       const extras = alias !== fieldName ? { alias } : undefined;
 
       if (selection.selectionSet) {
-        // Object field — factory returns a curried function
+        // Object/union field — factory returns a curried function
         const curried = factory(args, extras);
         if (typeof curried === "function") {
-          // Drive nested builder with recursive field building
-          const nestedFields = buildFieldsFromSelectionSet(
-            selection.selectionSet,
-            schema,
-            resolveFieldTypeName(schema, typeName, fieldName),
-            varAssignments,
-            interpolationMap,
-          );
-          const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
-            ({ f: nestedFactories }: { f: unknown }) => {
-              // Ignore the provided factories; use pre-built fields
-              void nestedFactories;
-              return nestedFields;
-            },
-          );
-          Object.assign(result, fieldResult);
+          // Detect union type via field specifier
+          const typeDef = schema.object[typeName];
+          const fieldSpec = typeDef?.fields[fieldName] as import("../types/type-foundation").DeferredOutputField;
+          const parsedType = parseOutputField(fieldSpec);
+
+          if (parsedType.kind === "union") {
+            // Union field: collect InlineFragmentNodes, build NestedUnionFieldsBuilder input
+            const hasInlineFragments = selection.selectionSet.selections.some(
+              (s) => s.kind === Kind.INLINE_FRAGMENT,
+            );
+            if (!hasInlineFragments) {
+              throw new Error(
+                `Union field "${fieldName}" requires inline fragment syntax (... on Type { fields }) in tagged templates`,
+              );
+            }
+
+            const unionInput: Record<string, unknown> = {};
+            let hasTypename = false;
+
+            for (const sel of selection.selectionSet.selections) {
+              if (sel.kind === Kind.INLINE_FRAGMENT) {
+                if (sel.directives?.length) {
+                  throw new Error(
+                    "Directives on inline fragments are not supported in tagged templates",
+                  );
+                }
+                if (!sel.typeCondition) {
+                  throw new Error(
+                    "Inline fragments without type conditions are not supported in tagged templates",
+                  );
+                }
+                const memberName = sel.typeCondition.name.value;
+                // Validate member is part of the union
+                const unionDef = schema.union[parsedType.name];
+                if (!unionDef?.types[memberName]) {
+                  throw new Error(
+                    `Type "${memberName}" is not a member of union "${parsedType.name}" in tagged template inline fragment`,
+                  );
+                }
+                if (memberName in unionInput) {
+                  throw new Error(
+                    `Duplicate inline fragment for union member "${memberName}" in tagged template. ` +
+                    `Merge selections into a single "... on ${memberName} { ... }" block.`,
+                  );
+                }
+                const memberFields = buildFieldsFromSelectionSet(
+                  sel.selectionSet,
+                  schema,
+                  memberName,
+                  varAssignments,
+                  interpolationMap,
+                );
+                unionInput[memberName] = ({ f: _f }: { f: unknown }) => memberFields;
+              } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
+                hasTypename = true;
+              } else {
+                // Non-__typename fields and fragment spreads at union level are not supported
+                const desc =
+                  sel.kind === Kind.FIELD
+                    ? `Field "${sel.name.value}"`
+                    : "Fragment spread";
+                throw new Error(
+                  `${desc} alongside inline fragments in union selection is not supported in tagged templates. Use per-member inline fragments instead.`,
+                );
+              }
+            }
+
+            if (hasTypename) {
+              (unionInput as Record<string, unknown>).__typename = true;
+            }
+
+            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
+              unionInput,
+            );
+            Object.assign(result, fieldResult);
+          } else {
+            // Object field: existing path
+            const nestedFields = buildFieldsFromSelectionSet(
+              selection.selectionSet,
+              schema,
+              resolveFieldTypeName(schema, typeName, fieldName),
+              varAssignments,
+              interpolationMap,
+            );
+            const fieldResult = (curried as (nest: unknown) => Record<string, unknown>)(
+              ({ f: nestedFactories }: { f: unknown }) => {
+                // Ignore the provided factories; use pre-built fields
+                void nestedFactories;
+                return nestedFields;
+              },
+            );
+            Object.assign(result, fieldResult);
+          }
         } else {
           Object.assign(result, curried);
         }
@@ -174,7 +252,7 @@ export function buildFieldsFromSelectionSet(
         );
       }
     }
-    // InlineFragment nodes are not supported in tagged template fragments
+    // Top-level InlineFragment nodes (fragment defined on union type) are deferred
   }
 
   return result as AnyFieldsExtended;
