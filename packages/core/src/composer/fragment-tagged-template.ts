@@ -121,15 +121,9 @@ export function buildFieldsFromSelectionSet(
 
           if (parsedType.kind === "union") {
             // Union field: collect InlineFragmentNodes, build NestedUnionFieldsBuilder input
-            const hasInlineFragments = selection.selectionSet.selections.some((s) => s.kind === Kind.INLINE_FRAGMENT);
-            if (!hasInlineFragments) {
-              throw new Error(
-                `Union field "${fieldName}" requires inline fragment syntax (... on Type { fields }) in tagged templates`,
-              );
-            }
-
             const unionInput: Record<string, unknown> = {};
             let hasTypename = false;
+            const unsupportedSelections: string[] = [];
 
             for (const sel of selection.selectionSet.selections) {
               if (sel.kind === Kind.INLINE_FRAGMENT) {
@@ -164,12 +158,33 @@ export function buildFieldsFromSelectionSet(
               } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
                 hasTypename = true;
               } else {
-                // Non-__typename fields and fragment spreads at union level are not supported
+                // Track unsupported selections for deferred error reporting
                 const desc = sel.kind === Kind.FIELD ? `Field "${sel.name.value}"` : "Fragment spread";
+                unsupportedSelections.push(desc);
+              }
+            }
+
+            // Post-loop validation
+            const hasInlineFragments = Object.keys(unionInput).length > 0;
+
+            if (unsupportedSelections.length > 0) {
+              if (hasInlineFragments) {
+                // Unsupported selections alongside real inline fragments
                 throw new Error(
-                  `${desc} alongside inline fragments in union selection is not supported in tagged templates. Use per-member inline fragments instead.`,
+                  `${unsupportedSelections[0]} alongside inline fragments in union selection is not supported in tagged templates. Use per-member inline fragments instead.`,
                 );
               }
+              // No inline fragments at all — require them
+              throw new Error(
+                `Union field "${fieldName}" requires at least __typename or inline fragment syntax (... on Type { fields }) in tagged templates`,
+              );
+            }
+
+            // Must have at least __typename or an inline fragment
+            if (!hasInlineFragments && !hasTypename) {
+              throw new Error(
+                `Union field "${fieldName}" requires at least __typename or inline fragment syntax (... on Type { fields }) in tagged templates`,
+              );
             }
 
             if (hasTypename) {
@@ -240,8 +255,12 @@ export function buildFieldsFromSelectionSet(
             `Use \`...@\${fragment}\` instead of \`...FragmentName\`.`,
         );
       }
+    } else if (selection.kind === Kind.INLINE_FRAGMENT) {
+      throw new Error(
+        "Inline fragments (... on Type) at the top level are not supported in tagged templates. " +
+          "Use inline fragments only inside union field selections.",
+      );
     }
-    // Top-level InlineFragment nodes (fragment defined on union type) are deferred
   }
 
   return result as AnyFieldsExtended;

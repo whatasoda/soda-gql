@@ -665,7 +665,19 @@ describe("createFragmentTaggedTemplate", () => {
       }).toThrow('Type "User" is not a member of union "SearchResult"');
     });
 
-    it("rejects union field without inline fragments", () => {
+    it("allows __typename-only union selection", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          __typename
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      expect(searchField.union?.__typename).toBe(true);
+      expect(Object.keys(searchField.union?.selections ?? {}).filter((k) => k !== "__typename")).toHaveLength(0);
+    });
+
+    it("rejects union field without inline fragments or __typename", () => {
       expect(() => {
         const frag = fragment("SearchFields", "Query")`{
           search {
@@ -673,7 +685,16 @@ describe("createFragmentTaggedTemplate", () => {
           }
         }`();
         frag.spread({} as never);
-      }).toThrow('Union field "search" requires inline fragment syntax');
+      }).toThrow('Union field "search" requires at least __typename or inline fragment syntax');
+    });
+
+    it("rejects top-level inline fragments", () => {
+      expect(() => {
+        const frag = fragment("UserFields", "User")`{
+          ... on User { id }
+        }`();
+        frag.spread({} as never);
+      }).toThrow("Inline fragments (... on Type) at the top level are not supported in tagged templates");
     });
 
     it("rejects duplicate inline fragments for same union member", () => {
