@@ -244,6 +244,134 @@ describe("tagged template operation integration", () => {
     });
   });
 
+  describe("metadata pipeline parity: callback-builder vs tagged-template", () => {
+    it("static metadata is identical between callback-builder and tagged-template", () => {
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+            })),
+          }),
+          metadata: () => ({ headers: { "X-Source": "test" } }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id name } }`({
+          metadata: () => ({ headers: { "X-Source": "test" } }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+      expect(print(cbOp.document)).toEqual(print(ttOp.document));
+    });
+
+    it("metadata callback receives document with same kind", () => {
+      let cbDocKind: string | undefined;
+      let ttDocKind: string | undefined;
+
+      const cbOp = gql(({ query }) =>
+        query.operation({
+          name: "GetUser",
+          fields: ({ f }) => ({
+            ...f.user({ id: "1" })(({ f }) => ({
+              ...f.id(),
+            })),
+          }),
+          metadata: ({ document }) => {
+            cbDocKind = document.kind;
+            return {};
+          },
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{ user(id: "1") { id } }`({
+          metadata: ({ document }: { document: { kind: string } }) => {
+            ttDocKind = document.kind;
+            return {};
+          },
+        }),
+      );
+
+      // Access metadata to trigger lazy evaluation
+      void cbOp.metadata;
+      void ttOp.metadata;
+
+      expect(cbDocKind).toBe("Document");
+      expect(ttDocKind).toBe("Document");
+      expect(cbDocKind).toEqual(ttDocKind);
+    });
+
+    it("variable-parameterized operations produce matching metadata", () => {
+      const cbOp = gql(({ query, $var }) =>
+        query.operation({
+          name: "GetUser",
+          variables: { ...$var("userId").ID("!") },
+          fields: ({ f, $ }) => ({
+            ...f.user({ id: $.userId })(({ f }) => ({
+              ...f.id(),
+              ...f.name(),
+            })),
+          }),
+          metadata: ({ $ }) => ({ hasUserId: $.userId !== undefined }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`($userId: ID!) { user(id: $userId) { id name } }`({
+          metadata: ({ $ }: { $: Record<string, unknown> }) => ({ hasUserId: $.userId !== undefined }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+      expect<string[]>(cbOp.variableNames).toEqual(ttOp.variableNames as string[]);
+    });
+
+    it("fragment metadata aggregation works through both paths", () => {
+      const cbFragFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{ id name }`({
+          metadata: { source: "fragment" },
+        }),
+      );
+
+      const ttFragFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{ id name }`({
+          metadata: { source: "fragment" },
+        }),
+      );
+
+      const cbOp = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            ...${cbFragFields}
+          }
+        }`({
+          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      const ttOp = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            ...${ttFragFields}
+          }
+        }`({
+          metadata: ({ fragmentMetadata }: { fragmentMetadata: unknown }) => ({
+            fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
+          }),
+        }),
+      );
+
+      expect(cbOp.metadata).toEqual(ttOp.metadata);
+    });
+  });
+
   describe("callback builder coexistence", () => {
     it("callback builder still works alongside tagged template", () => {
       const GetUser = gql(({ query, $var }) =>
