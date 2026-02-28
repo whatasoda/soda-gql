@@ -25,6 +25,7 @@ export const basicTestSchema = {
   scalar: {
     ...defineScalar<"ID", string, string>("ID"),
     ...defineScalar<"String", string, string>("String"),
+    ...defineScalar<"Int", number, number>("Int"),
   },
   enum: {},
   input: {},
@@ -35,6 +36,7 @@ export const basicTestSchema = {
           id: unsafeInputType.scalar("ID:!", {}),
         },
       }),
+      search: unsafeOutputType.union("SearchResult:!", {}),
     }),
     Mutation: define("Mutation").object({
       updateUser: unsafeOutputType.object("User:?", {
@@ -55,8 +57,18 @@ export const basicTestSchema = {
       id: unsafeOutputType.scalar("ID:!", {}),
       name: unsafeOutputType.scalar("String:!", {}),
     }),
+    Article: define("Article").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      title: unsafeOutputType.scalar("String:!", {}),
+    }),
+    Video: define("Video").object({
+      id: unsafeOutputType.scalar("ID:!", {}),
+      duration: unsafeOutputType.scalar("Int:!", {}),
+    }),
   },
-  union: {},
+  union: {
+    SearchResult: define("SearchResult").union({ Article: true, Video: true }),
+  },
 } satisfies AnyGraphqlSchema;
 
 export type BasicTestSchema = typeof basicTestSchema & { _?: never };

@@ -440,4 +440,103 @@ describe("tagged template operation integration", () => {
       expect(fields).toHaveProperty("name");
     });
   });
+
+  describe("union selection", () => {
+    it("creates operation with inline fragment union selection", () => {
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      expect(Search.operationName).toBe("Search");
+
+      const printed = print(Search.document);
+      expect(printed).toContain("query Search");
+      expect(printed).toContain("search");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
+    });
+
+    it("union selection with __typename", () => {
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            __typename
+            ... on Article { id }
+            ... on Video { id }
+          }
+        }`(),
+      );
+
+      const printed = print(Search.document);
+      expect(printed).toContain("__typename");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+    });
+
+    it("union selection with fragment spread inside member", () => {
+      const articleFields = gql(({ fragment }) =>
+        fragment("ArticleFields", "Article")`{
+          id
+          title
+        }`(),
+      );
+
+      const Search = gql(({ query }) =>
+        query("Search")`{
+          search {
+            ... on Article { ...${articleFields} }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      const printed = print(Search.document);
+      expect(printed).toContain("query Search");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("id");
+      expect(printed).toContain("title");
+      expect(printed).toContain("duration");
+    });
+
+    it("union selection combined with other interpolations", () => {
+      const userFields = gql(({ fragment }) =>
+        fragment("UserFields", "User")`{
+          id
+          name
+        }`(),
+      );
+
+      const Search = gql(({ query }) =>
+        query("SearchAndUser")`($userId: ID!) {
+          user(id: $userId) {
+            ...${userFields}
+          }
+          search {
+            ... on Article { id title }
+            ... on Video { id duration }
+          }
+        }`(),
+      );
+
+      expect(Search.operationType).toBe("query");
+      expect(Search.operationName).toBe("SearchAndUser");
+      expect(Search.variableNames).toContain("userId");
+
+      const printed = print(Search.document);
+      expect(printed).toContain("$userId: ID!");
+      expect(printed).toContain("... on Article");
+      expect(printed).toContain("... on Video");
+      expect(printed).toContain("name");
+    });
+  });
 });
