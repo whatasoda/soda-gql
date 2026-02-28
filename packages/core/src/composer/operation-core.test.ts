@@ -432,7 +432,7 @@ describe("buildOperationArtifact", () => {
       expect(printed).toContain("$id: ID!");
     });
 
-    it("defaults variableNames to empty array when prebuiltVariableNames not provided", () => {
+    it("defaults variableNames to empty when variables is empty and prebuiltVariableNames not provided", () => {
       const doc = parseGraphql('query GetUsers { user(id: "1") { id } }');
       const result = buildOperationArtifact({
         mode: "prebuilt",
@@ -449,6 +449,25 @@ describe("buildOperationArtifact", () => {
       expect(result).not.toBeInstanceOf(Promise);
       const artifact = result as OperationArtifactResult<"query", "GetUsers", {}, any, unknown>;
       expect(artifact.variableNames).toEqual([]);
+    });
+
+    it("defaults variableNames to Object.keys(variables) when prebuiltVariableNames not provided", () => {
+      const doc = parseGraphql("query GetUser($id: ID!) { user(id: $id) { id } }");
+      const result = buildOperationArtifact({
+        mode: "prebuilt",
+        schema,
+        operationType: "query",
+        operationTypeName: "Query",
+        operationName: "GetUser",
+        variables: { id: { type: "ID", nullable: false } } as any,
+
+        prebuiltDocument: doc,
+        adapter: defaultMetadataAdapter,
+      });
+
+      expect(result).not.toBeInstanceOf(Promise);
+      const artifact = result as OperationArtifactResult<"query", "GetUser", any, any, unknown>;
+      expect(artifact.variableNames).toEqual(["id"]);
     });
 
     it("returns undefined metadata on fast path", () => {

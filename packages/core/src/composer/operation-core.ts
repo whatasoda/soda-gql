@@ -200,7 +200,7 @@ export const buildOperationArtifact = <
     // GraphQL-level ...FragmentName exists in AST but doesn't participate
     // in soda-gql metadata pipeline (resolved by GraphQL runtime).
     document = params.prebuiltDocument;
-    variableNames = (params.prebuiltVariableNames ?? []) as (keyof TVarDefinitions & string)[];
+    variableNames = (params.prebuiltVariableNames ?? Object.keys(variables)) as (keyof TVarDefinitions & string)[];
     fields = {} as TFields;
     fragmentUsages = [];
   } else {
