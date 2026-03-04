@@ -402,12 +402,43 @@ const validateWorkspaceResiduals = async (packageEntries: Map<string, PackageEnt
   }
 };
 
+const validatePlatformWorkspaceResiduals = async () => {
+  const DEP_FIELDS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"] as const;
+  let platformDirs: Dirent[];
+  try {
+    platformDirs = (await readdir("dist", { withFileTypes: true })).filter(
+      (e) => e.isDirectory() && e.name.startsWith("swc-"),
+    );
+  } catch {
+    return; // No dist directory — nothing to check
+  }
+  let hasResiduals = false;
+  for (const dir of platformDirs) {
+    const pkgPath = path.join("dist", dir.name, "package.json");
+    const pkg = JSON.parse(await readFile(pkgPath, "utf-8"));
+    for (const field of DEP_FIELDS) {
+      const deps: Record<string, string> | undefined = pkg[field];
+      if (!deps) continue;
+      for (const [dep, version] of Object.entries(deps)) {
+        if (version.startsWith("workspace:")) {
+          console.error(`Workspace protocol residual: "${pkg.name}" has "${dep}": "${version}" in ${field}`);
+          hasResiduals = true;
+        }
+      }
+    }
+  }
+  if (hasResiduals) {
+    process.exit(1);
+  }
+};
+
 const main = async () => {
   const packageEntries = await prepare();
   await validate(packageEntries);
   await preparePlatformPackages();
   await addOptionalDependenciesToSwcTransformer();
   await validateWorkspaceResiduals(packageEntries);
+  await validatePlatformWorkspaceResiduals();
 };
 
 await main();
