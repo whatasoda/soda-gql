@@ -53,6 +53,7 @@ const packageJsonSchema = z.object({
   peerDependencies: z.record(z.string(), z.string()).optional(),
   optionalDependencies: z.record(z.string(), z.string()).optional(),
   bundledDependencies: z.array(z.string()).optional(),
+  peerDependenciesMeta: z.record(z.string(), z.object({ optional: z.boolean().optional() }).passthrough()).optional(),
 });
 
 // Schema for private packages (minimal validation, not published to npm)
@@ -166,6 +167,7 @@ const prepare = async () => {
             devDependencies,
             peerDependencies,
             optionalDependencies,
+            peerDependenciesMeta,
             ...rest
           } = packageJsonSource;
 
@@ -205,6 +207,7 @@ const prepare = async () => {
             optionalDependencies: mapValues(optionalDependencies ?? {}, (value) =>
               value === "workspace:*" ? exactVersion : value,
             ),
+            peerDependenciesMeta,
             ...rest,
           };
 
