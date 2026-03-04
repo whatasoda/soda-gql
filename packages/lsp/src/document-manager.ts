@@ -3,10 +3,10 @@
  * @module
  */
 
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
-import { parseSync } from "@swc/core";
 import type {
   ArrowFunctionExpression,
   CallExpression,
@@ -34,18 +34,11 @@ export type DocumentManager = {
   readonly findFragmentSpreadLocations: (fragmentName: string, schemaName: string) => readonly FragmentSpreadLocation[];
 };
 
-/** Wrap SWC parseSync (which throws) to return null on failure. */
-const safeParseSync = (source: string, tsx: boolean): ReturnType<typeof parseSync> | null => {
-  try {
-    return parseSync(source, {
-      syntax: "typescript",
-      tsx,
-      decorators: false,
-      dynamicImport: true,
-    });
-  } catch {
-    return null;
-  }
+type SwcLoaderOptions = {
+  /** Override parseSync for testing. Pass null to simulate SWC unavailable. */
+  readonly parseSync?: typeof import("@swc/core").parseSync | null;
+  /** Config file path used as the base for createRequire resolution of @swc/core. */
+  readonly resolveFrom?: string;
 };
 
 const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
@@ -387,7 +380,52 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
 };
 
 /** Create a document manager that tracks open documents and extracts templates. */
-export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): DocumentManager => {
+export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOptions?: SwcLoaderOptions): DocumentManager => {
+  // Per-instance SWC state (avoids cross-instance contamination in multi-config setups)
+  let parseSyncFn: typeof import("@swc/core").parseSync | null =
+    swcOptions?.parseSync !== undefined ? (swcOptions.parseSync ?? null) : null;
+  let swcLoadAttempted = swcOptions?.parseSync !== undefined;
+  let swcUnavailable = swcOptions?.parseSync === null;
+
+  const getParseSync = (): typeof import("@swc/core").parseSync | null => {
+    if (!swcLoadAttempted) {
+      swcLoadAttempted = true;
+      // Try resolveFrom first (project-local), then fall back to LSP package location
+      const resolveBases = swcOptions?.resolveFrom ? [swcOptions.resolveFrom, import.meta.url] : [import.meta.url];
+      for (const base of resolveBases) {
+        try {
+          const localRequire = createRequire(base);
+          const candidate = localRequire("@swc/core")?.parseSync;
+          if (typeof candidate === "function") {
+            parseSyncFn = candidate;
+            return parseSyncFn;
+          }
+        } catch {
+          // Try next base
+        }
+      }
+      swcUnavailable = true;
+    }
+    return parseSyncFn;
+  };
+
+  /** Wrap SWC parseSync (which throws) to return null on failure. */
+  const safeParseSync = (source: string, tsx: boolean): Module | null => {
+    const parseSync = getParseSync();
+    if (!parseSync) return null;
+    try {
+      const result = parseSync(source, {
+        syntax: "typescript",
+        tsx,
+        decorators: false,
+        dynamicImport: true,
+      });
+      return result.type === "Module" ? result : null;
+    } catch {
+      return null;
+    }
+  };
+
   const cache = new Map<string, DocumentState>();
   const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
@@ -395,7 +433,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
     const isTsx = uri.endsWith(".tsx");
 
     const program = safeParseSync(source, isTsx);
-    if (!program || program.type !== "Module") {
+    if (!program) {
       return [];
     }
 
@@ -418,9 +456,19 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper): Docu
   return {
     update: (uri, version, source) => {
       const templates = extractTemplates(uri, source);
-      const state: DocumentState = { uri, version, source, templates };
+      const state: DocumentState = {
+        uri,
+        version,
+        source,
+        templates,
+        ...(swcUnavailable ? { swcUnavailable: true as const } : {}),
+      };
       cache.set(uri, state);
-      fragmentIndex.set(uri, indexFragments(uri, templates, source));
+      if (swcUnavailable) {
+        fragmentIndex.delete(uri);
+      } else {
+        fragmentIndex.set(uri, indexFragments(uri, templates, source));
+      }
       return state;
     },
 

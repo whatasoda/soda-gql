@@ -5,7 +5,7 @@ This guide explains how to use the soda-gql Language Server Protocol (LSP) integ
 ## Overview
 
 The LSP-first workflow provides:
-- **Real-time type information** via hover and inlay hints
+- **Real-time type information** via hover
 - **Field completion** based on your GraphQL schema
 - **Inline diagnostics** for invalid field selections and arguments
 - **Fragment spread support** with interpolation expressions
@@ -109,7 +109,6 @@ export const userFragment = gql.default(({ fragment }) =>
 **LSP Features in Action:**
 
 - **Hover**: Hover over `name` to see `String!` type information
-- **Inlay Hints**: See `: String!` hints after each field
 - **Completion**: Type inside the fragment to get field suggestions
 - **Diagnostics**: Invalid fields are underlined with error messages
 
@@ -141,15 +140,27 @@ The LSP understands fragment spreads via `...${frag}` and provides:
 - **Completion** for fields on the same parent type
 - **Hover information** for the interpolated fragment
 
-### 7. Build Operations (Callback Builder for Fragment Spreads in Operations)
+### 7. Build Operations with Fragment Spreads
 
-For operations that use fragment spreads, use the callback builder syntax:
+Operations support fragment spreads via tagged template interpolation:
 
 ```typescript
 import { gql } from "@/graphql-system";
 import { userFragment } from "./fragments";
 
-// Operations with fragment spreads require callback builder syntax
+// Operations with fragment spreads use tagged template interpolation
+export const getUserQuery = gql.default(({ query, $var }) =>
+  query("GetUser")`{
+    user(id: "1") {
+      ...${userFragment}
+    }
+  }`(),
+);
+```
+
+You can also use the callback builder syntax when you need advanced features like field directives, `$colocate`, or `$var`:
+
+```typescript
 export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
@@ -162,8 +173,6 @@ export const getUserQuery = gql.default(({ query, $var }) =>
   }),
 );
 ```
-
-**Note**: Operations using fragment spreads cannot use tagged template syntax (interpolation in operations is not supported). Use callback builders for this pattern.
 
 ### 8. Optional: Run Typegen for Compile-Time Type Safety
 
@@ -188,7 +197,7 @@ This generates:
 
 | Feature | LSP | Typegen |
 |---------|-----|---------|
-| Field type information | ✅ Hover + inlay hints | ✅ TypeScript types |
+| Field type information | ✅ Hover | ✅ TypeScript types |
 | Field completion | ✅ Real-time | ✅ TypeScript autocomplete |
 | Diagnostics | ✅ Inline errors | ✅ Compile-time errors |
 | Fragment spread analysis | ✅ Cross-file | ✅ TypeScript inference |
@@ -235,20 +244,16 @@ export const extendedFragment = gql.default(({ fragment }) =>
 );
 ```
 
-### Operations with Fragment Spreads (Callback Builder Only)
+### Operations with Fragment Spreads (Tagged Template Interpolation)
 
 ```typescript
-// Must use callback builder for fragment spreads in operations
-export const profileQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfileQuery",
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...userFragment.spread(),
-      })),
-    }),
-  }),
+// Operations support fragment spreads via tagged template interpolation
+export const profileQuery = gql.default(({ query }) =>
+  query("ProfileQuery")`{
+    user(id: "1") {
+      ...${userFragment}
+    }
+  }`(),
 );
 ```
 
@@ -276,6 +281,5 @@ If you see false errors on `...${frag}` patterns:
 
 ## Next Steps
 
-- See [Tagged Template Guide](./tagged-template-guide.md) for syntax details
-- See [Fragment Composition](./fragment-composition.md) for advanced patterns
+- See [Tagged Template Syntax Guide](./tagged-template-syntax.md) for syntax details and advanced patterns
 - See [Main README](../../README.md) for full feature overview

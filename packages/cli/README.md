@@ -82,6 +82,33 @@ bun run soda-gql codegen graphql --input "src/**/*.graphql"
 bun run soda-gql codegen graphql --input "src/**/*.graphql" --suffix ".generated.ts"
 ```
 
+#### Generate Prebuilt Types
+
+```bash
+bun run soda-gql typegen
+```
+
+Analyzes your TypeScript source files and generates prebuilt type definitions for all soda-gql operations and fragments. Run this after `codegen schema` to get compile-time type safety.
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--config <path>` | Path to config file |
+| `--watch`, `-w` | Watch for file changes and regenerate automatically |
+
+**Watch mode** (`--watch` / `-w`) monitors your source files for changes and regenerates types automatically. It uses 150ms debounce to batch rapid changes, automatic rebuilds on each change, and automatic error recovery — a failed build does not stop the watcher.
+
+```bash
+# One-time generation
+bun run soda-gql typegen
+
+# Watch mode for development
+bun run soda-gql typegen --watch
+```
+
+> **Note:** Schema codegen always generates a CommonJS bundle (`.cjs`) alongside TypeScript source files for runtime module loading. No `--bundle` flag is needed.
+
 ### CLI Options
 
 | Option | Description |

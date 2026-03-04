@@ -19,6 +19,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
+import { lspErrors } from "./errors";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
@@ -38,6 +39,7 @@ export const createLspServer = (options?: LspServerOptions) => {
   const documents = new TextDocuments(TextDocument);
 
   let registry: ConfigRegistry | undefined;
+  const swcNotification: SwcNotificationState = { shown: false };
 
   const publishDiagnosticsForDocument = (uri: string) => {
     if (!registry) {
@@ -139,7 +141,8 @@ export const createLspServer = (options?: LspServerOptions) => {
     if (!ctx) {
       return;
     }
-    ctx.documentManager.update(change.document.uri, change.document.version, change.document.getText());
+    const state = ctx.documentManager.update(change.document.uri, change.document.version, change.document.getText());
+    checkSwcUnavailable(state.swcUnavailable, swcNotification, (msg) => connection.window.showErrorMessage(msg));
     publishDiagnosticsForDocument(change.document.uri);
   });
 
@@ -480,6 +483,21 @@ export const createLspServer = (options?: LspServerOptions) => {
       connection.listen();
     },
   };
+};
+
+/** One-time SWC unavailable notification state. */
+export type SwcNotificationState = { shown: boolean };
+
+/** Check if SWC is unavailable and show a one-time error notification. */
+export const checkSwcUnavailable = (
+  swcUnavailable: boolean | undefined,
+  state: SwcNotificationState,
+  showError: (message: string) => void,
+): void => {
+  if (swcUnavailable && !state.shown) {
+    state.shown = true;
+    showError(`soda-gql LSP: ${lspErrors.swcResolutionFailed().message}`);
+  }
 };
 
 /** Convert LSP Position to byte offset in source text. */

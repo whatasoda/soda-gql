@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       can_publish: ${{ steps.check.outputs.can_publish }}
+      all_packages: ${{ steps.packages.outputs.all_packages }}
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -24,7 +25,9 @@ jobs:
           for pkg_json in packages/*/package.json; do
             if [ -f "$pkg_json" ]; then
               IS_PRIVATE=$(jq -r '.private // false' "$pkg_json")
-              if [ "$IS_PRIVATE" = "false" ]; then
+              ACTUAL_NAME=$(jq -r '.name' "$pkg_json")
+              # Only include @soda-gql/-scoped public packages (skip non-scoped like vscode extension)
+              if [ "$IS_PRIVATE" = "false" ] && [[ "$ACTUAL_NAME" == @soda-gql/* ]]; then
                 PKG_NAME=$(basename "$(dirname "$pkg_json")")
                 PACKAGES+=("$PKG_NAME")
               fi
@@ -32,6 +35,18 @@ jobs:
           done
           echo "Found public packages: ${PACKAGES[*]}"
           echo "packages=${PACKAGES[*]}" >> $GITHUB_OUTPUT
+
+          # Combine with platform packages for dist reconciliation
+          PLATFORM_PACKAGES=(
+            "swc-darwin-arm64"
+            "swc-darwin-x64"
+            "swc-linux-x64-gnu"
+            "swc-linux-x64-musl"
+            "swc-win32-x64-msvc"
+          )
+          ALL=("${PACKAGES[@]}" "${PLATFORM_PACKAGES[@]}")
+          ALL_JSON=$(printf '%s\n' "${ALL[@]}" | jq -R . | jq -sc .)
+          echo "all_packages=${ALL_JSON}" >> $GITHUB_OUTPUT
 
       - name: Check npm registry
         id: check
@@ -109,11 +124,74 @@ jobs:
           node-version: "24.12.0"
           registry-url: "https://registry.npmjs.org"
 
+      - name: Reconcile dist packages
+        run: |
+          ALL_JSON='${{ needs.check-publishable.outputs.all_packages }}'
+          readarray -t EXPECTED < <(echo "$ALL_JSON" | jq -r '.[]')
+
+          if [ ${#EXPECTED[@]} -eq 0 ]; then
+            echo "::error::Expected package list is empty"
+            exit 1
+          fi
+
+          ACTUAL=()
+          for dir in dist/*/; do
+            [ -d "$dir" ] || continue
+            ACTUAL+=("$(basename "$dir")")
+          done
+
+          MISSING=()
+          for expected in "${EXPECTED[@]}"; do
+            FOUND=false
+            for actual in "${ACTUAL[@]}"; do
+              [ "$expected" = "$actual" ] && FOUND=true && break
+            done
+            [ "$FOUND" = "false" ] && MISSING+=("$expected")
+          done
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "::error::Missing packages in dist: ${MISSING[*]}"
+            exit 1
+          fi
+
+          UNEXPECTED=()
+          for actual in "${ACTUAL[@]}"; do
+            FOUND=false
+            for expected in "${EXPECTED[@]}"; do
+              [ "$actual" = "$expected" ] && FOUND=true && break
+            done
+            [ "$FOUND" = "false" ] && UNEXPECTED+=("$actual")
+          done
+
+          if [ ${#UNEXPECTED[@]} -gt 0 ]; then
+            echo "::error::Unexpected packages in dist: ${UNEXPECTED[*]}"
+            exit 1
+          fi
+
+          echo "Dist reconciliation passed: ${#ACTUAL[@]} packages"
+
       - name: Publish to npm
         run: |
           for dir in dist/*/; do
             PKG_NAME=$(jq -r '.name' "${dir}package.json")
             PKG_VERSION=$(jq -r '.version' "${dir}package.json")
+
+            # Skip non-scoped packages (e.g., vscode extension has separate distribution)
+            if [[ "$PKG_NAME" != @soda-gql/* ]]; then
+              # Fail on unknown non-scoped packages; only whitelisted ones are expected
+              KNOWN_NON_SCOPED=("soda-gql-vscode-extension")
+              KNOWN=false
+              for known in "${KNOWN_NON_SCOPED[@]}"; do
+                if [ "$PKG_NAME" = "$known" ]; then KNOWN=true; break; fi
+              done
+              if [ "$KNOWN" = "true" ]; then
+                echo "Skipping whitelisted non-scoped package ${PKG_NAME}"
+                continue
+              else
+                echo "::error::Unknown non-scoped package in dist: ${PKG_NAME}"
+                exit 1
+              fi
+            fi
 
             # Skip if already published
             if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then

@@ -56,7 +56,7 @@ export const createConfigRegistry = (configPaths: readonly string[]): Result<Con
       config,
       helper,
       schemaResolver: resolverResult.value,
-      documentManager: createDocumentManager(helper),
+      documentManager: createDocumentManager(helper, { resolveFrom: configPath }),
     });
   }
 

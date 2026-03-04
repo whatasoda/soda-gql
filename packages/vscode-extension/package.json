@@ -39,6 +39,12 @@
     "onLanguage:typescriptreact"
   ],
   "main": "./dist/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Syntax highlighting works in restricted mode. The LSP server requires workspace trust for template extraction and diagnostics."
+    }
+  },
   "contributes": {
     "grammars": [
       {

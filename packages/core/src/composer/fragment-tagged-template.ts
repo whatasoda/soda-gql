@@ -163,9 +163,7 @@ export function buildFieldsFromSelectionSet(
                   );
                 }
                 if (sel.directives?.length) {
-                  throw new Error(
-                    `Directives on __typename in union selections are not supported in tagged templates.`,
-                  );
+                  throw new Error(`Directives on __typename in union selections are not supported in tagged templates.`);
                 }
                 hasTypename = true;
               } else {

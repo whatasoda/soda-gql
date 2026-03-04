@@ -12,6 +12,8 @@ yarn add @soda-gql/metro-plugin
 bun add @soda-gql/metro-plugin
 ```
 
+> **Peer dependency:** `@babel/core` (^7.24.0) is required. Metro and Expo projects typically include it already.
+
 ## Usage
 
 ### Expo Projects
