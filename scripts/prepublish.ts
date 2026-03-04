@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { $ } from "bun";
@@ -278,44 +279,54 @@ const platformPackageJsonSchema = z.object({
 
 const preparePlatformPackages = async () => {
   const platformPackagesDir = "packages/swc/npm";
-  const platformDistDir = "dist";
+
+  let platformDirEntries: Dirent[];
+  try {
+    platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
+  } catch {
+    console.log("No platform packages directory found (expected for local builds).");
+    return;
+  }
+
+  const dirs = platformDirEntries.filter((entry) => entry.isDirectory());
+  if (dirs.length === 0) {
+    console.log("No platform packages found (expected for local builds).");
+    return;
+  }
 
   // Read swc's version to use for platform packages
   const swcTransformerPackageJson = JSON.parse(await readFile("packages/swc/package.json", "utf-8"));
   const swcTransformerVersion = swcTransformerPackageJson.version as string;
 
-  try {
-    const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
+  let hasErrors = false;
+  for (const entry of dirs) {
+    const sourceDir = path.join(platformPackagesDir, entry.name);
+    const distDir = path.join("dist", `swc-${entry.name}`);
 
-    for (const entry of platformDirEntries) {
-      if (!entry.isDirectory()) continue;
+    // Copy the platform package directory
+    await $`cp -rf ${sourceDir} ${distDir}`;
 
-      const sourceDir = path.join(platformPackagesDir, entry.name);
-      const distDir = path.join(platformDistDir, `swc-${entry.name}`);
+    // Read and update package.json with swc's version
+    const packageJsonPath = path.join(distDir, "package.json");
+    const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
 
-      // Copy the platform package directory
-      await $`cp -rf ${sourceDir} ${distDir}`;
-
-      // Read and update package.json with swc's version
-      const packageJsonPath = path.join(distDir, "package.json");
-      const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8"));
-
-      const parsed = platformPackageJsonSchema.safeParse(packageJson);
-      if (!parsed.success) {
-        console.error(`Invalid platform package.json: ${entry.name}`);
-        console.error(parsed.error);
-        continue;
-      }
-
-      // Update version to match swc's version
-      packageJson.version = swcTransformerVersion;
-      await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
-
-      console.log(`Prepared platform package: ${packageJson.name}`);
+    const parsed = platformPackageJsonSchema.safeParse(packageJson);
+    if (!parsed.success) {
+      console.error(`Platform package validation failed for swc-${entry.name}:`);
+      console.error(parsed.error.format());
+      hasErrors = true;
+      continue;
     }
-  } catch (error) {
-    // Platform packages may not exist yet (e.g., first build)
-    console.log("No platform packages found (this is expected for local builds)", error);
+
+    // Update version to match swc's version
+    packageJson.version = swcTransformerVersion;
+    await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+    console.log(`Prepared platform package: ${packageJson.name}`);
+  }
+
+  if (hasErrors) {
+    process.exit(1);
   }
 };
 
@@ -327,34 +338,64 @@ const addOptionalDependenciesToSwcTransformer = async () => {
   const platformPackagesDir = "packages/swc/npm";
   const swcTransformerDistPath = "dist/swc/package.json";
 
-  // Read swc's version for platform package dependencies
+  // Check prerequisites — non-fatal if missing (expected for local builds)
+  let distSwcPkgRaw: string;
+  try {
+    distSwcPkgRaw = await readFile(swcTransformerDistPath, "utf-8");
+  } catch {
+    console.log("dist/swc/package.json not found — skipping optionalDependencies injection.");
+    return;
+  }
+
+  let platformDirEntries: Dirent[];
+  try {
+    platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
+  } catch {
+    console.log("No platform packages directory — skipping optionalDependencies injection.");
+    return;
+  }
+
+  const dirs = platformDirEntries.filter((entry) => entry.isDirectory());
+  if (dirs.length === 0) {
+    console.log("No platform packages found — skipping optionalDependencies injection.");
+    return;
+  }
+
+  // From here: platform packages exist, errors are fatal
   const swcTransformerSourceJson = JSON.parse(await readFile("packages/swc/package.json", "utf-8"));
   const exactVersion = swcTransformerSourceJson.version as string;
 
-  try {
-    const platformDirEntries = await readdir(platformPackagesDir, { withFileTypes: true });
-    const optionalDependencies: Record<string, string> = {};
+  const optionalDependencies: Record<string, string> = {};
+  for (const entry of dirs) {
+    optionalDependencies[`@soda-gql/swc-${entry.name}`] = exactVersion;
+  }
 
-    for (const entry of platformDirEntries) {
-      if (entry.isDirectory()) {
-        const packageName = `@soda-gql/swc-${entry.name}`;
-        optionalDependencies[packageName] = exactVersion;
+  const packageJson = JSON.parse(distSwcPkgRaw);
+  packageJson.optionalDependencies = optionalDependencies;
+  await writeFile(swcTransformerDistPath, JSON.stringify(packageJson, null, 2));
+
+  console.log(`Added optionalDependencies to swc: ${Object.keys(optionalDependencies).join(", ")}`);
+};
+
+const validateWorkspaceResiduals = async (packageEntries: Map<string, PackageEntry>) => {
+  const DEP_FIELDS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"] as const;
+  let hasResiduals = false;
+  for (const entry of packageEntries.values()) {
+    const distPkgPath = path.join(entry.packageDistDir, "package.json");
+    const distPkg = JSON.parse(await readFile(distPkgPath, "utf-8"));
+    for (const field of DEP_FIELDS) {
+      const deps: Record<string, string> | undefined = distPkg[field];
+      if (!deps) continue;
+      for (const [dep, version] of Object.entries(deps)) {
+        if (version.startsWith("workspace:")) {
+          console.error(`Workspace protocol residual: "${entry.name}" has "${dep}": "${version}" in ${field}`);
+          hasResiduals = true;
+        }
       }
     }
-
-    if (Object.keys(optionalDependencies).length === 0) {
-      console.log("No platform packages found, skipping optionalDependencies injection");
-      return;
-    }
-
-    const packageJson = JSON.parse(await readFile(swcTransformerDistPath, "utf-8"));
-    packageJson.optionalDependencies = optionalDependencies;
-    await writeFile(swcTransformerDistPath, JSON.stringify(packageJson, null, 2));
-
-    console.log(`Added optionalDependencies to swc: ${Object.keys(optionalDependencies).join(", ")}`);
-  } catch (error) {
-    // Platform packages may not exist yet (e.g., first build)
-    console.log("Could not add optionalDependencies to swc (this is expected for local builds)", error);
+  }
+  if (hasResiduals) {
+    process.exit(1);
   }
 };
 
@@ -363,6 +404,7 @@ const main = async () => {
   await validate(packageEntries);
   await preparePlatformPackages();
   await addOptionalDependenciesToSwcTransformer();
+  await validateWorkspaceResiduals(packageEntries);
 };
 
 await main();

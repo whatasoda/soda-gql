@@ -96,7 +96,16 @@ const verifyLocalBuild = async (): Promise<Result<void, string>> => {
   }
   console.log("  ✓ swc build succeeded");
 
-  // 2. Run prepublish
+  // 2. Run swc tests
+  console.log("  Testing swc...");
+  const testResult = await $`bun run test`.cwd("packages/swc").quiet().nothrow();
+  if (testResult.exitCode !== 0) {
+    console.error(testResult.stderr.toString());
+    return err("swc tests failed. Run 'bun run test' in packages/swc to debug.");
+  }
+  console.log("  ✓ swc tests passed");
+
+  // 3. Run prepublish
   console.log("  Running prepublish...");
   const prepublishResult = await $`bun prepublish`.quiet().nothrow();
   if (prepublishResult.exitCode !== 0) {
