@@ -391,9 +391,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
     if (!swcLoadAttempted) {
       swcLoadAttempted = true;
       // Try resolveFrom first (project-local), then fall back to LSP package location
-      const resolveBases = swcOptions?.resolveFrom
-        ? [swcOptions.resolveFrom, import.meta.url]
-        : [import.meta.url];
+      const resolveBases = swcOptions?.resolveFrom ? [swcOptions.resolveFrom, import.meta.url] : [import.meta.url];
       for (const base of resolveBases) {
         try {
           const localRequire = createRequire(base);
