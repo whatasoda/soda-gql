@@ -59,7 +59,7 @@
     "prepublishOnly": "napi prepublish -t npm",
     "artifacts": "napi artifacts",
     "pretest": "bun run build:dev",
-    "test": "bun test"
+    "test": "bun --conditions=@soda-gql test"
   },
   "dependencies": {
     "@ampproject/remapping": "^2.3.0",
