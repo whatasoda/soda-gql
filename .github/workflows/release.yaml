@@ -132,13 +132,13 @@ jobs:
         working-directory: packages/swc
         run: bunx @napi-rs/cli artifacts
 
+      - run: bun quality:prepare
+
       - name: Test SWC transformer
         working-directory: packages/swc
         env:
           SWC_TRANSFORMER_CI: "true"
         run: bun run test
-
-      - run: bun quality:prepare
       - run: bun quality
       - run: bun prepublish
 
