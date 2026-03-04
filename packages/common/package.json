@@ -87,6 +87,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "neverthrow": "^8.1.1",
     "zod": "^4.1.11"
   }
 }

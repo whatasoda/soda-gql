@@ -69,6 +69,7 @@
     "@soda-gql/config": "workspace:*"
   },
   "peerDependencies": {
+    "@babel/core": "^7.24.0",
     "metro": ">=0.70.0",
     "@soda-gql/swc": "workspace:*"
   },
