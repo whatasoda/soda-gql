@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
-import { createRequire } from "node:module";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
@@ -23,6 +23,9 @@ type TransformSync = typeof import("@swc/core").transformSync;
 let _transformSync: TransformSync | undefined;
 const getTransformSync = (): TransformSync => {
   if (!_transformSync) {
+    if (typeof import.meta.url !== "string") {
+      throw new Error("@swc/core cannot be resolved: import.meta.url is unavailable in CJS bundle context");
+    }
     const localRequire = createRequire(import.meta.url);
     _transformSync = localRequire("@swc/core").transformSync;
   }

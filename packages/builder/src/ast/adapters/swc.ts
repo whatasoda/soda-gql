@@ -3,6 +3,7 @@
  * Implements parser-specific logic using the SWC parser.
  */
 
+import { createRequire } from "node:module";
 import {
   createCanonicalId,
   createCanonicalTracker,
@@ -10,7 +11,6 @@ import {
   type ScopeHandle,
   type SwcSpanConverter,
 } from "@soda-gql/common";
-import { createRequire } from "node:module";
 import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
@@ -914,6 +914,9 @@ type ParseSync = typeof import("@swc/core").parseSync;
 let _parseSync: ParseSync | undefined;
 const getParseSync = (): ParseSync => {
   if (!_parseSync) {
+    if (typeof import.meta.url !== "string") {
+      throw new Error("@swc/core cannot be resolved: import.meta.url is unavailable in CJS bundle context");
+    }
     const localRequire = createRequire(import.meta.url);
     _parseSync = localRequire("@swc/core").parseSync;
   }
