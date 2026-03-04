@@ -17,7 +17,11 @@ const resolveSwc = (configPath: string): TransformSync => {
   try {
     const localRequire = createRequire(configPath);
     return localRequire("@swc/core").transformSync;
-  } catch {
+  } catch (primaryError) {
+    // import.meta.url is undefined in CJS bundles (esbuild replaces import.meta with {})
+    if (typeof import.meta.url !== "string") {
+      throw primaryError;
+    }
     // Fall back to package-level resolution (e.g., during tests or when user relies on bundled swc)
     const packageRequire = createRequire(import.meta.url);
     return packageRequire("@swc/core").transformSync;
@@ -99,7 +103,7 @@ export function executeConfigFile(configPath: string): Result<SodaGqlConfig, Con
   } catch (error) {
     const message =
       error instanceof Error && error.message.includes("Cannot find module '@swc/core'")
-        ? "@swc/core not found. Install it in your project: npm install -D @swc/core"
+        ? "@swc/core not found. Install it in your project: bun add -D @swc/core"
         : `Failed to load config: ${error instanceof Error ? error.message : String(error)}`;
     return err(
       configError({
