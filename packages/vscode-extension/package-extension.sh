@@ -9,6 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Remove stale node_modules from dist (defense-in-depth; .vscodeignore also excludes)
 rm -rf "$SCRIPT_DIR/dist/node_modules"
 
-# Package VSIX
+# Build with release profile (no sourcemaps, minified)
 cd "$SCRIPT_DIR"
+SODA_GQL_RELEASE=1 node build.mjs
+
+# Package VSIX
 bunx vsce package --no-dependencies "$@"

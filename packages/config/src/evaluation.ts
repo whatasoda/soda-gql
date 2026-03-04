@@ -3,7 +3,6 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path/posix";
 import { Script } from "node:vm";
 import { resolveRelativeImportWithExistenceCheck } from "@soda-gql/common";
-import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import { type ConfigError, configError } from "./errors";
 import { SodaGqlConfigContainer } from "./helper";
@@ -11,12 +10,28 @@ import { SodaGqlConfigContainer } from "./helper";
 import * as configModule from "./index";
 import type { SodaGqlConfig } from "./types";
 
+type TransformSync = typeof import("@swc/core").transformSync;
+
+/** Lazily resolve @swc/core from the config file's directory, falling back to package resolution. */
+const resolveSwc = (configPath: string): TransformSync => {
+  try {
+    const localRequire = createRequire(configPath);
+    return localRequire("@swc/core").transformSync;
+  } catch {
+    // Fall back to package-level resolution (e.g., during tests or when user relies on bundled swc)
+    const packageRequire = createRequire(import.meta.url);
+    return packageRequire("@swc/core").transformSync;
+  }
+};
+
 /**
  * Load and execute TypeScript config file synchronously using SWC + VM.
  */
 export function executeConfigFile(configPath: string): Result<SodaGqlConfig, ConfigError> {
   const filePath = resolve(configPath);
   try {
+    const transformSync = resolveSwc(filePath);
+
     // Read the config file
     const source = readFileSync(filePath, "utf-8");
 
@@ -82,10 +97,14 @@ export function executeConfigFile(configPath: string): Result<SodaGqlConfig, Con
 
     return ok(config);
   } catch (error) {
+    const message =
+      error instanceof Error && error.message.includes("Cannot find module '@swc/core'")
+        ? "@swc/core not found. Install it in your project: npm install -D @swc/core"
+        : `Failed to load config: ${error instanceof Error ? error.message : String(error)}`;
     return err(
       configError({
         code: "CONFIG_LOAD_FAILED",
-        message: `Failed to load config: ${error instanceof Error ? error.message : String(error)}`,
+        message,
         filePath: filePath,
         cause: error,
       }),

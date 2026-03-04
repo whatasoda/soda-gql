@@ -8,6 +8,7 @@ package-extension.sh
 # Development files
 node_modules/
 dist/node_modules/**
+dist/*.map
 .gitignore
 .git/
 

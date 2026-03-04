@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
+import { createRequire } from "node:module";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
-import { transformSync } from "@swc/core";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
 import type { BuilderError } from "../errors";
@@ -19,9 +19,19 @@ export type BuildIntermediateModulesInput = {
   readonly graphqlSystemPath: string;
 };
 
+type TransformSync = typeof import("@swc/core").transformSync;
+let _transformSync: TransformSync | undefined;
+const getTransformSync = (): TransformSync => {
+  if (!_transformSync) {
+    const localRequire = createRequire(import.meta.url);
+    _transformSync = localRequire("@swc/core").transformSync;
+  }
+  return _transformSync!;
+};
+
 const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: string }): Result<string, BuilderError> => {
   try {
-    const result = transformSync(sourceCode, {
+    const result = getTransformSync()(sourceCode, {
       filename: `${filePath}.ts`,
       jsc: {
         parser: {

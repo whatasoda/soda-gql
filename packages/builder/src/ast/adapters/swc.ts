@@ -10,7 +10,7 @@ import {
   type ScopeHandle,
   type SwcSpanConverter,
 } from "@soda-gql/common";
-import { parseSync } from "@swc/core";
+import { createRequire } from "node:module";
 import type { CallExpression, ImportDeclaration, Module } from "@swc/types";
 import type { GraphqlSystemIdentifyHelper } from "../../internal/graphql-system";
 import { createExportBindingsMap, type ScopeFrame } from "../common/scope";
@@ -910,10 +910,20 @@ const collectClassPropertyDiagnostics = (module: SwcModule, gqlIdentifiers: Read
  * The analyze method parses and collects all data in one pass,
  * ensuring the AST (Module) is released after analysis.
  */
+type ParseSync = typeof import("@swc/core").parseSync;
+let _parseSync: ParseSync | undefined;
+const getParseSync = (): ParseSync => {
+  if (!_parseSync) {
+    const localRequire = createRequire(import.meta.url);
+    _parseSync = localRequire("@swc/core").parseSync;
+  }
+  return _parseSync!;
+};
+
 export const swcAdapter: AnalyzerAdapter = {
   analyze(input: AnalyzeModuleInput, helper: GraphqlSystemIdentifyHelper): AnalyzerResult | null {
     // Parse source - AST is local to this function
-    const program = parseSync(input.source, {
+    const program = getParseSync()(input.source, {
       syntax: "typescript",
       tsx: input.filePath.endsWith(".tsx"),
       target: "es2022",

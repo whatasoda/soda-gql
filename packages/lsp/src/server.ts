@@ -10,6 +10,7 @@ import {
   createConnection,
   DidChangeWatchedFilesNotification,
   FileChangeType,
+  type InitializeParams,
   type InitializeResult,
   ProposedFeatures,
   type TextDocumentChangeEvent,
@@ -77,26 +78,16 @@ export const createLspServer = (options?: LspServerOptions) => {
   };
 
   connection.onInitialize((params): InitializeResult => {
-    const rootUri = params.rootUri ?? params.rootPath;
-    if (!rootUri) {
+    const roots = resolveWorkspaceRoots(params);
+    if (roots.length === 0) {
       connection.window.showErrorMessage("soda-gql LSP: no workspace root provided");
       return { capabilities: {} };
     }
 
-    // Convert URI to path
-    const rootPath = rootUri.startsWith("file://") ? fileURLToPath(rootUri) : rootUri;
-
-    // Discover all config files under the workspace
-    let configPaths = findAllConfigFiles(rootPath);
-
+    const configPaths = discoverConfigs(roots);
     if (configPaths.length === 0) {
-      // Fallback: try walking up from rootPath (for when workspace root != config dir)
-      const singleConfigPath = findConfigFile(rootPath);
-      if (!singleConfigPath) {
-        connection.window.showErrorMessage("soda-gql LSP: no config file found");
-        return { capabilities: {} };
-      }
-      configPaths = [singleConfigPath];
+      connection.window.showErrorMessage("soda-gql LSP: no config file found");
+      return { capabilities: {} };
     }
 
     const registryResult = createConfigRegistry(configPaths);
@@ -498,6 +489,43 @@ export const checkSwcUnavailable = (
     state.shown = true;
     showError(`soda-gql LSP: ${lspErrors.swcResolutionFailed().message}`);
   }
+};
+
+/** Extract workspace root paths from LSP initialize params. */
+const resolveWorkspaceRoots = (params: InitializeParams): string[] => {
+  if (params.workspaceFolders && params.workspaceFolders.length > 0) {
+    return params.workspaceFolders.map((f) => (f.uri.startsWith("file://") ? fileURLToPath(f.uri) : f.uri));
+  }
+  const rootUri = params.rootUri ?? params.rootPath;
+  if (rootUri) {
+    return [rootUri.startsWith("file://") ? fileURLToPath(rootUri) : rootUri];
+  }
+  return [];
+};
+
+/** Discover config files across multiple workspace roots (deduplicated). */
+const discoverConfigs = (roots: string[]): string[] => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const root of roots) {
+    const fromRoot = findAllConfigFiles(root);
+    if (fromRoot.length > 0) {
+      for (const p of fromRoot) {
+        if (!seen.has(p)) {
+          seen.add(p);
+          result.push(p);
+        }
+      }
+    } else {
+      // Per-root fallback: walk up from this root if findAllConfigFiles found nothing
+      const single = findConfigFile(root);
+      if (single && !seen.has(single)) {
+        seen.add(single);
+        result.push(single);
+      }
+    }
+  }
+  return result;
 };
 
 /** Convert LSP Position to byte offset in source text. */

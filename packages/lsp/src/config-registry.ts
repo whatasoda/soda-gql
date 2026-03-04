@@ -83,6 +83,10 @@ export const createConfigRegistry = (configPaths: readonly string[]): Result<Con
 
   return ok({
     resolveForUri: (uri: string) => {
+      // Only handle file:// URIs and absolute paths — remote/virtual schemes are unsupported
+      if (!uri.startsWith("file://") && !uri.startsWith("/")) {
+        return undefined;
+      }
       const filePath = uri.startsWith("file://") ? fileURLToPath(uri) : uri;
       const dirPath = dirname(filePath);
       const configPath = resolveConfigPath(dirPath);

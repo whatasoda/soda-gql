@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const isRelease = process.env.SODA_GQL_RELEASE === "1";
+const releaseOptions = isRelease
+  ? { sourcemap: false, minify: true }
+  : { sourcemap: true, minify: false };
 
 async function buildExtension() {
   await build({
@@ -20,8 +24,7 @@ async function buildExtension() {
     format: "cjs",
     platform: "node",
     target: "node18",
-    sourcemap: true,
-    minify: false,
+    ...releaseOptions,
     conditions: ["@soda-gql"],
   });
   console.log("✓ Extension client built successfully");
@@ -36,9 +39,13 @@ async function buildServer() {
     format: "cjs",
     platform: "node",
     target: "node18",
-    sourcemap: true,
-    minify: false,
+    ...releaseOptions,
     conditions: ["@soda-gql"],
+    // Suppress import.meta warnings from lazy @swc/core loaders in config/builder packages.
+    // These code paths use import.meta.url as fallback resolution base, which is undefined
+    // in CJS output. This is acceptable because the primary resolution paths (createRequire
+    // from configPath or __filename) handle the bundled context correctly.
+    logOverride: { "empty-import-meta": "silent" },
   });
   console.log("✓ LSP server built successfully");
 }
