@@ -1,6 +1,18 @@
 {
   "name": "soda-gql",
-  "owner": "soda-gql",
-  "version": "0.1.0",
-  "pluginRoot": "./claude-code-plugin"
+  "owner": {
+    "name": "soda-gql"
+  },
+  "metadata": {
+    "description": "Claude Code skills for soda-gql GraphQL development",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "soda-gql-skills",
+      "source": "./claude-code-plugin",
+      "description": "Claude Code skills for soda-gql GraphQL development",
+      "version": "0.1.0"
+    }
+  ]
 }
