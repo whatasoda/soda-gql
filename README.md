@@ -271,6 +271,8 @@ bun run soda-gql codegen schema
 bun run soda-gql typegen
 ```
 
+> **Note:** `@swc/core` is required for template extraction during typegen. Install it as a dev dependency: `bun add -D @swc/core`
+
 This produces the following output structure:
 
 ```
