@@ -4,6 +4,7 @@
   "description": "GraphQL language support for soda-gql with tagged template literals",
   "version": "0.12.0",
   "publisher": "soda-gql",
+  "type": "commonjs",
   "private": false,
   "license": "MIT",
   "author": {
