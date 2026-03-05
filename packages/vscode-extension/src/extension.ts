@@ -8,8 +8,12 @@ import * as vscode from "vscode";
 import { type LanguageClient, type LanguageClientOptions, type ServerOptions, TransportKind } from "vscode-languageclient/node";
 
 let client: LanguageClient | undefined;
+let outputChannel: vscode.OutputChannel | undefined;
 
 export const activate = (context: vscode.ExtensionContext): void => {
+  outputChannel = vscode.window.createOutputChannel("soda-gql GraphQL LSP");
+  context.subscriptions.push(outputChannel);
+
   const startClient = () => {
     if (client) return;
 
@@ -33,13 +37,11 @@ export const activate = (context: vscode.ExtensionContext): void => {
 
     // Client options: configure which documents the LSP should handle
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [
-        { language: "typescript" },
-        { language: "typescriptreact" },
-      ],
+      documentSelector: [{ language: "typescript" }, { language: "typescriptreact" }],
       synchronize: {
         fileEvents: [],
       },
+      outputChannel,
     };
 
     // Create and start the language client
@@ -47,7 +49,14 @@ export const activate = (context: vscode.ExtensionContext): void => {
     const lc = new LC("soda-gql", "soda-gql GraphQL LSP", serverOptions, clientOptions) as LanguageClient;
     client = lc;
 
-    lc.start();
+    lc.start().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      outputChannel?.appendLine(`[error] LSP server failed to start: ${message}`);
+      if (error instanceof Error && error.stack) {
+        outputChannel?.appendLine(error.stack);
+      }
+      client = undefined;
+    });
   };
 
   // Gate LSP client on workspace trust — the server loads native code (@swc/core)
