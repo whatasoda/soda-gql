@@ -188,7 +188,7 @@ describe("typegen key inference E2E", () => {
     // This test verifies that prebuilt type inference works correctly.
     // Codegen generates PrebuiltContext types in index.ts that preserve
     // TKey for fragments and TOperationName for operations.
-    test.skip(
+    test(
       "prebuilt module compiles with correct type resolution",
       async () => {
         const result = await runTypegen({ config: workspace.config });
