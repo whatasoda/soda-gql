@@ -5,7 +5,7 @@ import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethod } from "./var-builder";
+import { createVarMethodFactory } from "./var-builder";
 
 /**
  * Schema for testing shorthand field selection.
@@ -93,13 +93,14 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const createMethod = createVarMethodFactory<Schema>();
 const inputTypeMethods = {
-  ID: createVarMethod("scalar", "ID"),
-  String: createVarMethod("scalar", "String"),
-  Int: createVarMethod("scalar", "Int"),
-  Boolean: createVarMethod("scalar", "Boolean"),
-  Status: createVarMethod("enum", "Status"),
-  Role: createVarMethod("enum", "Role"),
+  ID: createMethod("scalar", "ID"),
+  String: createMethod("scalar", "String"),
+  Int: createMethod("scalar", "Int"),
+  Boolean: createMethod("scalar", "Boolean"),
+  Status: createMethod("enum", "Status"),
+  Role: createMethod("enum", "Role"),
 };
 
 describe("Shorthand Field Selection", () => {

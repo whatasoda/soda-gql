@@ -63,37 +63,6 @@ export type GenericVarSpecifier<
 };
 
 /**
- * Creates a variable method for a specific input type.
- * This is used by codegen to generate type-specific variable methods.
- *
- * @deprecated Use createVarMethodFactory instead for proper type inference with nested input objects.
- */
-export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName extends string>(
-  kind: TKind,
-  typeName: TTypeName,
-) => {
-  return <
-    TSchema extends AnyGraphqlSchema,
-    const TModifier extends TypeModifier,
-    const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
-    const TDirectives extends AnyConstDirectiveAttachments = {},
-  >(
-    modifier: TModifier,
-    extras?: {
-      default?: TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>);
-      directives?: TDirectives;
-    },
-  ): GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> =>
-    ({
-      kind,
-      name: typeName,
-      modifier,
-      defaultValue: extras?.default ? { default: extras.default() } : null,
-      directives: extras?.directives ?? {},
-    }) as GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
-};
-
-/**
  * Creates a factory function for generating schema-scoped variable methods.
  * This ensures proper type inference for nested input objects by binding the schema type upfront.
  *

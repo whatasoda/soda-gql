@@ -4,7 +4,7 @@ import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethod } from "./var-builder";
+import { createVarMethodFactory } from "./var-builder";
 
 const schema = {
   label: "test" as const,
@@ -39,9 +39,10 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const createMethod = createVarMethodFactory<Schema>();
 const inputTypeMethods = {
-  ID: createVarMethod("scalar", "ID"),
-  String: createVarMethod("scalar", "String"),
+  ID: createMethod("scalar", "ID"),
+  String: createMethod("scalar", "String"),
 };
 
 describe("createGqlInvoker", () => {

@@ -5,7 +5,7 @@ import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethod } from "./var-builder";
+import { createVarMethodFactory } from "./var-builder";
 
 const schema = {
   label: "test" as const,
@@ -42,11 +42,12 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const createMethod = createVarMethodFactory<Schema>();
 const inputTypeMethods = {
-  Boolean: createVarMethod("scalar", "Boolean"),
-  ID: createVarMethod("scalar", "ID"),
-  Int: createVarMethod("scalar", "Int"),
-  String: createVarMethod("scalar", "String"),
+  Boolean: createMethod("scalar", "Boolean"),
+  ID: createMethod("scalar", "ID"),
+  Int: createMethod("scalar", "Int"),
+  String: createMethod("scalar", "String"),
 };
 
 describe("helpers injection via adapter", () => {
