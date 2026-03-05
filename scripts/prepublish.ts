@@ -406,9 +406,7 @@ const validatePlatformWorkspaceResiduals = async () => {
   const DEP_FIELDS = ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"] as const;
   let platformDirs: Dirent[];
   try {
-    platformDirs = (await readdir("dist", { withFileTypes: true })).filter(
-      (e) => e.isDirectory() && e.name.startsWith("swc-"),
-    );
+    platformDirs = (await readdir("dist", { withFileTypes: true })).filter((e) => e.isDirectory() && e.name.startsWith("swc-"));
   } catch {
     return; // No dist directory — nothing to check
   }
