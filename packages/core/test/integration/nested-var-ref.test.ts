@@ -59,6 +59,18 @@ const inputTypeMethods = {
   Filter: createMethod("input", "Filter"),
 } satisfies InputTypeMethods<Schema>;
 
+// NOTE: The `(p: any)` annotations in getNameAt/getValueAt/getVariablePath selectors below
+// are intentional and cannot be removed. These tests use VarRefs created via
+// `createVarRefFromNestedValue` (which returns `AnyVarRef`) rather than the schema-aware
+// `$.varName` references. The runtime functions `getNameAt`/`getValueAt`/`getVariablePath` in
+// var-ref-tools.ts use the signature `<T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: T) => U)`,
+// where `T` has no constraint tying it to the VarRef's brand. As a result, TypeScript infers
+// `T` as `unknown`, making property access impossible without the `any` annotation.
+//
+// The schema-aware proxy typing (via `SchemaAwareGetValueAt`) only works when using the
+// `$var.getValueAt($.varName, ...)` pattern inside a gql composer callback, where the VarRef
+// is a `DeclaredVariables` reference with a concrete brand. See the type-level tests in
+// `packages/core/test/types/var-ref-tools.test.ts` for verification of schema-aware inference.
 describe("nested VarRef with $var helpers", () => {
   describe("$var.getNameAt", () => {
     it("extracts variable name from nested structure in metadata", () => {
