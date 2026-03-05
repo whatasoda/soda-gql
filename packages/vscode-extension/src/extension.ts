@@ -13,7 +13,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
   const startClient = () => {
     if (client) return;
 
-    // The LSP server is bundled into dist/server.js by build.js
+    // The LSP server is bundled into dist/server.js by build.mjs
     const serverModule = context.asAbsolutePath(path.join("dist", "server.js"));
 
     // Server debug options
@@ -34,11 +34,10 @@ export const activate = (context: vscode.ExtensionContext): void => {
     // Client options: configure which documents the LSP should handle
     const clientOptions: LanguageClientOptions = {
       documentSelector: [
-        { scheme: "file", language: "typescript" },
-        { scheme: "file", language: "typescriptreact" },
+        { language: "typescript" },
+        { language: "typescriptreact" },
       ],
       synchronize: {
-        // Watch .graphql files for schema changes
         fileEvents: [],
       },
     };

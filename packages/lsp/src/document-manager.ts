@@ -387,11 +387,30 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
   let swcLoadAttempted = swcOptions?.parseSync !== undefined;
   let swcUnavailable = swcOptions?.parseSync === null;
 
+  /** Get this module's base path for createRequire fallback (works in both CJS and ESM). */
+  const getModuleBase = (): string | undefined => {
+    try {
+      if (typeof __filename !== "undefined") return __filename;
+    } catch {
+      // __filename not defined in strict ESM
+    }
+    try {
+      if (import.meta.url) return import.meta.url;
+    } catch {
+      // import.meta not available in CJS
+    }
+    return undefined;
+  };
+
   const getParseSync = (): typeof import("@swc/core").parseSync | null => {
     if (!swcLoadAttempted) {
       swcLoadAttempted = true;
-      // Try resolveFrom first (project-local), then fall back to LSP package location
-      const resolveBases = swcOptions?.resolveFrom ? [swcOptions.resolveFrom, import.meta.url] : [import.meta.url];
+      // Try resolveFrom first (project-local), then fall back to this module's location
+      const fallback = getModuleBase();
+      const resolveBases = [
+        ...(swcOptions?.resolveFrom ? [swcOptions.resolveFrom] : []),
+        ...(fallback ? [fallback] : []),
+      ];
       for (const base of resolveBases) {
         try {
           const localRequire = createRequire(base);
