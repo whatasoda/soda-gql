@@ -350,7 +350,7 @@ const generateTypesCode = (
     " * @generated",
     " */",
     "",
-    'import type { PrebuiltTypeRegistry } from "@soda-gql/core";',
+    'import type { AssertExtends, PrebuiltTypeRegistry } from "@soda-gql/core";',
   ];
 
   // Generate import from _internal-injects.ts
@@ -417,6 +417,7 @@ const generateTypesCode = (
     }
     lines.push("  };");
     lines.push("};");
+    lines.push(`type _AssertPrebuiltTypes_${schemaName} = AssertExtends<PrebuiltTypes_${schemaName}, PrebuiltTypeRegistry>;`);
     lines.push("");
   }
 

@@ -15,6 +15,7 @@
 export type PrebuiltTypeRegistry = {
   readonly fragments: {
     readonly [key: string]: {
+      readonly typename: string;
       readonly input: unknown;
       readonly output: object;
     };
@@ -41,3 +42,6 @@ export type PrebuiltEntryNotFound<TKey extends string, TKind extends "fragment" 
   readonly __key: TKey;
   readonly __kind: TKind;
 };
+
+/** Compile-time assertion: produces TS2344 if T does not extend U. */
+export type AssertExtends<T extends U, U> = T;

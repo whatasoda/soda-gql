@@ -26,6 +26,7 @@ export {
 } from "./type-calculator";
 // Type definitions
 export type {
+  AssertExtends,
   PrebuiltEntryNotFound,
   PrebuiltTypeRegistry,
 } from "./types";
