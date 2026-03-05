@@ -407,10 +407,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
       swcLoadAttempted = true;
       // Try resolveFrom first (project-local), then fall back to this module's location
       const fallback = getModuleBase();
-      const resolveBases = [
-        ...(swcOptions?.resolveFrom ? [swcOptions.resolveFrom] : []),
-        ...(fallback ? [fallback] : []),
-      ];
+      const resolveBases = [...(swcOptions?.resolveFrom ? [swcOptions.resolveFrom] : []), ...(fallback ? [fallback] : [])];
       for (const base of resolveBases) {
         try {
           const localRequire = createRequire(base);

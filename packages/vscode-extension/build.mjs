@@ -11,9 +11,7 @@ import { build } from "esbuild";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isRelease = process.env.SODA_GQL_RELEASE === "1";
-const releaseOptions = isRelease
-  ? { sourcemap: false, minify: true }
-  : { sourcemap: true, minify: false };
+const releaseOptions = isRelease ? { sourcemap: false, minify: true } : { sourcemap: true, minify: false };
 
 async function buildExtension() {
   await build({

@@ -1343,14 +1343,14 @@ type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <T
 
 type FieldFactoryFn_${name} = (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>);
 ${(() => {
-        const fieldNames = allFieldNames?.get(name);
-        if (fieldNames && fieldNames.length > 0) {
-          const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
-          return `type AllObjectFieldNames_${name} = ${union};
+  const fieldNames = allFieldNames?.get(name);
+  if (fieldNames && fieldNames.length > 0) {
+    const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
+    return `type AllObjectFieldNames_${name} = ${union};
 type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]: FieldFactoryFn_${name} } & Record<string, FieldFactoryFn_${name}>;`;
-        }
-        return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
-      })()}
+  }
+  return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
+})()}
 type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
 
 type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(

@@ -17,7 +17,7 @@ import {
   extractFragmentVariables,
   preprocessFragmentArgs,
 } from "@soda-gql/core";
-import { Kind, type SelectionSetNode, parse as parseGraphql } from "graphql";
+import { Kind, parse as parseGraphql, type SelectionSetNode } from "graphql";
 import type { ExtractedTemplate } from "./template-extractor";
 
 /** Result of converting templates to field selections. */

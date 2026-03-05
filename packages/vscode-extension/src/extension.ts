@@ -33,10 +33,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
 
     // Client options: configure which documents the LSP should handle
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [
-        { language: "typescript" },
-        { language: "typescriptreact" },
-      ],
+      documentSelector: [{ language: "typescript" }, { language: "typescriptreact" }],
       synchronize: {
         fileEvents: [],
       },
