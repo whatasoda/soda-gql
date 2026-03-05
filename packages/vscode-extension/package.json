@@ -72,6 +72,6 @@
   "scripts": {
     "build": "node build.mjs",
     "package": "./package-extension.sh",
-    "package:install": "./package-extension.sh -o soda-gql.vsix && cursor --install-extension soda-gql.vsix && rm soda-gql.vsix"
+    "package:install": "cursor --uninstall-extension soda-gql.soda-gql-vscode-extension 2>/dev/null; ./package-extension.sh -o soda-gql.vsix && cursor --install-extension soda-gql.vsix && rm soda-gql.vsix"
   }
 }
