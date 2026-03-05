@@ -18,7 +18,6 @@ import type {
 import type { CreatableInputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
 import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
-import type { SelectableProxy } from "./var-ref-tools";
 import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue } from "./var-ref-tools";
 
 /**
@@ -213,7 +212,7 @@ export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends 
  */
 export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
   varRef: VarRef<T>,
-  selector: (proxy: SelectableProxy<ResolveTypeFromMeta<TSchema, T>>) => U,
+  selector: (proxy: ResolveTypeFromMeta<TSchema, T>) => U,
 ) => U;
 
 /**

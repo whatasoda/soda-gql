@@ -28,62 +28,6 @@ export type PrebuiltTypeRegistry = {
 };
 
 /**
- * Empty registry type for when no prebuilt types are available.
- */
-export type EmptyPrebuiltTypeRegistry = {
-  readonly fragments: {};
-  readonly operations: {};
-};
-
-/**
- * Extract the input type for a fragment from the registry.
- */
-export type PrebuiltFragmentInput<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends keyof TRegistry["fragments"] & string,
-> = TRegistry["fragments"][TKey]["input"];
-
-/**
- * Extract the output type for a fragment from the registry.
- */
-export type PrebuiltFragmentOutput<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends keyof TRegistry["fragments"] & string,
-> = TRegistry["fragments"][TKey]["output"];
-
-/**
- * Extract the input type for an operation from the registry.
- */
-export type PrebuiltOperationInput<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends keyof TRegistry["operations"] & string,
-> = TRegistry["operations"][TKey]["input"];
-
-/**
- * Extract the output type for an operation from the registry.
- */
-export type PrebuiltOperationOutput<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends keyof TRegistry["operations"] & string,
-> = TRegistry["operations"][TKey]["output"];
-
-/**
- * Check if a key exists in the fragment registry.
- */
-export type HasPrebuiltFragment<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends string,
-> = TKey extends keyof TRegistry["fragments"] ? true : false;
-
-/**
- * Check if a key exists in the operation registry.
- */
-export type HasPrebuiltOperation<
-  TRegistry extends PrebuiltTypeRegistry,
-  TKey extends string,
-> = TKey extends keyof TRegistry["operations"] ? true : false;
-
-/**
  * Branded error type for missing prebuilt registry entries.
  *
  * This type intentionally produces a clear error message at compile time
@@ -96,17 +40,4 @@ export type PrebuiltEntryNotFound<TKey extends string, TKind extends "fragment" 
   readonly __message: `${TKind} "${TKey}" not found in PrebuiltTypeRegistry. Run 'soda-gql typegen' to generate prebuilt types.`;
   readonly __key: TKey;
   readonly __kind: TKind;
-};
-
-/**
- * Branded error type for unrecognized element types in prebuilt resolution.
- *
- * This type is returned when ResolvePrebuiltElement receives a type that
- * is neither Operation nor Fragment. This should not happen in normal usage,
- * but provides a clear error message for debugging if it does.
- */
-export type PrebuiltUnknownElement<TElement> = {
-  readonly __error: "PREBUILT_UNKNOWN_ELEMENT";
-  readonly __message: "Element type not recognized. Expected Operation or Fragment.";
-  readonly __element: TElement;
 };
