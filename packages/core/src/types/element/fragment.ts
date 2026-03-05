@@ -12,7 +12,7 @@ import { GqlElement } from "./gql-element";
 /**
  * Type alias for any Fragment instance.
  */
-export type AnyFragment = Fragment<string, any, AnyFieldsExtended, any>;
+export type AnyFragment = Fragment<string, any, any, any>;
 
 /**
  * Type inference metadata for fragments.

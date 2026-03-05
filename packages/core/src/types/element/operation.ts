@@ -22,7 +22,7 @@ export type AnyOperationOf<TOperationType extends OperationType> = Operation<
   string,
   string[],
   any,
-  AnyFieldsExtended,
+  any,
   any
 >;
 
