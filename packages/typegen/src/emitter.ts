@@ -85,6 +85,7 @@ type SchemaGroup = {
 type GroupBySchemaResult = {
   readonly grouped: Map<string, SchemaGroup>;
   readonly warnings: string[];
+  readonly skippedFragmentCount: number;
 };
 
 /**
@@ -103,6 +104,7 @@ const groupBySchema = (
 ): Result<GroupBySchemaResult, BuilderError | TypegenError> => {
   const grouped = new Map<string, SchemaGroup>();
   const warnings: string[] = [];
+  let skippedFragmentCount = 0;
 
   // Initialize groups for each schema
   for (const schemaName of Object.keys(schemas)) {
@@ -131,7 +133,12 @@ const groupBySchema = (
     if (selection.type === "fragment") {
       // Skip fragments without keys (they won't be included in PrebuiltTypes)
       if (!selection.key) {
-        warnings.push(`[prebuilt] Fragment "${canonicalId}" skipped: missing 'key' property`);
+        skippedFragmentCount++;
+        warnings.push(
+          `[prebuilt] Fragment "${canonicalId}" skipped: missing 'key' property. ` +
+            `Use tagged template syntax fragment("Name", "Type")\`{ ... }\` to auto-assign a key, ` +
+            `or set 'key' explicitly in the callback builder.`,
+        );
         continue;
       }
 
@@ -191,7 +198,7 @@ const groupBySchema = (
     }
   }
 
-  return ok({ grouped, warnings });
+  return ok({ grouped, warnings, skippedFragmentCount });
 };
 
 /**
@@ -430,6 +437,7 @@ const generateTypesCode = (
 export type PrebuiltTypesEmitResult = {
   readonly path: string;
   readonly warnings: readonly string[];
+  readonly skippedFragmentCount: number;
 };
 
 /**
@@ -471,7 +479,7 @@ export const emitPrebuiltTypes = async (
   if (groupResult.isErr()) {
     return err(groupResult.error);
   }
-  const { grouped, warnings } = groupResult.value;
+  const { grouped, warnings, skippedFragmentCount } = groupResult.value;
 
   // Generate the types code
   const code = generateTypesCode(grouped, schemas, injectsModulePath);
@@ -481,7 +489,7 @@ export const emitPrebuiltTypes = async (
 
   try {
     await writeFile(typesPath, code, "utf-8");
-    return ok({ path: typesPath, warnings });
+    return ok({ path: typesPath, warnings, skippedFragmentCount });
   } catch (error) {
     return err(
       builderErrors.writeFailed(

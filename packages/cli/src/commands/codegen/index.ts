@@ -18,6 +18,7 @@ import {
 } from "@soda-gql/codegen";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { loadConfig } from "@soda-gql/config";
+import { runTypegen } from "@soda-gql/typegen";
 import { err, ok } from "neverthrow";
 import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";
@@ -30,15 +31,16 @@ type SchemaDocument = Parameters<typeof transformParsedGraphql>[1]["schemaDocume
 const CODEGEN_HELP = `Usage: soda-gql codegen [subcommand] [options]
 
 When run without a subcommand, executes the full pipeline:
-  codegen graphql (if configured) → codegen schema (with reachability filter)
+  codegen graphql (if configured) → codegen schema → typegen
 
 Subcommands:
   schema       Generate graphql-system runtime module from schema
   graphql      Generate compat code from .graphql operation files
 
 Options:
-  --config <path>  Path to soda-gql.config.ts
-  --help, -h       Show this help message
+  --config <path>    Path to soda-gql.config.ts
+  --skip-typegen     Skip prebuilt type generation in unified pipeline
+  --help, -h         Show this help message
 `;
 
 type CodegenCommandResult = CommandResult<CommandSuccess>;
@@ -178,6 +180,21 @@ const unifiedCodegen = async (argv: readonly string[]): Promise<CodegenCommandRe
     const writeResult = await writeGeneratedFiles(compatFiles.value.files);
     if (writeResult.isErr()) {
       return err(writeResult.error);
+    }
+  }
+
+  // Step 4: typegen (generate prebuilt types)
+  const skipTypegen = argv.includes("--skip-typegen");
+  if (!skipTypegen) {
+    const typegenResult = await runTypegen({ config });
+    if (typegenResult.isErr()) {
+      return err(cliErrors.fromTypegen(typegenResult.error));
+    }
+    const { fragmentCount, operationCount, skippedFragmentCount, warnings: typegenWarnings } = typegenResult.value;
+    const skippedNote = skippedFragmentCount > 0 ? ` (${skippedFragmentCount} skipped)` : "";
+    messages.push(`[typegen] Generated ${fragmentCount} fragment(s)${skippedNote} and ${operationCount} operation(s)`);
+    for (const w of typegenWarnings) {
+      messages.push(`  warning: ${w}`);
     }
   }
 

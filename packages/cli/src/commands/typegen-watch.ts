@@ -75,7 +75,9 @@ const executeRegenerate = async (
     if (result.isOk()) {
       state.generation++;
       console.log(`[typegen] Done in ${elapsed}ms`);
-      console.log(`  Fragments: ${result.value.fragmentCount}, Operations: ${result.value.operationCount}`);
+      const skippedNote =
+        result.value.skippedFragmentCount > 0 ? ` (${result.value.skippedFragmentCount} skipped)` : "";
+      console.log(`  Fragments: ${result.value.fragmentCount}${skippedNote}, Operations: ${result.value.operationCount}`);
 
       if (result.value.warnings.length > 0) {
         console.log(`  Warnings: ${result.value.warnings.length}`);

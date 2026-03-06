@@ -157,41 +157,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   const templateSelections = convertTemplatesToSelections(scanResult.templates, schemas);
 
-  // Merge builder and template selections into a combined map.
-  // Template selections are authoritative for elements found by both scanners.
-  // Deduplication is per-element (file + GraphQL name), not per-file, so that
-  // callback-builder operations in files that also contain tagged templates are preserved.
-  // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
-  // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
-  const extractFilePart = (id: string): string => {
-    const filePart = id.split("::")[0] ?? "";
-    // Normalize absolute paths to relative using baseDir
-    if (filePart.startsWith("/")) {
-      return relative(config.baseDir, filePart);
-    }
-    return filePart;
-  };
-
-  const extractElementName = (data: FieldSelectionData): string | undefined =>
-    data.type === "fragment" ? data.key : data.operationName;
-
-  // Build set of (file, elementName) pairs from template selections
-  const templateElements = new Set<string>();
-  for (const [id, data] of templateSelections.selections) {
-    const name = extractElementName(data);
-    if (name) templateElements.add(`${extractFilePart(id)}::${name}`);
-  }
-
-  const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
-  for (const [id, data] of builderSelections) {
-    // Only skip builder elements that were also found by the template scanner
-    const name = extractElementName(data);
-    if (name && templateElements.has(`${extractFilePart(id)}::${name}`)) continue;
-    fieldSelections.set(id, data);
-  }
-  for (const [id, data] of templateSelections.selections) {
-    fieldSelections.set(id, data);
-  }
+  const fieldSelections = mergeSelections(builderSelections, templateSelections.selections, config.baseDir);
 
   const scanWarnings = [...scanResult.warnings, ...templateSelections.warnings];
 
@@ -207,7 +173,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return err(emitResult.error);
   }
 
-  const { warnings: emitWarnings } = emitResult.value;
+  const { warnings: emitWarnings, skippedFragmentCount } = emitResult.value;
 
   // Count fragments and operations
   let fragmentCount = 0;
@@ -226,6 +192,57 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     prebuiltTypesPath,
     fragmentCount,
     operationCount,
+    skippedFragmentCount,
     warnings: allWarnings,
   } satisfies TypegenSuccess);
+};
+
+const extractElementName = (data: FieldSelectionData): string | undefined =>
+  data.type === "fragment" ? data.key : data.operationName;
+
+/**
+ * Merge builder and template selections into a combined map.
+ *
+ * Builder selections are authoritative — VM evaluation correctly resolves
+ * fragment spreads that static template analysis cannot handle.
+ * Template selections serve as fallback for elements only found by the scanner.
+ *
+ * Deduplication is per-element (file + GraphQL name), not per-file, so that
+ * callback-builder operations in files that also contain tagged templates are preserved.
+ */
+export const mergeSelections = (
+  builderSelections: ReadonlyMap<CanonicalId, FieldSelectionData>,
+  templateSelections: ReadonlyMap<CanonicalId, FieldSelectionData>,
+  baseDir: string,
+): Map<CanonicalId, FieldSelectionData> => {
+  // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
+  // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
+  const extractFilePart = (id: string): string => {
+    const filePart = id.split("::")[0] ?? "";
+    if (filePart.startsWith("/")) {
+      return relative(baseDir, filePart);
+    }
+    return filePart;
+  };
+
+  // Build set of (file, elementName) pairs from builder selections
+  const builderElements = new Set<string>();
+  for (const [id, data] of builderSelections) {
+    const name = extractElementName(data);
+    if (name) builderElements.add(`${extractFilePart(id)}::${name}`);
+  }
+
+  const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
+  // Builder selections first (authoritative)
+  for (const [id, data] of builderSelections) {
+    fieldSelections.set(id, data);
+  }
+  // Template selections as fallback for elements not found by builder
+  for (const [id, data] of templateSelections) {
+    const name = extractElementName(data);
+    if (name && builderElements.has(`${extractFilePart(id)}::${name}`)) continue;
+    fieldSelections.set(id, data);
+  }
+
+  return fieldSelections;
 };

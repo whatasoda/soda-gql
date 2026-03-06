@@ -286,6 +286,8 @@ describe("emitPrebuiltTypes", () => {
         expect(result.value.warnings).toHaveLength(1);
         expect(result.value.warnings[0]).toContain("/src/anon.ts::Fragment");
         expect(result.value.warnings[0]).toContain("missing 'key' property");
+        expect(result.value.warnings[0]).toContain("tagged template syntax");
+        expect(result.value.skippedFragmentCount).toBe(1);
 
         // Verify the fragment is not included in output
         const content = await readFile(result.value.path, "utf-8");
@@ -336,6 +338,7 @@ describe("emitPrebuiltTypes", () => {
         expect(result.value.warnings).toHaveLength(2);
         expect(result.value.warnings[0]).toContain("missing 'key' property");
         expect(result.value.warnings[1]).toContain("missing 'key' property");
+        expect(result.value.skippedFragmentCount).toBe(2);
       }
     });
 
