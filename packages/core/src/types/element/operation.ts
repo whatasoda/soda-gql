@@ -5,7 +5,7 @@
 
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
 import type { AnyFieldsExtended, InferFieldsExtended } from "../fragment";
-import type { AnyConstAssignableInput, AnyGraphqlSchema, ConstAssignableInputFromVarDefs, OperationType } from "../schema";
+import type { AnyGraphqlSchema, ConstAssignableInputFromVarDefs, OperationType } from "../schema";
 import type { VariableDefinitions } from "../type-foundation";
 import { GqlElement, type GqlElementContext } from "./gql-element";
 
@@ -38,7 +38,7 @@ type OperationArtifact<
   TOperationType extends OperationType,
   TOperationName extends string,
   TVariableNames extends string[],
-  TVariables extends AnyConstAssignableInput,
+  TVariables extends Record<string, unknown>,
   TFields extends Partial<AnyFieldsExtended>,
   TData extends object,
 > = {
@@ -68,7 +68,7 @@ export class Operation<
     TOperationType extends OperationType,
     TOperationName extends string,
     TVariableNames extends string[],
-    TVariables extends AnyConstAssignableInput,
+    TVariables extends Record<string, unknown>,
     TFields extends Partial<AnyFieldsExtended>,
     TData extends object,
   >
