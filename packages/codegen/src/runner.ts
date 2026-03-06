@@ -168,10 +168,12 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
   // Generate index.ts wrapper with prebuilt-style typing
   const schemaNames = Object.keys(options.schemas);
 
-  // Collect all field names from all object types per schema
+  // Collect field names and calculate stats/hashes per schema
   const allFieldNames = new Map<string, string[]>();
   for (const [name, document] of schemas.entries()) {
     const schemaIndex = createSchemaIndex(document);
+
+    // Collect field names from all object types
     const fieldNameSet = new Set<string>();
     for (const [objectName, record] of schemaIndex.objects.entries()) {
       if (objectName.startsWith("__")) continue;
@@ -180,13 +182,8 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       }
     }
     allFieldNames.set(name, Array.from(fieldNameSet).sort());
-  }
 
-  const indexCode = generateIndexModule(schemaNames, allFieldNames);
-
-  // Calculate individual schema stats and hashes
-  for (const [name, document] of schemas.entries()) {
-    const schemaIndex = createSchemaIndex(document);
+    // Calculate stats and hash
     const objects = Array.from(schemaIndex.objects.keys()).filter((n) => !n.startsWith("__")).length;
     const enums = Array.from(schemaIndex.enums.keys()).filter((n) => !n.startsWith("__")).length;
     const inputs = Array.from(schemaIndex.inputs.keys()).filter((n) => !n.startsWith("__")).length;
@@ -200,6 +197,8 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       unions,
     };
   }
+
+  const indexCode = generateIndexModule(schemaNames, allFieldNames);
 
   // Write _internal-injects.ts (adapter imports only, referenced by both _internal.ts and prebuilt)
   const injectsPath = join(dirname(outPath), "_internal-injects.ts");
