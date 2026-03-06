@@ -98,15 +98,39 @@ const filterPlaceholderSpreads = (selectionSet: SelectionSetNode): SelectionSetN
     }),
 });
 
+/** Simple matching-paren finder for template content (no comments/strings to handle). */
+const findClosingParen = (source: string, openIndex: number): number => {
+  let depth = 0;
+  for (let i = openIndex; i < source.length; i++) {
+    if (source[i] === "(") depth++;
+    else if (source[i] === ")") {
+      depth--;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+};
+
 /**
  * Reconstruct full GraphQL source from an extracted template.
  * For curried syntax (new), prepends the definition header from tag call arguments.
+ * For curried fragments with Fragment Arguments, repositions variable declarations
+ * before the on-clause to produce RFC-compliant syntax.
  * For old syntax, returns content as-is.
  */
 const reconstructGraphql = (template: ExtractedTemplate): string => {
   if (template.elementName) {
     if (template.kind === "fragment" && template.typeName) {
-      return `fragment ${template.elementName} on ${template.typeName} ${template.content}`;
+      const trimmed = template.content.trim();
+      if (trimmed.startsWith("(")) {
+        const closeIdx = findClosingParen(trimmed, 0);
+        if (closeIdx !== -1) {
+          const varDecls = trimmed.slice(0, closeIdx + 1);
+          const selectionSet = trimmed.slice(closeIdx + 1).trim();
+          return `fragment ${template.elementName}${varDecls} on ${template.typeName} ${selectionSet}`;
+        }
+      }
+      return `fragment ${template.elementName} on ${template.typeName} ${trimmed}`;
     }
     return `${template.kind} ${template.elementName} ${template.content}`;
   }

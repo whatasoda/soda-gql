@@ -350,6 +350,36 @@ describe("convertTemplatesToSelections", () => {
       }
     });
 
+    it("converts curried fragment template with Fragment Arguments", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/fragments.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "fragment",
+              elementName: "UserFields",
+              typeName: "User",
+              content: "($filter: String!) { id name }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/fragments.ts::UserFields" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("fragment");
+      if (selection!.type === "fragment") {
+        expect(selection!.key).toBe("UserFields");
+        expect(selection!.typename).toBe("User");
+      }
+    });
+
     it("converts curried mutation template", () => {
       const templates = new Map<string, readonly ExtractedTemplate[]>([
         [
