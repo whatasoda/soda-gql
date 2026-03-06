@@ -141,7 +141,7 @@ describe("emitPrebuiltTypes", () => {
         expect(content).toContain("/**");
         expect(content).toContain(" * Prebuilt type registry.");
         expect(content).toContain(" * @generated");
-        expect(content).toContain('import type { PrebuiltTypeRegistry } from "@soda-gql/core"');
+        expect(content).toContain('import type { AssertExtends, PrebuiltTypeRegistry } from "@soda-gql/core"');
       }
     });
 
