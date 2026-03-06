@@ -207,7 +207,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     return err(emitResult.error);
   }
 
-  const { warnings: emitWarnings } = emitResult.value;
+  const { warnings: emitWarnings, skippedFragmentCount } = emitResult.value;
 
   // Count fragments and operations
   let fragmentCount = 0;
@@ -226,6 +226,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     prebuiltTypesPath,
     fragmentCount,
     operationCount,
+    skippedFragmentCount,
     warnings: allWarnings,
   } satisfies TypegenSuccess);
 };

@@ -54,6 +54,11 @@ export type TypegenSuccess = {
   readonly operationCount: number;
 
   /**
+   * Number of fragments skipped due to missing 'key' property.
+   */
+  readonly skippedFragmentCount: number;
+
+  /**
    * Warnings encountered during type generation.
    */
   readonly warnings: readonly string[];

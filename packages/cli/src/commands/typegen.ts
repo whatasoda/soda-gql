@@ -37,6 +37,7 @@ type TypegenSuccessData = {
   prebuiltTypesPath: string;
   fragmentCount: number;
   operationCount: number;
+  skippedFragmentCount: number;
   warnings: readonly string[];
 };
 
@@ -44,7 +45,8 @@ const formatSuccess = (data: TypegenSuccessData): string => {
   const lines: string[] = [];
   lines.push(`Generated prebuilt types:`);
   lines.push(`  Types: ${data.prebuiltTypesPath}`);
-  lines.push(`  Fragments: ${data.fragmentCount}, Operations: ${data.operationCount}`);
+  const skippedNote = data.skippedFragmentCount > 0 ? ` (${data.skippedFragmentCount} skipped)` : "";
+  lines.push(`  Fragments: ${data.fragmentCount}${skippedNote}, Operations: ${data.operationCount}`);
 
   if (data.warnings.length > 0) {
     lines.push("");
@@ -121,6 +123,7 @@ export const typegenCommand = async (argv: readonly string[]): Promise<TypegenCo
     prebuiltTypesPath: result.value.prebuiltTypesPath,
     fragmentCount: result.value.fragmentCount,
     operationCount: result.value.operationCount,
+    skippedFragmentCount: result.value.skippedFragmentCount,
     warnings: result.value.warnings,
   };
 
