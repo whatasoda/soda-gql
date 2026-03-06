@@ -1319,7 +1319,7 @@ type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TNa
         TOperationType,
         TName,
         string[],
-        PrebuiltTypes_${name}["operations"][TName]["input"] & AnyConstAssignableInput,
+        PrebuiltTypes_${name}["operations"][TName]["input"],
         Partial<AnyFields>,
         PrebuiltTypes_${name}["operations"][TName]["output"] & object
       >
