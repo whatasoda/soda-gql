@@ -26,14 +26,7 @@ export {
 } from "./type-calculator";
 // Type definitions
 export type {
-  EmptyPrebuiltTypeRegistry,
-  HasPrebuiltFragment,
-  HasPrebuiltOperation,
+  AssertExtends,
   PrebuiltEntryNotFound,
-  PrebuiltFragmentInput,
-  PrebuiltFragmentOutput,
-  PrebuiltOperationInput,
-  PrebuiltOperationOutput,
   PrebuiltTypeRegistry,
-  PrebuiltUnknownElement,
 } from "./types";

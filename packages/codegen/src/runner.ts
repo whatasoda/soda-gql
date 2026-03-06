@@ -5,7 +5,7 @@ import { err, ok } from "neverthrow";
 import { defaultBundler } from "./bundler";
 import { generateDefsStructure } from "./defs-generator";
 import { readModule, removeDirectory, writeModule } from "./file";
-import { generateIndexModule, generateMultiSchemaModule, generatePrebuiltStub } from "./generator";
+import { createSchemaIndex, generateIndexModule, generateMultiSchemaModule, generatePrebuiltStub } from "./generator";
 import { hashSchema, loadSchema } from "./schema";
 import type { CodegenOptions, CodegenResult, CodegenSuccess } from "./types";
 
@@ -167,11 +167,23 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
 
   // Generate index.ts wrapper with prebuilt-style typing
   const schemaNames = Object.keys(options.schemas);
-  const indexCode = generateIndexModule(schemaNames);
 
-  // Calculate individual schema stats and hashes
+  // Collect field names and calculate stats/hashes per schema
+  const allFieldNames = new Map<string, string[]>();
   for (const [name, document] of schemas.entries()) {
-    const schemaIndex = (await import("./generator")).createSchemaIndex(document);
+    const schemaIndex = createSchemaIndex(document);
+
+    // Collect field names from all object types
+    const fieldNameSet = new Set<string>();
+    for (const [objectName, record] of schemaIndex.objects.entries()) {
+      if (objectName.startsWith("__")) continue;
+      for (const fieldName of record.fields.keys()) {
+        fieldNameSet.add(fieldName);
+      }
+    }
+    allFieldNames.set(name, Array.from(fieldNameSet).sort());
+
+    // Calculate stats and hash
     const objects = Array.from(schemaIndex.objects.keys()).filter((n) => !n.startsWith("__")).length;
     const enums = Array.from(schemaIndex.enums.keys()).filter((n) => !n.startsWith("__")).length;
     const inputs = Array.from(schemaIndex.inputs.keys()).filter((n) => !n.startsWith("__")).length;
@@ -185,6 +197,8 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       unions,
     };
   }
+
+  const indexCode = generateIndexModule(schemaNames, allFieldNames);
 
   // Write _internal-injects.ts (adapter imports only, referenced by both _internal.ts and prebuilt)
   const injectsPath = join(dirname(outPath), "_internal-injects.ts");

@@ -17,14 +17,7 @@ export type AnyOperation = AnyOperationOf<"query"> | AnyOperationOf<"mutation"> 
 /**
  * Type alias for an Operation of a specific type.
  */
-export type AnyOperationOf<TOperationType extends OperationType> = Operation<
-  TOperationType,
-  string,
-  string[],
-  any,
-  AnyFieldsExtended,
-  any
->;
+export type AnyOperationOf<TOperationType extends OperationType> = Operation<TOperationType, string, string[], any, any, any>;
 
 /**
  * Type inference metadata for operations.

@@ -237,6 +237,59 @@ describe("convertTemplatesToSelections", () => {
     expect(result.selections.has("/src/b.ts::B" as never)).toBe(true);
   });
 
+  describe("fragment spread placeholder filtering", () => {
+    it("filters top-level __FRAG_SPREAD_ placeholders without error", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/queries.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "query",
+              elementName: "GetUser",
+              content: "($id: ID!) { user(id: $id) { ...__FRAG_SPREAD_0__ id } }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/queries.ts::GetUser" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("operation");
+    });
+
+    it("filters nested __FRAG_SPREAD_ placeholders inside field sub-selections", () => {
+      const templates = new Map<string, readonly ExtractedTemplate[]>([
+        [
+          "/src/fragments.ts",
+          [
+            {
+              schemaName: "default",
+              kind: "fragment",
+              elementName: "UserFields",
+              typeName: "User",
+              content: "{ id ...__FRAG_SPREAD_0__ }",
+            },
+          ],
+        ],
+      ]);
+
+      const result = convertTemplatesToSelections(templates, schemas);
+
+      expect(result.warnings).toHaveLength(0);
+      expect(result.selections.size).toBe(1);
+
+      const selection = result.selections.get("/src/fragments.ts::UserFields" as never);
+      expect(selection).toBeDefined();
+      expect(selection!.type).toBe("fragment");
+    });
+  });
+
   describe("curried syntax (new API)", () => {
     it("converts curried query template", () => {
       const templates = new Map<string, readonly ExtractedTemplate[]>([

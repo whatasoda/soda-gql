@@ -1292,7 +1292,7 @@ ${typeDeclarations}
  * PrebuiltContext types will be integrated once the type resolution strategy
  * is redesigned to match the tagged template runtime API.
  */
-export const generateIndexModule = (schemaNames: string[]): string => {
+export const generateIndexModule = (schemaNames: string[], allFieldNames?: ReadonlyMap<string, readonly string[]>): string => {
   const gqlImports = schemaNames.map((name) => `__gql_${name}`).join(", ");
   const prebuiltImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
   const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
@@ -1341,7 +1341,16 @@ type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <T
   operationName: TName,
 ) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
 
-type GenericFieldFactory_${name} = Record<string, (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>)>;
+type FieldFactoryFn_${name} = (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>);
+${(() => {
+  const fieldNames = allFieldNames?.get(name);
+  if (fieldNames && fieldNames.length > 0) {
+    const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
+    return `type AllObjectFieldNames_${name} = ${union};
+type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]: FieldFactoryFn_${name} } & Record<string, FieldFactoryFn_${name}>;`;
+  }
+  return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
+})()}
 type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
 
 type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(

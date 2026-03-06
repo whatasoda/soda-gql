@@ -4,25 +4,32 @@
  * @module
  */
 
-import { createVarMethod } from "../../src/composer/var-builder";
+import type { AnyGraphqlSchema } from "../../src/types/schema/schema";
+import { createVarMethodFactory } from "../../src/composer/var-builder";
 
 /**
- * Basic input type methods for ID and String scalars.
+ * Creates basic input type methods for ID and String scalars.
  *
  * Used with: basicTestSchema
  */
-export const basicInputTypeMethods = {
-  ID: createVarMethod("scalar", "ID"),
-  String: createVarMethod("scalar", "String"),
+export const createBasicInputTypeMethods = <TSchema extends AnyGraphqlSchema>() => {
+  const m = createVarMethodFactory<TSchema>();
+  return {
+    ID: m("scalar", "ID"),
+    String: m("scalar", "String"),
+  };
 };
 
 /**
- * Extended input type methods including Int.
+ * Creates extended input type methods including Int.
  *
  * Used with: extendedTestSchema
  */
-export const extendedInputTypeMethods = {
-  ID: createVarMethod("scalar", "ID"),
-  Int: createVarMethod("scalar", "Int"),
-  String: createVarMethod("scalar", "String"),
+export const createExtendedInputTypeMethods = <TSchema extends AnyGraphqlSchema>() => {
+  const m = createVarMethodFactory<TSchema>();
+  return {
+    ID: m("scalar", "ID"),
+    Int: m("scalar", "Int"),
+    String: m("scalar", "String"),
+  };
 };

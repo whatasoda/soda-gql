@@ -3,11 +3,11 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadata } from "../../src/types/metadata";
-import { type ExtendedTestSchema, extendedInputTypeMethods, extendedTestSchema } from "../fixtures";
+import { createExtendedInputTypeMethods, type ExtendedTestSchema, extendedTestSchema } from "../fixtures";
 
 const schema = extendedTestSchema;
 type Schema = ExtendedTestSchema;
-const inputTypeMethods = extendedInputTypeMethods;
+const inputTypeMethods = createExtendedInputTypeMethods<ExtendedTestSchema>();
 
 describe("compat-extend integration", () => {
   const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });

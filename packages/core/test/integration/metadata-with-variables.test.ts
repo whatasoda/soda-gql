@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { createVarMethod } from "../../src/composer/var-builder";
+import { createVarMethodFactory } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
@@ -57,11 +57,12 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
+const createMethod = createVarMethodFactory<Schema>();
 const inputTypeMethods = {
-  Boolean: createVarMethod("scalar", "Boolean"),
-  ID: createVarMethod("scalar", "ID"),
-  Int: createVarMethod("scalar", "Int"),
-  String: createVarMethod("scalar", "String"),
+  Boolean: createMethod("scalar", "Boolean"),
+  ID: createMethod("scalar", "ID"),
+  Int: createMethod("scalar", "Int"),
+  String: createMethod("scalar", "String"),
 };
 
 describe("metadata with variable access", () => {

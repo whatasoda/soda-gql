@@ -18,7 +18,6 @@ import type {
 import type { CreatableInputTypeKind, TypeModifier, TypeProfile } from "../types/type-foundation";
 import type { AnyVarRefBrand, VarRef } from "../types/type-foundation/var-ref";
 import { wrapByKey } from "../utils/wrap-by-key";
-import type { SelectableProxy } from "./var-ref-tools";
 import { getNameAt, getValueAt, getVariablePath, getVarRefName, getVarRefValue } from "./var-ref-tools";
 
 /**
@@ -61,37 +60,6 @@ export type GenericVarSpecifier<
         default: ReturnType<NonNullable<TDefaultFn>>;
       };
   directives: TDirectives;
-};
-
-/**
- * Creates a variable method for a specific input type.
- * This is used by codegen to generate type-specific variable methods.
- *
- * @deprecated Use createVarMethodFactory instead for proper type inference with nested input objects.
- */
-export const createVarMethod = <TKind extends CreatableInputTypeKind, TTypeName extends string>(
-  kind: TKind,
-  typeName: TTypeName,
-) => {
-  return <
-    TSchema extends AnyGraphqlSchema,
-    const TModifier extends TypeModifier,
-    const TDefaultFn extends (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>) | null = null,
-    const TDirectives extends AnyConstDirectiveAttachments = {},
-  >(
-    modifier: TModifier,
-    extras?: {
-      default?: TDefaultFn & (() => AssignableDefaultValue<TSchema, TKind, TTypeName, TModifier>);
-      directives?: TDirectives;
-    },
-  ): GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives> =>
-    ({
-      kind,
-      name: typeName,
-      modifier,
-      defaultValue: extras?.default ? { default: extras.default() } : null,
-      directives: extras?.directives ?? {},
-    }) as GenericVarSpecifier<TKind, TTypeName, TModifier, TDefaultFn, TDirectives>;
 };
 
 /**
@@ -213,7 +181,7 @@ export type ResolveTypeFromMeta<TSchema extends AnyGraphqlSchema, TMeta extends 
  */
 export type SchemaAwareGetValueAt<TSchema extends AnyGraphqlSchema> = <T extends AnyVarRefBrand, U>(
   varRef: VarRef<T>,
-  selector: (proxy: SelectableProxy<ResolveTypeFromMeta<TSchema, T>>) => U,
+  selector: (proxy: ResolveTypeFromMeta<TSchema, T>) => U,
 ) => U;
 
 /**

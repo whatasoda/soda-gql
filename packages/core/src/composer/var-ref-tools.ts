@@ -75,11 +75,7 @@ export const getVarRefValue = (varRef: AnyVarRef): ConstValue => {
 export type PathSegment = string;
 
 // biome-ignore lint/suspicious/noExplicitAny: abstract type
-type AnySelectableProxy = SelectableProxy<any>;
-/**
- * Proxy type that records property accesses.
- */
-export type SelectableProxy<T> = T;
+type AnySelectableProxy = any;
 
 /**
  * Type-safe path builder function.
@@ -181,7 +177,7 @@ export const getNameAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy
  * });
  * getValueAt(ref, p => p.user.name); // returns "Alice"
  */
-export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: SelectableProxy<T>) => U): U => {
+export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: T) => U): U => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
@@ -215,7 +211,7 @@ export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (prox
  */
 export const getVariablePath = <T, U>(
   varRef: VarRef<AnyVarRefBrand>,
-  selector: (proxy: SelectableProxy<T>) => U,
+  selector: (proxy: T) => U,
 ): readonly PathSegment[] => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);

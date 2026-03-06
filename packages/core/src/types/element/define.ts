@@ -15,7 +15,7 @@ export type AnyGqlDefine = GqlDefine<unknown>;
  * Type inference metadata for define elements.
  * Access via `typeof defineElement.$infer`.
  */
-export type DefineInferMeta<TValue> = {
+type DefineInferMeta<TValue> = {
   readonly value: TValue;
 };
 

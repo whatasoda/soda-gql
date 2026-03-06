@@ -3,11 +3,11 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { GqlDefine } from "../../src/types/element";
-import type { BasicTestSchema } from "../fixtures";
-import { basicInputTypeMethods, basicTestSchema } from "../fixtures";
+import { createBasicInputTypeMethods, type BasicTestSchema, basicTestSchema } from "../fixtures";
 
+const inputTypeMethods = createBasicInputTypeMethods<BasicTestSchema>();
 const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
-  inputTypeMethods: basicInputTypeMethods,
+  inputTypeMethods,
 });
 
 describe("tagged template compat integration", () => {

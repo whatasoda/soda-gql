@@ -17,7 +17,7 @@ import {
   extractFragmentVariables,
   preprocessFragmentArgs,
 } from "@soda-gql/core";
-import { Kind, parse as parseGraphql } from "graphql";
+import { Kind, parse as parseGraphql, type SelectionSetNode } from "graphql";
 import type { ExtractedTemplate } from "./template-extractor";
 
 /** Result of converting templates to field selections. */
@@ -79,6 +79,26 @@ export const convertTemplatesToSelections = (
 };
 
 /**
+ * Recursively filter out __FRAG_SPREAD_ placeholder nodes from a selection set.
+ * These placeholders are created by template-extractor for interpolated fragment references.
+ * buildFieldsFromSelectionSet would throw on them since no interpolationMap is available.
+ */
+const filterPlaceholderSpreads = (selectionSet: SelectionSetNode): SelectionSetNode => ({
+  ...selectionSet,
+  selections: selectionSet.selections
+    .filter((sel) => !(sel.kind === Kind.FRAGMENT_SPREAD && sel.name.value.startsWith("__FRAG_SPREAD_")))
+    .map((sel) => {
+      if (sel.kind === Kind.FIELD && sel.selectionSet) {
+        return { ...sel, selectionSet: filterPlaceholderSpreads(sel.selectionSet) };
+      }
+      if (sel.kind === Kind.INLINE_FRAGMENT && sel.selectionSet) {
+        return { ...sel, selectionSet: filterPlaceholderSpreads(sel.selectionSet) };
+      }
+      return sel;
+    }),
+});
+
+/**
  * Reconstruct full GraphQL source from an extracted template.
  * For curried syntax (new), prepends the definition header from tag call arguments.
  * For old syntax, returns content as-is.
@@ -119,8 +139,8 @@ const convertFragmentTemplate = (
   const fragmentName = fragDef.name.value;
   const onType = fragDef.typeCondition.name.value;
 
-  // Build fields from selection set
-  const fields = buildFieldsFromSelectionSet(fragDef.selectionSet, schema, onType);
+  // Build fields from selection set (filter placeholder spreads from interpolated fragments)
+  const fields = buildFieldsFromSelectionSet(filterPlaceholderSpreads(fragDef.selectionSet), schema, onType);
 
   // Generate a canonical ID from file path + fragment name
   const id = `${filePath}::${fragmentName}` as CanonicalId;
@@ -159,8 +179,8 @@ const convertOperationTemplate = (
   // Determine root type name based on operation type
   const rootTypeName = getRootTypeName(schema, operationType);
 
-  // Build fields from selection set
-  const fields = buildFieldsFromSelectionSet(opDef.selectionSet, schema, rootTypeName);
+  // Build fields from selection set (filter placeholder spreads from interpolated fragments)
+  const fields = buildFieldsFromSelectionSet(filterPlaceholderSpreads(opDef.selectionSet), schema, rootTypeName);
 
   // Variable definitions from the operation AST
   const variableDefinitions = opDef.variableDefinitions ?? [];
