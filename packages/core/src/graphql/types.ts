@@ -120,12 +120,18 @@ export type ParsedObjectField = {
 };
 
 /**
- * Result of parsing a GraphQL source.
+ * Base parse result without DocumentNode — shared by core and codegen.
  */
-export type ParseResult = {
-  readonly document: DocumentNode;
+export type ParseResultBase = {
   readonly operations: readonly ParsedOperation[];
   readonly fragments: readonly ParsedFragment[];
+};
+
+/**
+ * Result of parsing a GraphQL source (includes the parsed DocumentNode).
+ */
+export type ParseResult = ParseResultBase & {
+  readonly document: DocumentNode;
 };
 
 /**

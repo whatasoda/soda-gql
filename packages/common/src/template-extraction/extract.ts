@@ -13,7 +13,7 @@
 // Re-export for convenience — SWC types are type-only imports
 import type { ArrowFunctionExpression, CallExpression, MemberExpression, Node, TaggedTemplateExpression } from "@swc/types";
 import type { SwcSpanConverter } from "../utils/swc-span";
-import type { ExtractedTemplate, OperationKind } from "./types";
+import type { ExtractedTemplate, ExtractedTemplateWithPosition, OperationKind } from "./types";
 
 export const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
 
@@ -220,11 +220,21 @@ export const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallE
 /**
  * Walk AST to find gql calls and extract templates.
  */
-export const walkAndExtract = (
+export function walkAndExtract(
+  node: Node,
+  identifiers: ReadonlySet<string>,
+  positionCtx: PositionTrackingContext,
+): ExtractedTemplateWithPosition[];
+export function walkAndExtract(
   node: Node,
   identifiers: ReadonlySet<string>,
   positionCtx?: PositionTrackingContext,
-): ExtractedTemplate[] => {
+): ExtractedTemplate[];
+export function walkAndExtract(
+  node: Node,
+  identifiers: ReadonlySet<string>,
+  positionCtx?: PositionTrackingContext,
+): ExtractedTemplate[] {
   const templates: ExtractedTemplate[] = [];
 
   const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): void => {
@@ -265,4 +275,4 @@ export const walkAndExtract = (
 
   visit(node);
   return templates;
-};
+}
