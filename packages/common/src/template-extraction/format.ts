@@ -77,43 +77,47 @@ const GRAPHQL_KEYWORDS = new Set(["query", "mutation", "subscription", "fragment
  *
  * For bare-tag syntax, the content already starts with a keyword and is a full document.
  *
- * @returns The wrapped source and the length of the prepended prefix (for stripping later)
+ * @returns The wrapped source and a regex pattern to strip the synthetic prefix after formatting
  */
-export const buildGraphqlWrapper = (template: ExtractedTemplate): { wrapped: string; prefixLength: number } => {
+export const buildGraphqlWrapper = (
+  template: ExtractedTemplate,
+): { wrapped: string; prefixPattern: RegExp | null } => {
   const content = template.content.trimStart();
   const firstWord = content.split(/[\s({]/)[0] ?? "";
 
   // If content already starts with a GraphQL keyword, it's a full document (bare-tag)
   if (GRAPHQL_KEYWORDS.has(firstWord)) {
-    return { wrapped: template.content, prefixLength: 0 };
+    return { wrapped: template.content, prefixPattern: null };
   }
 
   // Curried syntax — reconstruct the header
   if (template.elementName) {
     if (template.kind === "fragment" && template.typeName) {
       const prefix = `fragment ${template.elementName} on ${template.typeName} `;
-      return { wrapped: prefix + template.content, prefixLength: prefix.length };
+      const prefixPattern = new RegExp(`^fragment\\s+${template.elementName}\\s+on\\s+${template.typeName}\\s*`);
+      return { wrapped: prefix + template.content, prefixPattern };
     }
     const prefix = `${template.kind} ${template.elementName} `;
-    return { wrapped: prefix + template.content, prefixLength: prefix.length };
+    const prefixPattern = new RegExp(`^${template.kind}\\s+${template.elementName}\\s*`);
+    return { wrapped: prefix + template.content, prefixPattern };
   }
 
   // No elementName — try wrapping with just the kind
   const prefix = `${template.kind} `;
-  return { wrapped: prefix + template.content, prefixLength: prefix.length };
+  const prefixPattern = new RegExp(`^${template.kind}\\s*`);
+  return { wrapped: prefix + template.content, prefixPattern };
 };
 
 /**
  * Strip the reconstructed prefix from formatted output to get back the template body.
+ * Uses regex pattern matching to handle whitespace normalization by the formatter
+ * (e.g., `query Foo ($id: ID!)` → `query Foo($id: ID!)`).
  */
-export const unwrapFormattedContent = (formatted: string, prefixLength: number): string => {
-  if (prefixLength === 0) return formatted;
-  // Find the first '{' structurally — this is always the selection set opening brace
-  // for operations and fragments, regardless of how the printer normalizes whitespace
-  // (e.g., variable definitions may change spacing: `query Foo ($id: ID!)` → `query Foo($id: ID!)`)
-  const braceIndex = formatted.indexOf("{");
-  if (braceIndex === -1) return formatted.slice(prefixLength);
-  return formatted.slice(braceIndex);
+export const unwrapFormattedContent = (formatted: string, prefixPattern: RegExp | null): string => {
+  if (!prefixPattern) return formatted;
+  const match = formatted.match(prefixPattern);
+  if (!match) return formatted;
+  return formatted.slice(match[0].length);
 };
 
 /**
@@ -136,7 +140,7 @@ export const formatTemplatesInSource = (
     if (!template.contentRange) continue;
 
     // Wrap the content for formatting
-    const { wrapped, prefixLength } = buildGraphqlWrapper(template);
+    const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
 
     let formatted: string;
     try {
@@ -146,7 +150,7 @@ export const formatTemplatesInSource = (
     }
 
     // Unwrap the prefix
-    const unwrapped = unwrapFormattedContent(formatted, prefixLength);
+    const unwrapped = unwrapFormattedContent(formatted, prefixPattern);
 
     // Fast path: skip if formatter produces identical output
     if (unwrapped === template.content) {

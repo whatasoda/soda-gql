@@ -57,9 +57,9 @@ describe("buildGraphqlWrapper", () => {
       kind: "query",
       content: "query GetUser { user { id } }",
     };
-    const { wrapped, prefixLength } = buildGraphqlWrapper(template);
+    const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
     expect(wrapped).toBe("query GetUser { user { id } }");
-    expect(prefixLength).toBe(0);
+    expect(prefixPattern).toBeNull();
   });
 
   it("wraps curried query with elementName", () => {
@@ -69,9 +69,12 @@ describe("buildGraphqlWrapper", () => {
       content: "($id: ID!) { user(id: $id) { id } }",
       elementName: "GetUser",
     };
-    const { wrapped, prefixLength } = buildGraphqlWrapper(template);
+    const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
     expect(wrapped).toBe("query GetUser ($id: ID!) { user(id: $id) { id } }");
-    expect(prefixLength).toBe("query GetUser ".length);
+    expect(prefixPattern).not.toBeNull();
+    // Verify the pattern matches the prefix correctly
+    const match = wrapped.match(prefixPattern!);
+    expect(match?.[0]).toBe("query GetUser ");
   });
 
   it("wraps curried fragment with elementName and typeName", () => {
@@ -82,9 +85,11 @@ describe("buildGraphqlWrapper", () => {
       elementName: "UserFields",
       typeName: "User",
     };
-    const { wrapped, prefixLength } = buildGraphqlWrapper(template);
+    const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
     expect(wrapped).toBe("fragment UserFields on User { id name email }");
-    expect(prefixLength).toBe("fragment UserFields on User ".length);
+    expect(prefixPattern).not.toBeNull();
+    const match = wrapped.match(prefixPattern!);
+    expect(match?.[0]).toBe("fragment UserFields on User ");
   });
 
   it("wraps curried mutation", () => {
@@ -94,9 +99,11 @@ describe("buildGraphqlWrapper", () => {
       content: "{ createUser { id } }",
       elementName: "CreateUser",
     };
-    const { wrapped, prefixLength } = buildGraphqlWrapper(template);
+    const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
     expect(wrapped).toBe("mutation CreateUser { createUser { id } }");
-    expect(prefixLength).toBe("mutation CreateUser ".length);
+    expect(prefixPattern).not.toBeNull();
+    const match = wrapped.match(prefixPattern!);
+    expect(match?.[0]).toBe("mutation CreateUser ");
   });
 
   it("handles content with leading whitespace (bare-tag detection still works)", () => {
@@ -105,21 +112,28 @@ describe("buildGraphqlWrapper", () => {
       kind: "query",
       content: "\nquery GetUser {\n  user { id }\n}\n",
     };
-    const { prefixLength } = buildGraphqlWrapper(template);
+    const { prefixPattern } = buildGraphqlWrapper(template);
     // Content starts with whitespace, but trimStart reveals "query" keyword
-    expect(prefixLength).toBe(0);
+    expect(prefixPattern).toBeNull();
   });
 });
 
 describe("unwrapFormattedContent", () => {
-  it("returns content as-is when prefixLength is 0", () => {
-    expect(unwrapFormattedContent("query GetUser { id }", 0)).toBe("query GetUser { id }");
+  it("returns content as-is when prefixPattern is null", () => {
+    expect(unwrapFormattedContent("query GetUser { id }", null)).toBe("query GetUser { id }");
   });
 
-  it("strips prefix of given length", () => {
+  it("strips prefix matching the pattern", () => {
     const formatted = "query GetUser { user { id } }";
-    const prefixLength = "query GetUser ".length;
-    expect(unwrapFormattedContent(formatted, prefixLength)).toBe("{ user { id } }");
+    const prefixPattern = /^query\s+GetUser\s*/;
+    expect(unwrapFormattedContent(formatted, prefixPattern)).toBe("{ user { id } }");
+  });
+
+  it("preserves variable definitions after prefix removal", () => {
+    // After graphql.print(), whitespace before parens may be normalized
+    const formatted = "query GetUser($id: ID!) { user(id: $id) { id } }";
+    const prefixPattern = /^query\s+GetUser\s*/;
+    expect(unwrapFormattedContent(formatted, prefixPattern)).toBe("($id: ID!) { user(id: $id) { id } }");
   });
 });
 
