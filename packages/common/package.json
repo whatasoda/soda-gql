@@ -13,10 +13,10 @@
     "index.js",
     "portable.d.ts",
     "portable.js",
-    "utils.d.ts",
-    "utils.js",
     "template-extraction.d.ts",
     "template-extraction.js",
+    "utils.d.ts",
+    "utils.js",
     "zod.d.ts",
     "zod.js"
   ],
