@@ -108,7 +108,12 @@ export const buildGraphqlWrapper = (template: ExtractedTemplate): { wrapped: str
  */
 export const unwrapFormattedContent = (formatted: string, prefixLength: number): string => {
   if (prefixLength === 0) return formatted;
-  return formatted.slice(prefixLength);
+  // Find the first '{' structurally — this is always the selection set opening brace
+  // for operations and fragments, regardless of how the printer normalizes whitespace
+  // (e.g., variable definitions may change spacing: `query Foo ($id: ID!)` → `query Foo($id: ID!)`)
+  const braceIndex = formatted.indexOf("{");
+  if (braceIndex === -1) return formatted.slice(prefixLength);
+  return formatted.slice(braceIndex);
 };
 
 /**
