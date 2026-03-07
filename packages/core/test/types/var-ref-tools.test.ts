@@ -10,11 +10,7 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import {
-  type InputObjectSchema,
-  inputObjectInputTypeMethods,
-  inputObjectSchema,
-} from "./_fixtures";
+import { type InputObjectSchema, inputObjectInputTypeMethods, inputObjectSchema } from "./_fixtures";
 import type { Expect, Extends } from "./_helpers";
 
 const gql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {

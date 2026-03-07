@@ -1,11 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  buildGraphqlWrapper,
-  detectBaseIndent,
-  formatTemplatesInSource,
-  reindent,
-  unwrapFormattedContent,
-} from "./format";
+import { buildGraphqlWrapper, detectBaseIndent, formatTemplatesInSource, reindent, unwrapFormattedContent } from "./format";
 import type { ExtractedTemplate } from "./types";
 
 describe("detectBaseIndent", () => {

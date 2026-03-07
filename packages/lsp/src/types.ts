@@ -3,8 +3,8 @@
  * @module
  */
 
-import type { FragmentDefinitionNode } from "graphql";
 import type { OperationKind } from "@soda-gql/common/template-extraction";
+import type { FragmentDefinitionNode } from "graphql";
 
 export type { OperationKind };
 

@@ -1,10 +1,14 @@
 import { createRequire } from "node:module";
+import {
+  type FormatGraphqlFn,
+  formatTemplatesInSource,
+  type PositionTrackingContext,
+  walkAndExtract,
+} from "@soda-gql/common/template-extraction";
+import { createSwcSpanConverter } from "@soda-gql/common/utils";
 import { parseSync } from "@swc/core";
 import type { ArrowFunctionExpression, CallExpression, Module, Node, ObjectExpression } from "@swc/types";
 import { err, ok, type Result } from "neverthrow";
-import { walkAndExtract, type PositionTrackingContext } from "@soda-gql/common/template-extraction";
-import { formatTemplatesInSource, type FormatGraphqlFn } from "@soda-gql/common/template-extraction";
-import { createSwcSpanConverter } from "@soda-gql/common/utils";
 
 const require = createRequire(import.meta.url);
 

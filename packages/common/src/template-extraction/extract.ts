@@ -10,17 +10,10 @@
  * @module
  */
 
+// Re-export for convenience — SWC types are type-only imports
+import type { ArrowFunctionExpression, CallExpression, MemberExpression, Node, TaggedTemplateExpression } from "@swc/types";
 import type { SwcSpanConverter } from "../utils/swc-span";
 import type { ExtractedTemplate, OperationKind } from "./types";
-
-// Re-export for convenience — SWC types are type-only imports
-import type {
-  ArrowFunctionExpression,
-  CallExpression,
-  MemberExpression,
-  Node,
-  TaggedTemplateExpression,
-} from "@swc/types";
 
 export const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
 

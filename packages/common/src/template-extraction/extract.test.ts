@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { parseSync } from "@swc/core";
 import type { Module, Node } from "@swc/types";
 import { createSwcSpanConverter } from "../utils/swc-span";
-import { OPERATION_KINDS, type PositionTrackingContext, isOperationKind, walkAndExtract } from "./extract";
+import { isOperationKind, OPERATION_KINDS, type PositionTrackingContext, walkAndExtract } from "./extract";
 
 const parseSource = (source: string): Module => {
   const result = parseSync(source, {

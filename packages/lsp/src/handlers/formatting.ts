@@ -3,8 +3,8 @@
  * @module
  */
 
+import { detectBaseIndent, type FormatGraphqlFn, reindent } from "@soda-gql/common/template-extraction";
 import { parse as parseGraphql, print as printGraphql } from "graphql";
-import { detectBaseIndent, reindent, type FormatGraphqlFn } from "@soda-gql/common/template-extraction";
 import type { TextEdit } from "vscode-languageserver-types";
 import { computeLineOffsets, offsetToPosition } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";

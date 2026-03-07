@@ -9,15 +9,11 @@
  */
 
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { walkAndExtract } from "@soda-gql/common/template-extraction";
 import type { ExtractedTemplate } from "@soda-gql/common/template-extraction";
+import { walkAndExtract } from "@soda-gql/common/template-extraction";
 
 import { parseSync } from "@swc/core";
-import type {
-  ImportDeclaration,
-  Module,
-  Node,
-} from "@swc/types";
+import type { ImportDeclaration, Module, Node } from "@swc/types";
 
 export type { ExtractedTemplate, OperationKind } from "@soda-gql/common/template-extraction";
 

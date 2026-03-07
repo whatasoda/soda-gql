@@ -6,10 +6,10 @@
  *
  * @module
  */
-import { describe, test, expect } from "bun:test";
-import type { Expect, Extends } from "./_helpers";
+import { describe, expect, test } from "bun:test";
 import type { ConstValue } from "../../src/types/type-foundation/const-value";
-import type { AnyVarRef, VarRef, AnyVarRefBrand } from "../../src/types/type-foundation/var-ref";
+import type { AnyVarRef, AnyVarRefBrand, VarRef } from "../../src/types/type-foundation/var-ref";
+import type { Expect, Extends } from "./_helpers";
 
 // --- VarRef is NOT assignable to ConstValue ---
 // VarRef is a branded class; ConstValue only accepts primitives, objects of ConstValue, and arrays of ConstValue.
@@ -35,7 +35,9 @@ type _EmptyObjSatisfiesRecord = Expect<Extends<{}, Record<string, unknown>>>;
 type ObjectWithVarRef = {
   readonly filter: VarRef<AnyVarRefBrand>;
 };
-type _VarRefInObjectNotConst = Expect<Extends<ObjectWithVarRef, { readonly [key: string]: ConstValue }> extends true ? false : true>;
+type _VarRefInObjectNotConst = Expect<
+  Extends<ObjectWithVarRef, { readonly [key: string]: ConstValue }> extends true ? false : true
+>;
 
 // --- Record<string, unknown> IS assignable to Record<string, unknown> (consumer dynamic filter pattern) ---
 type _DynamicFilterAccepted = Expect<Extends<Record<string, unknown>, Record<string, unknown>>>;

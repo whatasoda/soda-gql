@@ -7,14 +7,8 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter } from "@soda-gql/common";
-import {
-  walkAndExtract,
-  type PositionTrackingContext,
-} from "@soda-gql/common/template-extraction";
-import type {
-  ImportDeclaration,
-  Module,
-} from "@swc/types";
+import { type PositionTrackingContext, walkAndExtract } from "@soda-gql/common/template-extraction";
+import type { ImportDeclaration, Module } from "@swc/types";
 import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
 import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";

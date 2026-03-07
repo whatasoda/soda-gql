@@ -1,15 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import type { CanonicalId } from "@soda-gql/common";
 import type { FieldSelectionData } from "@soda-gql/builder";
+import type { CanonicalId } from "@soda-gql/common";
 import { mergeSelections } from "./runner";
 
 const baseDir = "/project";
 
-const makeFragmentSelection = (
-  key: string,
-  typename: string,
-  fields: Record<string, unknown>,
-): FieldSelectionData =>
+const makeFragmentSelection = (key: string, typename: string, fields: Record<string, unknown>): FieldSelectionData =>
   ({
     type: "fragment",
     schemaLabel: "default",
@@ -61,10 +57,7 @@ describe("mergeSelections", () => {
     const builderSelections = new Map<CanonicalId, FieldSelectionData>();
 
     const templateSelections = new Map<CanonicalId, FieldSelectionData>([
-      [
-        "/project/src/extra.ts::ExtraFragment" as CanonicalId,
-        makeFragmentSelection("ExtraFragment", "Post", { title: "field" }),
-      ],
+      ["/project/src/extra.ts::ExtraFragment" as CanonicalId, makeFragmentSelection("ExtraFragment", "Post", { title: "field" })],
     ]);
 
     const result = mergeSelections(builderSelections, templateSelections, baseDir);
@@ -77,10 +70,7 @@ describe("mergeSelections", () => {
 
   it("preserves builder operations not found by template scanner", () => {
     const builderSelections = new Map<CanonicalId, FieldSelectionData>([
-      [
-        "src/ops.ts::GetUser" as CanonicalId,
-        makeOperationSelection("GetUser", "query", { user: "field" }),
-      ],
+      ["src/ops.ts::GetUser" as CanonicalId, makeOperationSelection("GetUser", "query", { user: "field" })],
     ]);
 
     const templateSelections = new Map<CanonicalId, FieldSelectionData>();
@@ -94,14 +84,8 @@ describe("mergeSelections", () => {
 
   it("preserves builder operations when template scanner finds fragments from the same file", () => {
     const builderSelections = new Map<CanonicalId, FieldSelectionData>([
-      [
-        "src/mixed.ts::GetUser" as CanonicalId,
-        makeOperationSelection("GetUser", "query", { user: "field" }),
-      ],
-      [
-        "src/mixed.ts::UserFields" as CanonicalId,
-        makeFragmentSelection("UserFields", "User", { id: "field", name: "field" }),
-      ],
+      ["src/mixed.ts::GetUser" as CanonicalId, makeOperationSelection("GetUser", "query", { user: "field" })],
+      ["src/mixed.ts::UserFields" as CanonicalId, makeFragmentSelection("UserFields", "User", { id: "field", name: "field" })],
     ]);
 
     const templateSelections = new Map<CanonicalId, FieldSelectionData>([
