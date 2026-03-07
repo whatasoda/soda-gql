@@ -24,6 +24,11 @@ export type ExtractedTemplate = {
   readonly expressionRanges?: readonly { readonly start: number; readonly end: number }[];
 };
 
+/** ExtractedTemplate with guaranteed position information (when positionCtx is provided). */
+export type ExtractedTemplateWithPosition = ExtractedTemplate & {
+  readonly contentRange: { readonly start: number; readonly end: number };
+};
+
 /** A text edit to apply to source code for template formatting. */
 export type TemplateFormatEdit = {
   readonly start: number;

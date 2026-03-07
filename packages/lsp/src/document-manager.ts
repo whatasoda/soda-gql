@@ -222,7 +222,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
     }
 
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
-    return walkAndExtract(program, gqlIdentifiers, positionCtx) as ExtractedTemplate[];
+    return walkAndExtract(program, gqlIdentifiers, positionCtx);
   };
 
   return {

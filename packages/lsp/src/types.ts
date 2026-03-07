@@ -3,26 +3,13 @@
  * @module
  */
 
-import type { OperationKind } from "@soda-gql/common/template-extraction";
+import type { ExtractedTemplateWithPosition, OperationKind } from "@soda-gql/common/template-extraction";
 import type { FragmentDefinitionNode } from "graphql";
 
 export type { OperationKind };
 
-/** A single tagged template extracted from a TypeScript file. */
-export type ExtractedTemplate = {
-  /** Byte offset range of GraphQL content within TS source (excludes backticks). */
-  readonly contentRange: { readonly start: number; readonly end: number };
-  /** Resolved schema name from gql.{schemaName}. */
-  readonly schemaName: string;
-  /** Operation kind from tag name. */
-  readonly kind: OperationKind;
-  /** Raw GraphQL content between backticks. */
-  readonly content: string;
-  /** Element name from curried tag call (e.g., "GetUser" from query("GetUser")). */
-  readonly elementName?: string;
-  /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
-  readonly typeName?: string;
-};
+/** A single tagged template extracted from a TypeScript file (with guaranteed position info). */
+export type ExtractedTemplate = ExtractedTemplateWithPosition;
 
 /** Per-document state maintained by the document manager. */
 export type DocumentState = {
