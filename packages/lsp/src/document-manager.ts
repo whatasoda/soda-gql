@@ -17,7 +17,7 @@ import type {
 } from "@swc/types";
 import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
-import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment, OperationKind } from "./types";
+import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";
 
 export type DocumentManager = {
   readonly update: (uri: string, version: number, source: string) => DocumentState;
