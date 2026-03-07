@@ -60,7 +60,7 @@ export const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
-Use callback builders when you need fragment spreads in operations:
+Use callback builders when you need field aliases, `$dir`, or union member selection. Fragment spreads work in both tagged templates (`...${fragment}`) and callback builders:
 
 ```typescript
 // Operation with spread fragment (callback builder required)
@@ -133,18 +133,6 @@ export const scalar = {
   // Custom scalars - defineScalar<Name, InputType, OutputType>(name)
   ...defineScalar<"DateTime", string, Date>("DateTime"),
   ...defineScalar<"JSON", Record<string, unknown>, Record<string, unknown>>("JSON"),
-} as const;
-```
-
-Alternative callback syntax:
-
-```typescript
-export const scalar = {
-  ...defineScalar("DateTime", ({ type }) => ({
-    input: type<string>(),
-    output: type<Date>(),
-    directives: {},
-  })),
 } as const;
 ```
 
@@ -317,7 +305,7 @@ The `/runtime` subpath provides utilities for operation registration and retriev
 import { gqlRuntime } from "@soda-gql/core/runtime";
 
 // Retrieve registered operations (typically handled by build plugins)
-const operation = gqlRuntime.getOperation("canonicalId");
+const operation = gqlRuntime.getOperation("GetUser");
 ```
 
 ## TypeScript Support

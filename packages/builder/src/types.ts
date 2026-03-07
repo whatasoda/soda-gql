@@ -14,5 +14,4 @@ export type BuilderOptions = BuilderInput & {
 export type {
   BuilderError,
   BuilderErrorCode,
-  BuilderResult as BuilderOperationResult,
 } from "./errors";

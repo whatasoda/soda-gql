@@ -67,11 +67,14 @@ When composing multiple fragments in a single operation, use `$colocate` to pref
 
 ```typescript
 // UserCard.tsx
-export const userCardFragment = gql.default(({ fragment, $var }) =>
-  fragment.Query({
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name(), ...f.email() })) }),
-  }),
+export const userCardFragment = gql.default(({ fragment }) =>
+  fragment("UserCard", "Query")`($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+      email
+    }
+  }`(),
 );
 
 export const userCardProjection = createProjection(userCardFragment, {
@@ -154,11 +157,15 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 import { gql } from "./graphql-system";
 
 export const postListFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: { ...$var("userId").ID("!") },
-      fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.posts({})(({ f }) => ({ ...f.id(), ...f.title() })) })) }),
-    }),
+  .default(({ fragment }) =>
+    fragment("PostList", "Query")`($userId: ID!) {
+      user(id: $userId) {
+        posts {
+          id
+          title
+        }
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
