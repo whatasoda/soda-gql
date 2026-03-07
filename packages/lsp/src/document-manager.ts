@@ -6,16 +6,14 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
-import { createSwcSpanConverter, type SwcSpanConverter } from "@soda-gql/common";
+import { createSwcSpanConverter } from "@soda-gql/common";
+import {
+  walkAndExtract,
+  type PositionTrackingContext,
+} from "@soda-gql/common/template-extraction";
 import type {
-  ArrowFunctionExpression,
-  CallExpression,
-  Expression,
   ImportDeclaration,
-  MemberExpression,
   Module,
-  Node,
-  TaggedTemplateExpression,
 } from "@swc/types";
 import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
@@ -40,10 +38,6 @@ type SwcLoaderOptions = {
   /** Config file path used as the base for createRequire resolution of @swc/core. */
   readonly resolveFrom?: string;
 };
-
-const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
-
-const isOperationKind = (value: string): value is OperationKind => OPERATION_KINDS.has(value);
 
 /**
  * Collect gql identifiers from import declarations.
@@ -85,239 +79,6 @@ const collectGqlIdentifiers = (module: Module, filePath: string, helper: Graphql
   }
 
   return identifiers;
-};
-
-/**
- * Check if a call expression is a gql.{schemaName}(...) call.
- * Returns the schema name if it is, null otherwise.
- */
-const getGqlCallSchemaName = (identifiers: ReadonlySet<string>, call: CallExpression): string | null => {
-  const callee = call.callee;
-  if (callee.type !== "MemberExpression") {
-    return null;
-  }
-
-  const member = callee as MemberExpression;
-  if (member.object.type !== "Identifier" || !identifiers.has(member.object.value)) {
-    return null;
-  }
-
-  if (member.property.type !== "Identifier") {
-    return null;
-  }
-
-  const firstArg = call.arguments[0];
-  if (!firstArg?.expression || firstArg.expression.type !== "ArrowFunctionExpression") {
-    return null;
-  }
-
-  return member.property.value;
-};
-
-/**
- * Extract templates from a gql callback's arrow function body.
- * Handles both expression bodies and block bodies with return statements.
- */
-const extractTemplatesFromCallback = (
-  arrow: ArrowFunctionExpression,
-  schemaName: string,
-  spanOffset: number,
-  converter: SwcSpanConverter,
-): ExtractedTemplate[] => {
-  const templates: ExtractedTemplate[] = [];
-
-  const processExpression = (expr: Expression): void => {
-    // Direct tagged template: query("Name")`...`
-    if (expr.type === "TaggedTemplateExpression") {
-      const tagged = expr as TaggedTemplateExpression;
-      extractFromTaggedTemplate(tagged, schemaName, spanOffset, converter, templates);
-      return;
-    }
-
-    // Metadata chaining: query("Name")`...`({ metadata: {} })
-    if (expr.type === "CallExpression") {
-      const call = expr as CallExpression;
-      if (call.callee.type === "TaggedTemplateExpression") {
-        extractFromTaggedTemplate(call.callee as TaggedTemplateExpression, schemaName, spanOffset, converter, templates);
-      }
-    }
-  };
-
-  // Expression body: ({ query }) => query("Name")`...`
-  if (arrow.body.type !== "BlockStatement") {
-    processExpression(arrow.body as Expression);
-    return templates;
-  }
-
-  // Block body: ({ query }) => { return query("Name")`...`; }
-  for (const stmt of arrow.body.stmts) {
-    if (stmt.type === "ReturnStatement" && stmt.argument) {
-      processExpression(stmt.argument);
-    }
-  }
-
-  return templates;
-};
-
-const extractFromTaggedTemplate = (
-  tagged: TaggedTemplateExpression,
-  schemaName: string,
-  spanOffset: number,
-  converter: SwcSpanConverter,
-  templates: ExtractedTemplate[],
-): void => {
-  // Tag must be a CallExpression: query("name")`...` or fragment("name", "type")`...` (curried syntax)
-  if (tagged.tag.type !== "CallExpression") {
-    return;
-  }
-
-  const tagCall = tagged.tag as CallExpression;
-  if (tagCall.callee.type !== "Identifier") {
-    return;
-  }
-
-  const kind = tagCall.callee.value;
-  if (!isOperationKind(kind)) {
-    return;
-  }
-
-  // Extract element name and type name from curried call arguments
-  let elementName: string | undefined;
-  let typeName: string | undefined;
-  const firstArg = tagCall.arguments[0]?.expression;
-  if (firstArg?.type === "StringLiteral") {
-    elementName = (firstArg as { value: string }).value;
-  }
-  const secondArg = tagCall.arguments[1]?.expression;
-  if (secondArg?.type === "StringLiteral") {
-    typeName = (secondArg as { value: string }).value;
-  }
-
-  const { quasis, expressions } = tagged.template;
-
-  if (quasis.length === 0) {
-    return;
-  }
-
-  // Build content by interleaving quasis with placeholder tokens
-  const parts: string[] = [];
-  let contentStart = -1;
-  let contentEnd = -1;
-
-  for (let i = 0; i < quasis.length; i++) {
-    const quasi = quasis[i];
-    if (!quasi) {
-      continue;
-    }
-
-    // Track the overall content range (first quasi start to last quasi end)
-    const quasiStart = converter.byteOffsetToCharIndex(quasi.span.start - spanOffset);
-    const quasiEnd = converter.byteOffsetToCharIndex(quasi.span.end - spanOffset);
-
-    if (contentStart === -1) {
-      contentStart = quasiStart;
-    }
-    contentEnd = quasiEnd;
-
-    const quasiContent = quasi.cooked ?? quasi.raw;
-    parts.push(quasiContent);
-
-    // Add placeholder for interpolation expression if this is not the last quasi
-    if (i < expressions.length) {
-      // Use a placeholder that preserves GraphQL spread syntax for fragment references
-      // Pattern: __FRAG_SPREAD_N__ to indicate this is likely a fragment spread interpolation
-      parts.push(`__FRAG_SPREAD_${i}__`);
-    }
-  }
-
-  if (contentStart === -1 || contentEnd === -1) {
-    return;
-  }
-
-  const content = parts.join("");
-
-  templates.push({
-    contentRange: { start: contentStart, end: contentEnd },
-    schemaName,
-    kind,
-    content,
-    ...(elementName !== undefined ? { elementName } : {}),
-    ...(typeName !== undefined ? { typeName } : {}),
-  });
-};
-
-/**
- * Walk AST to find gql calls and extract templates.
- * Adapted from builder's unwrapMethodChains + visit pattern.
- */
-const walkAndExtract = (
-  node: Node,
-  identifiers: ReadonlySet<string>,
-  spanOffset: number,
-  converter: SwcSpanConverter,
-): ExtractedTemplate[] => {
-  const templates: ExtractedTemplate[] = [];
-
-  const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): void => {
-    if (!n || typeof n !== "object") {
-      return;
-    }
-
-    if ("type" in n && n.type === "CallExpression") {
-      // Check if this is a gql call (possibly wrapped in method chains)
-      const gqlCall = findGqlCall(identifiers, n as Node);
-      if (gqlCall) {
-        const schemaName = getGqlCallSchemaName(identifiers, gqlCall);
-        if (schemaName) {
-          const arrow = gqlCall.arguments[0]?.expression as ArrowFunctionExpression;
-          templates.push(...extractTemplatesFromCallback(arrow, schemaName, spanOffset, converter));
-        }
-        return; // Don't recurse into gql calls
-      }
-    }
-
-    // Recurse into all array and object properties
-    if (Array.isArray(n)) {
-      for (const item of n) {
-        visit(item as Node);
-      }
-      return;
-    }
-
-    for (const key of Object.keys(n)) {
-      if (key === "span" || key === "type") {
-        continue;
-      }
-      const value = (n as Record<string, unknown>)[key];
-      if (value && typeof value === "object") {
-        visit(value as Node);
-      }
-    }
-  };
-
-  visit(node);
-  return templates;
-};
-
-/**
- * Find the innermost gql call, unwrapping method chains like .attach().
- */
-const findGqlCall = (identifiers: ReadonlySet<string>, node: Node): CallExpression | null => {
-  if (!node || node.type !== "CallExpression") {
-    return null;
-  }
-
-  const call = node as unknown as CallExpression;
-  if (getGqlCallSchemaName(identifiers, call) !== null) {
-    return call;
-  }
-
-  const callee = call.callee;
-  if (callee.type !== "MemberExpression") {
-    return null;
-  }
-
-  return findGqlCall(identifiers, callee.object as unknown as Node);
 };
 
 /**
@@ -466,7 +227,8 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
       return [];
     }
 
-    return walkAndExtract(program, gqlIdentifiers, spanOffset, converter);
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+    return walkAndExtract(program, gqlIdentifiers, positionCtx) as ExtractedTemplate[];
   };
 
   return {

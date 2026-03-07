@@ -4,9 +4,9 @@
  */
 
 import type { FragmentDefinitionNode } from "graphql";
+import type { OperationKind } from "@soda-gql/common/template-extraction";
 
-/** Operation kind extracted from tagged template tag name. */
-export type OperationKind = "query" | "mutation" | "subscription" | "fragment";
+export type { OperationKind };
 
 /** A single tagged template extracted from a TypeScript file. */
 export type ExtractedTemplate = {
