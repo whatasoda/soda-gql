@@ -153,6 +153,7 @@ export const extractFromTaggedTemplate = (
   // Build content and optionally track position
   let contentStart = -1;
   let contentEnd = -1;
+  const expressionRanges: { start: number; end: number }[] = [];
 
   const parts: string[] = [];
   for (let i = 0; i < quasis.length; i++) {
@@ -169,6 +170,13 @@ export const extractFromTaggedTemplate = (
     parts.push(quasi.cooked ?? quasi.raw);
     if (i < expressions.length) {
       parts.push(`__FRAG_SPREAD_${i}__`);
+      if (positionCtx) {
+        // All SWC AST nodes have span; cast needed because Expression union type doesn't expose it uniformly
+        const expr = expressions[i] as unknown as { span: { start: number; end: number } };
+        const exprStart = positionCtx.converter.byteOffsetToCharIndex(expr.span.start - positionCtx.spanOffset);
+        const exprEnd = positionCtx.converter.byteOffsetToCharIndex(expr.span.end - positionCtx.spanOffset);
+        expressionRanges.push({ start: exprStart, end: exprEnd });
+      }
     }
   }
   const content = parts.join("");
@@ -182,6 +190,7 @@ export const extractFromTaggedTemplate = (
     ...(positionCtx && contentStart !== -1 && contentEnd !== -1
       ? { contentRange: { start: contentStart, end: contentEnd } }
       : {}),
+    ...(expressionRanges.length > 0 ? { expressionRanges } : {}),
   };
 
   templates.push(template);

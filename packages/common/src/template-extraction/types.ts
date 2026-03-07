@@ -20,6 +20,8 @@ export type ExtractedTemplate = {
   readonly typeName?: string;
   /** Character offset range of GraphQL content within TS source (excludes backticks). */
   readonly contentRange?: { readonly start: number; readonly end: number };
+  /** Character offset ranges of interpolation expressions within TS source (for __FRAG_SPREAD_N__ restoration). */
+  readonly expressionRanges?: readonly { readonly start: number; readonly end: number }[];
 };
 
 /** A text edit to apply to source code for template formatting. */
