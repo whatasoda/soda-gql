@@ -209,10 +209,7 @@ export const getValueAt = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (prox
  * // Returns: ["$filter", "user", "id"]
  * ```
  */
-export const getVariablePath = <T, U>(
-  varRef: VarRef<AnyVarRefBrand>,
-  selector: (proxy: T) => U,
-): readonly PathSegment[] => {
+export const getVariablePath = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: T) => U): readonly PathSegment[] => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);

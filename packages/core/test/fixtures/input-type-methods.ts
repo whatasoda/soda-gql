@@ -4,8 +4,8 @@
  * @module
  */
 
-import type { AnyGraphqlSchema } from "../../src/types/schema/schema";
 import { createVarMethodFactory } from "../../src/composer/var-builder";
+import type { AnyGraphqlSchema } from "../../src/types/schema/schema";
 
 /**
  * Creates basic input type methods for ID and String scalars.

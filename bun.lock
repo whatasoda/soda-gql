@@ -130,6 +130,9 @@
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
       },
+      "devDependencies": {
+        "@swc/types": "^0.1.6",
+      },
     },
     "packages/config": {
       "name": "@soda-gql/config",
@@ -153,14 +156,20 @@
       "name": "@soda-gql/formatter",
       "version": "0.12.3",
       "dependencies": {
+        "@soda-gql/common": "workspace:*",
         "neverthrow": "^8.1.1",
       },
       "devDependencies": {
         "@swc/types": "^0.1.0",
+        "graphql": "^16.11.0",
       },
       "peerDependencies": {
         "@swc/core": "^1.0.0",
+        "graphql": "^16.11.0",
       },
+      "optionalPeers": [
+        "graphql",
+      ],
     },
     "packages/lsp": {
       "name": "@soda-gql/lsp",

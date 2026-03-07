@@ -84,10 +84,11 @@ const FORMAT_HELP = `Usage: soda-gql format [patterns...] [options]
 Format soda-gql field selections by inserting empty comments.
 
 Options:
-  --config <path>         Path to soda-gql.config.ts (auto-detected if omitted)
-  --check                 Check if files need formatting (exit 1 if unformatted)
-  --inject-fragment-keys  Inject unique keys into anonymous fragments
-  --help, -h              Show this help message
+  --config <path>              Path to soda-gql.config.ts (auto-detected if omitted)
+  --check                      Check if files need formatting (exit 1 if unformatted)
+  --inject-fragment-keys       Inject unique keys into anonymous fragments
+  --format-tagged-templates    Format GraphQL in tagged templates
+  --help, -h                   Show this help message
 
 Examples:
   soda-gql format                           # Use config include/exclude
@@ -112,6 +113,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
   const args = parsed.value;
   const isCheckMode = args.check === true;
   const injectFragmentKeys = args["inject-fragment-keys"] === true;
+  const formatTaggedTemplates = args["format-tagged-templates"] === true;
   const explicitPatterns = args._ ?? [];
 
   // Determine patterns: use explicit patterns or load from config
@@ -160,7 +162,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
     const sourceCode = await readFile(filePath, "utf-8");
 
     if (isCheckMode) {
-      const result = formatter.needsFormat({ sourceCode, filePath });
+      const result = formatter.needsFormat({ sourceCode, filePath, formatTaggedTemplates });
       if (result.isErr()) {
         errors++;
         continue;
@@ -172,7 +174,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
         unchanged++;
       }
     } else {
-      const result = formatter.format({ sourceCode, filePath, injectFragmentKeys });
+      const result = formatter.format({ sourceCode, filePath, injectFragmentKeys, formatTaggedTemplates });
       if (result.isErr()) {
         errors++;
         continue;

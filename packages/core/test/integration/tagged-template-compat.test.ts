@@ -3,7 +3,7 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { GqlDefine } from "../../src/types/element";
-import { createBasicInputTypeMethods, type BasicTestSchema, basicTestSchema } from "../fixtures";
+import { type BasicTestSchema, basicTestSchema, createBasicInputTypeMethods } from "../fixtures";
 
 const inputTypeMethods = createBasicInputTypeMethods<BasicTestSchema>();
 const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
