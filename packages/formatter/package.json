@@ -48,12 +48,20 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
+    "@soda-gql/common": "workspace:*",
     "neverthrow": "^8.1.1"
   },
   "peerDependencies": {
-    "@swc/core": "^1.0.0"
+    "@swc/core": "^1.0.0",
+    "graphql": "^16.11.0"
+  },
+  "peerDependenciesMeta": {
+    "graphql": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@swc/types": "^0.1.0"
+    "@swc/types": "^0.1.0",
+    "graphql": "^16.11.0"
   }
 }

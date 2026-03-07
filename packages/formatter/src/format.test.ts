@@ -281,6 +281,170 @@ export const frag = gql.default(({ fragment }) => fragment.User({
   });
 });
 
+describe("format with formatTaggedTemplates", () => {
+  it("should format single-line tagged template query to multi-line", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toContain("id");
+    expect(result.value.sourceCode).toContain("name");
+  });
+
+  it("should skip tagged templates when formatTaggedTemplates is false", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: false });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(false);
+    expect(result.value.sourceCode).toBe(source);
+  });
+
+  it("should skip tagged templates when formatTaggedTemplates is not set (default)", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);`;
+    const result = format({ sourceCode: source });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(false);
+    expect(result.value.sourceCode).toBe(source);
+  });
+
+  it("should handle mixed callback builder + tagged template", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);
+export const GetPost = gql.default(({ query }) =>
+  query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    // Both tagged template and callback builder should be formatted
+    expect(result.value.sourceCode).toContain("id");
+    expect(result.value.sourceCode).toContain("name");
+    // Callback builder field selection should have newline inserted
+    const fieldSelectionPattern = /\(\{ f \}\) => \(\{\n/g;
+    const matches = result.value.sourceCode.match(fieldSelectionPattern);
+    expect(matches).not.toBeNull();
+  });
+
+  it("should not modify already-formatted tagged templates", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{
+  user {
+    id
+    name
+  }
+}\`
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(false);
+    expect(result.value.sourceCode).toBe(source);
+  });
+
+  it("should handle bare-tag syntax", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query\`query GetUser { user { id name } }\`
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toContain("id");
+    expect(result.value.sourceCode).toContain("name");
+  });
+
+  it("should handle fragment with curried syntax", () => {
+    const source = `import { gql } from "./graphql";
+export const UserFields = gql.default(({ fragment }) =>
+  fragment("UserFields", "User")\`{ id name email }\`
+);`;
+    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toContain("id");
+    expect(result.value.sourceCode).toContain("name");
+    expect(result.value.sourceCode).toContain("email");
+  });
+});
+
+describe("needsFormat with formatTaggedTemplates", () => {
+  it("should return true when tagged templates need formatting", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);`;
+    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value).toBe(true);
+  });
+
+  it("should return false when tagged templates are already formatted", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{
+  user {
+    id
+    name
+  }
+}\`
+);`;
+    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: true });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value).toBe(false);
+  });
+
+  it("should not check tagged templates when formatTaggedTemplates is false", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);`;
+    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: false });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value).toBe(false);
+  });
+});
+
 describe("needsFormat", () => {
   it("should return true for files needing formatting", () => {
     const source = loadFixture("needs-format");

@@ -1,6 +1,28 @@
+import { createRequire } from "node:module";
 import { parseSync } from "@swc/core";
 import type { ArrowFunctionExpression, CallExpression, Module, Node, ObjectExpression } from "@swc/types";
 import { err, ok, type Result } from "neverthrow";
+import { walkAndExtract, type PositionTrackingContext } from "@soda-gql/common/template-extraction";
+import { formatTemplatesInSource, type FormatGraphqlFn } from "@soda-gql/common/template-extraction";
+import { createSwcSpanConverter } from "@soda-gql/common/utils";
+
+const require = createRequire(import.meta.url);
+
+type GraphqlModule = {
+  parse: (source: string, options?: { noLocation?: boolean }) => unknown;
+  print: (ast: unknown) => string;
+};
+
+let _graphqlModule: GraphqlModule | undefined;
+
+const getGraphqlModule = (): GraphqlModule => {
+  if (!_graphqlModule) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    _graphqlModule = require("graphql") as GraphqlModule;
+  }
+  return _graphqlModule;
+};
+
 import {
   collectFragmentIdentifiers,
   collectGqlIdentifiers,
@@ -21,6 +43,7 @@ import type { FormatError, FormatOptions, FormatResult } from "./types";
 type InsertionPoint = {
   readonly position: number;
   readonly content: string;
+  readonly endPosition?: number;
 };
 
 type TraversalContext = {
@@ -156,7 +179,7 @@ const traverse = (module: Module, gqlIdentifiers: ReadonlySet<string>, onObjectE
  * Optionally injects fragment keys for anonymous fragments.
  */
 export const format = (options: FormatOptions): Result<FormatResult, FormatError> => {
-  const { sourceCode, filePath, injectFragmentKeys = false } = options;
+  const { sourceCode, filePath, injectFragmentKeys = false, formatTaggedTemplates = false } = options;
 
   // Parse source code with SWC
   let module: Module;
@@ -236,6 +259,32 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
     }
   });
 
+  // Tagged template formatting (when enabled)
+  if (formatTaggedTemplates) {
+    const { parse: parseGraphql, print: printGraphql } = getGraphqlModule();
+
+    const converter = createSwcSpanConverter(sourceCode);
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+    const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
+
+    if (templates.length > 0) {
+      const defaultFormat: FormatGraphqlFn = (source) => {
+        const ast = parseGraphql(source, { noLocation: false });
+        return printGraphql(ast);
+      };
+
+      const templateEdits = formatTemplatesInSource(templates, sourceCode, defaultFormat);
+
+      for (const edit of templateEdits) {
+        insertionPoints.push({
+          position: edit.start,
+          content: edit.newText,
+          endPosition: edit.end,
+        });
+      }
+    }
+  }
+
   // Apply insertions
   if (insertionPoints.length === 0) {
     return ok({ modified: false, sourceCode });
@@ -247,7 +296,8 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   let result = sourceCode;
   for (const point of sortedPoints) {
-    result = result.slice(0, point.position) + point.content + result.slice(point.position);
+    const end = point.endPosition ?? point.position;
+    result = result.slice(0, point.position) + point.content + result.slice(end);
   }
 
   return ok({ modified: true, sourceCode: result });
@@ -258,7 +308,7 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
  * Useful for pre-commit hooks or CI checks.
  */
 export const needsFormat = (options: FormatOptions): Result<boolean, FormatError> => {
-  const { sourceCode, filePath } = options;
+  const { sourceCode, filePath, formatTaggedTemplates = false } = options;
 
   // Parse source code with SWC
   let module: Module;
@@ -308,6 +358,27 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
       needsFormatting = true;
     }
   });
+
+  // Check tagged templates when enabled
+  if (!needsFormatting && formatTaggedTemplates) {
+    const { parse: parseGraphql, print: printGraphql } = getGraphqlModule();
+
+    const converter = createSwcSpanConverter(sourceCode);
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+    const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
+
+    if (templates.length > 0) {
+      const defaultFormat: FormatGraphqlFn = (source) => {
+        const ast = parseGraphql(source, { noLocation: false });
+        return printGraphql(ast);
+      };
+
+      const templateEdits = formatTemplatesInSource(templates, sourceCode, defaultFormat);
+      if (templateEdits.length > 0) {
+        needsFormatting = true;
+      }
+    }
+  }
 
   return ok(needsFormatting);
 };
