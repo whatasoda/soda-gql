@@ -18,13 +18,31 @@ type GraphqlModule = {
 };
 
 let _graphqlModule: GraphqlModule | undefined;
+let _graphqlModuleError: Error | undefined;
 
-const getGraphqlModule = (): GraphqlModule => {
-  if (!_graphqlModule) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    _graphqlModule = require("graphql") as GraphqlModule;
+const getGraphqlModule = (): Result<GraphqlModule, FormatError> => {
+  if (_graphqlModuleError) {
+    return err({
+      type: "FormatError",
+      code: "MISSING_DEPENDENCY",
+      message: 'The "graphql" package is required for --format-tagged-templates. Install it with: bun add graphql',
+    });
   }
-  return _graphqlModule;
+  if (!_graphqlModule) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      _graphqlModule = require("graphql") as GraphqlModule;
+    } catch (cause) {
+      _graphqlModuleError = cause instanceof Error ? cause : new Error(String(cause));
+      return err({
+        type: "FormatError",
+        code: "MISSING_DEPENDENCY",
+        message: 'The "graphql" package is required for --format-tagged-templates. Install it with: bun add graphql',
+        cause,
+      });
+    }
+  }
+  return ok(_graphqlModule);
 };
 
 import {
@@ -265,7 +283,11 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
 
   // Tagged template formatting (when enabled)
   if (formatTaggedTemplates) {
-    const { parse: parseGraphql, print: printGraphql } = getGraphqlModule();
+    const graphqlResult = getGraphqlModule();
+    if (graphqlResult.isErr()) {
+      return err(graphqlResult.error);
+    }
+    const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
     const converter = createSwcSpanConverter(sourceCode);
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
@@ -365,7 +387,11 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
 
   // Check tagged templates when enabled
   if (!needsFormatting && formatTaggedTemplates) {
-    const { parse: parseGraphql, print: printGraphql } = getGraphqlModule();
+    const graphqlResult = getGraphqlModule();
+    if (graphqlResult.isErr()) {
+      return err(graphqlResult.error);
+    }
+    const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
     const converter = createSwcSpanConverter(sourceCode);
     const positionCtx: PositionTrackingContext = { spanOffset, converter };

@@ -12,7 +12,7 @@ export type FormatResult = {
 
 export type FormatError = {
   readonly type: "FormatError";
-  readonly code: "PARSE_ERROR" | "TRANSFORM_ERROR";
+  readonly code: "PARSE_ERROR" | "TRANSFORM_ERROR" | "MISSING_DEPENDENCY";
   readonly message: string;
   readonly cause?: unknown;
 };
