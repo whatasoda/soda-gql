@@ -117,12 +117,14 @@ const ensurePluginSession = (configPath?: string): PluginSession | null => {
 };
 
 /**
- * Whether SWC transformer initialization has been attempted.
+ * Track the artifact used to create the current SWC transformer.
+ * Allows re-initialization when artifact changes (e.g., schema updates).
  */
-let swcInitialized = false;
+let lastArtifact: BuilderArtifact | null = null;
 
 /**
  * Initialize SWC transformer if configured.
+ * Reinitializes when artifact identity changes (reference equality).
  */
 const initializeSwcTransformer = async (
   artifact: BuilderArtifact,
@@ -131,13 +133,11 @@ const initializeSwcTransformer = async (
 ): Promise<SwcTransformerInterface | null> => {
   const stateKey = getStateKey(configPath);
 
-  // Check if already initialized
+  // Return existing transformer if artifact hasn't changed
   const existing = getSharedSwcTransformer(stateKey);
-  if (existing || swcInitialized) {
+  if (existing && artifact === lastArtifact) {
     return existing;
   }
-
-  swcInitialized = true;
 
   // Check if SWC is configured
   const transformerType = getSharedTransformerType(stateKey);
@@ -152,6 +152,7 @@ const initializeSwcTransformer = async (
       artifact,
       sourceMap: true,
     });
+    lastArtifact = artifact;
     setSharedSwcTransformer(stateKey, transformer);
     return transformer;
   } catch (error) {
@@ -225,6 +226,12 @@ async function transformCore(
       sourcePath: filename,
     });
 
+    if (swcResult.errors.length > 0) {
+      for (const error of swcResult.errors) {
+        console.warn(`[@soda-gql/metro-plugin] SWC ${error.stage} warning: ${error.message} (${error.code})`);
+      }
+    }
+
     if (swcResult.transformed) {
       // Pass SWC-transformed code to upstream transformer
       const upstreamResult = await upstream.transform({
@@ -264,7 +271,7 @@ async function transformCore(
     babelrc: false,
     configFile: false,
     parserOpts: {
-      plugins: filename.endsWith(".tsx") ? ["typescript", "jsx"] : ["typescript"],
+      plugins: filename.endsWith(".tsx") || filename.endsWith(".jsx") ? ["typescript", "jsx"] : ["typescript"],
     },
     plugins: [sodaGqlPlugin],
     sourceMaps: true,

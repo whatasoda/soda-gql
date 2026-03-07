@@ -41,7 +41,6 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
   let _viteServer: ViteDevServer | null = null;
   let isDevMode = false;
   let swcTransformer: SwcTransformerInterface | null = null;
-  let swcInitialized = false;
 
   const log = (message: string): void => {
     if (options.debug) {
@@ -51,13 +50,12 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
 
   /**
    * Initialize SWC transformer if configured.
+   * Called on buildStart and after artifact updates in handleHotUpdate.
    */
   const initializeSwcTransformer = async (): Promise<void> => {
-    if (swcInitialized || options.transformer !== "swc") {
+    if (options.transformer !== "swc") {
       return;
     }
-
-    swcInitialized = true;
 
     if (!currentArtifact || !pluginSession) {
       return;
@@ -245,6 +243,12 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
           sourcePath: id,
         });
 
+        if (swcResult.errors.length > 0) {
+          for (const error of swcResult.errors) {
+            console.warn(`[@soda-gql/vite-plugin] SWC ${error.stage} warning: ${error.message} (${error.code})`);
+          }
+        }
+
         if (swcResult.transformed) {
           return {
             code: swcResult.sourceCode,
@@ -261,7 +265,7 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
         babelrc: false,
         configFile: false,
         parserOpts: {
-          plugins: id.endsWith(".tsx") ? ["typescript", "jsx"] : ["typescript"],
+          plugins: id.endsWith(".tsx") || id.endsWith(".jsx") ? ["typescript", "jsx"] : ["typescript"],
         },
         plugins: [createPluginWithArtifact({ artifact: currentArtifact, config: pluginSession.config })],
         sourceMaps: true,
@@ -318,6 +322,9 @@ export const sodaGqlPlugin = (options: VitePluginOptions = {}): Plugin => {
       if (!currentArtifact) {
         return;
       }
+
+      // Reinitialize SWC transformer with updated artifact
+      await initializeSwcTransformer();
 
       // If artifact hasn't changed, just let normal HMR happen
       if (!hasArtifactChanged()) {

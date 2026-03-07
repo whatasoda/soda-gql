@@ -136,6 +136,12 @@ const sodaGqlLoader: LoaderDefinitionFunction<WebpackLoaderOptions> = function (
             inputSourceMap: inputSourceMap ? JSON.stringify(inputSourceMap) : undefined,
           });
 
+          if (result.errors.length > 0) {
+            for (const error of result.errors) {
+              console.warn(`[@soda-gql/webpack-plugin] SWC ${error.stage} warning: ${error.message} (${error.code})`);
+            }
+          }
+
           if (result.transformed) {
             const sourceMap = result.sourceMap ? JSON.parse(result.sourceMap) : undefined;
             callback(null, result.sourceCode, sourceMap);

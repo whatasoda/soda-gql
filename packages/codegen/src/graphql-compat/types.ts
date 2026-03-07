@@ -8,8 +8,14 @@
  */
 
 // Re-export shared GraphQL analysis types from core
+/** Backwards-compatible alias for error type. */
+// Re-export enriched types from core (previously duplicated in transformer.ts)
 export type {
+  EnrichedFragment,
+  EnrichedOperation,
+  EnrichedVariable,
   GraphqlAnalysisError,
+  GraphqlAnalysisError as GraphqlCompatError,
   InferredVariable,
   ParsedArgument,
   ParsedFieldSelection,
@@ -22,11 +28,10 @@ export type {
   ParsedValue,
   ParsedVariable,
   ParseResultBase as ParseResult,
+  TransformOptions,
+  TransformResult,
   TypeInfo,
 } from "@soda-gql/core";
-
-/** Backwards-compatible alias for error type. */
-export type { GraphqlAnalysisError as GraphqlCompatError } from "@soda-gql/core";
 
 /**
  * Options for running graphql-compat code generation.

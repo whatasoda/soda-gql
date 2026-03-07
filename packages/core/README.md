@@ -159,7 +159,7 @@ type UserOutput = typeof userFragment.$infer.output;
 
 // Operation types
 type QueryVariables = typeof getUserQuery.$infer.input;
-type QueryResult = typeof getUserQuery.$infer.output.projected;
+type QueryResult = typeof getUserQuery.$infer.output;
 ```
 
 ## Element Extensions
@@ -169,18 +169,10 @@ The `attach()` method allows extending gql elements with custom properties. This
 ### Basic Usage
 
 ```typescript
-import type { GqlElementAttachment } from "@soda-gql/core";
-
-// Define an attachment
-const myAttachment: GqlElementAttachment<typeof userFragment, "custom", { value: number }> = {
-  name: "custom",
-  createValue: (element) => ({ value: 42 }),
-};
-
-// Attach to a fragment
+// Create a fragment and attach a custom property inline
 export const userFragment = gql
-  .default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }))
-  .attach(myAttachment);
+  .default(({ fragment }) => fragment("UserFragment", "User")`{ id name email }`())
+  .attach({ name: "custom" as const, createValue: () => ({ value: 42 }) });
 
 // Access the attached property
 userFragment.custom.value; // 42
@@ -223,7 +215,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
       custom: {
         requiresAuth: true,
         cacheTtl: 300,
-        trackedVariables: [$var.getInner($.id)],
+        trackedVariables: [$var.getName($.id)],
       },
     }),
     fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),

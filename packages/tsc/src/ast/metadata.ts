@@ -177,7 +177,7 @@ const isGqlDefinitionCall = (node: ts.Node, typescript: typeof ts): node is ts.C
   if (firstArg === undefined) {
     return false;
   }
-  return typescript.isArrowFunction(firstArg);
+  return typescript.isArrowFunction(firstArg) || typescript.isFunctionExpression(firstArg);
 };
 
 const isGqlReference = (expr: ts.Expression, typescript: typeof ts): boolean => {
