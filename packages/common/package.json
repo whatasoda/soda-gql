@@ -15,6 +15,8 @@
     "portable.js",
     "utils.d.ts",
     "utils.js",
+    "template-extraction.d.ts",
+    "template-extraction.js",
     "zod.d.ts",
     "zod.js"
   ],
@@ -84,10 +86,20 @@
       "require": "./dist/zod.cjs",
       "default": "./dist/zod.mjs"
     },
+    "./template-extraction": {
+      "@soda-gql": "./@x-template-extraction.ts",
+      "types": "./dist/template-extraction.d.mts",
+      "import": "./dist/template-extraction.mjs",
+      "require": "./dist/template-extraction.cjs",
+      "default": "./dist/template-extraction.mjs"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
     "neverthrow": "^8.1.1",
     "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@swc/types": "^0.1.6"
   }
 }
