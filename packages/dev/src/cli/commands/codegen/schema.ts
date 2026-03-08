@@ -4,8 +4,8 @@
  */
 
 import { resolve } from "node:path";
-import type { CodegenSchemaConfig, CodegenSuccess } from "@soda-gql/codegen";
-import { runCodegen, writeInjectTemplate } from "@soda-gql/codegen";
+import type { CodegenSchemaConfig, CodegenSuccess } from "../../../codegen";
+import { runCodegen, writeInjectTemplate } from "../../../codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { type CliResult, cliErrors } from "../../errors";

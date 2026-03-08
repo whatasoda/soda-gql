@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { loadSchema } from "@soda-gql/codegen";
+import { loadSchema } from "@soda-gql/dev/codegen";
 import type { DocumentNode } from "graphql";
 import { buildASTSchema } from "graphql";
 import type { ExtractedTemplate } from "../types";

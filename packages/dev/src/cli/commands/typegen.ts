@@ -1,5 +1,5 @@
 import { loadConfig } from "@soda-gql/config";
-import { runTypegen } from "@soda-gql/typegen";
+import { runTypegen } from "../../typegen";
 import { err, ok } from "neverthrow";
 import { type CliResult, cliErrors } from "../errors";
 import { TypegenArgsSchema } from "../schemas/args";

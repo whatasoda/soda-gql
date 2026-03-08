@@ -4,9 +4,9 @@
  */
 
 import type { ArtifactLoadError, BuilderError } from "@soda-gql/builder";
-import type { CodegenError } from "@soda-gql/codegen";
+import type { CodegenError } from "../codegen";
 import type { ConfigError } from "@soda-gql/config";
-import type { TypegenError } from "@soda-gql/typegen";
+import type { TypegenError } from "../typegen";
 import { err, type Result } from "neverthrow";
 
 /**
@@ -225,7 +225,7 @@ export const cliErrors = {
   formatterNotInstalled: (message?: string): CliFormatterNotInstalledError => ({
     category: "cli",
     code: "CLI_FORMATTER_NOT_INSTALLED",
-    message: message ?? "@soda-gql/formatter is not installed. Run: bun add @soda-gql/formatter",
+    message: message ?? "@soda-gql/dev formatter failed to load",
   }),
 
   parseError: (message: string, filePath?: string): CliParseErrorError => ({

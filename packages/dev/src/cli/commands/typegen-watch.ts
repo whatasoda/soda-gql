@@ -8,7 +8,7 @@
  */
 
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { runTypegen } from "@soda-gql/typegen";
+import { runTypegen } from "../../typegen";
 import chokidar from "chokidar";
 
 const DEBOUNCE_MS = 150;

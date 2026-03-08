@@ -129,6 +129,20 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   }
 };
 
+// Dev package (CLI bin entry added manually — follows LSP pattern)
+const devConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/dev");
+  return {
+    ...base,
+    entry: { ...base.entry, bin: "packages/dev/src/cli/index.ts" },
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: true,
+  };
+})();
+
 // LSP package (bin entry added manually — not using @x-bin.ts to avoid exposing it as a package export)
 const lspConfig: UserConfig = (() => {
   const base = configure("@soda-gql/lsp", {
@@ -186,7 +200,7 @@ export default defineConfig([
     clean: true,
   },
 
-  // Builder and codegen packages (heavy Node usage, avoid tree-shaking)
+  // Builder package (heavy Node usage, avoid tree-shaking)
   {
     ...configure("@soda-gql/builder"),
     outDir: "packages/builder/dist",
@@ -196,49 +210,16 @@ export default defineConfig([
     treeshake: false,
     clean: true,
   },
-  {
-    ...configure("@soda-gql/codegen"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    treeshake: false,
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/typegen"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    treeshake: false,
-    clean: true,
-  },
+
+  // Dev package (CLI + codegen + typegen + formatter)
+  devConfig,
+
   {
     ...configure("@soda-gql/sdk"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    clean: true,
-  },
-
-  // CLI package (CJS for maximum compatibility)
-  {
-    ...configure("@soda-gql/cli"),
-    format: ["cjs"],
-    platform: "node",
-    target: "node18",
-    banner: {
-      js: "#!/usr/bin/env node",
-    },
-    clean: true,
-  },
-
-  // Formatter package (optional CLI dependency)
-  {
-    ...configure("@soda-gql/formatter"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
     clean: true,
   },
 

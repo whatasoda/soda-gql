@@ -1,15 +1,10 @@
 {
-  "name": "@soda-gql/sdk",
-  "version": "0.12.6",
-  "description": "Programmatic SDK for soda-gql CLI features",
+  "name": "@soda-gql/dev",
+  "version": "0.12.4",
+  "description": "Development tools for soda-gql: CLI, codegen, typegen, and formatter",
   "type": "module",
   "private": false,
   "license": "MIT",
-  "files": [
-    "dist",
-    "index.d.ts",
-    "index.js"
-  ],
   "author": {
     "name": "Shota Hatada",
     "email": "shota.hatada@whatasoda.me",
@@ -20,13 +15,13 @@
     "codegen",
     "zero-runtime",
     "typescript",
-    "sdk",
-    "programmatic"
+    "cli",
+    "formatter"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/whatasoda/soda-gql.git",
-    "directory": "packages/sdk"
+    "directory": "packages/dev"
   },
   "homepage": "https://github.com/whatasoda/soda-gql#readme",
   "bugs": {
@@ -35,24 +30,30 @@
   "engines": {
     "node": ">=18"
   },
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "exports": {
-    ".": {
-      "@soda-gql": "./@x-index.ts",
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs",
-      "default": "./dist/index.mjs"
-    },
-    "./package.json": "./package.json"
+  "bin": {
+    "soda-gql": "./dist/bin.cjs"
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
-    "@soda-gql/dev": "workspace:*",
+    "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "neverthrow": "^8.1.1"
+    "chokidar": "^3.6.0",
+    "esbuild": "^0.24.0",
+    "fast-glob": "^3.3.3",
+    "graphql": "^16.11.0",
+    "neverthrow": "^8.1.1",
+    "picomatch": "^4.0.3",
+    "zod": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@swc/core": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "@soda-gql/lsp": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^4.0.2",
+    "@swc/types": "^0.1.0"
   }
 }

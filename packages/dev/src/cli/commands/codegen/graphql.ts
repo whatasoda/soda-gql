@@ -5,8 +5,8 @@
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import type { EnrichedFragment, EnrichedOperation, ParseResult } from "@soda-gql/codegen";
-import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "@soda-gql/codegen";
+import type { EnrichedFragment, EnrichedOperation, ParseResult } from "../../../codegen";
+import { emitFragment, emitOperation, loadSchema, parseGraphqlSource, transformParsedGraphql } from "../../../codegen";
 import { normalizePath } from "@soda-gql/common";
 import { loadConfig } from "@soda-gql/config";
 import fg from "fast-glob";

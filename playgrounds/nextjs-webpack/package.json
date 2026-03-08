@@ -15,7 +15,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@soda-gql/cli": "workspace:*",
+    "@soda-gql/dev": "workspace:*",
     "@soda-gql/swc": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",
     "@types/node": "^22.0.0",

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBuilderSession } from "@soda-gql/builder";
-import { runCodegen } from "@soda-gql/codegen";
+import { runCodegen } from "@soda-gql/dev/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 /**

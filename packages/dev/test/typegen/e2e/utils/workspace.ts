@@ -12,7 +12,7 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCodegen } from "@soda-gql/codegen";
+import { runCodegen } from "../../../../src/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 
 // Project root for accessing node_modules

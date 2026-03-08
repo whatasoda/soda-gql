@@ -8,17 +8,17 @@
  */
 
 import { resolve } from "node:path";
-import type { CodegenSchemaConfig } from "@soda-gql/codegen";
+import type { CodegenSchemaConfig } from "../../../codegen";
 import {
   compileTypeFilter,
   computeReachabilityFilter,
   loadSchema,
   runCodegen,
   type transformParsedGraphql,
-} from "@soda-gql/codegen";
+} from "../../../codegen";
 import type { TypeFilterConfig } from "@soda-gql/config";
 import { loadConfig } from "@soda-gql/config";
-import { runTypegen } from "@soda-gql/typegen";
+import { runTypegen } from "../../../typegen";
 import { err, ok } from "neverthrow";
 import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";

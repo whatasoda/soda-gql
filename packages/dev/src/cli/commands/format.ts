@@ -7,11 +7,11 @@ import { FormatArgsSchema } from "../schemas/args";
 import type { CommandResult, CommandSuccess } from "../types";
 import { parseArgs } from "../utils/parse-args";
 
-type FormatterModule = typeof import("@soda-gql/formatter");
+type FormatterModule = typeof import("../../formatter");
 
 const loadFormatter = async (): Promise<FormatterModule | null> => {
   try {
-    return await import("@soda-gql/formatter");
+    return await import("../../formatter");
   } catch {
     return null;
   }
