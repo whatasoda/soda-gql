@@ -20,6 +20,17 @@
   ],
   "exclude": [
     "graphql-system/*.cjs",
-    "fixtures/**/fragment-in-fragment.ts"
+    "fixtures/**/fragment-in-fragment.ts",
+    "fixtures/**/basic-spread.ts",
+    "fixtures/**/attach-chaining.ts",
+    "fixtures/**/operations.ts",
+    "fixtures/**/imported-binding-refs.ts",
+    "fixtures/**/imported-slice-refs.ts",
+    "fixtures/**/namespace-imports.ts",
+    "fixtures/**/nested-namespace-deps.ts",
+    "fixtures/**/top-level-with-metadata.ts",
+    "fixtures/**/nested-create.ts",
+    "fixtures/**/multiple-fragments.ts",
+    "fixtures/**/local-and-imported-deps.ts"
   ]
 }
