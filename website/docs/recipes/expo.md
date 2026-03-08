@@ -12,7 +12,7 @@ This guide shows how to set up soda-gql with Expo or React Native projects using
 ```bash
 # Install soda-gql packages
 bun add @soda-gql/core
-bun add -D @soda-gql/cli @soda-gql/config @soda-gql/metro-plugin
+bun add -D @soda-gql/dev @soda-gql/config @soda-gql/metro-plugin
 ```
 
 ## Configuration

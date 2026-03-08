@@ -356,13 +356,13 @@ Error: Command not found: soda-gql
 
 **Analysis:**
 - soda-gql CLI not installed or not in PATH
-- Check package.json for @soda-gql/cli
+- Check package.json for @soda-gql/dev
 
 **Fix suggestion:**
-1. Verify @soda-gql/cli is in dependencies or devDependencies
+1. Verify @soda-gql/dev is in dependencies or devDependencies
 2. If missing, install:
    ```bash
-   bun add -d @soda-gql/cli
+   bun add -d @soda-gql/dev
    ```
 3. If installed but not found, try:
    ```bash

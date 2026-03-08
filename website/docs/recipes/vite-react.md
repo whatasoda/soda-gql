@@ -16,7 +16,7 @@ cd my-app
 
 # Install soda-gql packages
 bun add @soda-gql/core
-bun add -D @soda-gql/cli @soda-gql/config @soda-gql/vite-plugin
+bun add -D @soda-gql/dev @soda-gql/config @soda-gql/vite-plugin
 ```
 
 ## Configuration

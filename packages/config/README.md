@@ -137,8 +137,7 @@ if (result.isOk()) {
 
 ## Related Packages
 
-- [@soda-gql/cli](../cli) - Command-line interface
-- [@soda-gql/codegen](../codegen) - Code generation engine
+- [@soda-gql/dev](../dev) - CLI, codegen, typegen, and formatter
 
 ## License
 

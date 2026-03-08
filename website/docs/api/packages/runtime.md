@@ -1,11 +1,11 @@
-# @soda-gql/runtime
+# @soda-gql/core/runtime
 
-Minimal runtime utilities for soda-gql operations. This package provides the operation registry and runtime helpers.
+Minimal runtime utilities for soda-gql operations. This subpath export of `@soda-gql/core` provides the operation registry and runtime helpers.
 
 ## Installation
 
 ```bash
-bun add @soda-gql/runtime
+bun add @soda-gql/core
 ```
 
 ## Overview
@@ -25,7 +25,7 @@ This approach provides:
 The `gqlRuntime` object provides access to registered operations:
 
 ```typescript
-import { gqlRuntime } from "@soda-gql/runtime";
+import { gqlRuntime } from "@soda-gql/core/runtime";
 ```
 
 ### getOperation()
@@ -68,7 +68,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 After build plugin transformation:
 
 ```typescript
-import { gqlRuntime } from "@soda-gql/runtime";
+import { gqlRuntime } from "@soda-gql/core/runtime";
 
 export const getUserQuery = gqlRuntime.getOperation("abc123");
 ```

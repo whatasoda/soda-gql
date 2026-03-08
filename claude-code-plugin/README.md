@@ -13,8 +13,8 @@ This plugin enhances the Claude Code experience for soda-gql developers by provi
 1. **Install soda-gql in your project:**
 
 ```bash
-bun add @soda-gql/core @soda-gql/runtime
-bun add -D @soda-gql/cli @soda-gql/config
+bun add @soda-gql/core
+bun add -D @soda-gql/dev @soda-gql/config
 ```
 
 2. **Enable the marketplace plugin in Claude Code:**

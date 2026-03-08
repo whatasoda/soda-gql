@@ -23,20 +23,16 @@ soda-gql/
 ├── packages/           # All published packages
 │   ├── babel/
 │   ├── builder/
-│   ├── cli/
-│   ├── codegen/
 │   ├── colocation-tools/
 │   ├── common/
 │   ├── config/
-│   ├── core/
-│   ├── formatter/
+│   ├── core/           # Core types, utilities, and runtime (includes /runtime export)
+│   ├── dev/            # CLI, codegen, typegen, formatter (with subpath exports)
 │   ├── lsp/
 │   ├── metro-plugin/
-│   ├── runtime/
 │   ├── sdk/
 │   ├── swc/
 │   ├── tsc/
-│   ├── typegen/
 │   ├── vite-plugin/
 │   ├── vscode-extension/
 │   └── webpack-plugin/
@@ -328,8 +324,7 @@ Each example defines its own path mapping via symlink to the shared fixture-cata
     "@/graphql-system": ["./fixture-catalog/graphql-system/index.ts"]
   },
   "references": [
-    { "path": "../../packages/core/tsconfig.editor.json" },
-    { "path": "../../packages/runtime/tsconfig.editor.json" }
+    { "path": "../../packages/core/tsconfig.editor.json" }
   ]
 }
 ```
@@ -377,8 +372,7 @@ Each example requires a `tsconfig.editor.json` for integrated type checking with
   },
   "include": ["src/**/*", "fixture-catalog/**/*"],
   "references": [
-    { "path": "../../packages/core/tsconfig.editor.json" },
-    { "path": "../../packages/runtime/tsconfig.editor.json" }
+    { "path": "../../packages/core/tsconfig.editor.json" }
   ]
 }
 ```

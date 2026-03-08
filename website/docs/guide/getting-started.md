@@ -7,7 +7,7 @@ This guide walks you through setting up soda-gql in your project.
 ```bash
 # Install core packages
 bun add @soda-gql/core
-bun add -D @soda-gql/cli @soda-gql/config
+bun add -D @soda-gql/dev @soda-gql/config
 
 # Install peer dependencies
 bun add neverthrow

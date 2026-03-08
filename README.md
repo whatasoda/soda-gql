@@ -15,8 +15,8 @@ A zero-runtime GraphQL query generation system that brings PandaCSS's approach t
 
 ```
 packages/
-├── core/              # Core GraphQL types and utilities
-├── codegen/           # Schema code generation
+├── core/              # Core GraphQL types, utilities, and runtime
+├── dev/               # CLI, codegen, typegen, and formatter (dev tooling)
 ├── builder/           # Static analysis & artifact generation
 ├── babel/             # Babel transformer and plugin
 ├── tsc/               # TypeScript transformer and plugin
@@ -25,9 +25,7 @@ packages/
 ├── vite-plugin/       # Vite plugin
 ├── metro-plugin/      # Metro plugin (React Native)
 ├── lsp/               # Language Server Protocol implementation
-├── vscode-extension/  # VS Code extension for LSP
-├── runtime/           # Runtime execution helpers
-└── cli/               # Command-line interface
+└── vscode-extension/  # VS Code extension for LSP
 ```
 
 ## Quick Start
@@ -36,8 +34,8 @@ packages/
 
 ```bash
 # Install packages
-bun add @soda-gql/core @soda-gql/runtime
-bun add -D @soda-gql/cli @soda-gql/config
+bun add @soda-gql/core
+bun add -D @soda-gql/dev @soda-gql/config
 ```
 
 Create a `soda-gql.config.ts` file in your project root:
