@@ -538,4 +538,61 @@ export const GetPost = gql.default(({ query }) =>
     if (!second.isOk()) return;
     expect(second.value.modified).toBe(false);
   });
+
+  it("should be idempotent with multi-line tagged template fragment", () => {
+    const source = `import { gql } from "./graphql";
+export const Foo = gql.default(({ fragment }) =>
+  fragment("Foo", "Bar")\`{
+    id
+    name
+  }\`(),
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with multi-line tagged template query", () => {
+    const source = `import { gql } from "./graphql";
+export const GetUsers = gql.default(({ query }) =>
+  query("GetUsers")\`{
+    employees {
+      id
+      name
+    }
+  }\`
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with tagged template content ending with newline", () => {
+    const source = `import { gql } from "./graphql";
+export const Foo = gql.default(({ fragment }) =>
+  fragment("Foo", "Bar")\`{
+    id
+    name
+  }
+\`(),
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
 });
