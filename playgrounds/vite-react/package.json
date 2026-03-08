@@ -15,7 +15,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@soda-gql/dev": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@soda-gql/vite-plugin": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

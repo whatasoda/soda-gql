@@ -16,7 +16,7 @@ const cliErrorHints: Partial<Record<CliErrorCode, string>> = {
   CLI_WRITE_FAILED: "Check write permissions and disk space",
   CLI_READ_FAILED: "Check file permissions and verify the file is not locked",
   CLI_NO_PATTERNS: "Provide file patterns or create soda-gql.config.ts",
-  CLI_FORMATTER_NOT_INSTALLED: "Formatter failed to load from @soda-gql/dev",
+  CLI_FORMATTER_NOT_INSTALLED: "Formatter failed to load from @soda-gql/tools",
   CLI_PARSE_ERROR: "Check the file for syntax errors",
   CLI_FORMAT_ERROR: "Verify the file contains valid soda-gql code",
   CLI_UNEXPECTED: "This is an unexpected error. Please report at https://github.com/soda-gql/soda-gql/issues",

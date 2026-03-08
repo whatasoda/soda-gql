@@ -1,6 +1,6 @@
-# @soda-gql/dev (CLI)
+# @soda-gql/tools (CLI)
 
-Command-line interface for soda-gql code generation. The CLI binary `soda-gql` is provided by the `@soda-gql/dev` package, which also includes codegen (`@soda-gql/dev/codegen`), typegen (`@soda-gql/dev/typegen`), and formatter (`@soda-gql/dev/formatter`).
+Command-line interface for soda-gql code generation. The CLI binary `soda-gql` is provided by the `@soda-gql/tools` package, which also includes codegen (`@soda-gql/tools/codegen`), typegen (`@soda-gql/tools/typegen`), and formatter (`@soda-gql/tools/formatter`).
 
 :::warning Work in Progress
 This documentation is being developed.
@@ -9,7 +9,7 @@ This documentation is being developed.
 ## Installation
 
 ```bash
-bun add -D @soda-gql/dev
+bun add -D @soda-gql/tools
 ```
 
 ## Commands

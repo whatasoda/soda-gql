@@ -18,7 +18,7 @@
       "path": "../config/tsconfig.editor.json"
     },
     {
-      "path": "../dev/tsconfig.editor.json"
+      "path": "../tools/tsconfig.editor.json"
     }
   ]
 }

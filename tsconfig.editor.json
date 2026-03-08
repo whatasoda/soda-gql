@@ -8,7 +8,7 @@
     "tsBuildInfoFile": "node_modules/.soda-gql/.typecheck/root/tsconfig.tsbuildinfo",
     "rootDir": "."
   },
-  "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*", "packages/dev/test/cli/utils/cli.ts"],
+  "include": ["package.json", "tests/**/*", "scripts/**/*", "perf-measures/**/*", "packages/tools/test/cli/utils/cli.ts"],
   "exclude": [
     "node_modules",
     "**/dist/**/*",
@@ -25,7 +25,7 @@
     { "path": "./packages/common/tsconfig.editor.json" },
     { "path": "./packages/config/tsconfig.editor.json" },
     { "path": "./packages/core/tsconfig.editor.json" },
-    { "path": "./packages/dev/tsconfig.editor.json" },
+    { "path": "./packages/tools/tsconfig.editor.json" },
     { "path": "./packages/lsp/tsconfig.editor.json" },
     { "path": "./packages/metro-plugin/tsconfig.editor.json" },
     { "path": "./packages/sdk/tsconfig.editor.json" },

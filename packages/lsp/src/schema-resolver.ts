@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { hashSchema } from "@soda-gql/dev/codegen";
+import { hashSchema } from "@soda-gql/tools/codegen";
 import { buildASTSchema, concatAST, type DocumentNode, type GraphQLSchema, parse } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import type { LspError } from "./errors";

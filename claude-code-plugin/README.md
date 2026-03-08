@@ -14,7 +14,7 @@ This plugin enhances the Claude Code experience for soda-gql developers by provi
 
 ```bash
 bun add @soda-gql/core
-bun add -D @soda-gql/dev @soda-gql/config
+bun add -D @soda-gql/tools @soda-gql/config
 ```
 
 2. **Enable the marketplace plugin in Claude Code:**

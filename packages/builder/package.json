@@ -72,6 +72,6 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@soda-gql/dev": "workspace:*"
+    "@soda-gql/tools": "workspace:*"
   }
 }

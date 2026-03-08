@@ -137,7 +137,7 @@ if (result.isOk()) {
 
 ## Related Packages
 
-- [@soda-gql/dev](../dev) - CLI, codegen, typegen, and formatter
+- [@soda-gql/tools](../tools) - CLI, codegen, typegen, and formatter
 
 ## License
 

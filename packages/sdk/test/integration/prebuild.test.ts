@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCodegen } from "@soda-gql/dev/codegen";
+import { runCodegen } from "@soda-gql/tools/codegen";
 import { prebuild, prebuildAsync } from "../../src/prebuild";
 
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));

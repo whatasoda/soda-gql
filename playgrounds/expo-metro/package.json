@@ -25,7 +25,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@expo/metro-config": "~54.0.12",
-    "@soda-gql/dev": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "~54.0.9",
     "typescript": "~5.3.3"

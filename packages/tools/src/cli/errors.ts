@@ -225,7 +225,7 @@ export const cliErrors = {
   formatterNotInstalled: (message?: string): CliFormatterNotInstalledError => ({
     category: "cli",
     code: "CLI_FORMATTER_NOT_INSTALLED",
-    message: message ?? "@soda-gql/dev formatter failed to load",
+    message: message ?? "@soda-gql/tools formatter failed to load",
   }),
 
   parseError: (message: string, filePath?: string): CliParseErrorError => ({

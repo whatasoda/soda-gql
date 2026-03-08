@@ -17,7 +17,7 @@
     "@soda-gql/core": "workspace:*"
   },
   "devDependencies": {
-    "@soda-gql/dev": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@types/node": "^22.0.0",
     "graphql": "^16.8.1",

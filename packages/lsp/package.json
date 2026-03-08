@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
-    "@soda-gql/dev": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@swc/core": "^1.6.3",

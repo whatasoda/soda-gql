@@ -129,12 +129,12 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   }
 };
 
-// Dev package (CLI bin entry added manually — follows LSP pattern)
-const devConfig: UserConfig = (() => {
-  const base = configure("@soda-gql/dev");
+// Tools package (CLI bin entry added manually — follows LSP pattern)
+const toolsConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/tools");
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/dev/src/cli/index.ts" },
+    entry: { ...base.entry, bin: "packages/tools/src/cli/index.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
@@ -206,8 +206,8 @@ export default defineConfig([
     clean: true,
   },
 
-  // Dev package (CLI + codegen + typegen + formatter)
-  devConfig,
+  // Tools package (CLI + codegen + typegen + formatter)
+  toolsConfig,
 
   {
     ...configure("@soda-gql/sdk"),

@@ -10,8 +10,8 @@
 import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { loadConfig } from "@soda-gql/config";
-import { runCodegen } from "@soda-gql/dev/codegen";
-import { runTypegen } from "@soda-gql/dev/typegen";
+import { runCodegen } from "@soda-gql/tools/codegen";
+import { runTypegen } from "@soda-gql/tools/typegen";
 
 const rootDir = join(import.meta.dirname, "..");
 

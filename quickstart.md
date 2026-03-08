@@ -8,7 +8,7 @@ This guide demonstrates the basic usage of the zero-runtime GraphQL generation s
 # Install the core package and build plugin
 bun add @soda-gql/core
 bun add -D @soda-gql/plugin-babel  # Minimum requirement
-bun add -D @soda-gql/dev           # For schema generation (CLI, codegen, typegen)
+bun add -D @soda-gql/tools           # For schema generation (CLI, codegen, typegen)
 
 # Install peer dependencies
 bun add zod neverthrow

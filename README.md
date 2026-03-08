@@ -35,7 +35,7 @@ packages/
 ```bash
 # Install packages
 bun add @soda-gql/core
-bun add -D @soda-gql/dev @soda-gql/config
+bun add -D @soda-gql/tools @soda-gql/config
 ```
 
 Create a `soda-gql.config.ts` file in your project root:

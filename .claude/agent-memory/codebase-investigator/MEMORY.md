@@ -59,7 +59,7 @@ See: `api-contract-report.md` for full details.
 Key critical/high findings:
 - `config.codegen.chunkSize` silently dropped by CLI (`schemaCommand`) and SDK (`codegenAsync`) — never forwarded to `runCodegen`
 - String form of `inject` config always sets `adapter` = same path as `scalars`, even if the file doesn't export an adapter
-- `TypegenOptions` exported from `@soda-gql/dev/typegen` is a dead export — `runTypegen` uses `RunTypegenOptions` (different shape)
+- `TypegenOptions` exported from `@soda-gql/tools/typegen` is a dead export — `runTypegen` uses `RunTypegenOptions` (different shape)
 - `ArtifactLoadError`: wrong code `ARTIFACT_NOT_FOUND` used for I/O read failures (permission errors, etc.)
 - `FieldSelectionData.variableDefinitions` is `VariableDefinitions` (VarSpecifier map) for fragments vs `VariableDefinitionNode[]` for operations
 - `toImportSpecifier` duplicated between `codegen/runner.ts` and `typegen/runner.ts` with subtle drift in edge case behavior

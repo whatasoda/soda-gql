@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBuilderSession } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig, ResolvedTsconfigPaths } from "@soda-gql/config";
-import { runCodegen } from "@soda-gql/dev/codegen";
+import { runCodegen } from "@soda-gql/tools/codegen";
 
 // Project root for accessing shared test fixtures
 const projectRoot = fileURLToPath(new URL("../../../../", import.meta.url));

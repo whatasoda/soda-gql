@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBuilderSession } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { runCodegen } from "@soda-gql/dev/codegen";
+import { runCodegen } from "@soda-gql/tools/codegen";
 
 /**
  * Tests for portable artifacts with relative paths.
