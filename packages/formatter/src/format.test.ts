@@ -471,4 +471,71 @@ describe("needsFormat", () => {
 
     expect(result.value).toBe(false);
   });
+
+  it("should correctly detect unformatted field selections after multi-byte characters", () => {
+    const source = `import { gql } from "./graphql";
+// 日本語コメント
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+    const result = needsFormat({ sourceCode: source });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value).toBe(true);
+  });
+});
+
+describe("idempotency", () => {
+  it("should return modified: false when formatting an already-formatted result", () => {
+    const source = `import { gql } from "./graphql";
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+    expect(first.value.modified).toBe(true);
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with multi-byte characters", () => {
+    const source = `import { gql } from "./graphql";
+// 🎉 テスト
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with mixed callback builder and tagged template", () => {
+    const source = `import { gql } from "./graphql";
+// 日本語コメント: 混合テスト
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);
+export const GetPost = gql.default(({ query }) =>
+  query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
 });

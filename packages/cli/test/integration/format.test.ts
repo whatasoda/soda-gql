@@ -325,6 +325,31 @@ export const frag = gql.default(({ fragment }) => fragment.User({
     });
   });
 
+  describe("tagged template formatting (always on)", () => {
+    it("formats tagged templates without any special flag", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      const testFile = join(caseDir, "test.ts");
+      const source = `import { gql } from "@/graphql-system";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);
+`;
+      await Bun.write(testFile, source);
+
+      const result = await runFormatCli([testFile]);
+
+      assertCliSuccess(result);
+      expect(result.stdout).toContain("1 formatted");
+
+      const formatted = await Bun.file(testFile).text();
+      // Tagged template should be formatted to multi-line
+      expect(formatted).toContain("id");
+      expect(formatted).toContain("name");
+    });
+  });
+
   afterAll(() => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
