@@ -202,7 +202,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
     errors,
     unformatted,
     hasFormattingIssues: isCheckMode
-      ? unformatted.length > 0 // check mode: parse errors don't trigger exit 1
+      ? unformatted.length > 0 || errors > 0 // check mode: unformatted or parse errors
       : errors > 0, // format mode: errors (write failures, etc.) still trigger exit 1
   };
 

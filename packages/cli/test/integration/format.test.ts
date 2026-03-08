@@ -131,7 +131,7 @@ export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => 
   });
 
   describe("check mode exit code with parse errors", () => {
-    it("exits 0 when all parseable files are formatted even with unparseable files", async () => {
+    it("exits 1 when unparseable files exist even if all parseable files are formatted", async () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}`);
       mkdirSync(caseDir, { recursive: true });
 
@@ -154,8 +154,7 @@ export const model = gql.default(({ model }) =>
 
       const result = await runFormatCli([join(caseDir, "*.ts"), "--check"]);
 
-      expect(result.exitCode).toBe(0);
-      expect(result.stdout).toContain("properly formatted");
+      expect(result.exitCode).toBe(1);
       expect(result.stdout).toContain("parse errors");
     });
   });
