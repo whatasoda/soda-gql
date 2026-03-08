@@ -64,7 +64,7 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
       cause: configResult.error.cause,
     });
     if (failOnError) {
-      throw new Error(errorMsg);
+      throw new Error(errorMsg, { cause: configResult.error });
     }
     return null;
   }
@@ -82,7 +82,7 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
         filePath: artifactResult.error.filePath,
       });
       if (failOnError) {
-        throw new Error(errorMsg);
+        throw new Error(errorMsg, { cause: artifactResult.error });
       }
       return null;
     }
@@ -126,7 +126,7 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
       const formattedError = formatBuilderErrorForCLI(buildResult.error);
       console.error(`[${pluginName}] Build failed:\n${formattedError}`);
       if (failOnError) {
-        throw new Error(`[${pluginName}] ${buildResult.error.message}`);
+        throw new Error(`[${pluginName}] ${buildResult.error.message}`, { cause: buildResult.error });
       }
       return null;
     }
@@ -146,7 +146,7 @@ export const createPluginSession = (options: PluginOptions, pluginName: string):
       const formattedError = formatBuilderErrorForCLI(buildResult.error);
       console.error(`[${pluginName}] Build failed:\n${formattedError}`);
       if (failOnError) {
-        throw new Error(`[${pluginName}] ${buildResult.error.message}`);
+        throw new Error(`[${pluginName}] ${buildResult.error.message}`, { cause: buildResult.error });
       }
       return null;
     }

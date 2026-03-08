@@ -34,7 +34,7 @@ const result = await runCodegen({
   format: "json",
   schemas: {
     default: {
-      schema: "./schema.graphql",
+      schema: ["./schema.graphql"],
       inject: {
         scalars: "./scalars.ts",
       },

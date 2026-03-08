@@ -6,14 +6,17 @@
 import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
-import {
-  type EnrichedFragment,
-  type EnrichedOperation,
-  getArgumentType,
-  getFieldReturnType,
-  getInputFieldType,
-} from "./transformer";
-import type { GraphqlCompatError, ParsedArgument, ParsedInlineFragment, ParsedSelection, ParsedValue, TypeInfo } from "./types";
+import { getArgumentType, getFieldReturnType, getInputFieldType } from "./transformer";
+import type {
+  EnrichedFragment,
+  EnrichedOperation,
+  GraphqlCompatError,
+  ParsedArgument,
+  ParsedInlineFragment,
+  ParsedSelection,
+  ParsedValue,
+  TypeInfo,
+} from "./types";
 
 /**
  * Schema index for type lookups.

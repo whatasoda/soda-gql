@@ -23,6 +23,7 @@ type ParsedCommand =
       schemas: Record<string, CodegenSchemaConfig>;
       outPath: string;
       importExtension: boolean;
+      chunkSize: number;
     };
 
 const parseSchemaArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
@@ -76,6 +77,7 @@ const parseSchemaArgs = (argv: readonly string[]): CliResult<ParsedCommand> => {
     schemas,
     outPath,
     importExtension: config.styles.importExtension,
+    chunkSize: config.codegen.chunkSize,
   });
 };
 
@@ -150,6 +152,7 @@ export const schemaCommand = async (argv: readonly string[]): Promise<SchemaComm
     outPath: resolve(command.outPath),
     format: "human",
     importExtension: command.importExtension,
+    chunkSize: command.chunkSize,
   });
 
   if (result.isErr()) {

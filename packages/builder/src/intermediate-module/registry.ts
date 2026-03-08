@@ -9,6 +9,7 @@ import {
   Operation,
 } from "@soda-gql/core";
 import type { ModuleAnalysis } from "../ast";
+import { builderErrors } from "../errors";
 import { ElementEvaluationEffect } from "../scheduler";
 import type { EvaluationRequest, IntermediateArtifactElement } from "./types";
 
@@ -77,7 +78,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     // Start with the requested module
     const factory = modules.get(filePath);
     if (!factory) {
-      throw new Error(`Module not found or yet to be registered: ${filePath}`);
+      throw builderErrors.runtimeModuleLoadFailed(filePath, "", `Module not found or yet to be registered: ${filePath}`);
     }
     stack.push({ filePath, generator: factory() });
 
@@ -134,13 +135,13 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
                   continue;
                 }
               }
-              throw new Error(`Circular dependency detected: ${depPath}`);
+              throw builderErrors.internalInvariant(`Circular dependency detected: ${depPath}`, filePath);
             }
 
             // Need to evaluate dependency first
             const depFactory = modules.get(depPath);
             if (!depFactory) {
-              throw new Error(`Module not found or yet to be registered: ${depPath}`);
+              throw builderErrors.runtimeModuleLoadFailed(depPath, "", `Module not found or yet to be registered: ${depPath}`);
             }
 
             // Push new frame for dependency
@@ -155,7 +156,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
 
     const result = evaluated.get(filePath);
     if (!result) {
-      throw new Error(`Module evaluation failed: ${filePath}`);
+      throw builderErrors.runtimeModuleLoadFailed(filePath, "", `Module evaluation failed: ${filePath}`);
     }
     return result;
   };
@@ -209,7 +210,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     const result = scheduler.run(() => evaluateElementsGen());
 
     if (result.isErr()) {
-      throw new Error(`Element evaluation failed: ${result.error.message}`);
+      throw builderErrors.internalInvariant(`Element evaluation failed: ${result.error.message}`, "registry.evaluate");
     }
 
     return buildArtifacts();
@@ -235,7 +236,7 @@ export const createIntermediateRegistry = ({ analyses }: { analyses?: Map<string
     const result = await scheduler.run(() => evaluateElementsGen());
 
     if (result.isErr()) {
-      throw new Error(`Element evaluation failed: ${result.error.message}`);
+      throw builderErrors.internalInvariant(`Element evaluation failed: ${result.error.message}`, "registry.evaluateAsync");
     }
 
     return buildArtifacts();

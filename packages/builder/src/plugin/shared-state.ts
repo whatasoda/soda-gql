@@ -18,6 +18,7 @@ export interface SwcTransformerInterface {
     transformed: boolean;
     sourceCode: string;
     sourceMap?: string;
+    errors: ReadonlyArray<{ readonly code: string; readonly message: string; readonly stage: string }>;
   };
 }
 

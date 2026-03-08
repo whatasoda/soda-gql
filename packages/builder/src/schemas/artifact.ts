@@ -17,6 +17,7 @@ const BuilderArtifactOperationSchema = z.object({
     schemaLabel: z.string(),
     document: z.unknown(), // DocumentNode object
     variableNames: z.array(z.string()),
+    metadata: z.unknown().optional(),
   }),
 });
 

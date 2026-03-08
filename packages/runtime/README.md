@@ -41,7 +41,7 @@ export const userQuery = gql.default(({ query }) =>
 // After transformation (automatically handled by build plugin)
 import { gqlRuntime } from "@soda-gql/runtime";
 
-export const userQuery = gqlRuntime.getOperation("canonicalId");
+export const userQuery = gqlRuntime.getOperation("GetUser");
 ```
 
 ## API Reference
@@ -53,8 +53,8 @@ The main runtime object for operation management:
 ```typescript
 import { gqlRuntime } from "@soda-gql/runtime";
 
-// Get an operation by canonical ID
-const operation = gqlRuntime.getOperation("path/to/file.ts::userQuery");
+// Get an operation by name
+const operation = gqlRuntime.getOperation("GetUser");
 ```
 
 ## Zero-Runtime Philosophy

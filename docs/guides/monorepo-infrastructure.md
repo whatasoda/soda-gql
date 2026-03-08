@@ -21,25 +21,32 @@ The soda-gql project is organized as a Bun workspace monorepo with the following
 ```
 soda-gql/
 ├── packages/           # All published packages
+│   ├── babel/
 │   ├── builder/
 │   ├── cli/
 │   ├── codegen/
+│   ├── colocation-tools/
 │   ├── common/
 │   ├── config/
 │   ├── core/
-│   ├── plugin-babel/
-│   ├── plugin-nestjs/
-│   ├── plugin-shared/
-│   └── runtime/
+│   ├── formatter/
+│   ├── lsp/
+│   ├── metro-plugin/
+│   ├── runtime/
+│   ├── sdk/
+│   ├── swc/
+│   ├── tsc/
+│   ├── typegen/
+│   ├── vite-plugin/
+│   ├── vscode-extension/
+│   └── webpack-plugin/
 ├── playgrounds/        # Development/testing playgrounds
-│   ├── nextjs-webpack/
-│   ├── vite-react/
 │   ├── expo-metro/
-│   └── nestjs-compiler-tsc/
-├── tests/              # All test suites
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/
+│   ├── hasura/
+│   ├── nestjs-compiler-tsc/
+│   ├── nextjs-webpack/
+│   └── vite-react/
+├── fixture-catalog/    # Shared test fixtures (schemas, graphql-system)
 └── scripts/            # Build and utility scripts
     ├── sync-exports.ts
     └── generated/

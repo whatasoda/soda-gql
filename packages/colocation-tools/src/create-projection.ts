@@ -66,12 +66,12 @@ export type CreateProjectionOptions<
  * @example
  * ```typescript
  * const userFragment = gql(({ fragment }) =>
- *   fragment.Query({
- *     variables: { ... },
- *     fields: ({ f, $ }) => ({
- *       ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })),
- *     }),
- *   })
+ *   fragment("UserFields", "Query")`($userId: ID!) {
+ *     user(id: $userId) {
+ *       id
+ *       name
+ *     }
+ *   }`(),
  * );
  *
  * const userProjection = createProjection(userFragment, {
@@ -102,9 +102,9 @@ export const createProjection = <
  * @example
  * ```typescript
  * const fragment = gql(({ fragment }) =>
- *   fragment.Query({
- *     fields: ({ f }) => ({ ...f.user()(({ f }) => ({ ...f.id() })) }),
- *   })
+ *   fragment("MyFragment", "Query")`{
+ *     user { id }
+ *   }`()
  * ).attach(createProjectionAttachment({
  *   paths: ["$.user.id"],
  *   handle: (result) => result.isSuccess() ? result.unwrap()[0] : null,

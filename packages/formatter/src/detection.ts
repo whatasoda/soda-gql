@@ -13,10 +13,12 @@ import type {
  * Handles: gql, namespace.gql
  */
 export const isGqlReference = (node: Expression, gqlIdentifiers: ReadonlySet<string>): boolean => {
-  if (node.type === "Identifier") {
-    return gqlIdentifiers.has(node.value);
+  // Unwrap TsNonNullExpression: gql! -> gql
+  const unwrapped = node.type === "TsNonNullExpression" ? (node as { type: string; expression: Expression }).expression : node;
+  if (unwrapped.type === "Identifier") {
+    return gqlIdentifiers.has(unwrapped.value);
   }
-  if (node.type === "MemberExpression" && node.property.type === "Identifier" && node.property.value === "gql") {
+  if (unwrapped.type === "MemberExpression" && unwrapped.property.type === "Identifier" && unwrapped.property.value === "gql") {
     return true;
   }
   return false;
@@ -36,7 +38,8 @@ export const isGqlDefinitionCall = (node: CallExpression, gqlIdentifiers: Readon
   // Verify first argument is an arrow function (factory pattern)
   // SWC's arguments are ExprOrSpread[], so access via .expression
   const firstArg = node.arguments[0];
-  if (!firstArg || firstArg.expression.type !== "ArrowFunctionExpression") return false;
+  if (!firstArg || (firstArg.expression.type !== "ArrowFunctionExpression" && firstArg.expression.type !== "FunctionExpression"))
+    return false;
 
   return true;
 };

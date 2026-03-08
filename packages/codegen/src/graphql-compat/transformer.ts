@@ -3,11 +3,13 @@
  * @module
  */
 
-import type { DocumentNode } from "graphql";
 import { err, ok, type Result } from "neverthrow";
 import { createSchemaIndex } from "../generator";
 import { parseTypeNode } from "./parser";
 import type {
+  EnrichedFragment,
+  EnrichedOperation,
+  EnrichedVariable,
   GraphqlCompatError,
   InferredVariable,
   ParsedArgument,
@@ -15,8 +17,9 @@ import type {
   ParsedOperation,
   ParsedSelection,
   ParsedValue,
-  ParsedVariable,
   ParseResult,
+  TransformOptions,
+  TransformResult,
   TypeInfo,
 } from "./types";
 
@@ -601,48 +604,6 @@ const collectFragmentDependenciesSet = (selections: readonly ParsedSelection[]):
  * Check if a type name is an enum type.
  */
 const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
-
-/**
- * Enriched operation with resolved type information.
- */
-export type EnrichedOperation = Omit<ParsedOperation, "variables"> & {
-  readonly variables: readonly EnrichedVariable[];
-  /** Fragment names used in this operation (for imports) */
-  readonly fragmentDependencies: readonly string[];
-};
-
-/**
- * Enriched fragment with resolved type information.
- */
-export type EnrichedFragment = ParsedFragment & {
-  /** Fragment names used in this fragment (for imports) */
-  readonly fragmentDependencies: readonly string[];
-  /** Variables inferred from field arguments in this fragment */
-  readonly variables: readonly InferredVariable[];
-};
-
-/**
- * Enriched variable with resolved type kind.
- */
-export type EnrichedVariable = Omit<ParsedVariable, "typeKind"> & {
-  readonly typeKind: "scalar" | "enum" | "input";
-};
-
-/**
- * Result of transforming parsed operations.
- */
-export type TransformResult = {
-  readonly operations: readonly EnrichedOperation[];
-  readonly fragments: readonly EnrichedFragment[];
-};
-
-/**
- * Options for transformation.
- */
-export type TransformOptions = {
-  /** Schema document for type resolution */
-  readonly schemaDocument: DocumentNode;
-};
 
 /**
  * Transform parsed operations/fragments by enriching them with schema information.

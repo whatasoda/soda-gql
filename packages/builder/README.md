@@ -34,9 +34,9 @@ This package provides the core static analysis engine that powers soda-gql's bui
 For custom build tool integrations:
 
 ```typescript
-import { createBuilder } from "@soda-gql/builder";
+import { createBuilderService } from "@soda-gql/builder";
 
-const builder = await createBuilder({
+const service = await createBuilderService({
   config: {
     outdir: "./graphql-system",
     include: ["./src/**/*.ts"],
@@ -50,23 +50,23 @@ const builder = await createBuilder({
   },
 });
 
-// Analyze source files
-const analysisResult = await builder.analyze();
+// Build and analyze source files
+const result = await service.buildAsync();
 
-if (analysisResult.isOk()) {
-  const artifact = analysisResult.value;
+if (result.isOk()) {
+  const artifact = result.value;
   // Use artifact for transformations
 }
 ```
 
 ## API Reference
 
-### `createBuilder(options)`
+### `createBuilderService(options)`
 
-Creates a builder instance for static analysis:
+Creates a builder service for static analysis:
 
 ```typescript
-const builder = await createBuilder({
+const service = await createBuilderService({
   config: SodaGqlConfig,
   cwd?: string,
 });
@@ -84,12 +84,12 @@ const builder = await createBuilder({
 For better performance in large codebases, use the async build API:
 
 ```typescript
-import { createBuilder } from "@soda-gql/builder";
+import { createBuilderService } from "@soda-gql/builder";
 
-const builder = await createBuilder({ config });
+const service = await createBuilderService({ config });
 
 // Async build with parallel file I/O
-const result = await builder.buildAsync();
+const result = await service.buildAsync();
 
 if (result.isOk()) {
   const artifact = result.value;
@@ -97,7 +97,7 @@ if (result.isOk()) {
 }
 
 // Incremental rebuild (only processes changed files)
-const incrementalResult = await builder.buildAsync();
+const incrementalResult = await service.buildAsync();
 ```
 
 The async API is recommended for:

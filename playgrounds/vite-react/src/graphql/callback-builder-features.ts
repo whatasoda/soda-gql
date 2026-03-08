@@ -59,12 +59,10 @@ import { employeeFragment } from "./fragments";
 // ============================================================================
 // 2. Fragment Spreads in Operations
 // ============================================================================
-// Why tagged templates can't express this:
-// Tagged templates REJECT all interpolated expressions to maintain static
-// GraphQL string parsing. Fragment spreads in operations require interpolation
-// (e.g., ...${fragment}) which triggers "Tagged templates must not contain
-// interpolated expressions" error. Only fragment-to-fragment spreading supports
-// interpolation.
+// Why callback builders are preferred for this:
+// Tagged template operations DO support fragment interpolation via ...${fragment},
+// but callback builders provide more control with explicit variable passing
+// via .spread({ key: $.var }) and support for field aliases and $dir.
 
 /**
  * WORKING EXAMPLE: Operation spreading a fragment with explicit variable passing

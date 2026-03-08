@@ -21,7 +21,7 @@ import {
   type ModuleLoadStats,
   resolveEntryPaths,
 } from "../discovery";
-import { builderErrors } from "../errors";
+import { builderErrors, isBuilderError } from "../errors";
 import {
   evaluateIntermediateModulesGen,
   generateIntermediateModules,
@@ -364,8 +364,8 @@ export const createBuilderSession = (options: {
       return finalizeBuild(result.value, currentScan);
     } catch (error) {
       // Handle thrown BuilderError from buildGen
-      if (error && typeof error === "object" && "code" in error) {
-        return err(error as BuilderError);
+      if (isBuilderError(error)) {
+        return err(error);
       }
       throw error;
     }
@@ -398,8 +398,8 @@ export const createBuilderSession = (options: {
       return finalizeBuild(result.value, currentScan);
     } catch (error) {
       // Handle thrown BuilderError from buildGen
-      if (error && typeof error === "object" && "code" in error) {
-        return err(error as BuilderError);
+      if (isBuilderError(error)) {
+        return err(error);
       }
       throw error;
     }
@@ -556,8 +556,8 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
  */
 const convertSchedulerError = (error: SchedulerError): BuilderError => {
   // If the cause is a BuilderError, return it directly
-  if (error.cause && typeof error.cause === "object" && "code" in error.cause) {
-    return error.cause as BuilderError;
+  if (isBuilderError(error.cause)) {
+    return error.cause;
   }
   return builderErrors.internalInvariant(error.message, "scheduler", error.cause);
 };

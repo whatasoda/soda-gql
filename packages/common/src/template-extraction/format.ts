@@ -79,9 +79,7 @@ const GRAPHQL_KEYWORDS = new Set(["query", "mutation", "subscription", "fragment
  *
  * @returns The wrapped source and a regex pattern to strip the synthetic prefix after formatting
  */
-export const buildGraphqlWrapper = (
-  template: ExtractedTemplate,
-): { wrapped: string; prefixPattern: RegExp | null } => {
+export const buildGraphqlWrapper = (template: ExtractedTemplate): { wrapped: string; prefixPattern: RegExp | null } => {
   const content = template.content.trimStart();
   const firstWord = content.split(/[\s({]/)[0] ?? "";
 

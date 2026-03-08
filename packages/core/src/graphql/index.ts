@@ -51,6 +51,7 @@ export type {
   ParsedValue,
   ParsedVariable,
   ParseResult,
+  ParseResultBase,
   TypeInfo,
 } from "./types";
 export {

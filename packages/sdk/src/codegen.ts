@@ -91,6 +91,7 @@ export const codegenAsync = async (options: CodegenSdkOptions = {}): Promise<Res
     outPath,
     format: "human",
     importExtension: config.styles.importExtension,
+    chunkSize: config.codegen.chunkSize,
   });
 
   if (result.isErr()) {
