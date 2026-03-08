@@ -96,6 +96,43 @@ describe("format", () => {
     });
   });
 
+  describe("multi-byte character handling", () => {
+    it("should correctly format field selections after multi-byte characters", () => {
+      const source = `import { gql } from "./graphql";
+// 日本語コメント: テスト用のミューテーション
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "GetUser", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+);`;
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(true);
+      // Verify no corruption — the method names should be intact
+      expect(result.value.sourceCode).toContain("...f.id()");
+      expect(result.value.sourceCode).toContain("...f.name()");
+      // Verify newline was inserted after { in field selection
+      expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
+    });
+
+    it("should handle emoji and CJK characters before field selections", () => {
+      const source = `import { gql } from "./graphql";
+// 🎉 テスト: 絵文字とCJK文字のテスト
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(true);
+      expect(result.value.sourceCode).toContain("...f.id()");
+      expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
+    });
+  });
+
   describe("error handling", () => {
     it("should return parse error for invalid syntax", () => {
       const source = "const x = {";
@@ -281,37 +318,8 @@ export const frag = gql.default(({ fragment }) => fragment.User({
   });
 });
 
-describe("format with formatTaggedTemplates", () => {
+describe("tagged template formatting", () => {
   it("should format single-line tagged template query to multi-line", () => {
-    const source = `import { gql } from "./graphql";
-export const GetUser = gql.default(({ query }) =>
-  query("GetUser")\`{ user { id name } }\`
-);`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: true });
-
-    expect(result.isOk()).toBe(true);
-    if (!result.isOk()) return;
-
-    expect(result.value.modified).toBe(true);
-    expect(result.value.sourceCode).toContain("id");
-    expect(result.value.sourceCode).toContain("name");
-  });
-
-  it("should skip tagged templates when formatTaggedTemplates is false", () => {
-    const source = `import { gql } from "./graphql";
-export const GetUser = gql.default(({ query }) =>
-  query("GetUser")\`{ user { id name } }\`
-);`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: false });
-
-    expect(result.isOk()).toBe(true);
-    if (!result.isOk()) return;
-
-    expect(result.value.modified).toBe(false);
-    expect(result.value.sourceCode).toBe(source);
-  });
-
-  it("should skip tagged templates when formatTaggedTemplates is not set (default)", () => {
     const source = `import { gql } from "./graphql";
 export const GetUser = gql.default(({ query }) =>
   query("GetUser")\`{ user { id name } }\`
@@ -321,8 +329,9 @@ export const GetUser = gql.default(({ query }) =>
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
 
-    expect(result.value.modified).toBe(false);
-    expect(result.value.sourceCode).toBe(source);
+    expect(result.value.modified).toBe(true);
+    expect(result.value.sourceCode).toContain("id");
+    expect(result.value.sourceCode).toContain("name");
   });
 
   it("should handle mixed callback builder + tagged template", () => {
@@ -333,7 +342,7 @@ export const GetUser = gql.default(({ query }) =>
 export const GetPost = gql.default(({ query }) =>
   query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
 );`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+    const result = format({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -358,7 +367,7 @@ export const GetUser = gql.default(({ query }) =>
   }
 }\`
 );`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+    const result = format({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -372,7 +381,7 @@ export const GetUser = gql.default(({ query }) =>
 export const GetUser = gql.default(({ query }) =>
   query\`query GetUser { user { id name } }\`
 );`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+    const result = format({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -387,7 +396,7 @@ export const GetUser = gql.default(({ query }) =>
 export const UserFields = gql.default(({ fragment }) =>
   fragment("UserFields", "User")\`{ id name email }\`
 );`;
-    const result = format({ sourceCode: source, formatTaggedTemplates: true });
+    const result = format({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -399,13 +408,13 @@ export const UserFields = gql.default(({ fragment }) =>
   });
 });
 
-describe("needsFormat with formatTaggedTemplates", () => {
+describe("needsFormat with tagged templates", () => {
   it("should return true when tagged templates need formatting", () => {
     const source = `import { gql } from "./graphql";
 export const GetUser = gql.default(({ query }) =>
   query("GetUser")\`{ user { id name } }\`
 );`;
-    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: true });
+    const result = needsFormat({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -423,20 +432,7 @@ export const GetUser = gql.default(({ query }) =>
   }
 }\`
 );`;
-    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: true });
-
-    expect(result.isOk()).toBe(true);
-    if (!result.isOk()) return;
-
-    expect(result.value).toBe(false);
-  });
-
-  it("should not check tagged templates when formatTaggedTemplates is false", () => {
-    const source = `import { gql } from "./graphql";
-export const GetUser = gql.default(({ query }) =>
-  query("GetUser")\`{ user { id name } }\`
-);`;
-    const result = needsFormat({ sourceCode: source, formatTaggedTemplates: false });
+    const result = needsFormat({ sourceCode: source });
 
     expect(result.isOk()).toBe(true);
     if (!result.isOk()) return;
@@ -474,5 +470,72 @@ describe("needsFormat", () => {
     if (!result.isOk()) return;
 
     expect(result.value).toBe(false);
+  });
+
+  it("should correctly detect unformatted field selections after multi-byte characters", () => {
+    const source = `import { gql } from "./graphql";
+// 日本語コメント
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+    const result = needsFormat({ sourceCode: source });
+
+    expect(result.isOk()).toBe(true);
+    if (!result.isOk()) return;
+
+    expect(result.value).toBe(true);
+  });
+});
+
+describe("idempotency", () => {
+  it("should return modified: false when formatting an already-formatted result", () => {
+    const source = `import { gql } from "./graphql";
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+    expect(first.value.modified).toBe(true);
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with multi-byte characters", () => {
+    const source = `import { gql } from "./graphql";
+// 🎉 テスト
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
+  });
+
+  it("should be idempotent with mixed callback builder and tagged template", () => {
+    const source = `import { gql } from "./graphql";
+// 日本語コメント: 混合テスト
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);
+export const GetPost = gql.default(({ query }) =>
+  query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
+);`;
+    const first = format({ sourceCode: source });
+    expect(first.isOk()).toBe(true);
+    if (!first.isOk()) return;
+
+    const second = format({ sourceCode: first.value.sourceCode });
+    expect(second.isOk()).toBe(true);
+    if (!second.isOk()) return;
+    expect(second.value.modified).toBe(false);
   });
 });

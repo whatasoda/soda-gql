@@ -33,7 +33,11 @@ const formatResultMessage = (data: FormatData): string => {
       const files = data.unformatted.map((f) => `  ${f}`).join("\n");
       return `${data.unformatted.length} file(s) need formatting:\n${files}`;
     }
-    return `All ${data.total} file(s) are properly formatted`;
+    const msg = `All ${data.total} file(s) are properly formatted`;
+    if (data.errors > 0) {
+      return `${msg} (${data.errors} file(s) had parse errors)`;
+    }
+    return msg;
   }
 
   const parts: string[] = [];
@@ -87,7 +91,6 @@ Options:
   --config <path>              Path to soda-gql.config.ts (auto-detected if omitted)
   --check                      Check if files need formatting (exit 1 if unformatted)
   --inject-fragment-keys       Inject unique keys into anonymous fragments
-  --format-tagged-templates    Format GraphQL in tagged templates
   --help, -h                   Show this help message
 
 Examples:
@@ -113,7 +116,6 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
   const args = parsed.value;
   const isCheckMode = args.check === true;
   const injectFragmentKeys = args["inject-fragment-keys"] === true;
-  const formatTaggedTemplates = args["format-tagged-templates"] === true;
   const explicitPatterns = args._ ?? [];
 
   // Determine patterns: use explicit patterns or load from config
@@ -162,7 +164,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
     const sourceCode = await readFile(filePath, "utf-8");
 
     if (isCheckMode) {
-      const result = formatter.needsFormat({ sourceCode, filePath, formatTaggedTemplates });
+      const result = formatter.needsFormat({ sourceCode, filePath });
       if (result.isErr()) {
         errors++;
         continue;
@@ -174,7 +176,7 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
         unchanged++;
       }
     } else {
-      const result = formatter.format({ sourceCode, filePath, injectFragmentKeys, formatTaggedTemplates });
+      const result = formatter.format({ sourceCode, filePath, injectFragmentKeys });
       if (result.isErr()) {
         errors++;
         continue;
@@ -199,7 +201,9 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
     unchanged,
     errors,
     unformatted,
-    hasFormattingIssues: (isCheckMode && unformatted.length > 0) || errors > 0,
+    hasFormattingIssues: isCheckMode
+      ? unformatted.length > 0 || errors > 0 // check mode: unformatted or parse errors
+      : errors > 0, // format mode: errors (write failures, etc.) still trigger exit 1
   };
 
   return ok({ message: formatResultMessage(data), data });

@@ -130,6 +130,35 @@ export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => 
     });
   });
 
+  describe("check mode exit code with parse errors", () => {
+    it("exits 1 when unparseable files exist even if all parseable files are formatted", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      // A properly formatted file
+      const goodFile = join(caseDir, "good.ts");
+      const alreadyFormatted = `import { gql } from "@/graphql-system";
+export const model = gql.default(({ model }) =>
+  model.User({
+    fields: ({ f }) => ({
+      ...f.id(),
+    }),
+  }),
+);
+`;
+      await Bun.write(goodFile, alreadyFormatted);
+
+      // An unparseable file (syntax error)
+      const badFile = join(caseDir, "bad.ts");
+      await Bun.write(badFile, "const x = {");
+
+      const result = await runFormatCli([join(caseDir, "*.ts"), "--check"]);
+
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("parse errors");
+    });
+  });
+
   describe("error handling", () => {
     it("returns error when no patterns and no config", async () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}`);
@@ -292,6 +321,31 @@ export const frag = gql.default(({ fragment }) => fragment.User({
 
       const formatted = await Bun.file(testFile).text();
       expect(formatted).not.toContain("key:");
+    });
+  });
+
+  describe("tagged template formatting (always on)", () => {
+    it("formats tagged templates without any special flag", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      const testFile = join(caseDir, "test.ts");
+      const source = `import { gql } from "@/graphql-system";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id name } }\`
+);
+`;
+      await Bun.write(testFile, source);
+
+      const result = await runFormatCli([testFile]);
+
+      assertCliSuccess(result);
+      expect(result.stdout).toContain("1 formatted");
+
+      const formatted = await Bun.file(testFile).text();
+      // Tagged template should be formatted to multi-line
+      expect(formatted).toContain("id");
+      expect(formatted).toContain("name");
     });
   });
 

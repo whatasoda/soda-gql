@@ -25,7 +25,7 @@ const getGraphqlModule = (): Result<GraphqlModule, FormatError> => {
     return err({
       type: "FormatError",
       code: "MISSING_DEPENDENCY",
-      message: 'The "graphql" package is required for --format-tagged-templates. Install it with: bun add graphql',
+      message: 'The "graphql" package is required for soda-gql formatter. Install it with: bun add graphql',
     });
   }
   if (!_graphqlModule) {
@@ -37,7 +37,7 @@ const getGraphqlModule = (): Result<GraphqlModule, FormatError> => {
       return err({
         type: "FormatError",
         code: "MISSING_DEPENDENCY",
-        message: 'The "graphql" package is required for --format-tagged-templates. Install it with: bun add graphql',
+        message: 'The "graphql" package is required for soda-gql formatter. Install it with: bun add graphql',
         cause,
       });
     }
@@ -201,7 +201,7 @@ const traverse = (module: Module, gqlIdentifiers: ReadonlySet<string>, onObjectE
  * Optionally injects fragment keys for anonymous fragments.
  */
 export const format = (options: FormatOptions): Result<FormatResult, FormatError> => {
-  const { sourceCode, filePath, injectFragmentKeys = false, formatTaggedTemplates = false } = options;
+  const { sourceCode, filePath, injectFragmentKeys = false } = options;
 
   // Parse source code with SWC
   let module: Module;
@@ -236,6 +236,10 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   // Using module.span.start ensures correct position calculation regardless of accumulation
   const spanOffset = module.span.start;
 
+  // SWC returns UTF-8 byte offsets; JS strings use UTF-16 code units.
+  // The converter handles this mapping (fast path for ASCII-only sources).
+  const converter = createSwcSpanConverter(sourceCode);
+
   // Collect gql identifiers from imports
   const gqlIdentifiers = collectGqlIdentifiers(module);
   if (gqlIdentifiers.size === 0) {
@@ -246,8 +250,8 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   const insertionPoints: InsertionPoint[] = [];
 
   traverse(module, gqlIdentifiers, (object, _parent, callbackContext) => {
-    // Calculate actual position in source
-    const objectStart = object.span.start - spanOffset;
+    // Calculate actual position in source (byte offset → char index)
+    const objectStart = converter.byteOffsetToCharIndex(object.span.start - spanOffset);
 
     // For fragment config objects, inject key if enabled and not present
     if (callbackContext.isFragmentConfig && injectFragmentKeys && !hasKeyProperty(object)) {
@@ -281,33 +285,30 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
     }
   });
 
-  // Tagged template formatting (when enabled)
-  if (formatTaggedTemplates) {
-    const graphqlResult = getGraphqlModule();
-    if (graphqlResult.isErr()) {
-      return err(graphqlResult.error);
-    }
-    const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
+  // Tagged template formatting
+  const graphqlResult = getGraphqlModule();
+  if (graphqlResult.isErr()) {
+    return err(graphqlResult.error);
+  }
+  const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
-    const converter = createSwcSpanConverter(sourceCode);
-    const positionCtx: PositionTrackingContext = { spanOffset, converter };
-    const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
+  const positionCtx: PositionTrackingContext = { spanOffset, converter };
+  const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
 
-    if (templates.length > 0) {
-      const defaultFormat: FormatGraphqlFn = (source) => {
-        const ast = parseGraphql(source, { noLocation: false });
-        return printGraphql(ast);
-      };
+  if (templates.length > 0) {
+    const defaultFormat: FormatGraphqlFn = (source) => {
+      const ast = parseGraphql(source, { noLocation: false });
+      return printGraphql(ast);
+    };
 
-      const templateEdits = formatTemplatesInSource(templates, sourceCode, defaultFormat);
+    const templateEdits = formatTemplatesInSource(templates, sourceCode, defaultFormat);
 
-      for (const edit of templateEdits) {
-        insertionPoints.push({
-          position: edit.start,
-          content: edit.newText,
-          endPosition: edit.end,
-        });
-      }
+    for (const edit of templateEdits) {
+      insertionPoints.push({
+        position: edit.start,
+        content: edit.newText,
+        endPosition: edit.end,
+      });
     }
   }
 
@@ -334,7 +335,7 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
  * Useful for pre-commit hooks or CI checks.
  */
 export const needsFormat = (options: FormatOptions): Result<boolean, FormatError> => {
-  const { sourceCode, filePath, formatTaggedTemplates = false } = options;
+  const { sourceCode, filePath } = options;
 
   // Parse source code with SWC
   let module: Module;
@@ -365,6 +366,7 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
   }
 
   const spanOffset = module.span.start;
+  const converter = createSwcSpanConverter(sourceCode);
   const gqlIdentifiers = collectGqlIdentifiers(module);
 
   if (gqlIdentifiers.size === 0) {
@@ -379,21 +381,20 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
     // Skip fragment config objects for needsFormat check (key injection is optional)
     if (callbackContext.isFragmentConfig) return;
 
-    const objectStart = object.span.start - spanOffset;
+    const objectStart = converter.byteOffsetToCharIndex(object.span.start - spanOffset);
     if (!hasExistingNewline(sourceCode, objectStart)) {
       needsFormatting = true;
     }
   });
 
-  // Check tagged templates when enabled
-  if (!needsFormatting && formatTaggedTemplates) {
+  // Check tagged templates
+  if (!needsFormatting) {
     const graphqlResult = getGraphqlModule();
     if (graphqlResult.isErr()) {
       return err(graphqlResult.error);
     }
     const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
-    const converter = createSwcSpanConverter(sourceCode);
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
     const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
 
