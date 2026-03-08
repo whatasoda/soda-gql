@@ -236,6 +236,10 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   // Using module.span.start ensures correct position calculation regardless of accumulation
   const spanOffset = module.span.start;
 
+  // SWC returns UTF-8 byte offsets; JS strings use UTF-16 code units.
+  // The converter handles this mapping (fast path for ASCII-only sources).
+  const converter = createSwcSpanConverter(sourceCode);
+
   // Collect gql identifiers from imports
   const gqlIdentifiers = collectGqlIdentifiers(module);
   if (gqlIdentifiers.size === 0) {
@@ -246,8 +250,8 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
   const insertionPoints: InsertionPoint[] = [];
 
   traverse(module, gqlIdentifiers, (object, _parent, callbackContext) => {
-    // Calculate actual position in source
-    const objectStart = object.span.start - spanOffset;
+    // Calculate actual position in source (byte offset → char index)
+    const objectStart = converter.byteOffsetToCharIndex(object.span.start - spanOffset);
 
     // For fragment config objects, inject key if enabled and not present
     if (callbackContext.isFragmentConfig && injectFragmentKeys && !hasKeyProperty(object)) {
@@ -289,7 +293,6 @@ export const format = (options: FormatOptions): Result<FormatResult, FormatError
     }
     const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
-    const converter = createSwcSpanConverter(sourceCode);
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
     const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
 
@@ -365,6 +368,7 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
   }
 
   const spanOffset = module.span.start;
+  const converter = createSwcSpanConverter(sourceCode);
   const gqlIdentifiers = collectGqlIdentifiers(module);
 
   if (gqlIdentifiers.size === 0) {
@@ -379,7 +383,7 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
     // Skip fragment config objects for needsFormat check (key injection is optional)
     if (callbackContext.isFragmentConfig) return;
 
-    const objectStart = object.span.start - spanOffset;
+    const objectStart = converter.byteOffsetToCharIndex(object.span.start - spanOffset);
     if (!hasExistingNewline(sourceCode, objectStart)) {
       needsFormatting = true;
     }
@@ -393,7 +397,6 @@ export const needsFormat = (options: FormatOptions): Result<boolean, FormatError
     }
     const { parse: parseGraphql, print: printGraphql } = graphqlResult.value;
 
-    const converter = createSwcSpanConverter(sourceCode);
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
     const templates = walkAndExtract(module as unknown as Node, gqlIdentifiers, positionCtx);
 

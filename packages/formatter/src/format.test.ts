@@ -96,6 +96,43 @@ describe("format", () => {
     });
   });
 
+  describe("multi-byte character handling", () => {
+    it("should correctly format field selections after multi-byte characters", () => {
+      const source = `import { gql } from "./graphql";
+// 日本語コメント: テスト用のミューテーション
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "GetUser", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+);`;
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(true);
+      // Verify no corruption — the method names should be intact
+      expect(result.value.sourceCode).toContain("...f.id()");
+      expect(result.value.sourceCode).toContain("...f.name()");
+      // Verify newline was inserted after { in field selection
+      expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
+    });
+
+    it("should handle emoji and CJK characters before field selections", () => {
+      const source = `import { gql } from "./graphql";
+// 🎉 テスト: 絵文字とCJK文字のテスト
+export const op = gql.default(({ query }) =>
+  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+);`;
+      const result = format({ sourceCode: source });
+
+      expect(result.isOk()).toBe(true);
+      if (!result.isOk()) return;
+
+      expect(result.value.modified).toBe(true);
+      expect(result.value.sourceCode).toContain("...f.id()");
+      expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
+    });
+  });
+
   describe("error handling", () => {
     it("should return parse error for invalid syntax", () => {
       const source = "const x = {";
