@@ -6,7 +6,7 @@ import { createContext, Script } from "node:vm";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
 import type { ModuleAnalysis } from "../ast";
-import type { BuilderError } from "../errors";
+import { type BuilderError, builderErrors, isBuilderError } from "../errors";
 import { ElementEvaluationEffect } from "../scheduler";
 import { createSandbox } from "../vm/sandbox";
 import { renderRegistryBlock } from "./codegen";
@@ -118,26 +118,48 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
     return { gql: cachedGql };
   }
 
-  // Bundle the GraphQL system module
-  const bundledCode = readFileSync(modulePath, "utf-8");
-
-  // Create sandbox and execute
-  const sandbox = createSandbox(modulePath);
-  new Script(bundledCode, { filename: modulePath }).runInNewContext(sandbox);
-
-  // Read exported gql (handle both direct export and default export)
-  const finalExports = sandbox.module.exports;
-  const exportedGql = finalExports.gql ?? finalExports.default;
-
-  if (exportedGql === undefined) {
-    throw new Error(`No 'gql' export found in GraphQL system module: ${modulePath}`);
+  let bundledCode: string;
+  try {
+    bundledCode = readFileSync(modulePath, "utf-8");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw builderErrors.runtimeModuleLoadFailed(modulePath, "", `Failed to read GraphQL system module: ${message}`, error);
   }
 
-  // Cache the result
-  cachedGql = exportedGql;
-  cachedModulePath = modulePath;
+  try {
+    // Create sandbox and execute
+    const sandbox = createSandbox(modulePath);
+    new Script(bundledCode, { filename: modulePath }).runInNewContext(sandbox);
 
-  return { gql: cachedGql };
+    // Read exported gql (handle both direct export and default export)
+    const finalExports = sandbox.module.exports;
+    const exportedGql = finalExports.gql ?? finalExports.default;
+
+    if (exportedGql === undefined) {
+      throw builderErrors.runtimeModuleLoadFailed(
+        modulePath,
+        "",
+        `No 'gql' export found in GraphQL system module: ${modulePath}`,
+      );
+    }
+
+    // Cache the result
+    cachedGql = exportedGql;
+    cachedModulePath = modulePath;
+
+    return { gql: cachedGql };
+  } catch (error) {
+    if (isBuilderError(error)) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw builderErrors.runtimeModuleLoadFailed(
+      modulePath,
+      "",
+      `GraphQL system module execution failed: ${message}`,
+      error,
+    );
+  }
 }
 
 /**
@@ -173,8 +195,7 @@ export const generateIntermediateModules = function* ({
     // Transpile TypeScript to JavaScript using SWC
     const transpiledCodeResult = transpile({ filePath, sourceCode });
     if (transpiledCodeResult.isErr()) {
-      // error
-      continue;
+      throw transpiledCodeResult.error;
     }
     const transpiledCode = transpiledCodeResult.value;
 
@@ -226,8 +247,16 @@ const setupIntermediateModulesContext = ({
     try {
       script.runInContext(vmContext);
     } catch (error) {
-      console.error(`Error evaluating intermediate module ${filePath}:`, error);
-      throw error;
+      if (isBuilderError(error)) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      throw builderErrors.runtimeModuleLoadFailed(
+        filePath,
+        "",
+        `Error evaluating intermediate module: ${message}`,
+        error,
+      );
     }
   }
 
