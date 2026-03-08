@@ -181,16 +181,18 @@ const isGqlDefinitionCall = (node: ts.Node, typescript: typeof ts): node is ts.C
 };
 
 const isGqlReference = (expr: ts.Expression, typescript: typeof ts): boolean => {
-  if (typescript.isIdentifier(expr) && expr.text === "gql") {
+  // Unwrap NonNullExpression: gql! -> gql
+  const unwrapped = typescript.isNonNullExpression(expr) ? expr.expression : expr;
+  if (typescript.isIdentifier(unwrapped) && unwrapped.text === "gql") {
     return true;
   }
-  if (!typescript.isPropertyAccessExpression(expr)) {
+  if (!typescript.isPropertyAccessExpression(unwrapped)) {
     return false;
   }
-  if (typescript.isIdentifier(expr.name) && expr.name.text === "gql") {
+  if (typescript.isIdentifier(unwrapped.name) && unwrapped.name.text === "gql") {
     return true;
   }
-  return isGqlReference(expr.expression, typescript);
+  return isGqlReference(unwrapped.expression, typescript);
 };
 
 const resolveTopLevelExport = (

@@ -153,19 +153,21 @@ const isGqlDefinitionCall = (node: t.Node): node is t.CallExpression =>
   (t.isArrowFunctionExpression(node.arguments[0]) || t.isFunctionExpression(node.arguments[0]));
 
 const isGqlReference = (expr: t.Expression | t.Super): boolean => {
-  if (t.isIdentifier(expr, { name: "gql" })) {
+  // Unwrap TSNonNullExpression: gql! -> gql
+  const unwrapped = t.isTSNonNullExpression(expr) ? expr.expression : expr;
+  if (t.isIdentifier(unwrapped, { name: "gql" })) {
     return true;
   }
-  if (!t.isMemberExpression(expr) || expr.computed) {
+  if (!t.isMemberExpression(unwrapped) || unwrapped.computed) {
     return false;
   }
   if (
-    (t.isIdentifier(expr.property) && expr.property.name === "gql") ||
-    (t.isStringLiteral(expr.property) && expr.property.value === "gql")
+    (t.isIdentifier(unwrapped.property) && unwrapped.property.name === "gql") ||
+    (t.isStringLiteral(unwrapped.property) && unwrapped.property.value === "gql")
   ) {
     return true;
   }
-  return isGqlReference(expr.object);
+  return isGqlReference(unwrapped.object);
 };
 
 const resolveTopLevelExport = (

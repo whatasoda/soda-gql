@@ -207,7 +207,7 @@ const isGqlDefinitionCall = (identifiers: ReadonlySet<string>, callExpression: t
   }
 
   const [factory] = callExpression.arguments;
-  if (!factory || !ts.isArrowFunction(factory)) {
+  if (!factory || !(ts.isArrowFunction(factory) || ts.isFunctionExpression(factory))) {
     return false;
   }
 
