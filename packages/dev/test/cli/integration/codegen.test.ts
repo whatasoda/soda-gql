@@ -165,7 +165,9 @@ describe("soda-gql codegen CLI", () => {
             "@soda-gql/core": [coreEntryPath.startsWith(".") ? coreEntryPath : `./${coreEntryPath}`],
             "@soda-gql/core/*": [coreEntryWildcard.startsWith(".") ? coreEntryWildcard : `./${coreEntryWildcard}`],
             "@soda-gql/core/runtime": [runtimeEntryPath.startsWith(".") ? runtimeEntryPath : `./${runtimeEntryPath}`],
-            "@soda-gql/core/runtime/*": [runtimeEntryWildcard.startsWith(".") ? runtimeEntryWildcard : `./${runtimeEntryWildcard}`],
+            "@soda-gql/core/runtime/*": [
+              runtimeEntryWildcard.startsWith(".") ? runtimeEntryWildcard : `./${runtimeEntryWildcard}`,
+            ],
           },
         },
         files: [generatedRelative.startsWith(".") ? generatedRelative : `./${generatedRelative}`],

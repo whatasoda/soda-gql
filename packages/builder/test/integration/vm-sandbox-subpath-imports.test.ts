@@ -4,8 +4,8 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createBuilderSession } from "@soda-gql/builder";
-import { runCodegen } from "@soda-gql/dev/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { runCodegen } from "@soda-gql/dev/codegen";
 
 /**
  * Tests for VM sandbox require() handling of @soda-gql subpath exports.

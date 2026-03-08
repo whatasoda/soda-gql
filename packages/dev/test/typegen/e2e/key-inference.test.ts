@@ -12,11 +12,11 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runTypegen } from "../../src/runner";
+import { runTypegen } from "../../../src/typegen/runner";
 import { createTestWorkspace, type WorkspaceSetup } from "./utils/workspace";
 
 const fixtureDir = fileURLToPath(new URL("./fixtures", import.meta.url));
-const projectRoot = resolve(fileURLToPath(import.meta.url), "../../../../..");
+const projectRoot = resolve(fileURLToPath(import.meta.url), "../../../../../..");
 const tscPath = join(projectRoot, "node_modules/.bin/tsc");
 
 describe("typegen key inference E2E", () => {

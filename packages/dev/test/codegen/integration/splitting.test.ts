@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runCodegen } from "../../src/runner";
-import type { CodegenOptions } from "../../src/types";
+import { runCodegen } from "../../../src/codegen/runner";
+import type { CodegenOptions } from "../../../src/codegen/types";
 
 describe("codegen splitting", () => {
   let tempDir: string;

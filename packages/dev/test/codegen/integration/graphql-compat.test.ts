@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { emitFragment, emitOperation } from "../../src/graphql-compat/emitter";
-import { parseGraphqlSource } from "../../src/graphql-compat/parser";
-import { transformParsedGraphql } from "../../src/graphql-compat/transformer";
-import { loadSchema } from "../../src/schema";
+import { emitFragment, emitOperation } from "../../../src/codegen/graphql-compat/emitter";
+import { parseGraphqlSource } from "../../../src/codegen/graphql-compat/parser";
+import { transformParsedGraphql } from "../../../src/codegen/graphql-compat/transformer";
+import { loadSchema } from "../../../src/codegen/schema";
 
 describe("graphql-compat integration", () => {
   let tempDir: string;

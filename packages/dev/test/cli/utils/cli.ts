@@ -25,7 +25,7 @@ export const runSodaGqlCli = async (command: string, args: readonly string[], op
   } = options;
 
   // Call CLI entry point directly to preserve cwd for config discovery
-  const cliEntryPoint = join(getProjectRoot(), "packages/cli/src/index.ts");
+  const cliEntryPoint = join(getProjectRoot(), "packages/dev/src/cli/index.ts");
 
   // Use portable spawn with timeout handling
   const timeoutPromise = new Promise<CliResult>((_, reject) => {
@@ -132,5 +132,5 @@ export const parseCliJsonOutput = <T>(result: CliResult): T => {
  */
 
 export const getProjectRoot = (): string => {
-  return fileURLToPath(new URL("../../../../", import.meta.url));
+  return fileURLToPath(new URL("../../../../../", import.meta.url));
 };

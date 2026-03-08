@@ -55,5 +55,29 @@
   "devDependencies": {
     "@types/picomatch": "^4.0.2",
     "@swc/types": "^0.1.0"
+  },
+  "exports": {
+    "./codegen": {
+      "@soda-gql": "./@x-codegen.ts",
+      "types": "./dist/codegen.d.mts",
+      "import": "./dist/codegen.mjs",
+      "require": "./dist/codegen.cjs",
+      "default": "./dist/codegen.mjs"
+    },
+    "./typegen": {
+      "@soda-gql": "./@x-typegen.ts",
+      "types": "./dist/typegen.d.mts",
+      "import": "./dist/typegen.mjs",
+      "require": "./dist/typegen.cjs",
+      "default": "./dist/typegen.mjs"
+    },
+    "./formatter": {
+      "@soda-gql": "./@x-formatter.ts",
+      "types": "./dist/formatter.d.mts",
+      "import": "./dist/formatter.mjs",
+      "require": "./dist/formatter.cjs",
+      "default": "./dist/formatter.mjs"
+    },
+    "./package.json": "./package.json"
   }
 }

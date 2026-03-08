@@ -4,10 +4,10 @@
  */
 
 import { resolve } from "node:path";
-import type { CodegenSchemaConfig, CodegenSuccess } from "../../../codegen";
-import { runCodegen, writeInjectTemplate } from "../../../codegen";
 import { loadConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
+import type { CodegenSchemaConfig, CodegenSuccess } from "../../../codegen";
+import { runCodegen, writeInjectTemplate } from "../../../codegen";
 import { type CliResult, cliErrors } from "../../errors";
 import { CodegenSchemaArgsSchema } from "../../schemas/args";
 import type { CommandResult, CommandSuccess } from "../../types";

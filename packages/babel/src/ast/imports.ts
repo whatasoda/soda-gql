@@ -54,6 +54,16 @@ export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   );
 
   if (existing && t.isImportDeclaration(existing)) {
+    // Convert type-only import to mixed import so value specifiers can be added
+    if (existing.importKind === "type") {
+      for (const spec of existing.specifiers) {
+        if (t.isImportSpecifier(spec) && !spec.importKind) {
+          spec.importKind = "type";
+        }
+      }
+      existing.importKind = "value";
+    }
+
     const hasSpecifier = existing.specifiers.some(
       (specifier) =>
         specifier.type === "ImportSpecifier" &&

@@ -86,7 +86,7 @@ describe("cliErrors", () => {
 
       expect(error.category).toBe("cli");
       expect(error.code).toBe("CLI_FORMATTER_NOT_INSTALLED");
-      expect(error.message).toContain("@soda-gql/formatter");
+      expect(error.message).toContain("@soda-gql/dev");
     });
 
     it("creates CLI_PARSE_ERROR error", () => {

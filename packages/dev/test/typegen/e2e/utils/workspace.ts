@@ -12,11 +12,11 @@ import fs from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runCodegen } from "../../../../src/codegen";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
+import { runCodegen } from "../../../../src/codegen";
 
 // Project root for accessing node_modules
-const projectRoot = path.resolve(fileURLToPath(import.meta.url), "../../../../../..");
+const projectRoot = path.resolve(fileURLToPath(import.meta.url), "../../../../../../..");
 
 /**
  * Result of creating a test workspace.

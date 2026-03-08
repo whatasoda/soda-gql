@@ -8,6 +8,9 @@
  */
 
 import { resolve } from "node:path";
+import type { TypeFilterConfig } from "@soda-gql/config";
+import { loadConfig } from "@soda-gql/config";
+import { err, ok } from "neverthrow";
 import type { CodegenSchemaConfig } from "../../../codegen";
 import {
   compileTypeFilter,
@@ -16,10 +19,7 @@ import {
   runCodegen,
   type transformParsedGraphql,
 } from "../../../codegen";
-import type { TypeFilterConfig } from "@soda-gql/config";
-import { loadConfig } from "@soda-gql/config";
 import { runTypegen } from "../../../typegen";
-import { err, ok } from "neverthrow";
 import { cliErrors } from "../../errors";
 import type { CommandResult, CommandSuccess } from "../../types";
 import { generateCompatFiles, graphqlCommand, type ParsedGraphqlArgs, writeGeneratedFiles } from "./graphql";

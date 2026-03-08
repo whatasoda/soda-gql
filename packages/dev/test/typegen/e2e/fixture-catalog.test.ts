@@ -13,7 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const projectRoot = resolve(fileURLToPath(import.meta.url), "../../../../..");
+const projectRoot = resolve(fileURLToPath(import.meta.url), "../../../../../..");
 const fixtureCatalogRoot = join(projectRoot, "fixture-catalog");
 const graphqlSystemDir = join(fixtureCatalogRoot, "graphql-system");
 const tscPath = join(projectRoot, "node_modules/.bin/tsc");

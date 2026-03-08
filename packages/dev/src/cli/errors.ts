@@ -4,10 +4,10 @@
  */
 
 import type { ArtifactLoadError, BuilderError } from "@soda-gql/builder";
-import type { CodegenError } from "../codegen";
 import type { ConfigError } from "@soda-gql/config";
-import type { TypegenError } from "../typegen";
 import { err, type Result } from "neverthrow";
+import type { CodegenError } from "../codegen";
+import type { TypegenError } from "../typegen";
 
 /**
  * CLI-specific error codes.

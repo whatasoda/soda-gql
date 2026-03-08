@@ -58,7 +58,7 @@ describe("formatCliErrorHuman", () => {
 
       expect(result).toContain("Error [CLI_FORMATTER_NOT_INSTALLED]");
       expect(result).toContain("Hint:");
-      expect(result).toContain("bun add");
+      expect(result).toContain("Formatter failed to load");
     });
 
     it("formats CLI_UNEXPECTED with report hint", () => {

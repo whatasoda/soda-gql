@@ -15,10 +15,10 @@
       "path": "../builder/tsconfig.editor.json"
     },
     {
-      "path": "../codegen/tsconfig.editor.json"
+      "path": "../config/tsconfig.editor.json"
     },
     {
-      "path": "../config/tsconfig.editor.json"
+      "path": "../dev/tsconfig.editor.json"
     }
   ]
 }
