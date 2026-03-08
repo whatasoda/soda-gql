@@ -26,7 +26,6 @@ export const FormatArgsSchema = z.object({
   config: z.string().optional(),
   check: z.boolean().optional(),
   "inject-fragment-keys": z.boolean().optional(),
-  "format-tagged-templates": z.boolean().optional(),
 });
 
 export const InitArgsSchema = z.object({
