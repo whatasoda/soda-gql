@@ -33,7 +33,11 @@ const formatResultMessage = (data: FormatData): string => {
       const files = data.unformatted.map((f) => `  ${f}`).join("\n");
       return `${data.unformatted.length} file(s) need formatting:\n${files}`;
     }
-    return `All ${data.total} file(s) are properly formatted`;
+    const msg = `All ${data.total} file(s) are properly formatted`;
+    if (data.errors > 0) {
+      return `${msg} (${data.errors} file(s) had parse errors)`;
+    }
+    return msg;
   }
 
   const parts: string[] = [];
@@ -197,7 +201,9 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
     unchanged,
     errors,
     unformatted,
-    hasFormattingIssues: (isCheckMode && unformatted.length > 0) || errors > 0,
+    hasFormattingIssues: isCheckMode
+      ? unformatted.length > 0 // check mode: parse errors don't trigger exit 1
+      : errors > 0, // format mode: errors (write failures, etc.) still trigger exit 1
   };
 
   return ok({ message: formatResultMessage(data), data });

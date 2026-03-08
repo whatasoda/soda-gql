@@ -130,6 +130,36 @@ export const model = gql.default(({ model }) => model.User({ fields: ({ f }) => 
     });
   });
 
+  describe("check mode exit code with parse errors", () => {
+    it("exits 0 when all parseable files are formatted even with unparseable files", async () => {
+      const caseDir = join(tmpRoot, `case-${Date.now()}`);
+      mkdirSync(caseDir, { recursive: true });
+
+      // A properly formatted file
+      const goodFile = join(caseDir, "good.ts");
+      const alreadyFormatted = `import { gql } from "@/graphql-system";
+export const model = gql.default(({ model }) =>
+  model.User({
+    fields: ({ f }) => ({
+      ...f.id(),
+    }),
+  }),
+);
+`;
+      await Bun.write(goodFile, alreadyFormatted);
+
+      // An unparseable file (syntax error)
+      const badFile = join(caseDir, "bad.ts");
+      await Bun.write(badFile, "const x = {");
+
+      const result = await runFormatCli([join(caseDir, "*.ts"), "--check"]);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("properly formatted");
+      expect(result.stdout).toContain("parse errors");
+    });
+  });
+
   describe("error handling", () => {
     it("returns error when no patterns and no config", async () => {
       const caseDir = join(tmpRoot, `case-${Date.now()}`);
