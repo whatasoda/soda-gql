@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/common",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "description": "Shared utilities for soda-gql packages",
   "type": "module",
   "private": false,
@@ -48,6 +48,13 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "exports": {
+    "./template-extraction": {
+      "@soda-gql": "./@x-template-extraction.ts",
+      "types": "./dist/template-extraction.d.mts",
+      "import": "./dist/template-extraction.mjs",
+      "require": "./dist/template-extraction.cjs",
+      "default": "./dist/template-extraction.mjs"
+    },
     "./utils": {
       "@soda-gql": "./@x-utils.ts",
       "types": "./dist/utils.d.mts",
@@ -85,13 +92,6 @@
       "import": "./dist/zod.mjs",
       "require": "./dist/zod.cjs",
       "default": "./dist/zod.mjs"
-    },
-    "./template-extraction": {
-      "@soda-gql": "./@x-template-extraction.ts",
-      "types": "./dist/template-extraction.d.mts",
-      "import": "./dist/template-extraction.mjs",
-      "require": "./dist/template-extraction.cjs",
-      "default": "./dist/template-extraction.mjs"
     },
     "./package.json": "./package.json"
   },
