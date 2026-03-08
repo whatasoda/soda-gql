@@ -53,7 +53,6 @@
     "@soda-gql/common": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "@soda-gql/runtime": "workspace:*",
     "@soda-gql/swc": "workspace:*",
     "@soda-gql/tsc": "workspace:*",
     "@soda-gql/webpack-plugin": "workspace:*",

@@ -12,7 +12,6 @@
   "dependencies": {
     "@soda-gql/core": "workspace:*",
     "@soda-gql/metro-plugin": "workspace:*",
-    "@soda-gql/runtime": "workspace:*",
     "expo": "~54.0.0",
     "expo-asset": "~12.0.12",
     "expo-constants": "~18.0.12",

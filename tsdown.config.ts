@@ -172,11 +172,6 @@ export default defineConfig([
     platform: "neutral" as const,
   },
   {
-    ...configure("@soda-gql/runtime", { noExternals: ["@soda-gql/core/runtime"] }),
-    format: ["esm", "cjs"] as const,
-    platform: "neutral" as const,
-  },
-  {
     ...configure("@soda-gql/colocation-tools"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,

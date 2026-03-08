@@ -11,7 +11,7 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
  * Tests for VM sandbox require() handling of @soda-gql subpath exports.
  *
  * The CLI template generates inject files that import from "@soda-gql/core/adapter",
- * but the VM sandbox only handles "@soda-gql/core" and "@soda-gql/runtime".
+ * but the VM sandbox only handles "@soda-gql/core" and "@soda-gql/core/runtime".
  * This causes build failures when the inject file uses subpath exports.
  */
 describe("VM sandbox subpath imports", () => {

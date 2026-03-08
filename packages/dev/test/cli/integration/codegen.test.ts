@@ -153,8 +153,8 @@ describe("soda-gql codegen CLI", () => {
       const extendsPath = toPosix(relative(caseDir, join(projectRoot, "tsconfig.base.json")) || "./tsconfig.base.json");
       const coreEntryPath = toPosix(relative(caseDir, join(projectRoot, "packages", "core", "src", "index.ts")));
       const coreEntryWildcard = toPosix(`${relative(caseDir, join(projectRoot, "packages", "core", "src"))}/*`);
-      const runtimeEntryPath = toPosix(relative(caseDir, join(projectRoot, "packages", "runtime", "src", "index.ts")));
-      const runtimeEntryWildcard = toPosix(`${relative(caseDir, join(projectRoot, "packages", "runtime", "src"))}/*`);
+      const runtimeEntryPath = toPosix(relative(caseDir, join(projectRoot, "packages", "core", "src", "runtime", "index.ts")));
+      const runtimeEntryWildcard = toPosix(`${relative(caseDir, join(projectRoot, "packages", "core", "src", "runtime"))}/*`);
       const generatedRelative = toPosix(relative(caseDir, outFile));
 
       const tsconfig = {
@@ -164,8 +164,8 @@ describe("soda-gql codegen CLI", () => {
           paths: {
             "@soda-gql/core": [coreEntryPath.startsWith(".") ? coreEntryPath : `./${coreEntryPath}`],
             "@soda-gql/core/*": [coreEntryWildcard.startsWith(".") ? coreEntryWildcard : `./${coreEntryWildcard}`],
-            "@soda-gql/runtime": [runtimeEntryPath.startsWith(".") ? runtimeEntryPath : `./${runtimeEntryPath}`],
-            "@soda-gql/runtime/*": [runtimeEntryWildcard.startsWith(".") ? runtimeEntryWildcard : `./${runtimeEntryWildcard}`],
+            "@soda-gql/core/runtime": [runtimeEntryPath.startsWith(".") ? runtimeEntryPath : `./${runtimeEntryPath}`],
+            "@soda-gql/core/runtime/*": [runtimeEntryWildcard.startsWith(".") ? runtimeEntryWildcard : `./${runtimeEntryWildcard}`],
           },
         },
         files: [generatedRelative.startsWith(".") ? generatedRelative : `./${generatedRelative}`],

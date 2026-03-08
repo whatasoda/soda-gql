@@ -326,7 +326,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
   // Bundle the generated module
   const bundleOutcome = await defaultBundler.bundle({
     sourcePath: outPath,
-    external: ["@soda-gql/core", "@soda-gql/runtime"],
+    external: ["@soda-gql/core", "@soda-gql/core/runtime"],
   });
   const bundleResult = bundleOutcome.match(
     (result) => ok(result),

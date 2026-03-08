@@ -1,11 +1,11 @@
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import ts from "typescript";
 
-const RUNTIME_MODULE = "@soda-gql/runtime";
+const RUNTIME_MODULE = "@soda-gql/core/runtime";
 
 /**
  * Ensure that the gqlRuntime require exists in the source file for CJS output.
- * Injects: const __soda_gql_runtime = require("@soda-gql/runtime");
+ * Injects: const __soda_gql_runtime = require("@soda-gql/core/runtime");
  * Returns an updated source file with the require added if needed.
  */
 export const ensureGqlRuntimeRequire = ({
@@ -39,7 +39,7 @@ export const ensureGqlRuntimeRequire = ({
     return sourceFile;
   }
 
-  // Create: const __soda_gql_runtime = require("@soda-gql/runtime");
+  // Create: const __soda_gql_runtime = require("@soda-gql/core/runtime");
   const requireCall = factory.createCallExpression(factory.createIdentifier("require"), undefined, [
     factory.createStringLiteral(RUNTIME_MODULE),
   ]);
@@ -63,7 +63,7 @@ export const ensureGqlRuntimeRequire = ({
 
 /**
  * Ensure that the gqlRuntime import exists in the source file.
- * gqlRuntime is always imported from @soda-gql/runtime.
+ * gqlRuntime is always imported from @soda-gql/core/runtime.
  * Returns an updated source file with the import added or merged.
  */
 export const ensureGqlRuntimeImport = ({
@@ -126,7 +126,7 @@ export const ensureGqlRuntimeImport = ({
 
 /**
  * Remove the graphql-system import (runtimeModule) and gql-related exports from the source file.
- * After transformation, gqlRuntime is imported from @soda-gql/runtime instead,
+ * After transformation, gqlRuntime is imported from @soda-gql/core/runtime instead,
  * so the original graphql-system import should be completely removed.
  *
  * This handles both ESM imports and CommonJS require() statements (including interop helpers).

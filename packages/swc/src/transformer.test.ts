@@ -123,7 +123,7 @@ describe("swc", async () => {
 
           // Verify runtime import is added when expected
           if (testCase.expectations.shouldAddRuntimeImport) {
-            expect(normalized).toContain("@soda-gql/runtime");
+            expect(normalized).toContain("@soda-gql/core/runtime");
           }
 
           // Verify gql.default import is removed
@@ -161,7 +161,7 @@ describe("swc", async () => {
           // Verify no runtime calls are added
           expect(result).not.toContain("gqlRuntime.");
           // Verify no runtime import is added
-          expect(result).not.toContain("@soda-gql/runtime");
+          expect(result).not.toContain("@soda-gql/core/runtime");
         });
       }
     });
