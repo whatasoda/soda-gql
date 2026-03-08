@@ -19,7 +19,6 @@
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
         "@soda-gql/dev": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "@soda-gql/swc": "workspace:*",
         "@soda-gql/tsc": "workspace:*",
         "@soda-gql/webpack-plugin": "workspace:*",
@@ -39,7 +38,7 @@
     },
     "packages/babel": {
       "name": "@soda-gql/babel",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@babel/core": "^7.24.0",
@@ -60,12 +59,11 @@
     },
     "packages/builder": {
       "name": "@soda-gql/builder",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@soda-gql/config": "workspace:*",
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "@swc/core": "^1.6.3",
         "@swc/types": "^0.1.6",
         "fast-glob": "^3.3.3",
@@ -80,48 +78,9 @@
         "@soda-gql/dev": "workspace:*",
       },
     },
-    "packages/cli": {
-      "name": "@soda-gql/cli",
-      "version": "0.12.6",
-      "bin": {
-        "soda-gql": "./dist/index.cjs",
-      },
-      "dependencies": {
-        "@soda-gql/builder": "workspace:*",
-        "@soda-gql/codegen": "workspace:*",
-        "@soda-gql/common": "workspace:*",
-        "@soda-gql/config": "workspace:*",
-        "@soda-gql/typegen": "workspace:*",
-        "chokidar": "^3.6.0",
-        "fast-glob": "^3.3.3",
-        "graphql": "^16.11.0",
-        "neverthrow": "^8.1.1",
-        "zod": "^4.1.11",
-      },
-      "optionalDependencies": {
-        "@soda-gql/formatter": "workspace:*",
-        "@soda-gql/lsp": "workspace:*",
-      },
-    },
-    "packages/codegen": {
-      "name": "@soda-gql/codegen",
-      "version": "0.12.6",
-      "dependencies": {
-        "@soda-gql/config": "workspace:*",
-        "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
-        "esbuild": "^0.24.0",
-        "graphql": "^16.11.0",
-        "neverthrow": "^8.1.1",
-        "picomatch": "^4.0.3",
-      },
-      "devDependencies": {
-        "@types/picomatch": "^4.0.2",
-      },
-    },
     "packages/colocation-tools": {
       "name": "@soda-gql/colocation-tools",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "graphql": "^16.11.0",
@@ -129,7 +88,7 @@
     },
     "packages/common": {
       "name": "@soda-gql/common",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "neverthrow": "^8.1.1",
         "zod": "^4.1.11",
@@ -140,7 +99,7 @@
     },
     "packages/config": {
       "name": "@soda-gql/config",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/common": "workspace:*",
         "@swc/core": "^1.10.0",
@@ -150,7 +109,7 @@
     },
     "packages/core": {
       "name": "@soda-gql/core",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@graphql-typed-document-node/core": "^3.2.0",
         "graphql": "^16.11.0",
@@ -186,25 +145,9 @@
         "@swc/core": "^1.0.0",
       },
     },
-    "packages/formatter": {
-      "name": "@soda-gql/formatter",
-      "version": "0.12.6",
-      "dependencies": {
-        "@soda-gql/common": "workspace:*",
-        "neverthrow": "^8.1.1",
-      },
-      "devDependencies": {
-        "@swc/types": "^0.1.0",
-        "graphql": "^16.11.0",
-      },
-      "peerDependencies": {
-        "@swc/core": "^1.0.0",
-        "graphql": "^16.11.0",
-      },
-    },
     "packages/lsp": {
       "name": "@soda-gql/lsp",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "bin": {
         "soda-gql-lsp": "./dist/bin.mjs",
       },
@@ -226,7 +169,7 @@
     },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@soda-gql/babel": "workspace:*",
@@ -244,16 +187,9 @@
         "metro",
       ],
     },
-    "packages/runtime": {
-      "name": "@soda-gql/runtime",
-      "version": "0.12.6",
-      "dependencies": {
-        "@soda-gql/core": "workspace:*",
-      },
-    },
     "packages/sdk": {
       "name": "@soda-gql/sdk",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/config": "workspace:*",
@@ -264,7 +200,7 @@
     },
     "packages/swc": {
       "name": "@soda-gql/swc",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@ampproject/remapping": "^2.3.0",
         "@soda-gql/builder": "workspace:*",
@@ -283,7 +219,7 @@
     },
     "packages/tsc": {
       "name": "@soda-gql/tsc",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/builder": "workspace:*",
         "@soda-gql/common": "workspace:*",
@@ -299,26 +235,9 @@
         "typescript": "5.*",
       },
     },
-    "packages/typegen": {
-      "name": "@soda-gql/typegen",
-      "version": "0.12.6",
-      "dependencies": {
-        "@soda-gql/builder": "workspace:*",
-        "@soda-gql/common": "workspace:*",
-        "@soda-gql/config": "workspace:*",
-        "@soda-gql/core": "workspace:*",
-        "esbuild": "^0.24.0",
-        "fast-glob": "^3.3.0",
-        "graphql": "^16.11.0",
-        "neverthrow": "^8.1.1",
-      },
-      "peerDependencies": {
-        "@swc/core": "^1.0.0",
-      },
-    },
     "packages/vite-plugin": {
       "name": "@soda-gql/vite-plugin",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@babel/core": "^7.24.0",
         "@soda-gql/babel": "workspace:*",
@@ -336,7 +255,7 @@
     },
     "packages/vscode-extension": {
       "name": "soda-gql-vscode-extension",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/lsp": "workspace:*",
         "vscode-languageclient": "^9.0.1",
@@ -349,7 +268,7 @@
     },
     "packages/webpack-plugin": {
       "name": "@soda-gql/webpack-plugin",
-      "version": "0.12.6",
+      "version": "0.12.4",
       "dependencies": {
         "@soda-gql/babel": "workspace:*",
         "@soda-gql/builder": "workspace:*",
@@ -374,7 +293,6 @@
       "dependencies": {
         "@soda-gql/core": "workspace:*",
         "@soda-gql/metro-plugin": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "expo": "~54.0.0",
         "expo-asset": "~12.0.12",
         "expo-constants": "~18.0.12",
@@ -398,7 +316,6 @@
       "name": "@soda-gql-playgrounds/hasura",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
       },
       "devDependencies": {
         "@soda-gql/config": "workspace:*",
@@ -416,7 +333,6 @@
         "@nestjs/core": "^10.0.0",
         "@nestjs/platform-express": "^10.0.0",
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "reflect-metadata": "^0.2.0",
         "rxjs": "^7.8.1",
       },
@@ -433,7 +349,6 @@
       "name": "@soda-gql-playgrounds/nextjs-webpack",
       "dependencies": {
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "next": "^15.0.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
@@ -453,7 +368,6 @@
       "dependencies": {
         "@soda-gql/colocation-tools": "workspace:*",
         "@soda-gql/core": "workspace:*",
-        "@soda-gql/runtime": "workspace:*",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
       },
@@ -1254,10 +1168,6 @@
 
     "@soda-gql/builder": ["@soda-gql/builder@workspace:packages/builder"],
 
-    "@soda-gql/cli": ["@soda-gql/cli@workspace:packages/cli"],
-
-    "@soda-gql/codegen": ["@soda-gql/codegen@workspace:packages/codegen"],
-
     "@soda-gql/colocation-tools": ["@soda-gql/colocation-tools@workspace:packages/colocation-tools"],
 
     "@soda-gql/common": ["@soda-gql/common@workspace:packages/common"],
@@ -1268,21 +1178,15 @@
 
     "@soda-gql/dev": ["@soda-gql/dev@workspace:packages/dev"],
 
-    "@soda-gql/formatter": ["@soda-gql/formatter@workspace:packages/formatter"],
-
     "@soda-gql/lsp": ["@soda-gql/lsp@workspace:packages/lsp"],
 
     "@soda-gql/metro-plugin": ["@soda-gql/metro-plugin@workspace:packages/metro-plugin"],
-
-    "@soda-gql/runtime": ["@soda-gql/runtime@workspace:packages/runtime"],
 
     "@soda-gql/sdk": ["@soda-gql/sdk@workspace:packages/sdk"],
 
     "@soda-gql/swc": ["@soda-gql/swc@workspace:packages/swc"],
 
     "@soda-gql/tsc": ["@soda-gql/tsc@workspace:packages/tsc"],
-
-    "@soda-gql/typegen": ["@soda-gql/typegen@workspace:packages/typegen"],
 
     "@soda-gql/vite-plugin": ["@soda-gql/vite-plugin@workspace:packages/vite-plugin"],
 
