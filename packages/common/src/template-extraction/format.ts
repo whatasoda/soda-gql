@@ -54,7 +54,7 @@ export const reindent = (formatted: string, baseIndent: string, originalContent:
 
   // Match original leading/trailing newline pattern
   const startsWithNewline = originalContent.startsWith("\n");
-  const endsWithNewline = originalContent.endsWith("\n");
+  const endsWithNewline = /\n\s*$/.test(originalContent);
 
   let result = indentedLines.join("\n");
   if (startsWithNewline) {
