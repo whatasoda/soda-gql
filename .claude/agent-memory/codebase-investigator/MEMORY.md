@@ -65,6 +65,18 @@ Key critical/high findings:
 - `toImportSpecifier` duplicated between `codegen/runner.ts` and `typegen/runner.ts` with subtle drift in edge case behavior
 - `@soda-gql/common/test` subpath only has `@soda-gql` condition — not accessible to external consumers at runtime
 
+## Test/Implementation/Dead-Code Inconsistencies (Investigated 2026-03-08)
+See: `test-impl-inconsistencies.md` for full details.
+
+Key findings:
+- `TypegenOptions` dead export: defined in `typegen/src/types.ts`, exported in `typegen/src/index.ts`, never imported anywhere
+- `BuilderArgsSchema`+`BuilderArgs`+`BuilderMode` dead: defined in `cli/src/schemas/args.ts` and `builder/src/types.ts`, never used
+- `RuntimeOperationInput.runtime` field (`{}`) is never read by `createRuntimeOperation` — forward-compat dead field
+- `normalizeInject` always sets `adapter=resolvedPath` for string form, even if file doesn't export adapter (contradicts docs)
+- Zod schema stricter than TS type: `TypeFilterConfigSchema` requires `exclude` array `.min(1)` but TS type allows empty array
+- Zod schema looser than TS type: `graphqlSystemAliases` uses `z.array(z.string())` allowing empty strings, TS type has no constraint
+- `schemas/artifact.ts` exports its own `BuilderArtifact`/`BuilderArtifactElement` types (Zod-inferred, mutable) that shadow the readonly types in `artifact/types.ts`
+
 ## Error Handling Inconsistencies (Investigated 2026-03-08)
 See: `error-handling-report.md` for full details.
 

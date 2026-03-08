@@ -153,12 +153,7 @@ function executeGraphqlSystemModule(modulePath: string): { gql: unknown } {
       throw error;
     }
     const message = error instanceof Error ? error.message : String(error);
-    throw builderErrors.runtimeModuleLoadFailed(
-      modulePath,
-      "",
-      `GraphQL system module execution failed: ${message}`,
-      error,
-    );
+    throw builderErrors.runtimeModuleLoadFailed(modulePath, "", `GraphQL system module execution failed: ${message}`, error);
   }
 }
 
@@ -251,12 +246,7 @@ const setupIntermediateModulesContext = ({
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
-      throw builderErrors.runtimeModuleLoadFailed(
-        filePath,
-        "",
-        `Error evaluating intermediate module: ${message}`,
-        error,
-      );
+      throw builderErrors.runtimeModuleLoadFailed(filePath, "", `Error evaluating intermediate module: ${message}`, error);
     }
   }
 
