@@ -180,8 +180,12 @@ export const formatCommand = async (argv: readonly string[]): Promise<FormatComm
         continue;
       }
       if (result.value.modified) {
-        await writeFile(filePath, result.value.sourceCode, "utf-8");
-        modified++;
+        try {
+          await writeFile(filePath, result.value.sourceCode, "utf-8");
+          modified++;
+        } catch {
+          errors++;
+        }
       } else {
         unchanged++;
       }

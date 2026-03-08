@@ -161,7 +161,10 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       varSpecifiers = mergeVariableDefinitions(varSpecifiers, interpolationMap);
 
       // Determine root type name based on operation type
-      const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
+      const operationTypeName = schema.operations[operationType];
+      if (operationTypeName === null) {
+        throw new Error(`Operation type ${operationType} is not defined in schema roots`);
+      }
 
       const resolvedAdapter = metadataAdapter ?? defaultMetadataAdapter;
 
