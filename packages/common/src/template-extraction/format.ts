@@ -33,13 +33,33 @@ export const detectBaseIndent = (tsSource: string, contentStartOffset: number): 
 };
 
 /**
+ * Convert graphql-js 2-space indentation to the target indent unit.
+ * Strips leading 2-space groups and replaces with equivalent indent units.
+ */
+const convertGraphqlIndent = (line: string, indentUnit: string): string => {
+  if (indentUnit === "  ") return line; // No conversion needed
+  let level = 0;
+  let pos = 0;
+  while (pos + 1 < line.length && line[pos] === " " && line[pos + 1] === " ") {
+    level++;
+    pos += 2;
+  }
+  if (level === 0) return line;
+  return indentUnit.repeat(level) + line.slice(pos);
+};
+
+/**
  * Re-indent formatted GraphQL to match the embedding context.
  *
- * - If original was single-line and formatted is single-line, keep as-is
- * - Otherwise, apply base indent + one level to each line, preserving
- *   original leading/trailing newline pattern
+ * **Inline templates** (content does NOT start with `\n`):
+ * - Line 0 (`{`): no prefix — appears right after backtick
+ * - Lines 1..N: graphql-js indentation only (converted to target unit)
+ *
+ * **Block templates** (content starts with `\n`):
+ * - All lines: `baseIndent + indentUnit` prefix + converted graphql indent
+ * - Trailing: `\n` + `baseIndent`
  */
-export const reindent = (formatted: string, baseIndent: string, originalContent: string): string => {
+export const reindent = (formatted: string, baseIndent: string, originalContent: string, indentUnit: string = "  "): string => {
   const trimmedFormatted = formatted.trim();
 
   // If original was single-line and formatted is also single-line, keep it
@@ -47,14 +67,26 @@ export const reindent = (formatted: string, baseIndent: string, originalContent:
     return trimmedFormatted;
   }
 
-  // For multi-line: use the indentation pattern from the original content
-  const indent = `${baseIndent}  `; // add one level of indentation
   const lines = trimmedFormatted.split("\n");
-  const indentedLines = lines.map((line) => (line.trim() === "" ? "" : indent + line));
 
   // Match original leading/trailing newline pattern
   const startsWithNewline = originalContent.startsWith("\n");
   const endsWithNewline = /\n\s*$/.test(originalContent);
+
+  const indentedLines = lines.map((line, i) => {
+    if (line.trim() === "") return "";
+    const converted = convertGraphqlIndent(line, indentUnit);
+
+    if (!startsWithNewline) {
+      // Inline template: first line has no prefix (appears after backtick);
+      // body lines get baseIndent + converted graphql indent to align with TS context.
+      if (i === 0) return converted;
+      return baseIndent + converted;
+    }
+
+    // Block template: every line gets baseIndent + indentUnit prefix
+    return `${baseIndent}${indentUnit}${converted}`;
+  });
 
   let result = indentedLines.join("\n");
   if (startsWithNewline) {
@@ -65,6 +97,26 @@ export const reindent = (formatted: string, baseIndent: string, originalContent:
   }
 
   return result;
+};
+
+/**
+ * Detect the indentation unit used in a TypeScript source file.
+ *
+ * Uses the smallest indentation width found as the indent unit.
+ * In files with embedded templates (e.g., graphql in backticks),
+ * template content lines are at `baseIndent + graphqlIndent`,
+ * so their absolute indent is always >= the file's indent unit.
+ */
+export const detectIndentUnit = (tsSource: string): string => {
+  let minSpaceIndent = Infinity;
+  for (const line of tsSource.split("\n")) {
+    if (line.length === 0 || line.trimStart().length === 0) continue;
+    if (line[0] === "\t") return "\t";
+    const match = line.match(/^( +)\S/);
+    if (match) minSpaceIndent = Math.min(minSpaceIndent, match[1]!.length);
+  }
+  if (minSpaceIndent === Infinity || minSpaceIndent <= 1) return "  ";
+  return " ".repeat(minSpaceIndent);
 };
 
 const GRAPHQL_KEYWORDS = new Set(["query", "mutation", "subscription", "fragment"]);
@@ -132,6 +184,7 @@ export const formatTemplatesInSource = (
   tsSource: string,
   formatGraphql: FormatGraphqlFn,
 ): readonly TemplateFormatEdit[] => {
+  const indentUnit = detectIndentUnit(tsSource);
   const edits: TemplateFormatEdit[] = [];
 
   for (const template of templates) {
@@ -168,7 +221,7 @@ export const formatTemplatesInSource = (
     const baseIndent = detectBaseIndent(tsSource, template.contentRange.start);
 
     // Re-indent the formatted output
-    const reindented = reindent(unwrapped, baseIndent, template.content);
+    const reindented = reindent(unwrapped, baseIndent, template.content, indentUnit);
 
     // Skip if no changes after re-indentation
     if (reindented === template.content) {

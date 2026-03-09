@@ -1,5 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { buildGraphqlWrapper, detectBaseIndent, formatTemplatesInSource, reindent, unwrapFormattedContent } from "./format";
+import {
+  buildGraphqlWrapper,
+  detectBaseIndent,
+  detectIndentUnit,
+  formatTemplatesInSource,
+  reindent,
+  unwrapFormattedContent,
+} from "./format";
 import type { ExtractedTemplate } from "./types";
 
 describe("detectBaseIndent", () => {
@@ -23,20 +30,65 @@ describe("detectBaseIndent", () => {
   });
 });
 
+describe("detectIndentUnit", () => {
+  it("detects 2-space indentation", () => {
+    const source = "function foo() {\n  const x = 1;\n  if (x) {\n    return x;\n  }\n}";
+    expect(detectIndentUnit(source)).toBe("  ");
+  });
+
+  it("detects 4-space indentation", () => {
+    const source = "function foo() {\n    const x = 1;\n    if (x) {\n        return x;\n    }\n}";
+    expect(detectIndentUnit(source)).toBe("    ");
+  });
+
+  it("detects tab indentation", () => {
+    const source = "function foo() {\n\tconst x = 1;\n\tif (x) {\n\t\treturn x;\n\t}\n}";
+    expect(detectIndentUnit(source)).toBe("\t");
+  });
+
+  it("defaults to 2-space for empty file", () => {
+    expect(detectIndentUnit("")).toBe("  ");
+  });
+
+  it("defaults to 2-space for file with no indentation", () => {
+    expect(detectIndentUnit("const x = 1;\nconst y = 2;")).toBe("  ");
+  });
+});
+
 describe("reindent", () => {
   it("keeps single-line if both original and formatted are single-line", () => {
     const result = reindent("{ id name }", "", "{ id name }");
     expect(result).toBe("{ id name }");
   });
 
-  it("re-indents multi-line formatted output", () => {
+  it("re-indents block template (starts with newline)", () => {
     const formatted = "{\n  id\n  name\n}";
     const result = reindent(formatted, "  ", "\n  { id name }\n  ");
     expect(result).toContain("    id");
     expect(result).toContain("    name");
   });
 
-  it("preserves leading newline from original", () => {
+  it("re-indents inline template (no leading newline)", () => {
+    // graphql output: {\n  id\n  name\n}
+    // baseIndent: "  " (line containing backtick)
+    // Expected: { on first line (no prefix), body lines get baseIndent + graphql indent
+    const formatted = "{\n  id\n  name\n}";
+    const result = reindent(formatted, "  ", "{ id name }");
+    expect(result).toBe("{\n    id\n    name\n  }");
+  });
+
+  it("inline template first line has no prefix", () => {
+    const formatted = "{\n  id\n}";
+    const result = reindent(formatted, "    ", "{ id }");
+    // First line: no prefix
+    expect(result.startsWith("{")).toBe(true);
+    // Body: baseIndent(4) + graphql(2) = 6 spaces
+    expect(result).toContain("      id");
+    // Closing: baseIndent(4) + graphql(0) = 4 spaces
+    expect(result).toContain("    }");
+  });
+
+  it("preserves leading newline from original (block template)", () => {
     const result = reindent("{\n  id\n}", "", "\n{ id }\n");
     expect(result.startsWith("\n")).toBe(true);
   });
@@ -44,9 +96,24 @@ describe("reindent", () => {
   it("preserves trailing newline pattern from original", () => {
     const original = "\n  { id }\n  ";
     const result = reindent("{\n  id\n}", "  ", original);
-    // Original ends with newline, so result should too
-    expect(result.includes("\n")).toBe(true);
-    expect(result.startsWith("\n")).toBe(true); // leading newline preserved
+    expect(result.startsWith("\n")).toBe(true);
+    expect(result.endsWith("\n  ")).toBe(true);
+  });
+
+  it("converts graphql 2-space indent to 4-space", () => {
+    const formatted = "{\n  id\n  name\n}";
+    const result = reindent(formatted, "    ", "{ id name }", "    ");
+    // First line: no prefix
+    expect(result.startsWith("{")).toBe(true);
+    // Body: baseIndent(4) + graphql(1 level=4 spaces) = 8 spaces
+    expect(result).toContain("        id");
+  });
+
+  it("converts graphql 2-space indent to tab", () => {
+    const formatted = "{\n  id\n  nested {\n    deep\n  }\n}";
+    const result = reindent(formatted, "\t", "{ id }", "\t");
+    expect(result).toContain("\t\tid");
+    expect(result).toContain("\t\t\tdeep");
   });
 });
 
