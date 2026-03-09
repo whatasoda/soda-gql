@@ -49,9 +49,6 @@
   "peerDependencies": {
     "@swc/core": "^1.0.0"
   },
-  "optionalDependencies": {
-    "@soda-gql/lsp": "workspace:*"
-  },
   "devDependencies": {
     "@types/picomatch": "^4.0.2",
     "@swc/types": "^0.1.0"

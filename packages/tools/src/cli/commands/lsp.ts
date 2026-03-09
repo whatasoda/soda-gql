@@ -20,7 +20,16 @@ export const lspCommand = async (argv: readonly string[]): Promise<never> => {
   }
 
   // Dynamic import to avoid loading LSP deps for other commands
-  const { createLspServer } = await import("@soda-gql/lsp");
+  let createLspServer: typeof import("@soda-gql/lsp")["createLspServer"];
+  try {
+    ({ createLspServer } = await import("@soda-gql/lsp"));
+  } catch {
+    process.stderr.write(
+      "Error: @soda-gql/lsp is not installed.\n" +
+        "Install it with: bun add -D @soda-gql/lsp\n",
+    );
+    process.exit(1);
+  }
   const server = createLspServer();
   server.start();
 
