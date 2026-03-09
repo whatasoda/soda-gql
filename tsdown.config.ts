@@ -135,6 +135,7 @@ const toolsConfig: UserConfig = (() => {
   return {
     ...base,
     entry: { ...base.entry, bin: "packages/tools/src/cli/index.ts" },
+    banner: { js: "#!/usr/bin/env node" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
