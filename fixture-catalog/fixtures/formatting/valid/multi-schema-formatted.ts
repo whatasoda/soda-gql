@@ -2,10 +2,10 @@ import { gql } from "../../../graphql-system";
 
 // Multi-schema: admin schema (already formatted)
 export const adminFragment = gql.admin(({ fragment }) =>
-  fragment("AdminFragment", "Task")`    {
-      id
-      title
-    }`(),
+  fragment("AdminFragment", "Task")`{
+  id
+  title
+}`(),
 );
 
 // Multi-schema: default schema (already formatted)
