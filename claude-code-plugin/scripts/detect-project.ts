@@ -101,7 +101,7 @@ function detectProject(cwd: string = process.cwd()): ProjectInfo {
         projectDir: process.cwd(),
         error: error.message,
         suggestions: [
-          'Ensure @soda-gql packages are installed: bun add -D @soda-gql/cli @soda-gql/config',
+          'Ensure @soda-gql packages are installed: bun add -D @soda-gql/tools @soda-gql/config',
           'Check if you are running from the correct directory',
           'Verify that your soda-gql.config file has valid syntax',
           'See getting started documentation: https://github.com/soda-gql/soda-gql#quick-start'

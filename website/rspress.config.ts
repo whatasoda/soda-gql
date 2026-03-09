@@ -59,9 +59,9 @@ export default defineConfig({
           text: "Core Packages",
           items: [
             { text: "@soda-gql/core", link: "/api/packages/core" },
-            { text: "@soda-gql/cli", link: "/api/packages/cli" },
+            { text: "@soda-gql/tools", link: "/api/packages/cli" },
             { text: "@soda-gql/config", link: "/api/packages/config" },
-            { text: "@soda-gql/runtime", link: "/api/packages/runtime" },
+            { text: "@soda-gql/core/runtime", link: "/api/packages/runtime" },
             {
               text: "@soda-gql/colocation-tools",
               link: "/api/packages/colocation-tools",
