@@ -24,10 +24,7 @@ export const lspCommand = async (argv: readonly string[]): Promise<never> => {
   try {
     ({ createLspServer } = await import("@soda-gql/lsp"));
   } catch {
-    process.stderr.write(
-      "Error: @soda-gql/lsp is not installed.\n" +
-        "Install it with: bun add -D @soda-gql/lsp\n",
-    );
+    process.stderr.write("Error: @soda-gql/lsp is not installed.\n" + "Install it with: bun add -D @soda-gql/lsp\n");
     process.exit(1);
   }
   const server = createLspServer();

@@ -189,7 +189,7 @@
     },
     "packages/tools": {
       "name": "@soda-gql/tools",
-      "version": "0.12.4",
+      "version": "0.12.6",
       "bin": {
         "soda-gql": "./dist/bin.cjs",
       },
@@ -209,9 +209,6 @@
       "devDependencies": {
         "@swc/types": "^0.1.0",
         "@types/picomatch": "^4.0.2",
-      },
-      "optionalDependencies": {
-        "@soda-gql/lsp": "workspace:*",
       },
       "peerDependencies": {
         "@swc/core": "^1.0.0",
