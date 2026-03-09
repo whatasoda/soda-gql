@@ -102,43 +102,21 @@ export const reindent = (formatted: string, baseIndent: string, originalContent:
 /**
  * Detect the indentation unit used in a TypeScript source file.
  *
- * Heuristic:
- * - If any line starts with a tab, returns `"\t"`
- * - If any indented line has a length that is a multiple of 2 but NOT 4
- *   (e.g., 2, 6, 10 spaces), returns `"  "` (2-space)
- * - If all indented lines are multiples of 4, returns `"    "` (4-space)
- * - Falls back to `"  "` (2-space) for empty/ambiguous files
+ * Uses the smallest indentation width found as the indent unit.
+ * In files with embedded templates (e.g., graphql in backticks),
+ * template content lines are at `baseIndent + graphqlIndent`,
+ * so their absolute indent is always >= the file's indent unit.
  */
 export const detectIndentUnit = (tsSource: string): string => {
-  const lines = tsSource.split("\n");
-  let tabCount = 0;
-
-  for (const line of lines) {
-    if (line.length === 0) continue;
-    const match = line.match(/^(\s+)/);
-    if (!match) continue;
-    if (match[1]!.includes("\t")) {
-      tabCount++;
-    }
+  let minSpaceIndent = Infinity;
+  for (const line of tsSource.split("\n")) {
+    if (line.length === 0 || line.trimStart().length === 0) continue;
+    if (line[0] === "\t") return "\t";
+    const match = line.match(/^( +)\S/);
+    if (match) minSpaceIndent = Math.min(minSpaceIndent, match[1]!.length);
   }
-
-  if (tabCount > 0) return "\t";
-
-  // Check for lines at odd-double indent (2, 6, 10...) — indicates 2-space
-  for (const line of lines) {
-    const match = line.match(/^( +)/);
-    if (!match) continue;
-    const len = match[1]!.length;
-    if (len % 2 === 0 && len % 4 !== 0) return "  ";
-  }
-
-  // All indented lines are multiples of 4 — check if any exist
-  for (const line of lines) {
-    const match = line.match(/^( {4,})/);
-    if (match) return "    ";
-  }
-
-  return "  "; // default
+  if (minSpaceIndent === Infinity || minSpaceIndent <= 1) return "  ";
+  return " ".repeat(minSpaceIndent);
 };
 
 const GRAPHQL_KEYWORDS = new Set(["query", "mutation", "subscription", "fragment"]);
