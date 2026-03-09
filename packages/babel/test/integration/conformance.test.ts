@@ -80,7 +80,7 @@ describe("Babel-Plugin Conformance with TSC-Transformer", async () => {
 
               // Verify runtime import is added when expected
               if (testCase.expectations.shouldAddRuntimeImport) {
-                expect(normalized).toContain("@soda-gql/runtime");
+                expect(normalized).toContain("@soda-gql/core/runtime");
               }
 
               // Verify gql.default import is removed
@@ -118,7 +118,7 @@ describe("Babel-Plugin Conformance with TSC-Transformer", async () => {
               // Verify no runtime calls are added
               expect(babelOutput).not.toContain("gqlRuntime.");
               // Verify no runtime import is added
-              expect(babelOutput).not.toContain("@soda-gql/runtime");
+              expect(babelOutput).not.toContain("@soda-gql/core/runtime");
             });
           }
         });

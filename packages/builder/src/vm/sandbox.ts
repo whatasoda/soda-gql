@@ -12,7 +12,6 @@ import { createContext, Script } from "node:vm";
 import * as sandboxCore from "@soda-gql/core";
 import * as sandboxCoreAdapter from "@soda-gql/core/adapter";
 import * as sandboxCoreRuntime from "@soda-gql/core/runtime";
-import * as sandboxRuntime from "@soda-gql/runtime";
 
 /**
  * Sandbox type with CommonJS module exports.
@@ -38,7 +37,6 @@ const createSandboxRequire =
     if (path === "@soda-gql/core") return sandboxCore;
     if (path === "@soda-gql/core/adapter") return sandboxCoreAdapter;
     if (path === "@soda-gql/core/runtime") return sandboxCoreRuntime;
-    if (path === "@soda-gql/runtime") return sandboxRuntime;
     throw new Error(`Unknown module: ${path}`);
   };
 

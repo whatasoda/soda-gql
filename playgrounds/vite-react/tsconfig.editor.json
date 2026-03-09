@@ -17,7 +17,6 @@
   "exclude": ["**/graphql-system/*.cjs", "**/fragment-in-fragment.ts", "**/union-type-verification.ts"],
   "references": [
     { "path": "../../packages/core/tsconfig.editor.json" },
-    { "path": "../../packages/runtime/tsconfig.editor.json" },
     { "path": "../../packages/colocation-tools/tsconfig.editor.json" }
   ]
 }

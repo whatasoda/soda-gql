@@ -236,7 +236,7 @@ const result = parseResult(executionResult);
 ## Related Packages
 
 - [@soda-gql/core](../core) - Core types and fragment definitions
-- [@soda-gql/runtime](../runtime) - Runtime operation handling
+- [@soda-gql/core](../core) - Core types, runtime (`@soda-gql/core/runtime`)
 
 ## License
 

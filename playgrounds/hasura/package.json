@@ -14,11 +14,10 @@
     "codegen": "soda-gql codegen"
   },
   "dependencies": {
-    "@soda-gql/core": "workspace:*",
-    "@soda-gql/runtime": "workspace:*"
+    "@soda-gql/core": "workspace:*"
   },
   "devDependencies": {
-    "@soda-gql/cli": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@soda-gql/config": "workspace:*",
     "@types/node": "^22.0.0",
     "graphql": "^16.8.1",

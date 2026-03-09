@@ -296,7 +296,7 @@ Requirements:
 - Cache schemas and invalidate when source files change
 - Support multiple schemas simultaneously (one per config entry)
 
-**Reuse opportunity**: `@soda-gql/codegen` already has `loadSchema()` (`packages/codegen/src/schema.ts`) and `hashSchema()` functions.
+**Reuse opportunity**: `@soda-gql/tools/codegen` already has `loadSchema()` and `hashSchema()` functions.
 
 ### 3.4 Cross-file fragment resolution
 
@@ -529,7 +529,7 @@ Custom commands executable via the LSP:
 | `soda-gql.switchSchema` | Change the default schema for new templates |
 | `soda-gql.validateWorkspace` | Run full workspace validation |
 
-These integrate with the existing `@soda-gql/cli` and `@soda-gql/sdk` packages.
+These integrate with the existing `@soda-gql/tools` (CLI) and `@soda-gql/sdk` packages.
 
 ### 4.8 Variables JSON schema generation
 
@@ -576,7 +576,7 @@ For the hybrid approach, the dependency chain is:
 └── typescript or @swc/core (for TS AST parsing)
 ```
 
-Total new dependencies: `vscode-languageserver`, `vscode-languageserver-textdocument`, `graphql-language-service`. The `graphql` package is already used by `@soda-gql/codegen`.
+Total new dependencies: `vscode-languageserver`, `vscode-languageserver-textdocument`, `graphql-language-service`. The `graphql` package is already used by `@soda-gql/tools/codegen`.
 
 ---
 

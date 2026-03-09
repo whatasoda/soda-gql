@@ -11,7 +11,7 @@ This guide shows how to set up soda-gql with Next.js using the Webpack plugin.
 
 ```bash
 bun add @soda-gql/core
-bun add -D @soda-gql/cli @soda-gql/config @soda-gql/webpack-plugin
+bun add -D @soda-gql/tools @soda-gql/config @soda-gql/webpack-plugin
 ```
 
 ## Configuration

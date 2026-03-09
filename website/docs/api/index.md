@@ -14,9 +14,8 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 
 | Package | Description |
 |---------|-------------|
-| [@soda-gql/core](/api/packages/core) | Core GraphQL types, utilities, and primitives |
-| [@soda-gql/runtime](/api/packages/runtime) | Runtime execution helpers and adapters |
-| [@soda-gql/cli](/api/packages/cli) | Command-line interface for codegen |
+| [@soda-gql/core](/api/packages/core) | Core GraphQL types, utilities, primitives, and runtime (`/runtime`) |
+| [@soda-gql/tools](/api/packages/cli) | CLI, codegen (`/codegen`), typegen (`/typegen`), formatter (`/formatter`) |
 | [@soda-gql/config](/api/packages/config) | Configuration utilities |
 
 ### Transformer Packages
@@ -39,7 +38,7 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 
 | Package | Description |
 |---------|-------------|
-| @soda-gql/codegen | Schema code generation |
+| @soda-gql/tools/codegen | Schema code generation (subpath of @soda-gql/tools) |
 | @soda-gql/builder | Static analysis, artifact generation, and plugin support utilities (`/plugin-support` export) |
 | @soda-gql/common | Shared utilities |
 

@@ -75,7 +75,7 @@ soda-gql.config.ts
 
 Key packages:
 - `@soda-gql/config`: Configuration loading (`soda-gql.config.ts`)
-- `@soda-gql/codegen`: Schema code generation with reachability filtering
+- `@soda-gql/tools/codegen`: Schema code generation with reachability filtering
 - `@soda-gql/builder`: Static analysis engine (TypeScript AST and SWC)
 - `@soda-gql/core`: Runtime types, composer, fragment/operation definitions
 

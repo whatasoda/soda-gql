@@ -1,0 +1,1153 @@
+import type { TypeCategory, TypeFilterConfig } from "@soda-gql/config";
+import {
+  createSchemaIndex,
+  type DirectiveRecord,
+  type EnumRecord,
+  type InputRecord,
+  type ObjectRecord,
+  type OperationTypeNames,
+  type ScalarRecord,
+  type SchemaIndex,
+  type UnionRecord,
+} from "@soda-gql/core";
+import { type DocumentNode, type FieldDefinitionNode, type InputValueDefinitionNode, Kind, type TypeNode } from "graphql";
+
+import type { CategoryVars, DefinitionVar } from "./defs-generator";
+import { buildExclusionSet, compileTypeFilter } from "./type-filter";
+
+export { createSchemaIndex };
+export type {
+  DirectiveRecord,
+  EnumRecord,
+  InputRecord,
+  ObjectRecord,
+  OperationTypeNames,
+  ScalarRecord,
+  SchemaIndex,
+  UnionRecord,
+};
+
+const builtinScalarTypes = new Map<string, { readonly input: string; readonly output: string }>([
+  ["ID", { input: "string", output: "string" }],
+  ["String", { input: "string", output: "string" }],
+  ["Int", { input: "number", output: "number" }],
+  ["Float", { input: "number", output: "number" }],
+  ["Boolean", { input: "boolean", output: "boolean" }],
+]);
+
+type TypeLevel = {
+  readonly kind: "list" | "named";
+  readonly nonNull: boolean;
+};
+
+const collectTypeLevels = (
+  type: TypeNode,
+  nonNull = false,
+  levels: TypeLevel[] = [],
+): { readonly name: string; readonly levels: TypeLevel[] } => {
+  if (type.kind === Kind.NON_NULL_TYPE) {
+    return collectTypeLevels(type.type, true, levels);
+  }
+
+  if (type.kind === Kind.LIST_TYPE) {
+    levels.push({ kind: "list", nonNull });
+    return collectTypeLevels(type.type, false, levels);
+  }
+
+  levels.push({ kind: "named", nonNull });
+  return { name: type.name.value, levels };
+};
+
+const buildTypeModifier = (levels: TypeLevel[]): string => {
+  let modifier = "?";
+
+  for (const level of levels.slice().reverse()) {
+    if (level.kind === "named") {
+      // Inner type: always explicit nullable marker
+      modifier = level.nonNull ? "!" : "?";
+      continue;
+    }
+
+    // List type: append []? or []! based on list's nullability
+    const listSuffix = level.nonNull ? "[]!" : "[]?";
+    modifier = `${modifier}${listSuffix}`;
+  }
+
+  return modifier;
+};
+
+const parseTypeReference = (type: TypeNode): { readonly name: string; readonly modifier: string } => {
+  const { name, levels } = collectTypeLevels(type);
+  return { name, modifier: buildTypeModifier(levels) };
+};
+
+const isScalarName = (schema: SchemaIndex, name: string): boolean => builtinScalarTypes.has(name) || schema.scalars.has(name);
+const isEnumName = (schema: SchemaIndex, name: string): boolean => schema.enums.has(name);
+const _isInputName = (schema: SchemaIndex, name: string): boolean => schema.inputs.has(name);
+const isUnionName = (schema: SchemaIndex, name: string): boolean => schema.unions.has(name);
+const isObjectName = (schema: SchemaIndex, name: string): boolean => schema.objects.has(name);
+
+/**
+ * Maps type kind to deferred specifier prefix character.
+ */
+const inputKindToChar = (kind: "scalar" | "enum" | "input" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "input":
+      return "i";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
+  }
+};
+
+const renderInputRef = (schema: SchemaIndex, definition: InputValueDefinitionNode, excluded: Set<string>): string => {
+  const { name, modifier } = parseTypeReference(definition.type);
+  const defaultValue = definition.defaultValue;
+
+  // Check if referenced type is excluded
+  if (excluded.has(name)) {
+    // Use string format for consistency with other specifiers
+    const defaultSuffix = defaultValue ? "|D" : "";
+    return `"x|${name}|${modifier}${defaultSuffix}"`;
+  }
+
+  let kind: "scalar" | "enum" | "input";
+  if (isScalarName(schema, name)) {
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else {
+    kind = "input";
+  }
+
+  // Generate deferred string specifier format: "{kindChar}|{name}|{modifier}[|D]"
+  const kindChar = inputKindToChar(kind);
+  const defaultSuffix = defaultValue ? "|D" : "";
+  return `"${kindChar}|${name}|${modifier}${defaultSuffix}"`;
+};
+
+/**
+ * Maps output type kind to deferred specifier prefix character.
+ */
+const outputKindToChar = (kind: "scalar" | "enum" | "union" | "object" | "excluded"): string => {
+  switch (kind) {
+    case "scalar":
+      return "s";
+    case "enum":
+      return "e";
+    case "object":
+      return "o";
+    case "union":
+      return "u";
+    case "excluded":
+      return "x"; // excluded types use 'x' prefix
+  }
+};
+
+/**
+ * Render arguments as object format for DeferredOutputFieldWithArgs.
+ * Returns array of "argName: \"spec\"" entries.
+ */
+const renderArgumentsObjectEntries = (
+  schema: SchemaIndex,
+  args: readonly InputValueDefinitionNode[],
+  excluded: Set<string>,
+): string[] => {
+  return [...args]
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => {
+      const { name, modifier } = parseTypeReference(arg.type);
+      // Skip excluded types - they shouldn't appear in field arguments
+      if (excluded.has(name)) {
+        return null;
+      }
+      let kind: "scalar" | "enum" | "input";
+      if (isScalarName(schema, name)) {
+        kind = "scalar";
+      } else if (isEnumName(schema, name)) {
+        kind = "enum";
+      } else {
+        kind = "input";
+      }
+      const kindChar = inputKindToChar(kind);
+      const defaultSuffix = arg.defaultValue ? "|D" : "";
+      return `${arg.name.value}: "${kindChar}|${name}|${modifier}${defaultSuffix}"`;
+    })
+    .filter((spec): spec is string => spec !== null);
+};
+
+const renderArgumentMap = (
+  schema: SchemaIndex,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  excluded: Set<string>,
+): string => {
+  const entries = [...(args ?? [])]
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => `${arg.name.value}: ${renderInputRef(schema, arg, excluded)}`);
+
+  return renderPropertyLines({ entries, indentSize: 8 });
+};
+
+const renderOutputRef = (
+  schema: SchemaIndex,
+  type: TypeNode,
+  args: readonly InputValueDefinitionNode[] | undefined,
+  excluded: Set<string>,
+): string => {
+  const { name, modifier } = parseTypeReference(type);
+
+  // Check if referenced type is excluded
+  if (excluded.has(name)) {
+    // Use string format wrapped in DeferredOutputFieldWithArgs object
+    const argumentMap = renderArgumentMap(schema, args, excluded);
+    return `{ spec: "x|${name}|${modifier}", arguments: ${argumentMap} }`;
+  }
+
+  let kind: "scalar" | "enum" | "union" | "object";
+  if (isScalarName(schema, name)) {
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else if (isUnionName(schema, name)) {
+    kind = "union";
+  } else if (isObjectName(schema, name)) {
+    kind = "object";
+  } else {
+    kind = "scalar"; // fallback for unknown types
+  }
+
+  const kindChar = outputKindToChar(kind);
+  const spec = `${kindChar}|${name}|${modifier}`;
+
+  // Always use object format for consistency (avoids union type distribution issues)
+  if (args && args.length > 0) {
+    const argEntries = renderArgumentsObjectEntries(schema, args, excluded);
+    if (argEntries.length > 0) {
+      return `{ spec: "${spec}", arguments: { ${argEntries.join(", ")} } }`;
+    }
+  }
+
+  // Fields without arguments still use object format with empty arguments
+  return `{ spec: "${spec}", arguments: {} }`;
+};
+
+const renderPropertyLines = ({ entries, indentSize }: { entries: string[]; indentSize: number }) => {
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  const indent = " ".repeat(indentSize);
+  const lastIndent = " ".repeat(indentSize - 2);
+  return ["{", `${indent}${entries.join(`,\n${indent}`)},`, `${lastIndent}}`].join(`\n`);
+};
+
+const renderObjectFields = (schema: SchemaIndex, fields: Map<string, FieldDefinitionNode>, excluded: Set<string>): string => {
+  const entries = Array.from(fields.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((field) => `${field.name.value}: ${renderOutputRef(schema, field.type, field.arguments, excluded)}`);
+
+  return renderPropertyLines({ entries, indentSize: 6 });
+};
+
+const renderInputFields = (schema: SchemaIndex, fields: Map<string, InputValueDefinitionNode>, excluded: Set<string>): string => {
+  const entries = Array.from(fields.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((field) => `${field.name.value}: ${renderInputRef(schema, field, excluded)}`);
+
+  return renderPropertyLines({ entries, indentSize: 6 });
+};
+
+// Granular render functions - each type as its own const variable
+const renderScalarVar = (schemaName: string, record: ScalarRecord): string => {
+  const typeInfo = builtinScalarTypes.get(record.name) ?? { input: "string", output: "string" };
+  return `const scalar_${schemaName}_${record.name} = { name: "${record.name}", $type: {} as { input: ${typeInfo.input}; output: ${typeInfo.output}; inputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.input} }; outputProfile: { kind: "scalar"; name: "${record.name}"; value: ${typeInfo.output} } } } as const;`;
+};
+
+const renderEnumVar = (schemaName: string, record: EnumRecord): string => {
+  const valueNames = Array.from(record.values.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((value) => value.name.value);
+  const valuesObj = valueNames.length === 0 ? "{}" : `{ ${valueNames.map((v) => `${v}: true`).join(", ")} }`;
+  const valueUnion = valueNames.length === 0 ? "never" : valueNames.map((v) => `"${v}"`).join(" | ");
+  return `const enum_${schemaName}_${record.name} = defineEnum<"${record.name}", ${valueUnion}>("${record.name}", ${valuesObj});`;
+};
+
+const renderInputVar = (schemaName: string, schema: SchemaIndex, record: InputRecord, excluded: Set<string>): string => {
+  const fields = renderInputFields(schema, record.fields, excluded);
+  return `const input_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+};
+
+const renderObjectVar = (schemaName: string, schema: SchemaIndex, record: ObjectRecord, excluded: Set<string>): string => {
+  const fields = renderObjectFields(schema, record.fields, excluded);
+  return `const object_${schemaName}_${record.name} = { name: "${record.name}", fields: ${fields} } as const;`;
+};
+
+const renderUnionVar = (schemaName: string, record: UnionRecord, excluded: Set<string>): string => {
+  const memberNames = Array.from(record.members.values())
+    .filter((member) => !excluded.has(member.name.value))
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((member) => member.name.value);
+  const typesObj = memberNames.length === 0 ? "{}" : `{ ${memberNames.map((m) => `${m}: true`).join(", ")} }`;
+  return `const union_${schemaName}_${record.name} = { name: "${record.name}", types: ${typesObj} } as const;`;
+};
+
+const collectObjectTypeNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.objects.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+// Fragment callback builders removed in Phase 3 — fragments use tagged templates exclusively.
+
+const collectInputTypeNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.inputs.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+const collectEnumTypeNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.enums.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+const collectUnionTypeNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.unions.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+const collectScalarNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.scalars.keys())
+    .filter((name) => !name.startsWith("__"))
+    .sort((left, right) => left.localeCompare(right));
+
+const collectDirectiveNames = (schema: SchemaIndex): string[] =>
+  Array.from(schema.directives.keys()).sort((left, right) => left.localeCompare(right));
+
+const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
+  `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
+
+const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, excluded: Set<string>): string => {
+  const scalarMethods = Array.from(builtinScalarTypes.keys())
+    .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
+
+  const enumMethods = collectEnumTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "enum", name));
+
+  const inputMethods = collectInputTypeNames(schema)
+    .filter((name) => !excluded.has(name))
+    .map((name) => renderInputTypeMethod(factoryVar, "input", name));
+
+  const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
+    const leftName = left.split(":")[0] ?? "";
+    const rightName = right.split(":")[0] ?? "";
+    return leftName.localeCompare(rightName);
+  });
+
+  return renderPropertyLines({ entries: allMethods, indentSize: 2 });
+};
+
+/**
+ * Renders an input reference as a deferred string for directive arguments.
+ * Format: "{kindChar}|{name}|{modifier}"
+ */
+const renderDeferredDirectiveArgRef = (
+  schema: SchemaIndex,
+  definition: InputValueDefinitionNode,
+  excluded: Set<string>,
+): string | null => {
+  const { name, modifier } = parseTypeReference(definition.type);
+
+  // Skip excluded types
+  if (excluded.has(name)) {
+    return null;
+  }
+
+  let kind: "scalar" | "enum" | "input";
+  if (isScalarName(schema, name)) {
+    kind = "scalar";
+  } else if (isEnumName(schema, name)) {
+    kind = "enum";
+  } else {
+    kind = "input";
+  }
+
+  const kindChar = inputKindToChar(kind);
+  return `"${kindChar}|${name}|${modifier}"`;
+};
+
+/**
+ * Renders argument specifiers for a directive.
+ * Returns null if the directive has no arguments.
+ * Uses deferred string format for consistency with other type specifiers.
+ */
+const renderDirectiveArgsSpec = (
+  schema: SchemaIndex,
+  args: Map<string, InputValueDefinitionNode>,
+  excluded: Set<string>,
+): string | null => {
+  if (args.size === 0) return null;
+
+  const entries = Array.from(args.values())
+    .sort((left, right) => left.name.value.localeCompare(right.name.value))
+    .map((arg) => {
+      const ref = renderDeferredDirectiveArgRef(schema, arg, excluded);
+      return ref ? `${arg.name.value}: ${ref}` : null;
+    })
+    .filter((entry): entry is string => entry !== null);
+
+  if (entries.length === 0) return null;
+
+  return renderPropertyLines({ entries, indentSize: 4 });
+};
+
+const renderDirectiveMethod = (schema: SchemaIndex, record: DirectiveRecord, excluded: Set<string>): string => {
+  const locationsJson = JSON.stringify(record.locations);
+  const argsSpec = renderDirectiveArgsSpec(schema, record.args, excluded);
+
+  if (argsSpec === null) {
+    // No arguments - use simple createDirectiveMethod
+    return `${record.name}: createDirectiveMethod("${record.name}", ${locationsJson} as const)`;
+  }
+
+  // With arguments - use createTypedDirectiveMethod
+  return `${record.name}: createTypedDirectiveMethod("${record.name}", ${locationsJson} as const, ${argsSpec})`;
+};
+
+const renderDirectiveMethods = (schema: SchemaIndex, excluded: Set<string>): string => {
+  const directiveNames = collectDirectiveNames(schema);
+  if (directiveNames.length === 0) {
+    return "{}";
+  }
+
+  const methods = directiveNames
+    .map((name) => {
+      const record = schema.directives.get(name);
+      return record ? renderDirectiveMethod(schema, record, excluded) : null;
+    })
+    .filter((method): method is string => method !== null);
+
+  return renderPropertyLines({ entries: methods, indentSize: 2 });
+};
+
+export type DefsFile = {
+  readonly relativePath: string;
+  readonly content: string;
+};
+
+export type GeneratedModule = {
+  readonly code: string;
+  readonly injectsCode?: string;
+  readonly defsFiles?: readonly DefsFile[];
+  readonly categoryVars?: Record<string, CategoryVars>;
+  readonly stats: {
+    readonly objects: number;
+    readonly enums: number;
+    readonly inputs: number;
+    readonly unions: number;
+  };
+};
+
+type PerSchemaInjection = {
+  readonly scalarImportPath: string;
+  readonly adapterImportPath?: string;
+};
+
+type RuntimeTemplateInjection =
+  | { readonly mode: "inline" }
+  | {
+      readonly mode: "inject";
+      readonly perSchema: Map<string, PerSchemaInjection>;
+      readonly injectsModulePath: string;
+    };
+
+export type RuntimeGenerationOptions = {
+  readonly injection?: Map<string, PerSchemaInjection>;
+  readonly defaultInputDepth?: Map<string, number>;
+  readonly inputDepthOverrides?: Map<string, Readonly<Record<string, number>>>;
+  readonly chunkSize?: number;
+  readonly typeFilters?: Map<string, TypeFilterConfig>;
+};
+
+type SplittingMode = {
+  readonly importPaths: {
+    readonly enums: string;
+    readonly inputs: string;
+    readonly objects: string;
+    readonly unions: string;
+  };
+};
+
+type MultiRuntimeTemplateOptions = {
+  readonly schemas: Record<
+    string,
+    {
+      readonly queryType: string;
+      readonly mutationType: string;
+      readonly subscriptionType: string;
+      // Granular: individual variable declarations
+      readonly scalarVars: string[];
+      readonly enumVars: string[];
+      readonly inputVars: string[];
+      readonly objectVars: string[];
+      readonly unionVars: string[];
+      // Granular: type name lists for assembly
+      readonly scalarNames: string[];
+      readonly enumNames: string[];
+      readonly inputNames: string[];
+      readonly objectNames: string[];
+      readonly unionNames: string[];
+      readonly inputTypeMethodsBlock: string;
+      readonly directiveMethodsBlock: string;
+
+      readonly defaultInputDepth?: number;
+      readonly inputDepthOverrides?: Readonly<Record<string, number>>;
+    }
+  >;
+  readonly injection: RuntimeTemplateInjection;
+  readonly splitting: SplittingMode;
+};
+
+/**
+ * Generates the _internal-injects.ts module code.
+ * This file contains only adapter imports (scalar, adapter) to keep it lightweight.
+ * The heavy schema types remain in _internal.ts.
+ */
+const generateInjectsCode = (injection: Map<string, PerSchemaInjection>): string => {
+  const imports: string[] = [];
+  const exports: string[] = [];
+  const typeExports: string[] = [];
+
+  // Group imports by file path
+  const importsByPath = new Map<string, string[]>();
+
+  for (const [schemaName, config] of injection) {
+    const scalarAlias = `scalar_${schemaName}`;
+
+    // Group scalar import
+    const scalarSpecifiers = importsByPath.get(config.scalarImportPath) ?? [];
+    if (!importsByPath.has(config.scalarImportPath)) {
+      importsByPath.set(config.scalarImportPath, scalarSpecifiers);
+    }
+    scalarSpecifiers.push(`scalar as ${scalarAlias}`);
+
+    exports.push(`export { ${scalarAlias} };`);
+    typeExports.push(`export type Scalar_${schemaName} = typeof ${scalarAlias};`);
+
+    // Group adapter import (optional)
+    if (config.adapterImportPath) {
+      const adapterAlias = `adapter_${schemaName}`;
+      const adapterSpecifiers = importsByPath.get(config.adapterImportPath) ?? [];
+      if (!importsByPath.has(config.adapterImportPath)) {
+        importsByPath.set(config.adapterImportPath, adapterSpecifiers);
+      }
+      adapterSpecifiers.push(`adapter as ${adapterAlias}`);
+
+      exports.push(`export { ${adapterAlias} };`);
+      typeExports.push(`export type Adapter_${schemaName} = typeof ${adapterAlias} & { _?: never };`);
+    }
+  }
+
+  // Generate grouped imports
+  for (const [path, specifiers] of importsByPath) {
+    if (specifiers.length === 1) {
+      imports.push(`import { ${specifiers[0]} } from "${path}";`);
+    } else {
+      imports.push(`import {\n  ${specifiers.join(",\n  ")},\n} from "${path}";`);
+    }
+  }
+
+  return `\
+/**
+ * Adapter injections for schema.
+ * Separated to allow lightweight imports for prebuilt module.
+ * @generated by @soda-gql/tools/codegen
+ */
+
+${imports.join("\n")}
+
+// Value exports
+${exports.join("\n")}
+
+// Type exports
+${typeExports.join("\n")}
+`;
+};
+
+const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
+  // Build imports based on injection mode
+  const imports: string[] = [];
+  const scalarAliases = new Map<string, string>();
+  const adapterAliases = new Map<string, string>();
+
+  if ($$.injection.mode === "inject") {
+    // Import from _internal-injects.ts instead of individual files
+    const injectsImports: string[] = [];
+
+    for (const [schemaName, injection] of $$.injection.perSchema) {
+      const scalarAlias = `scalar_${schemaName}`;
+      scalarAliases.set(schemaName, scalarAlias);
+      injectsImports.push(scalarAlias);
+
+      if (injection.adapterImportPath) {
+        const adapterAlias = `adapter_${schemaName}`;
+        adapterAliases.set(schemaName, adapterAlias);
+        injectsImports.push(adapterAlias);
+      }
+    }
+
+    imports.push(`import { ${injectsImports.join(", ")} } from "${$$.injection.injectsModulePath}";`);
+  }
+
+  // Build imports for split mode (always enabled)
+  {
+    const { importPaths } = $$.splitting;
+    for (const [name, config] of Object.entries($$.schemas)) {
+      // Import enums (if any)
+      if (config.enumNames.length > 0) {
+        const enumImports = config.enumNames.map((n) => `enum_${name}_${n}`).join(", ");
+        imports.push(`import { ${enumImports} } from "${importPaths.enums}";`);
+      }
+      // Import inputs (if any)
+      if (config.inputNames.length > 0) {
+        const inputImports = config.inputNames.map((n) => `input_${name}_${n}`).join(", ");
+        imports.push(`import { ${inputImports} } from "${importPaths.inputs}";`);
+      }
+      // Import objects (if any)
+      if (config.objectNames.length > 0) {
+        const objectImports = config.objectNames.map((n) => `object_${name}_${n}`).join(", ");
+        imports.push(`import { ${objectImports} } from "${importPaths.objects}";`);
+      }
+      // Import unions (if any)
+      if (config.unionNames.length > 0) {
+        const unionImports = config.unionNames.map((n) => `union_${name}_${n}`).join(", ");
+        imports.push(`import { ${unionImports} } from "${importPaths.unions}";`);
+      }
+    }
+  }
+
+  const extraImports = imports.length > 0 ? `${imports.join("\n")}\n` : "";
+
+  // Generate per-schema definitions (granular pattern)
+  const schemaBlocks: string[] = [];
+  const gqlExports: string[] = [];
+
+  for (const [name, config] of Object.entries($$.schemas)) {
+    const schemaVar = `${name}Schema`;
+
+    // Get optional adapter
+    const adapterVar = adapterAliases.get(name);
+
+    // Build type exports
+    const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
+    if (adapterVar) {
+      typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
+    }
+
+    const inputTypeMethodsVar = `inputTypeMethods_${name}`;
+    const factoryVar = `createMethod_${name}`;
+    const customDirectivesVar = `customDirectives_${name}`;
+
+    // Generate __defaultInputDepth block if non-default value
+    const defaultDepthBlock =
+      config.defaultInputDepth !== undefined && config.defaultInputDepth !== 3
+        ? `\n  __defaultInputDepth: ${config.defaultInputDepth},`
+        : "";
+
+    // Generate __inputDepthOverrides block if there are overrides
+    const depthOverridesBlock =
+      config.inputDepthOverrides && Object.keys(config.inputDepthOverrides).length > 0
+        ? `\n  __inputDepthOverrides: ${JSON.stringify(config.inputDepthOverrides)},`
+        : "";
+
+    // Always in split mode
+    const isSplitMode = true;
+
+    // Granular: generate individual variable declarations (skip in split mode - they're imported)
+    // Note: Scalars are never split - they're either injected or inlined
+    const scalarVarsBlock = config.scalarVars.join("\n");
+    const enumVarsBlock = isSplitMode
+      ? "// (enums imported)"
+      : config.enumVars.length > 0
+        ? config.enumVars.join("\n")
+        : "// (no enums)";
+    const inputVarsBlock = isSplitMode
+      ? "// (inputs imported)"
+      : config.inputVars.length > 0
+        ? config.inputVars.join("\n")
+        : "// (no inputs)";
+    const objectVarsBlock = isSplitMode
+      ? "// (objects imported)"
+      : config.objectVars.length > 0
+        ? config.objectVars.join("\n")
+        : "// (no objects)";
+    const unionVarsBlock = isSplitMode
+      ? "// (unions imported)"
+      : config.unionVars.length > 0
+        ? config.unionVars.join("\n")
+        : "// (no unions)";
+
+    // Granular: generate assembly references
+    // For injection mode, use imported scalar object; otherwise assemble from individual vars
+    const scalarAssembly =
+      $$.injection.mode === "inject"
+        ? (scalarAliases.get(name) ?? "{}")
+        : config.scalarNames.length > 0
+          ? `{ ${config.scalarNames.map((n) => `${n}: scalar_${name}_${n}`).join(", ")} }`
+          : "{}";
+    const enumAssembly =
+      config.enumNames.length > 0 ? `{ ${config.enumNames.map((n) => `${n}: enum_${name}_${n}`).join(", ")} }` : "{}";
+    const inputAssembly =
+      config.inputNames.length > 0 ? `{ ${config.inputNames.map((n) => `${n}: input_${name}_${n}`).join(", ")} }` : "{}";
+    const objectAssembly =
+      config.objectNames.length > 0 ? `{ ${config.objectNames.map((n) => `${n}: object_${name}_${n}`).join(", ")} }` : "{}";
+    const unionAssembly =
+      config.unionNames.length > 0 ? `{ ${config.unionNames.map((n) => `${n}: union_${name}_${n}`).join(", ")} }` : "{}";
+
+    // Granular: skip individual scalar vars when using injection (scalars come from import)
+    // Note: Even in split mode, scalars are inlined unless injection is used
+    const scalarVarsSection = $$.injection.mode === "inject" ? "// (scalars imported)" : scalarVarsBlock;
+
+    // When injecting scalars, use the imported alias directly; otherwise use the assembled category object
+    const scalarAssemblyLine =
+      $$.injection.mode === "inject"
+        ? `// scalar_${name} is imported directly`
+        : `const scalar_${name} = ${scalarAssembly} as const;`;
+    const scalarRef = $$.injection.mode === "inject" ? (scalarAliases.get(name) ?? `scalar_${name}`) : `scalar_${name}`;
+
+    schemaBlocks.push(`
+// Individual scalar definitions
+${scalarVarsSection}
+
+// Individual enum definitions
+${enumVarsBlock}
+
+// Individual input definitions
+${inputVarsBlock}
+
+// Individual object definitions
+${objectVarsBlock}
+
+// Individual union definitions
+${unionVarsBlock}
+
+// Category assembly
+${scalarAssemblyLine}
+const enum_${name} = ${enumAssembly} as const;
+const input_${name} = ${inputAssembly} as const;
+const object_${name} = ${objectAssembly} as const;
+const union_${name} = ${unionAssembly} as const;
+
+// Schema assembly
+const ${schemaVar} = {
+  label: "${name}" as const,
+  operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
+  scalar: ${scalarRef},
+  enum: enum_${name},
+  input: input_${name},
+  object: object_${name},
+  union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
+} as const satisfies AnyGraphqlSchema;
+
+const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
+const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
+const ${customDirectivesVar} = { ...createStandardDirectives(), ...${config.directiveMethodsBlock} };
+
+${typeExports.join("\n")}`);
+
+    // Build gql composer as a named variable for Context type extraction
+    const gqlVarName = `gql_${name}`;
+    if (adapterVar) {
+      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
+      schemaBlocks.push(
+        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+      );
+    } else {
+      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}>`;
+      schemaBlocks.push(
+        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+      );
+    }
+
+    // Export Context type extracted from the gql composer
+    schemaBlocks.push(
+      `export type Context_${name} = Parameters<typeof ${gqlVarName}>[0] extends (ctx: infer C) => unknown ? C : never;`,
+    );
+
+    // Prebuilt module exports (for typegen)
+    const prebuiltExports: string[] = [
+      `export { ${schemaVar} as __schema_${name} }`,
+      `export { ${inputTypeMethodsVar} as __inputTypeMethods_${name} }`,
+      `export { ${customDirectivesVar} as __directiveMethods_${name} }`,
+    ];
+    if (adapterVar) {
+      prebuiltExports.push(`export { ${adapterVar} as __adapter_${name} }`);
+    }
+    schemaBlocks.push(`${prebuiltExports.join(";\n")};`);
+
+    gqlExports.push(`export { ${gqlVarName} as __gql_${name} }`);
+  }
+
+  // In split mode (always on), we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
+  const needsDefineEnum = false;
+
+  return `\
+import {${needsDefineEnum ? "\n  defineEnum," : ""}
+  type AnyGraphqlSchema,
+  createDirectiveMethod,
+  createTypedDirectiveMethod,
+  createGqlElementComposer,
+  createStandardDirectives,
+  createVarMethodFactory,
+} from "@soda-gql/core";
+${extraImports}
+${schemaBlocks.join("\n")}
+
+${gqlExports.join(";\n")};
+`;
+};
+
+export const generateMultiSchemaModule = (
+  schemas: Map<string, DocumentNode>,
+  options?: RuntimeGenerationOptions,
+): GeneratedModule => {
+  // biome-ignore lint/suspicious/noExplicitAny: complex schema config type
+  const schemaConfigs: Record<string, any> = {};
+  const allStats = {
+    objects: 0,
+    enums: 0,
+    inputs: 0,
+    unions: 0,
+  };
+
+  for (const [name, document] of schemas.entries()) {
+    const schema = createSchemaIndex(document);
+
+    // Build type filter for this schema
+    const typeFilterConfig = options?.typeFilters?.get(name);
+    const typeFilter = compileTypeFilter(typeFilterConfig);
+
+    // Collect all type names for exclusion set building
+    const allTypeNames = new Map<TypeCategory, readonly string[]>([
+      ["object", Array.from(schema.objects.keys()).filter((n) => !n.startsWith("__"))],
+      ["input", Array.from(schema.inputs.keys()).filter((n) => !n.startsWith("__"))],
+      ["enum", Array.from(schema.enums.keys()).filter((n) => !n.startsWith("__"))],
+      ["union", Array.from(schema.unions.keys()).filter((n) => !n.startsWith("__"))],
+      ["scalar", Array.from(schema.scalars.keys()).filter((n) => !n.startsWith("__"))],
+    ]);
+
+    // Build exclusion set
+    const excluded = buildExclusionSet(typeFilter, allTypeNames);
+
+    // Collect type names (filtered)
+    const objectTypeNames = collectObjectTypeNames(schema).filter((n) => !excluded.has(n));
+    const enumTypeNames = collectEnumTypeNames(schema).filter((n) => !excluded.has(n));
+    const inputTypeNames = collectInputTypeNames(schema).filter((n) => !excluded.has(n));
+    const unionTypeNames = collectUnionTypeNames(schema).filter((n) => !excluded.has(n));
+    const customScalarNames = collectScalarNames(schema).filter((n) => !builtinScalarTypes.has(n) && !excluded.has(n));
+
+    // Generate individual variable declarations (granular pattern)
+    const scalarVars: string[] = [];
+    const enumVars: string[] = [];
+    const inputVars: string[] = [];
+    const objectVars: string[] = [];
+    const unionVars: string[] = [];
+
+    // Builtin scalars
+    for (const scalarName of builtinScalarTypes.keys()) {
+      const record = schema.scalars.get(scalarName) ?? { name: scalarName, directives: [] };
+      scalarVars.push(renderScalarVar(name, record));
+    }
+
+    // Custom scalars
+    for (const scalarName of customScalarNames) {
+      const record = schema.scalars.get(scalarName);
+      if (record) {
+        scalarVars.push(renderScalarVar(name, record));
+      }
+    }
+
+    // Enums
+    for (const enumName of enumTypeNames) {
+      const record = schema.enums.get(enumName);
+      if (record) {
+        enumVars.push(renderEnumVar(name, record));
+      }
+    }
+
+    // Inputs
+    for (const inputName of inputTypeNames) {
+      const record = schema.inputs.get(inputName);
+      if (record) {
+        inputVars.push(renderInputVar(name, schema, record, excluded));
+      }
+    }
+
+    // Objects
+    for (const objectName of objectTypeNames) {
+      const record = schema.objects.get(objectName);
+      if (record) {
+        objectVars.push(renderObjectVar(name, schema, record, excluded));
+      }
+    }
+
+    // Unions
+    for (const unionName of unionTypeNames) {
+      const record = schema.unions.get(unionName);
+      if (record) {
+        unionVars.push(renderUnionVar(name, record, excluded));
+      }
+    }
+
+    // Type name lists for assembly
+    const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
+
+    const factoryVar = `createMethod_${name}`;
+    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
+    const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
+    // Fragment callback builders removed in Phase 3 — adapter type for fragments no longer needed
+
+    const queryType = schema.operationTypes.query ?? "Query";
+    const mutationType = schema.operationTypes.mutation ?? "Mutation";
+    const subscriptionType = schema.operationTypes.subscription ?? "Subscription";
+
+    schemaConfigs[name] = {
+      queryType,
+      mutationType,
+      subscriptionType,
+      // Granular: individual variable declarations
+      scalarVars,
+      enumVars,
+      inputVars,
+      objectVars,
+      unionVars,
+      // Granular: type name lists for assembly
+      scalarNames: allScalarNames,
+      enumNames: enumTypeNames,
+      inputNames: inputTypeNames,
+      objectNames: objectTypeNames,
+      unionNames: unionTypeNames,
+      inputTypeMethodsBlock,
+      directiveMethodsBlock,
+      defaultInputDepth: options?.defaultInputDepth?.get(name),
+      inputDepthOverrides: options?.inputDepthOverrides?.get(name),
+    };
+
+    // Accumulate stats
+    allStats.objects += objectVars.length;
+    allStats.enums += enumVars.length;
+    allStats.inputs += inputVars.length;
+    allStats.unions += unionVars.length;
+  }
+
+  const injection: RuntimeTemplateInjection = options?.injection
+    ? { mode: "inject", perSchema: options.injection, injectsModulePath: "./_internal-injects" }
+    : { mode: "inline" };
+
+  // Always use split mode
+  const splitting: SplittingMode = {
+    importPaths: {
+      enums: "./_defs/enums",
+      inputs: "./_defs/inputs",
+      objects: "./_defs/objects",
+      unions: "./_defs/unions",
+    },
+  };
+
+  const code = multiRuntimeTemplate({
+    schemas: schemaConfigs,
+    injection,
+    splitting,
+  });
+
+  // Generate injects code if in inject mode
+  const injectsCode = options?.injection ? generateInjectsCode(options.injection) : undefined;
+
+  // Always build categoryVars (splitting is always enabled)
+  const categoryVarsResult: Record<string, CategoryVars> = Object.fromEntries(
+    Object.entries(schemaConfigs).map(([schemaName, config]) => {
+      const toDefVar = (code: string, prefix: string): DefinitionVar => {
+        // Extract name from "const {prefix}_{schemaName}_{name} = ..."
+        const match = code.match(new RegExp(`const (${prefix}_${schemaName}_(\\w+))`));
+        return {
+          name: match?.[1] ?? "",
+          code,
+        };
+      };
+
+      return [
+        schemaName,
+        {
+          enums: (config.enumVars as string[]).map((c) => toDefVar(c, "enum")),
+          inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
+          objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
+          unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
+        } satisfies CategoryVars,
+      ];
+    }),
+  );
+
+  return {
+    code,
+    injectsCode,
+    categoryVars: categoryVarsResult,
+    stats: allStats,
+  };
+};
+
+/**
+ * Generate a stub `types.prebuilt.ts` file with empty PrebuiltTypes registries.
+ * This stub is only written when `types.prebuilt.ts` does not already exist.
+ * Typegen will later overwrite it with the real type registry.
+ */
+export const generatePrebuiltStub = (schemaNames: string[]): string => {
+  const typeDeclarations = schemaNames
+    .map(
+      (name) => `export type PrebuiltTypes_${name} = {
+  readonly fragments: {};
+  readonly operations: {};
+};`,
+    )
+    .join("\n\n");
+
+  return `\
+/**
+ * Prebuilt type registry stub.
+ *
+ * This file was generated by @soda-gql/tools/codegen as an empty stub.
+ * Run 'soda-gql typegen' to populate with real prebuilt types.
+ *
+ * @module
+ * @generated
+ */
+
+${typeDeclarations}
+`;
+};
+
+/**
+ * Generate the `index.ts` module that re-exports from `_internal`
+ * and constructs the `gql` object from individual `__gql_*` exports.
+ *
+ * The `gql` object preserves the original inferred types from schema inference.
+ * PrebuiltContext types will be integrated once the type resolution strategy
+ * is redesigned to match the tagged template runtime API.
+ */
+export const generateIndexModule = (schemaNames: string[], allFieldNames?: ReadonlyMap<string, readonly string[]>): string => {
+  const gqlImports = schemaNames.map((name) => `__gql_${name}`).join(", ");
+  const prebuiltImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
+  const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
+  const directiveImports = schemaNames.map((name) => `__directiveMethods_${name}`).join(", ");
+
+  const perSchemaTypes = schemaNames
+    .map(
+      (name) => `
+type ResolveFragmentAtBuilder_${name}<TKey extends string> =
+  TKey extends keyof PrebuiltTypes_${name}["fragments"]
+    ? Fragment<
+        PrebuiltTypes_${name}["fragments"][TKey]["typename"],
+        PrebuiltTypes_${name}["fragments"][TKey]["input"] extends void
+          ? void
+          : Partial<PrebuiltTypes_${name}["fragments"][TKey]["input"] & AnyConstAssignableInput>,
+        Partial<AnyFields>,
+        PrebuiltTypes_${name}["fragments"][TKey]["output"] & object
+      >
+    : Fragment<"(unknown)", PrebuiltEntryNotFound<TKey, "fragment">, Partial<AnyFields>, PrebuiltEntryNotFound<TKey, "fragment">>;
+
+type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TName extends string> =
+  TName extends keyof PrebuiltTypes_${name}["operations"]
+    ? Operation<
+        TOperationType,
+        TName,
+        string[],
+        PrebuiltTypes_${name}["operations"][TName]["input"],
+        Partial<AnyFields>,
+        PrebuiltTypes_${name}["operations"][TName]["output"] & object
+      >
+    : Operation<
+        TOperationType,
+        TName,
+        string[],
+        PrebuiltEntryNotFound<TName, "operation">,
+        Partial<AnyFields>,
+        PrebuiltEntryNotFound<TName, "operation">
+      >;
+
+type PrebuiltCurriedFragment_${name} = <TKey extends string>(
+  name: TKey,
+  typeName: string,
+) => (...args: unknown[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>;
+
+type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
+  operationName: TName,
+) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+
+type FieldFactoryFn_${name} = (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>);
+${(() => {
+  const fieldNames = allFieldNames?.get(name);
+  if (fieldNames && fieldNames.length > 0) {
+    const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
+    return `type AllObjectFieldNames_${name} = ${union};
+type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]: FieldFactoryFn_${name} } & Record<string, FieldFactoryFn_${name}>;`;
+  }
+  return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
+})()}
+type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
+
+type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
+  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: (tools: { readonly $: Readonly<Record<string, never>>; readonly fragmentMetadata: unknown[] | undefined }) => Record<string, unknown> },
+) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+
+export type PrebuiltContext_${name} = {
+  readonly fragment: PrebuiltCurriedFragment_${name};
+  readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"query">;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
+  };
+  readonly mutation: PrebuiltCurriedOperation_${name}<"mutation"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"mutation">;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
+  };
+  readonly subscription: PrebuiltCurriedOperation_${name}<"subscription"> & {
+    readonly operation: PrebuiltCallbackOperation_${name}<"subscription">;
+    readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
+  };
+  readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
+  readonly extend: (...args: unknown[]) => AnyOperation;
+  readonly $var: VarBuilder<Schema_${name}>;
+  readonly $dir: typeof __directiveMethods_${name};
+  readonly $colocate: <T extends Record<string, unknown>>(projections: T) => T;
+};
+
+type GqlComposer_${name} = {
+  <TResult>(composeElement: (context: PrebuiltContext_${name}) => TResult): TResult;
+  readonly $schema: AnyGraphqlSchema;
+};`,
+    )
+    .join("\n");
+
+  const gqlEntries = schemaNames.map((name) => `  ${name}: __gql_${name} as unknown as GqlComposer_${name}`).join(",\n");
+
+  return `\
+/**
+ * Generated by @soda-gql/tools/codegen
+ * @module
+ * @generated
+ */
+
+export * from "./_internal";
+import { ${gqlImports} } from "./_internal";
+import type { ${schemaTypeImports} } from "./_internal";
+import type { ${directiveImports} } from "./_internal";
+import type { ${prebuiltImports} } from "./types.prebuilt";
+import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, VarBuilder, GqlDefine } from "@soda-gql/core";
+${perSchemaTypes}
+
+export const gql = {
+${gqlEntries}
+};
+`;
+};

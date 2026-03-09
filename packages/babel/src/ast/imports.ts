@@ -2,11 +2,11 @@ import { types as t } from "@babel/core";
 import type { NodePath } from "@babel/traverse";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 
-const RUNTIME_MODULE = "@soda-gql/runtime";
+const RUNTIME_MODULE = "@soda-gql/core/runtime";
 
 /**
  * Ensure that the gqlRuntime require exists in the program for CJS output.
- * Injects: const __soda_gql_runtime = require("@soda-gql/runtime");
+ * Injects: const __soda_gql_runtime = require("@soda-gql/core/runtime");
  */
 export const ensureGqlRuntimeRequire = (programPath: NodePath<t.Program>) => {
   // Check if the require already exists
@@ -33,7 +33,7 @@ export const ensureGqlRuntimeRequire = (programPath: NodePath<t.Program>) => {
     return;
   }
 
-  // Create: const __soda_gql_runtime = require("@soda-gql/runtime");
+  // Create: const __soda_gql_runtime = require("@soda-gql/core/runtime");
   const requireCall = t.callExpression(t.identifier("require"), [t.stringLiteral(RUNTIME_MODULE)]);
 
   const variableDeclaration = t.variableDeclaration("const", [
@@ -46,7 +46,7 @@ export const ensureGqlRuntimeRequire = (programPath: NodePath<t.Program>) => {
 
 /**
  * Ensure that the gqlRuntime import exists in the program.
- * gqlRuntime is always imported from @soda-gql/runtime.
+ * gqlRuntime is always imported from @soda-gql/core/runtime.
  */
 export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   const existing = programPath.node.body.find(
@@ -54,6 +54,16 @@ export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
   );
 
   if (existing && t.isImportDeclaration(existing)) {
+    // Convert type-only import to mixed import so value specifiers can be added
+    if (existing.importKind === "type") {
+      for (const spec of existing.specifiers) {
+        if (t.isImportSpecifier(spec) && !spec.importKind) {
+          spec.importKind = "type";
+        }
+      }
+      existing.importKind = "value";
+    }
+
     const hasSpecifier = existing.specifiers.some(
       (specifier) =>
         specifier.type === "ImportSpecifier" &&
@@ -78,7 +88,7 @@ export const ensureGqlRuntimeImport = (programPath: NodePath<t.Program>) => {
 
 /**
  * Remove the graphql-system import (runtimeModule) and gql-related exports from the program.
- * After transformation, gqlRuntime is imported from @soda-gql/runtime instead,
+ * After transformation, gqlRuntime is imported from @soda-gql/core/runtime instead,
  * so the original graphql-system import should be completely removed.
  *
  * This handles both ESM imports and CommonJS require() statements.

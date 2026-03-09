@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "customConditions": ["@soda-gql"],
+    "outDir": "../../node_modules/.soda-gql/.typecheck/tools",
+    "tsBuildInfoFile": "../../node_modules/.soda-gql/.typecheck/tools/tsconfig.tsbuildinfo",
+    "rootDir": "."
+  },
+  "include": ["src/**/*", "@x-*.ts", "@devx-*.ts", "test/**/*"],
+  "exclude": ["node_modules", "dist", "**/fragment-in-fragment.ts", "test/typegen/e2e/fixtures/sources/**"],
+  "references": [
+    {
+      "path": "../builder/tsconfig.editor.json"
+    }
+  ]
+}

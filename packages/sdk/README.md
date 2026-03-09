@@ -209,7 +209,7 @@ may result in incorrect context being applied.
 ## Related Packages
 
 - [@soda-gql/builder](../builder) - Core build system
-- [@soda-gql/codegen](../codegen) - Code generation from GraphQL schemas
+- [@soda-gql/tools](../tools) - CLI, codegen (`@soda-gql/tools/codegen`), typegen, and formatter
 - [@soda-gql/config](../config) - Configuration loading
 - [@soda-gql/core](../core) - GraphQL composition primitives
 

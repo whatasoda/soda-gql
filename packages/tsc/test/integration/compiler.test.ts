@@ -168,11 +168,11 @@ describe("TypeScript Compiler Plugin Integration", () => {
         expect(emitResult.emitSkipped).toBe(false);
 
         // TODO: When enabled with builder-generated artifacts:
-        // - Should contain: import { gqlRuntime } from "@soda-gql/runtime"
+        // - Should contain: import { gqlRuntime } from "@soda-gql/core/runtime"
         // - Should contain: gqlRuntime.operation(...)
         // - Should contain: gqlRuntime.getComposedOperation(...)
         // - Should NOT contain: __soda_gql_runtime
-        // - Should NOT contain: require("@soda-gql/runtime")
+        // - Should NOT contain: require("@soda-gql/core/runtime")
       },
       { timeout: 30000 },
     );
@@ -208,7 +208,7 @@ describe("TypeScript Compiler Plugin Integration", () => {
         expect(emitResult.emitSkipped).toBe(false);
 
         // TODO: When enabled with builder-generated artifacts:
-        // - Should contain: const __soda_gql_runtime = require("@soda-gql/runtime")
+        // - Should contain: const __soda_gql_runtime = require("@soda-gql/core/runtime")
         // - Should contain: __soda_gql_runtime.gqlRuntime.operation(...)
         // - Should contain: __soda_gql_runtime.gqlRuntime.getComposedOperation(...)
         // - Should NOT contain: import { gqlRuntime }

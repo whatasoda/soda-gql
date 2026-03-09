@@ -1,0 +1,80 @@
+{
+  "name": "@soda-gql/tools",
+  "version": "0.12.6",
+  "description": "Development tools for soda-gql: CLI, codegen, typegen, and formatter",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "author": {
+    "name": "Shota Hatada",
+    "email": "shota.hatada@whatasoda.me",
+    "url": "https://github.com/whatasoda"
+  },
+  "keywords": [
+    "graphql",
+    "codegen",
+    "zero-runtime",
+    "typescript",
+    "cli",
+    "formatter"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whatasoda/soda-gql.git",
+    "directory": "packages/tools"
+  },
+  "homepage": "https://github.com/whatasoda/soda-gql#readme",
+  "bugs": {
+    "url": "https://github.com/whatasoda/soda-gql/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "soda-gql": "./dist/bin.cjs"
+  },
+  "dependencies": {
+    "@soda-gql/builder": "workspace:*",
+    "@soda-gql/common": "workspace:*",
+    "@soda-gql/config": "workspace:*",
+    "@soda-gql/core": "workspace:*",
+    "chokidar": "^3.6.0",
+    "esbuild": "^0.24.0",
+    "fast-glob": "^3.3.3",
+    "graphql": "^16.11.0",
+    "neverthrow": "^8.1.1",
+    "picomatch": "^4.0.3",
+    "zod": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@swc/core": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/picomatch": "^4.0.2",
+    "@swc/types": "^0.1.0"
+  },
+  "exports": {
+    "./codegen": {
+      "@soda-gql": "./@x-codegen.ts",
+      "types": "./dist/codegen.d.mts",
+      "import": "./dist/codegen.mjs",
+      "require": "./dist/codegen.cjs",
+      "default": "./dist/codegen.mjs"
+    },
+    "./typegen": {
+      "@soda-gql": "./@x-typegen.ts",
+      "types": "./dist/typegen.d.mts",
+      "import": "./dist/typegen.mjs",
+      "require": "./dist/typegen.cjs",
+      "default": "./dist/typegen.mjs"
+    },
+    "./formatter": {
+      "@soda-gql": "./@x-formatter.ts",
+      "types": "./dist/formatter.d.mts",
+      "import": "./dist/formatter.mjs",
+      "require": "./dist/formatter.cjs",
+      "default": "./dist/formatter.mjs"
+    },
+    "./package.json": "./package.json"
+  }
+}

@@ -1,14 +1,14 @@
 //! Import management module.
 //!
 //! This module handles:
-//! - Adding the `@soda-gql/runtime` import/require
+//! - Adding the `@soda-gql/core/runtime` import/require
 //! - Removing the `graphql-system` imports
 
 use swc_core::common::{SyntaxContext, DUMMY_SP};
 use swc_core::ecma::ast::*;
 use swc_core::ecma::visit::{VisitMut, VisitMutWith};
 
-const RUNTIME_MODULE: &str = "@soda-gql/runtime";
+const RUNTIME_MODULE: &str = "@soda-gql/core/runtime";
 const RUNTIME_IMPORT_NAME: &str = "gqlRuntime";
 const CJS_RUNTIME_NAME: &str = "__soda_gql_runtime";
 
@@ -39,7 +39,7 @@ impl ImportManager {
 
     /// Create the ESM runtime import.
     fn create_esm_import(&self) -> ModuleItem {
-        // import { gqlRuntime } from "@soda-gql/runtime";
+        // import { gqlRuntime } from "@soda-gql/core/runtime";
         ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
             span: DUMMY_SP,
             specifiers: vec![ImportSpecifier::Named(ImportNamedSpecifier {
@@ -61,7 +61,7 @@ impl ImportManager {
 
     /// Create the CJS runtime require.
     fn create_cjs_require(&self) -> ModuleItem {
-        // const __soda_gql_runtime = require("@soda-gql/runtime");
+        // const __soda_gql_runtime = require("@soda-gql/core/runtime");
         ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
             span: DUMMY_SP,
             ctxt: SyntaxContext::empty(),

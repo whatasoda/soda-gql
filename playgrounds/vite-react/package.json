@@ -11,12 +11,11 @@
   "dependencies": {
     "@soda-gql/colocation-tools": "workspace:*",
     "@soda-gql/core": "workspace:*",
-    "@soda-gql/runtime": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@soda-gql/cli": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@soda-gql/vite-plugin": "workspace:*",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

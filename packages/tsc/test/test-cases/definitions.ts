@@ -12,7 +12,7 @@ export type TestCaseDefinition = {
   readonly expectations: {
     /** Expected gqlRuntime.* calls in the output */
     readonly runtimeCalls: readonly string[];
-    /** Whether the transformer should add @soda-gql/runtime import */
+    /** Whether the transformer should add @soda-gql/core/runtime import */
     readonly shouldAddRuntimeImport: boolean;
     /** Whether the source should be transformed at all */
     readonly shouldTransform: boolean;

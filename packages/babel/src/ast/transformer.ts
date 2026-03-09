@@ -86,7 +86,7 @@ export const insertRuntimeCalls = (programPath: NodePath<t.Program>, runtimeCall
 
   programPath.traverse({
     ImportDeclaration(importDeclPath) {
-      if (importDeclPath.node.source.value === "@soda-gql/runtime") {
+      if (importDeclPath.node.source.value === "@soda-gql/core/runtime") {
         importDeclPath.insertAfter([...runtimeCalls]);
       }
     },

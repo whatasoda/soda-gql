@@ -12,7 +12,6 @@
   "dependencies": {
     "@soda-gql/core": "workspace:*",
     "@soda-gql/metro-plugin": "workspace:*",
-    "@soda-gql/runtime": "workspace:*",
     "expo": "~54.0.0",
     "expo-asset": "~12.0.12",
     "expo-constants": "~18.0.12",
@@ -26,7 +25,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@expo/metro-config": "~54.0.12",
-    "@soda-gql/cli": "workspace:*",
+    "@soda-gql/tools": "workspace:*",
     "@types/react": "~19.1.10",
     "babel-preset-expo": "~54.0.9",
     "typescript": "~5.3.3"

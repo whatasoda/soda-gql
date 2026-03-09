@@ -129,6 +129,34 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   }
 };
 
+// Tools package — library entries (codegen, typegen, formatter)
+const toolsConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/tools");
+  return {
+    ...base,
+    format: ["esm", "cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: true,
+  };
+})();
+
+// Tools package — CLI binary (separate config so shebang banner only applies to bin)
+const toolsBinConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/tools");
+  return {
+    ...base,
+    entry: { bin: "packages/tools/src/cli/index.ts" },
+    banner: { js: "#!/usr/bin/env node" },
+    format: ["cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: false,
+  };
+})();
+
 // LSP package (bin entry added manually — not using @x-bin.ts to avoid exposing it as a package export)
 const lspConfig: UserConfig = (() => {
   const base = configure("@soda-gql/lsp", {
@@ -158,11 +186,6 @@ export default defineConfig([
     platform: "neutral" as const,
   },
   {
-    ...configure("@soda-gql/runtime", { noExternals: ["@soda-gql/core/runtime"] }),
-    format: ["esm", "cjs"] as const,
-    platform: "neutral" as const,
-  },
-  {
     ...configure("@soda-gql/colocation-tools"),
     format: ["esm", "cjs"] as const,
     platform: "neutral" as const,
@@ -186,7 +209,7 @@ export default defineConfig([
     clean: true,
   },
 
-  // Builder and codegen packages (heavy Node usage, avoid tree-shaking)
+  // Builder package (heavy Node usage, avoid tree-shaking)
   {
     ...configure("@soda-gql/builder"),
     outDir: "packages/builder/dist",
@@ -196,49 +219,17 @@ export default defineConfig([
     treeshake: false,
     clean: true,
   },
-  {
-    ...configure("@soda-gql/codegen"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    treeshake: false,
-    clean: true,
-  },
-  {
-    ...configure("@soda-gql/typegen"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
-    treeshake: false,
-    clean: true,
-  },
+
+  // Tools package (library entries + CLI binary)
+  toolsConfig,
+  toolsBinConfig,
+
   {
     ...configure("@soda-gql/sdk"),
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
-    clean: true,
-  },
-
-  // CLI package (CJS for maximum compatibility)
-  {
-    ...configure("@soda-gql/cli"),
-    format: ["cjs"],
-    platform: "node",
-    target: "node18",
-    banner: {
-      js: "#!/usr/bin/env node",
-    },
-    clean: true,
-  },
-
-  // Formatter package (optional CLI dependency)
-  {
-    ...configure("@soda-gql/formatter"),
-    format: ["esm", "cjs"],
-    platform: "node",
-    target: "node18",
     clean: true,
   },
 

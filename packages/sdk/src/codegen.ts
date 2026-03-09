@@ -4,10 +4,10 @@
  */
 
 import { join } from "node:path";
-import type { CodegenError, CodegenSuccess } from "@soda-gql/codegen";
-import { runCodegen } from "@soda-gql/codegen";
 import type { ConfigError } from "@soda-gql/config";
 import { loadConfig } from "@soda-gql/config";
+import type { CodegenError, CodegenSuccess } from "@soda-gql/tools/codegen";
+import { runCodegen } from "@soda-gql/tools/codegen";
 import { err, ok, type Result } from "neverthrow";
 
 /**

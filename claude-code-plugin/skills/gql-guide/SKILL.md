@@ -850,7 +850,7 @@ Setting up a new soda-gql project involves config file creation, schema setup, a
 1. **Install dependencies:**
    ```bash
    bun add @soda-gql/core @soda-gql/builder
-   bun add -d @soda-gql/cli
+   bun add -d @soda-gql/tools
    ```
 
 2. **Add framework plugin (optional but recommended):**
