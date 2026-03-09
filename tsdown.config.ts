@@ -129,18 +129,31 @@ const configure = (name: string, options: ConfigureOptions = {}) => {
   }
 };
 
-// Tools package (CLI bin entry added manually — follows LSP pattern)
+// Tools package — library entries (codegen, typegen, formatter)
 const toolsConfig: UserConfig = (() => {
   const base = configure("@soda-gql/tools");
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/tools/src/cli/index.ts" },
-    banner: { js: "#!/usr/bin/env node" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
     treeshake: false,
     clean: true,
+  };
+})();
+
+// Tools package — CLI binary (separate config so shebang banner only applies to bin)
+const toolsBinConfig: UserConfig = (() => {
+  const base = configure("@soda-gql/tools");
+  return {
+    ...base,
+    entry: { bin: "packages/tools/src/cli/index.ts" },
+    banner: { js: "#!/usr/bin/env node" },
+    format: ["cjs"],
+    platform: "node",
+    target: "node18",
+    treeshake: false,
+    clean: false,
   };
 })();
 
@@ -207,8 +220,9 @@ export default defineConfig([
     clean: true,
   },
 
-  // Tools package (CLI + codegen + typegen + formatter)
+  // Tools package (library entries + CLI binary)
   toolsConfig,
+  toolsBinConfig,
 
   {
     ...configure("@soda-gql/sdk"),
