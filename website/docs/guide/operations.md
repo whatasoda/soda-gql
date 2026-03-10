@@ -44,7 +44,7 @@ gql.default(({ mutation, $var }) =>
   mutation.operation({ name: "CreateUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
 
-// Subscription - real-time updates (planned)
+// Subscription - real-time updates
 gql.default(({ subscription, $var }) =>
   subscription.operation({ name: "UserUpdated", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );

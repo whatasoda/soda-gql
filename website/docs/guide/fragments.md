@@ -267,4 +267,5 @@ For more details on prebuilt types, see the [Prebuilt Types Guide](/guide/prebui
 
 - Learn about [Operations](/guide/operations) to create complete GraphQL queries
 - Understand [Variables](/guide/variables) syntax in detail
+- See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for a complete syntax comparison
 - Explore [Fragment Colocation](/guide/colocation) for component-based patterns

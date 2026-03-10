@@ -14,7 +14,7 @@ bun add neverthrow
 ```
 
 :::tip
-This initial version supports queries and mutations only. Subscriptions, directives, and native GraphQL fragments are planned for future releases.
+soda-gql supports queries, mutations, and subscriptions. Field directives and native GraphQL fragments are planned for future releases.
 :::
 
 ## Setup
@@ -146,5 +146,8 @@ See the [Recipes](/recipes/) section for framework-specific setup guides.
 
 ## Next Steps
 
-- Explore the [API Reference](/api/) for detailed documentation
+- Learn about [Fragments](/guide/fragments) and [Operations](/guide/operations) in detail
+- Understand the [Tagged Template Syntax](/guide/tagged-template-syntax) and when to use callback builders
+- Explore [Variables](/guide/variables) for parameterized operations
 - Check out [Recipes](/recipes/) for framework integration examples
+- See the [API Reference](/api/) for detailed documentation
