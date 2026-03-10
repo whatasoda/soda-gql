@@ -166,8 +166,15 @@ async function main() {
   console.log("Syncing package exports from @x-* files...\n");
 
   const configs = await loadTsdownConfigs();
+  const processedPackages = new Set<string>();
 
   for (const config of configs) {
+    if (processedPackages.has(config.name)) {
+      const shortName = config.name.replace(/^@soda-gql\//, "");
+      console.log(`  ⊘ ${shortName}: skipped (already processed)`);
+      continue;
+    }
+
     if (EXCLUDED_PACKAGES.includes(config.name)) {
       const shortName = config.name.replace(/^@soda-gql\//, "");
       console.log(`  ⊘ ${shortName}: skipped (manages own exports)`);
@@ -185,6 +192,7 @@ async function main() {
 
     try {
       await syncPackageExports(config);
+      processedPackages.add(config.name);
     } catch (error) {
       console.error(`  ✗ ${shortName}: ${error instanceof Error ? error.message : String(error)}`);
       process.exit(1);

@@ -33,6 +33,9 @@
   "bin": {
     "soda-gql": "./dist/bin.cjs"
   },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
@@ -61,6 +64,13 @@
       "require": "./dist/codegen.cjs",
       "default": "./dist/codegen.mjs"
     },
+    ".": {
+      "@soda-gql": "./@x-index.ts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.mjs"
+    },
     "./typegen": {
       "@soda-gql": "./@x-typegen.ts",
       "types": "./dist/typegen.d.mts",
@@ -76,5 +86,16 @@
       "default": "./dist/formatter.mjs"
     },
     "./package.json": "./package.json"
-  }
+  },
+  "files": [
+    "dist",
+    "codegen.d.ts",
+    "codegen.js",
+    "formatter.d.ts",
+    "formatter.js",
+    "index.d.ts",
+    "index.js",
+    "typegen.d.ts",
+    "typegen.js"
+  ]
 }
