@@ -400,4 +400,6 @@ This is simpler than `$colocate` when you only have one fragment to parse.
 ## Next Steps
 
 - See [@soda-gql/colocation-tools](/api/packages/colocation-tools) for the complete API reference
+- Learn about [Fragments](/guide/fragments) and fragment variables
+- Understand the [Tagged Template Syntax](/guide/tagged-template-syntax) for simpler fragment definitions
 - Explore [Recipes](/recipes/) for framework-specific colocation patterns

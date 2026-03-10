@@ -15,19 +15,18 @@ query GetUser($id: ID!) {
 }
 ```
 
-soda-gql operations are TypeScript functions:
+soda-gql operations are TypeScript functions with two syntax options:
 
-| Aspect | GraphQL | soda-gql |
-|--------|---------|----------|
-| **Definition** | String-based query language | TypeScript builder functions |
-| **Variables** | `$name: Type!` syntax | `$var("name").Type("!")` with full type safety |
-| **Variable Declaration** | Object-style in query header | Object spread: `{ ...$var(...), ...$var(...) }` |
-| **Field Selections** | Implicit object syntax | Object spread: `({ ...f.id(), ...f.name() })` |
-| **Type Checking** | Requires external codegen step | Compile-time validation |
-| **Output** | Runtime parsing needed | `.document` for query |
+| Aspect | GraphQL | soda-gql (Tagged Template) | soda-gql (Callback Builder) |
+|--------|---------|----------|----------|
+| **Definition** | String-based | Template literals with GraphQL syntax | TypeScript builder functions |
+| **Variables** | `$name: Type!` | `($name: Type!)` in template | `$var("name").Type("!")` |
+| **Field Selections** | Implicit | GraphQL syntax in template | Object spread: `({ ...f.id() })` |
+| **Type Checking** | Requires codegen | Build-time validation | Build-time validation |
+| **Best for** | — | Simple queries/mutations | Aliases, directives, `$colocate` |
 
-:::info Object Spread API
-soda-gql uses object spread syntax for both variable declarations and field selections. This design enables better type inference and explicit field merging.
+:::tip Recommended Syntax
+Use **tagged templates** for most operations. Switch to **callback builders** when you need field aliases, directives (`@skip`, `@include`), or `$colocate` for fragment colocation. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
 :::
 
 ## Operation Types
@@ -45,7 +44,7 @@ gql.default(({ mutation, $var }) =>
   mutation.operation({ name: "CreateUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
 
-// Subscription - real-time updates (planned)
+// Subscription - real-time updates
 gql.default(({ subscription, $var }) =>
   subscription.operation({ name: "UserUpdated", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
 );
@@ -53,7 +52,29 @@ gql.default(({ subscription, $var }) =>
 
 ## Defining an Operation
 
-A complete operation definition includes:
+### Tagged Template Syntax (Recommended)
+
+The simplest way to define an operation uses tagged template syntax — write GraphQL directly as a template literal:
+
+```typescript
+import { gql } from "@/graphql-system";
+
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+      email
+    }
+  }`(),
+);
+```
+
+This is concise, readable, and familiar to developers who know GraphQL syntax. The trailing `()` finalizes the operation.
+
+### Callback Builder Syntax
+
+For advanced features like field aliases, directives, or `$colocate`, use the callback builder syntax:
 
 ```typescript
 import { gql } from "@/graphql-system";
@@ -112,7 +133,37 @@ Field selections in operations work the same as in fragments:
 
 ## Spreading Fragments
 
-Spread fragments to reuse field selections:
+### Tagged Template (Interpolation)
+
+In tagged templates, use `${...}` interpolation to spread fragments:
+
+```typescript
+import { userFragment } from "./user.fragment";
+
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) {
+      ...${userFragment}
+    }
+  }`(),
+);
+```
+
+For fragments with variables, use a callback function to pass variable bindings:
+
+```typescript
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!, $includeEmail: Boolean) {
+    user(id: $userId) {
+      ...${({ $ }) => userFragment.spread({ includeEmail: $.includeEmail })}
+    }
+  }`(),
+);
+```
+
+### Callback Builder (.spread())
+
+In callback builder syntax, use `.spread()`:
 
 ```typescript
 import { userFragment } from "./user.fragment";

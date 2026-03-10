@@ -50,23 +50,56 @@ export const scalar = {
 
 ## gql (Generated)
 
-The `gql` object is generated per-schema and provides builders:
+The `gql` object is generated per-schema and provides builders. Two syntax styles are available:
+
+### Tagged Template Syntax (Recommended)
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Fragment builder
-gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ... }) }));
+// Fragment
+gql.default(({ fragment }) =>
+  fragment("UserFields", "User")`{ id name email }`()
+);
 
-// Query operation
-gql.default(({ query }) => query.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
+// Query
+gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) { user(id: $id) { id name } }`()
+);
 
-// Mutation operation
-gql.default(({ mutation }) => mutation.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
+// Mutation
+gql.default(({ mutation }) =>
+  mutation("CreateUser")`($input: CreateUserInput!) { createUser(input: $input) { id } }`()
+);
 
-// Subscription operation (planned)
-gql.default(({ subscription }) => subscription.operation({ name: "...", fields: ({ f, $ }) => ({ ... }) }));
+// Subscription
+gql.default(({ subscription }) =>
+  subscription("OnUserCreated")`{ userCreated { id name } }`()
+);
 ```
+
+### Callback Builder Syntax
+
+For advanced features (field aliases, directives, `$colocate`):
+
+```typescript
+import { gql } from "@/graphql-system";
+
+// Fragment
+gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
+
+// Query
+gql.default(({ query, $var }) =>
+  query.operation({ name: "GetUser", variables: { ...$var("id").ID("!") }, fields: ({ f, $ }) => ({ ... }) })
+);
+
+// Mutation
+gql.default(({ mutation, $var }) =>
+  mutation.operation({ name: "CreateUser", variables: { ...$var("input").CreateUserInput("!") }, fields: ({ f, $ }) => ({ ... }) })
+);
+```
+
+See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for a complete comparison.
 
 ## Element Extensions (attach)
 

@@ -1,1 +1,1 @@
-["core", "cli"]
+["core", "cli", "config", "runtime", "colocation-tools", "vite-plugin", "webpack-plugin", "metro-plugin"]

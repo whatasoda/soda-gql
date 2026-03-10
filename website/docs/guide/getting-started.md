@@ -14,7 +14,7 @@ bun add neverthrow
 ```
 
 :::tip
-This initial version supports queries and mutations only. Subscriptions, directives, and native GraphQL fragments are planned for future releases.
+soda-gql supports queries, mutations, and subscriptions. Field directives (`@skip`, `@include`) are supported in callback builder syntax. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for a feature comparison.
 :::
 
 ## Setup
@@ -101,10 +101,23 @@ export const userFragment = gql.default(({ fragment }) =>
 
 ### Create an Operation
 
-Operations can use tagged template syntax for standalone queries, or callback builders when fragment spreads are needed:
+Operations can also use tagged template syntax, with fragment spreads via interpolation:
 
 ```typescript
-// Callback builder (required for fragment spreads)
+// Tagged template with fragment spread
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) {
+      ...${userFragment}
+    }
+  }`(),
+);
+```
+
+For advanced features like field aliases, directives, or `$colocate`, use the callback builder syntax:
+
+```typescript
+// Callback builder (for advanced features)
 export const getUserQuery = gql.default(({ query, $var }) =>
   query.operation({
     name: "GetUser",
@@ -146,5 +159,8 @@ See the [Recipes](/recipes/) section for framework-specific setup guides.
 
 ## Next Steps
 
-- Explore the [API Reference](/api/) for detailed documentation
+- Learn about [Fragments](/guide/fragments) and [Operations](/guide/operations) in detail
+- Understand the [Tagged Template Syntax](/guide/tagged-template-syntax) and when to use callback builders
+- Explore [Variables](/guide/variables) for parameterized operations
 - Check out [Recipes](/recipes/) for framework integration examples
+- See the [API Reference](/api/) for detailed documentation
