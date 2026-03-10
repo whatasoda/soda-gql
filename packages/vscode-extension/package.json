@@ -2,7 +2,7 @@
   "name": "soda-gql-vscode-extension",
   "displayName": "soda-gql",
   "description": "GraphQL language support for soda-gql with tagged template literals",
-  "version": "0.12.6",
+  "version": "0.13.0",
   "publisher": "soda-gql",
   "private": false,
   "license": "MIT",
