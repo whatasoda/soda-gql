@@ -33,9 +33,9 @@
   "bin": {
     "soda-gql": "./dist/bin.cjs"
   },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.cjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "dependencies": {
     "@soda-gql/builder": "workspace:*",
     "@soda-gql/common": "workspace:*",
@@ -59,27 +59,31 @@
   "exports": {
     "./codegen": {
       "@soda-gql": "./@x-codegen.ts",
-      "types": "./dist/codegen.d.cts",
+      "types": "./dist/codegen.d.mts",
+      "import": "./dist/codegen.mjs",
       "require": "./dist/codegen.cjs",
-      "default": "./dist/codegen.cjs"
+      "default": "./dist/codegen.mjs"
     },
     ".": {
       "@soda-gql": "./@x-index.ts",
-      "types": "./dist/index.d.cts",
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
-      "default": "./dist/index.cjs"
+      "default": "./dist/index.mjs"
     },
     "./typegen": {
       "@soda-gql": "./@x-typegen.ts",
-      "types": "./dist/typegen.d.cts",
+      "types": "./dist/typegen.d.mts",
+      "import": "./dist/typegen.mjs",
       "require": "./dist/typegen.cjs",
-      "default": "./dist/typegen.cjs"
+      "default": "./dist/typegen.mjs"
     },
     "./formatter": {
       "@soda-gql": "./@x-formatter.ts",
-      "types": "./dist/formatter.d.cts",
+      "types": "./dist/formatter.d.mts",
+      "import": "./dist/formatter.mjs",
       "require": "./dist/formatter.cjs",
-      "default": "./dist/formatter.cjs"
+      "default": "./dist/formatter.mjs"
     },
     "./package.json": "./package.json"
   },
