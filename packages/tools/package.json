@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/tools",
-  "version": "0.12.6",
+  "version": "0.13.0",
   "description": "Development tools for soda-gql: CLI, codegen, typegen, and formatter",
   "type": "module",
   "private": false,

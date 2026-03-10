@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/lsp",
-  "version": "0.12.6",
+  "version": "0.13.0",
   "description": "GraphQL Language Server Protocol implementation for soda-gql",
   "type": "module",
   "private": false,
