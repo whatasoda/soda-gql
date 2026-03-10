@@ -31,12 +31,28 @@ When `codegen` runs for the first time, it creates `types.prebuilt.ts` as an emp
 
 For fragments to be included in the prebuilt registry, they must have a `key` property:
 
+Tagged template syntax — the first argument to `fragment()` serves as the key:
+
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User("UserFields")`
+  fragment("UserFields", "User")`{
     id
     name
-  `(),
+  }`(),
+);
+```
+
+Callback builder syntax — use the `key` property:
+
+```typescript
+export const userFragment = gql.default(({ fragment }) =>
+  fragment.User({
+    key: "UserFields",
+    fields: ({ f }) => ({
+      ...f.id(),
+      ...f.name(),
+    }),
+  }),
 );
 ```
 

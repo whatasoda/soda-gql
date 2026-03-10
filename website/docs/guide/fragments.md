@@ -220,14 +220,14 @@ For colocation patterns, see the [Fragment Colocation](/guide/colocation) guide.
 
 ## Fragment Keys
 
-The optional `key` property gives a fragment a unique identifier. With tagged template syntax, pass the key as an argument before the template:
+The optional `key` property gives a fragment a unique identifier. With tagged template syntax, the first argument to `fragment()` serves as the key:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User("UserFields")`
+  fragment("UserFields", "User")`{
     id
     name
-  `(),
+  }`(),
 );
 ```
 

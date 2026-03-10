@@ -14,19 +14,19 @@ query GetUser($id: ID!, $limit: Int) {
 }
 ```
 
-soda-gql uses a TypeScript-based approach:
+soda-gql provides two approaches depending on the syntax you use:
 
-| Aspect | GraphQL | soda-gql |
-|--------|---------|----------|
-| **Syntax** | `$name: Type!` | `$var("name").Type("!")` |
-| **Required** | `Type!` (suffix) | `"Type:!"` (suffix after colon) |
-| **Optional** | `Type` (no suffix) | `"Type:?"` (explicit optional) |
-| **Lists** | `[Type!]!` | `"Type:![]!"` |
-| **Declaration** | In operation header | Object spread: `variables: { ...$var(...) }` |
-| **Type Safety** | External codegen required | Compile-time inference |
+| Aspect | GraphQL | Tagged Template | Callback Builder |
+|--------|---------|----------|----------|
+| **Syntax** | `$name: Type!` | `($name: Type!)` (standard GraphQL) | `$var("name").Type("!")` |
+| **Required** | `Type!` | `Type!` | `"!"` suffix |
+| **Optional** | `Type` (no suffix) | `Type` (no suffix) | `"?"` suffix |
+| **Lists** | `[Type!]!` | `[Type!]!` | `"![]!"` |
+| **Declaration** | In operation header | In template: `` `($id: ID!) { ... }` `` | Object spread: `{ ...$var(...) }` |
+| **Type Safety** | External codegen | Build-time validation | Compile-time inference |
 
-:::info Explicit Nullability
-Unlike GraphQL where omitting `!` means optional, soda-gql requires explicit `:!` or `:?` to make nullability clear and prevent mistakes.
+:::tip Tagged Templates Use Standard GraphQL Variable Syntax
+When using tagged template syntax, variables are declared using standard GraphQL syntax directly in the template. The `$var` helper is only needed for callback builder syntax. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
 :::
 
 ## Declaring Variables

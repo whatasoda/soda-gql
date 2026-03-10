@@ -38,6 +38,10 @@ export default defineConfig({
             { text: "Fragments", link: "/guide/fragments" },
             { text: "Operations", link: "/guide/operations" },
             { text: "Variables", link: "/guide/variables" },
+            {
+              text: "Tagged Template Syntax",
+              link: "/guide/tagged-template-syntax",
+            },
           ],
         },
         {

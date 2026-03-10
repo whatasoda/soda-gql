@@ -44,4 +44,4 @@ soda-gql is a monorepo with multiple packages. Here's an overview:
 
 ## Version Compatibility
 
-soda-gql is currently at **v0.1.0** (pre-release). APIs may change between minor versions. Once we reach v1.0.0, we will follow semantic versioning strictly.
+soda-gql is currently at **v0.13.0** (pre-release). APIs may change between minor versions. Once we reach v1.0.0, we will follow semantic versioning strictly.

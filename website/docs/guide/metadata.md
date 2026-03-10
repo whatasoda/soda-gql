@@ -23,7 +23,26 @@ All metadata has two base properties:
 
 ## Defining Metadata
 
-Add metadata to an operation using the `metadata` option:
+### Tagged Template Syntax
+
+Pass metadata as an object or callback in the trailing `()` call:
+
+```typescript
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) { id name }
+  }`({
+    metadata: ({ $ }) => ({
+      headers: { "X-Request-ID": "get-user-query" },
+      custom: { requiresAuth: true },
+    }),
+  }),
+);
+```
+
+### Callback Builder Syntax
+
+Add metadata using the `metadata` option in the operation config:
 
 ```typescript
 export const getUserQuery = gql.default(({ query, $var }) =>
