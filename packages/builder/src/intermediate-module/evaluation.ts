@@ -5,6 +5,7 @@ import { extname, resolve } from "node:path";
 import { createContext, Script } from "node:vm";
 import { type EffectGenerator, ParallelEffect } from "@soda-gql/common";
 import { err, ok, type Result } from "neverthrow";
+import type { AliasResolver } from "@soda-gql/common";
 import type { ModuleAnalysis } from "../ast";
 import { type BuilderError, builderErrors, isBuilderError } from "../errors";
 import { ElementEvaluationEffect } from "../scheduler";
@@ -17,6 +18,7 @@ export type BuildIntermediateModulesInput = {
   readonly analyses: Map<string, ModuleAnalysis>;
   readonly targetFiles: Set<string>;
   readonly graphqlSystemPath: string;
+  readonly aliasResolver?: AliasResolver;
 };
 
 type TransformSync = typeof import("@swc/core").transformSync;
@@ -165,6 +167,7 @@ export const generateIntermediateModules = function* ({
   analyses,
   targetFiles,
   graphqlSystemPath,
+  aliasResolver,
 }: BuildIntermediateModulesInput): Generator<IntermediateModule, void, undefined> {
   for (const filePath of targetFiles) {
     const analysis = analyses.get(filePath);
@@ -173,7 +176,7 @@ export const generateIntermediateModules = function* ({
     }
 
     // Generate source code for this intermediate module
-    const sourceCode = renderRegistryBlock({ filePath, analysis, analyses, graphqlSystemPath });
+    const sourceCode = renderRegistryBlock({ filePath, analysis, analyses, graphqlSystemPath, aliasResolver });
 
     // Debug: log the generated source code
     if (process.env.DEBUG_INTERMEDIATE_MODULE) {

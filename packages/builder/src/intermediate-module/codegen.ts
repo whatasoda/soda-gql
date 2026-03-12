@@ -1,4 +1,4 @@
-import { resolveRelativeImportWithReferences } from "@soda-gql/common";
+import { type AliasResolver, resolveRelativeImportWithReferences } from "@soda-gql/common";
 import type { ModuleAnalysis, ModuleDefinition, ModuleImport } from "../ast";
 
 const formatFactory = (expression: string): string => {
@@ -204,11 +204,13 @@ const renderImportStatements = ({
   analysis,
   analyses,
   graphqlSystemPath,
+  aliasResolver,
 }: {
   filePath: string;
   analysis: ModuleAnalysis;
   analyses: Map<string, ModuleAnalysis>;
   graphqlSystemPath: string;
+  aliasResolver?: AliasResolver;
 }): { imports: string; importedRootNames: Set<string>; namespaceImports: Set<string> } => {
   const importLines: string[] = [];
   const importedRootNames = new Set<string>();
@@ -222,8 +224,14 @@ const renderImportStatements = ({
       return;
     }
 
-    // Skip non-relative imports (external packages)
+    // Try alias resolution for non-relative imports
     if (!imp.source.startsWith(".")) {
+      if (!aliasResolver) return;
+      const aliasResolved = aliasResolver.resolve(imp.source);
+      if (!aliasResolved || !analyses.has(aliasResolved) || aliasResolved === graphqlSystemPath) return;
+      const imports = importsByFile.get(aliasResolved) ?? [];
+      imports.push(imp);
+      importsByFile.set(aliasResolved, imports);
       return;
     }
 
@@ -282,13 +290,15 @@ export const renderRegistryBlock = ({
   analysis,
   analyses,
   graphqlSystemPath,
+  aliasResolver,
 }: {
   filePath: string;
   analysis: ModuleAnalysis;
   analyses: Map<string, ModuleAnalysis>;
   graphqlSystemPath: string;
+  aliasResolver?: AliasResolver;
 }): string => {
-  const { imports } = renderImportStatements({ filePath, analysis, analyses, graphqlSystemPath });
+  const { imports } = renderImportStatements({ filePath, analysis, analyses, graphqlSystemPath, aliasResolver });
 
   return [`registry.setModule("${filePath}", function*() {`, imports, "", buildNestedObject(analysis.definitions), "});"].join(
     "\n",

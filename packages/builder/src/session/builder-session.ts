@@ -527,7 +527,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   }
 
   // Build and write affected intermediate modules
-  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles, graphqlSystemPath })) {
+  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles, graphqlSystemPath, aliasResolver })) {
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
