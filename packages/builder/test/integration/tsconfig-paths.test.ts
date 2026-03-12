@@ -377,6 +377,71 @@ export const teamQuery = gql.default(({ query, $var }) =>
     expect(elementNames.some((name) => name.includes("teamQuery"))).toBe(true);
   });
 
+  test("resolves alias imports in intermediate module codegen (cross-file fragment reference)", async () => {
+    // Create directory structure
+    await fs.mkdir(path.join(workspaceRoot, "src/shared"), { recursive: true });
+    await fs.mkdir(path.join(workspaceRoot, "src/features"), { recursive: true });
+
+    // File A: defines a fragment using tagged template syntax
+    const fragmentContent = `
+import { gql } from "../../graphql-system";
+
+export const employeeFragment = gql.default(({ fragment }) =>
+  fragment("EmployeeBasic", "Employee")\`{ id name email }\`()
+);
+`;
+    await fs.writeFile(path.join(workspaceRoot, "src/shared/employee-fragment.ts"), fragmentContent);
+
+    // File B: imports fragment via alias and uses it in an operation
+    const queryContent = `
+import { gql } from "../../graphql-system";
+import { employeeFragment } from "@shared/employee-fragment";
+
+export const getEmployeeQuery = gql.default(({ query, $var }) =>
+  query.operation({
+    name: "GetEmployee",
+    variables: { ...$var("id").ID("!") },
+    fields: ({ f, $ }) => ({
+      ...f.employee({ id: $.id })(({ f }) => ({
+        ...employeeFragment.spread(),
+        ...f.role(),
+      })),
+    }),
+  }),
+);
+`;
+    await fs.writeFile(path.join(workspaceRoot, "src/features/employee-query.ts"), queryContent);
+
+    // Create tsconfigPaths config
+    const tsconfigPaths: ResolvedTsconfigPaths = {
+      baseUrl: workspaceRoot,
+      paths: {
+        "@shared/*": [path.join(workspaceRoot, "src/shared/*")],
+      },
+    };
+
+    const session = createBuilderSession({
+      evaluatorId: Bun.randomUUIDv7(),
+      entrypointsOverride: [path.join(workspaceRoot, "src/**/*.ts")],
+      config: createTestConfig(workspaceRoot, { tsconfigPaths }),
+    });
+
+    const result = session.build();
+
+    if (result.isErr()) {
+      console.error("Build failed:", result.error);
+    }
+    expect(result.isOk()).toBe(true);
+
+    const artifact = result._unsafeUnwrap();
+    const elementNames = Object.keys(artifact.elements);
+
+    // Should have both fragment and operation elements
+    expect(elementNames.length).toBe(2);
+    expect(elementNames.some((name) => name.includes("employeeFragment"))).toBe(true);
+    expect(elementNames.some((name) => name.includes("getEmployeeQuery"))).toBe(true);
+  });
+
   test("build works without tsconfigPaths (backward compatible)", async () => {
     // Create directory structure
     await fs.mkdir(path.join(workspaceRoot, "src"), { recursive: true });

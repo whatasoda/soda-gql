@@ -490,7 +490,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   const analyses = new Map(discoveryResult.snapshots.map((snapshot) => [snapshot.normalizedFilePath, snapshot.analysis]));
 
   // Phase 3: Validate module dependencies (pure computation)
-  const dependenciesValidationResult = validateModuleDependencies({ analyses, graphqlSystemHelper: graphqlHelper });
+  const dependenciesValidationResult = validateModuleDependencies({ analyses, graphqlSystemHelper: graphqlHelper, aliasResolver });
   if (dependenciesValidationResult.isErr()) {
     const error = dependenciesValidationResult.error;
     throw builderErrors.graphMissingImport(error.chain[0], error.chain[1]);
@@ -527,7 +527,7 @@ function* buildGen(input: BuildGenInput): EffectGenerator<BuildGenResult> {
   }
 
   // Build and write affected intermediate modules
-  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles, graphqlSystemPath })) {
+  for (const intermediateModule of generateIntermediateModules({ analyses, targetFiles, graphqlSystemPath, aliasResolver })) {
     intermediateModules.set(intermediateModule.filePath, intermediateModule);
   }
 
