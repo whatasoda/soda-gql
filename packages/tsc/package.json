@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/tsc",
-  "version": "0.13.1",
+  "version": "0.13.2",
   "description": "TypeScript transformer and compiler plugin for soda-gql",
   "type": "module",
   "private": false,
