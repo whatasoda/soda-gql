@@ -437,15 +437,16 @@ describe("createExtendComposer", () => {
       expect(operation.metadata).toEqual({ docKind: "Document" });
     });
 
-    it("template compat documentSource returns empty object", () => {
+    it("template compat documentSource returns real field selections", () => {
       const queryCompat = createCompatTaggedTemplate(schema, "query");
       const extend = createExtendComposer(schema);
 
       const compat = queryCompat("GetUser")`($id: ID!) { user(id: $id) { id name } }`;
       const operation = extend(compat);
 
-      // Template compat uses prebuilt document mode, so documentSource returns {}
-      expect(operation.documentSource()).toEqual({});
+      // Template compat now uses fieldsFactory mode, so documentSource returns real fields
+      const source = operation.documentSource();
+      expect(source).toHaveProperty("user");
     });
 
     it("callback compat documentSource returns real field selections", () => {

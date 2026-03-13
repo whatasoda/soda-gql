@@ -20,6 +20,7 @@ import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
 
+import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
 /**
@@ -109,7 +110,6 @@ export const createExtendComposer = <
     type DefineResult = Parameters<typeof Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>[0];
     return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>((() =>
       buildOperationArtifact({
-        mode: "fieldsFactory",
         schema,
         operationType,
         operationTypeName,
@@ -127,7 +127,7 @@ export const createExtendComposer = <
 
 /**
  * Builds an Operation from a TemplateCompatSpec by parsing the raw GraphQL source.
- * Delegates to buildOperationArtifact with pre-built document mode.
+ * Evaluates fields via buildFieldsFromSelectionSet for correct typegen output.
  */
 const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyMetadataAdapter>(
   schema: TSchema,
@@ -167,24 +167,31 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   // 4. Determine root type name
   const operationTypeName = schema.operations[operationType] as keyof typeof schema.object & string;
 
-  // 5. Delegate to buildOperationArtifact with pre-built document mode
+  // 5. Filter named fragment spreads that can't be resolved without interpolation context
+  const filteredSelectionSet = filterUnresolvedFragmentSpreads(opDef.selectionSet);
+
+  // 6. Delegate to buildOperationArtifact with fieldsFactory
   return wrapArtifactAsOperation(
     () =>
       buildOperationArtifact({
-        mode: "prebuilt",
         schema,
         operationType,
         operationTypeName,
         operationName,
         variables: varSpecifiers as unknown as VariableDefinitions,
-        prebuiltDocument: document,
-        prebuiltVariableNames: Object.keys(varSpecifiers),
+        fieldsFactory: ({ $ }) => {
+          return buildFieldsFromSelectionSet(
+            filteredSelectionSet,
+            schema,
+            operationTypeName,
+            $ as Readonly<Record<string, import("../types/type-foundation").AnyVarRef>>,
+          );
+        },
         adapter,
         metadata: options?.metadata,
         transformDocument: options?.transformDocument,
         adapterTransformDocument,
       }),
-    true,
-    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with pre-built document
+    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with template compat spec
   ) as any;
 };
