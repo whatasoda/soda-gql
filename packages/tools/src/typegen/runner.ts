@@ -5,8 +5,7 @@
  * 1. Load schemas from generated CJS bundle
  * 2. Build artifact to evaluate elements
  * 3. Extract field selections from builder
- * 4. Scan source files for tagged templates and merge selections
- * 5. Emit types.prebuilt.ts
+ * 4. Emit types.prebuilt.ts
  *
  * @module
  */
@@ -15,9 +14,7 @@ import { existsSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import {
   createBuilderService,
-  createGraphqlSystemIdentifyHelper,
   extractFieldSelections,
-  type FieldSelectionData,
   type IntermediateArtifactElement,
   loadSchemasFromBundle,
 } from "@soda-gql/builder";
@@ -26,8 +23,6 @@ import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
 import { err, ok } from "neverthrow";
 import { emitPrebuiltTypes } from "./emitter";
 import { typegenErrors } from "./errors";
-import { scanSourceFiles } from "./template-scanner";
-import { convertTemplatesToSelections } from "./template-to-selections";
 import type { TypegenResult, TypegenSuccess } from "./types";
 
 /**
@@ -97,8 +92,7 @@ const toImportSpecifier = (fromPath: string, targetPath: string, options?: Impor
  * 1. Loads schemas from the generated CJS bundle
  * 2. Creates a BuilderService and builds the artifact
  * 3. Extracts field selections from the artifact
- * 4. Scans source files for tagged templates and merges selections
- * 5. Emits types.prebuilt.ts using emitPrebuiltTypes
+ * 4. Emits types.prebuilt.ts using emitPrebuiltTypes
  *
  * @param options - Typegen options including config
  * @returns Result containing success data or error
@@ -146,20 +140,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
   const fieldSelectionsResult = extractFieldSelections(intermediateElements as Record<CanonicalId, IntermediateArtifactElement>);
   const { selections: builderSelections, warnings: extractWarnings } = fieldSelectionsResult;
 
-  // Step 4b: Scan source files for tagged templates and merge selections
-  const graphqlHelper = createGraphqlSystemIdentifyHelper(config);
-  const scanResult = scanSourceFiles({
-    include: [...config.include],
-    exclude: [...config.exclude],
-    baseDir: config.baseDir,
-    helper: graphqlHelper,
-  });
-
-  const templateSelections = convertTemplatesToSelections(scanResult.templates, schemas);
-
-  const fieldSelections = mergeSelections(builderSelections, templateSelections.selections, config.baseDir);
-
-  const scanWarnings = [...scanResult.warnings, ...templateSelections.warnings];
+  const fieldSelections = new Map(builderSelections);
 
   // Step 5: Emit types.prebuilt.ts
   const emitResult = await emitPrebuiltTypes({
@@ -186,7 +167,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     }
   }
 
-  const allWarnings = [...extractWarnings, ...scanWarnings, ...emitWarnings];
+  const allWarnings = [...extractWarnings, ...emitWarnings];
 
   return ok({
     prebuiltTypesPath,
@@ -195,54 +176,4 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
     skippedFragmentCount,
     warnings: allWarnings,
   } satisfies TypegenSuccess);
-};
-
-const extractElementName = (data: FieldSelectionData): string | undefined =>
-  data.type === "fragment" ? data.key : data.operationName;
-
-/**
- * Merge builder and template selections into a combined map.
- *
- * Builder selections are authoritative — VM evaluation correctly resolves
- * fragment spreads that static template analysis cannot handle.
- * Template selections serve as fallback for elements only found by the scanner.
- *
- * Deduplication is per-element (file + GraphQL name), not per-file, so that
- * callback-builder operations in files that also contain tagged templates are preserved.
- */
-export const mergeSelections = (
-  builderSelections: ReadonlyMap<CanonicalId, FieldSelectionData>,
-  templateSelections: ReadonlyMap<CanonicalId, FieldSelectionData>,
-  baseDir: string,
-): Map<CanonicalId, FieldSelectionData> => {
-  // Builder uses relative paths (e.g. "src/foo.ts::varName"), template scanner uses
-  // absolute paths (e.g. "/abs/path/src/foo.ts::FragmentName"). Normalize to relative.
-  const extractFilePart = (id: string): string => {
-    const filePart = id.split("::")[0] ?? "";
-    if (filePart.startsWith("/")) {
-      return relative(baseDir, filePart);
-    }
-    return filePart;
-  };
-
-  // Build set of (file, elementName) pairs from builder selections
-  const builderElements = new Set<string>();
-  for (const [id, data] of builderSelections) {
-    const name = extractElementName(data);
-    if (name) builderElements.add(`${extractFilePart(id)}::${name}`);
-  }
-
-  const fieldSelections = new Map<CanonicalId, FieldSelectionData>();
-  // Builder selections first (authoritative)
-  for (const [id, data] of builderSelections) {
-    fieldSelections.set(id, data);
-  }
-  // Template selections as fallback for elements not found by builder
-  for (const [id, data] of templateSelections) {
-    const name = extractElementName(data);
-    if (name && builderElements.has(`${extractFilePart(id)}::${name}`)) continue;
-    fieldSelections.set(id, data);
-  }
-
-  return fieldSelections;
 };
