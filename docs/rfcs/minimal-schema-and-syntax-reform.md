@@ -34,6 +34,30 @@ With the assumption that **codegen runs before typecheck**, argument types and o
 4. **AI-first, consistency over brevity** — a two-step model (`define → finalize`) is acceptable if it's consistent across all paths
 5. **Standard GraphQL syntax for variables** — eliminate custom DSLs; use what developers and AI already know
 
+## MinimalSchema Type
+
+```typescript
+type MinimalSchema = {
+  readonly label: string;
+  readonly operations: OperationRoots;
+  readonly object: { readonly [typename: string]: { readonly [field: string]: string } };
+  readonly union: { readonly [typename: string]: readonly string[] };
+  readonly typeNames: {
+    readonly scalar: readonly string[];
+    readonly enum: readonly string[];
+    readonly input: readonly string[];
+  };
+};
+```
+
+**Key principle: TS type vs JS runtime separation.** MinimalSchema reduces TypeScript type-checking cost only. At JavaScript runtime, the codegen-generated schema object retains full field argument data (`{ spec, arguments }` format). The MinimalSchema TypeScript type sees `object` fields as `{ [field: string]: string }`, but the actual runtime value may contain richer objects. Internal code that needs argument type info (e.g., enum detection in `buildArguments`) accesses it at runtime via duck-typing:
+
+```typescript
+const fieldDef = typeDef[fieldName];
+const spec = typeof fieldDef === "string" ? fieldDef : fieldDef.spec;
+const args = typeof fieldDef === "string" ? {} : fieldDef.arguments;
+```
+
 ## Decisions
 
 ### D1: Unified two-step model for operations
@@ -63,6 +87,17 @@ query("GetUser")`...`({ metadata: ({ $, document }) => ({ ... }) })
 query("GetUser")({ ... })({ metadata: ({ $, document }) => ({ ... }) })
 ```
 
+**Options object type**:
+
+```typescript
+type OperationOptions = {
+  variables?: string;  // GraphQL variable declarations, e.g. "($id: ID!)"
+  fields: (tools: { f: FieldAccessorFunction; $: Readonly<Record<string, VarRef>> }) => AnyFieldsExtended;
+};
+```
+
+Note: `variables` is typed as `string`. A template literal `` `($id: ID!)` `` in an object literal evaluates to a plain `string` at runtime — `TemplateStringsArray` only exists in tagged template call contexts. The formatter enforces template literal syntax in source code.
+
 **Overload dispatch**: Runtime checks `typeof firstArg` — `TemplateStringsArray` (has `.raw`) routes to tagged template, plain object routes to options.
 
 **Return type**:
@@ -74,7 +109,7 @@ type CurriedOperation =
 
 type TemplateResult = {
   (): Operation<...>;
-  (options: { metadata: MetadataBuilder }): Operation<...>;
+  (options: { metadata?: MetadataBuilder; transformDocument?: OperationDocumentTransformer }): Operation<...>;
 };
 ```
 
@@ -336,65 +371,31 @@ type Output = typeof getEmployee.$infer.output;
 
 ### 4.2 Codegen output
 
-#### `_defs/graph.ts` (NEW — replaces `_defs/objects.ts`)
+#### `_defs/objects.ts` (KEPT UNCHANGED)
+
+Per the TS type vs JS runtime separation principle, `_defs/objects.ts` is kept in its current `{ spec, arguments }` format. MinimalSchema reuses `object_default` from this file with a type cast in `_internal.ts`. No `_defs/graph.ts` is generated.
 
 ```typescript
-// BEFORE (_defs/objects.ts):
-// export const object_default_Employee = {
-//   name: "Employee",
-//   fields: {
-//     id: { spec: "s|ID|!", arguments: {} },
-//     name: { spec: "s|String|!", arguments: {} },
-//     tasks: { spec: "o|Task|![]!", arguments: { completed: "s|Boolean|?", limit: "s|Int|?" } },
-//   },
-// } as const;
-
-// AFTER (_defs/graph.ts):
-export const object_default = {
-  Query: {
-    employee: "o|Employee|?",
-    employees: "o|Employee|![]!",
+// _defs/objects.ts — unchanged from current format:
+export const object_default_Employee = {
+  name: "Employee",
+  fields: {
+    id: { spec: "s|ID|!", arguments: {} },
+    name: { spec: "s|String|!", arguments: {} },
+    tasks: { spec: "o|Task|![]!", arguments: { completed: "s|Boolean|?", limit: "s|Int|?" } },
   },
-  Employee: {
-    id: "s|ID|!",
-    name: "s|String|!",
-    email: "s|String|!",
-    role: "e|EmployeeRole|!",
-    tasks: "o|Task|![]!",
-    manager: "o|Employee|?",
-  },
-  Task: {
-    id: "s|ID|!",
-    title: "s|String|!",
-    completed: "s|Boolean|!",
-    priority: "e|TaskPriority|?",
-  },
-  // ...
 } as const;
+// ... (all object types, same as today)
 ```
 
-#### `_defs/unions.ts` (simplified)
+#### `_defs/unions.ts`, `_defs/enums.ts`, `_defs/inputs.ts` (KEPT UNCHANGED)
+
+All existing `_defs/` files are kept in their current format. They feed the `__fullSchema_*` export used by typegen. MinimalSchema union data is generated inline in `_internal.ts` (see below).
+
+#### `_defs/type-names.ts` (NEW — added alongside existing files)
 
 ```typescript
-// BEFORE:
-// export const union_default_ActivityItem = {
-//   name: "ActivityItem",
-//   types: { Comment: true, Task: true },
-// } as const;
-
-// AFTER:
-export const union_default = {
-  ActivityItem: ["Comment", "Task"],
-  SearchResult: ["Employee", "Project", "Task"],
-} as const;
-```
-
-#### `_defs/type-names.ts` (NEW — replaces `_defs/enums.ts`, `_defs/inputs.ts`)
-
-```typescript
-// BEFORE: full enum/input definitions with values and field structures
-//
-// AFTER: names only for type kind resolution
+// NEW file for MinimalSchema.typeNames. Existing _defs/enums.ts and _defs/inputs.ts are NOT replaced.
 export const typeNames_default = {
   scalar: ["ID", "String", "Int", "Float", "Boolean", "DateTime", "BigInt", "JSON"],
   enum: ["EmployeeRole", "ProjectStatus", "SortOrder", "TaskPriority"],
@@ -402,31 +403,64 @@ export const typeNames_default = {
 } as const;
 ```
 
-#### `_internal.ts` (drastically simplified)
+#### `_internal.ts` (dual schema assembly)
 
 ```typescript
 // BEFORE: ~93 lines with full schema assembly, inputTypeMethods, createVarMethodFactory
 //
-// AFTER:
+// AFTER: dual schema assembly — MinimalSchema for composer + full schema for typegen
+
 import { createGqlElementComposer, createStandardDirectives } from "@soda-gql/core";
-import { object_default } from "./_defs/graph";
-import { union_default } from "./_defs/unions";
+import type { MinimalSchema } from "@soda-gql/core";
+// Existing _defs imports (unchanged)
+import { object_default } from "./_defs/objects";  // full { spec, arguments } format
+import { enum_default } from "./_defs/enums";
+import { input_default } from "./_defs/inputs";
+import { union_default } from "./_defs/unions";     // old { name, types } format
+// New import
 import { typeNames_default } from "./_defs/type-names";
 
-const defaultSchema = {
+// --- FULL SCHEMA (for typegen via __fullSchema_*) ---
+// Unchanged assembly from existing _defs files
+const fullSchema_default = {
   label: "default" as const,
   operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" } as const,
+  scalar: scalar_default,
+  enum: enum_default,
+  input: input_default,
   object: object_default,
   union: union_default,
-  typeNames: typeNames_default,
 } as const;
+
+// --- MINIMAL SCHEMA (for composer) ---
+// Union data generated inline (generator knows members)
+const minimalUnion_default = {
+  ActivityItem: ["Comment", "Task"],
+  SearchResult: ["Employee", "Project", "Task"],
+} as const;
+
+// Reuse object_default — JS runtime has full { spec, arguments } data,
+// TS type cast sees it as MinimalSchema["object"]
+const minimalSchema_default = {
+  label: "default" as const,
+  operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" } as const,
+  object: object_default as unknown as MinimalSchema["object"],
+  union: minimalUnion_default,
+  typeNames: typeNames_default,
+} as const satisfies MinimalSchema;
 
 const customDirectives_default = { ...createStandardDirectives(), ...{} };
 
 export const __gql_default = createGqlElementComposer(
-  defaultSchema,
+  minimalSchema_default,
   { directiveMethods: customDirectives_default },
 );
+
+// inputTypeMethods: DELETED
+// createVarMethodFactory: DELETED
+
+export { minimalSchema_default as __schema_default };
+export { fullSchema_default as __fullSchema_default };
 ```
 
 Note: `_internal-injects.ts` (scalar definitions) is retained — it is referenced by `types.prebuilt.ts` for `ScalarInput_default` / `ScalarOutput_default` type helpers, but is **not** part of the MinimalSchema object. Scalars are listed by name only in `typeNames_default`.
@@ -580,7 +614,9 @@ query("GetUser")`($id: ID!) {
 | File | Reason |
 |------|--------|
 | `packages/core/src/composer/var-builder.ts` | `$var` eliminated |
-| `packages/core/src/types/element/fields-builder.ts` | Property-based `f.field` replaced by `f("field")` |
+| `packages/core/src/composer/operation.ts` | `.operation()` factory removed; absorbed by options object path |
+| `packages/core/src/composer/compat.ts` | Callback compat removed; tagged template compat (`query.compat("Name")\`...\``) covers all compat needs |
+| `packages/core/src/types/element/fields-builder.ts` | Schema-inference types replaced by PrebuiltTypes; builder contract types (`FieldsBuilder`, etc.) relocated to `composer/fields-builder.ts` as type-erased versions |
 
 ### Types to delete
 
@@ -594,25 +630,40 @@ query("GetUser")`($id: ID!) {
 
 ### Codegen output changes
 
-| Before | After |
-|--------|-------|
-| `_defs/objects.ts` (fields + arguments) | `_defs/graph.ts` (spec strings only) |
-| `_defs/enums.ts` (full enum definitions) | `_defs/type-names.ts` (names only) |
-| `_defs/inputs.ts` (full input field structures) | `_defs/type-names.ts` (names only) |
+| File | Change |
+|------|--------|
+| `_defs/objects.ts` | KEPT UNCHANGED (JS runtime data for MinimalSchema via type cast) |
+| `_defs/enums.ts` | KEPT UNCHANGED (for `__fullSchema_*`) |
+| `_defs/inputs.ts` | KEPT UNCHANGED (for `__fullSchema_*`) |
+| `_defs/unions.ts` | KEPT UNCHANGED (for `__fullSchema_*`) |
+| `_defs/type-names.ts` | NEW — scalar/enum/input name arrays for MinimalSchema |
+| `_internal.ts` | Dual schema assembly: `minimalSchema_*` + `fullSchema_*`. Exports `__schema_*` and `__fullSchema_*` |
 | `inputTypeMethods_default` in `_internal.ts` | deleted |
 | `createVarMethodFactory` call in `_internal.ts` | deleted |
 
 ## Implementation Order
 
-All changes are made without migration paths (pre-release v0.2.0).
+All changes ship in a single PR without migration paths (pre-release v0.2.0).
 
 | Step | Scope | Content | Dependencies |
 |------|-------|---------|--------------|
-| 1 | Core | Define `MinimalSchema` type, replacing `AnyGraphqlSchema` for composer use | None |
-| 2 | Codegen | Generate `_defs/graph.ts`, `_defs/type-names.ts`, simplified `_internal.ts` | Step 1 |
-| 3 | Typegen | Extend `types.prebuilt.ts` with `varTypes` and `fields` entries | Step 2 |
-| 4-6 | Core (single PR) | Delete `$var` / `VarBuilder` / `inputTypeMethods`; implement `f("field", args)` accessor; implement `query("Name")({ variables, fields })` options object path | Steps 1-3 |
-| 7 | Tools | Update formatter for variables/fields line break rules and template literal enforcement | Step 4-6 |
+| 1 | Core | Define `MinimalSchema` type in `packages/core/src/types/schema/schema.ts` | None |
+| 2 | Codegen | Add `_defs/type-names.ts`; keep existing `_defs/` unchanged; dual assembly in `_internal.ts` (MinimalSchema + full schema); delete `inputTypeMethods` | Step 1 |
+| 3 | Typegen | Add `loadFullSchemasFromBundle`; extend `types.prebuilt.ts` with `varTypes` and `fields` entries | Step 2 |
+| 4-6 | Core | Delete `$var` / `VarBuilder` / `inputTypeMethods` / callback compat; implement `f("field", args)` accessor; implement `query("Name")({ variables, fields })` options object path | Step 1 |
+| 7 | Tools | Update formatter for variables/fields line break rules and template literal enforcement; graphql-compat emitter to tagged template output | Steps 4-6 |
 | 8 | All | Rewrite tests and fixtures to new syntax | Steps 4-7 |
 
-Steps 4-6 are done in a single PR due to strong interdependencies. The before/after reference in section 4 serves as the mechanical rewrite guide for step 8.
+```
+Step 1: MinimalSchema type definition
+  ↓
+Step 2: Codegen  ←→  Steps 4-6: Core changes (parallel-capable)
+  ↓                       ↓
+Step 3: Typegen      Step 7: Formatter/Emitter
+  ↓                       ↓
+Step 8: Test/fixture rewrite (depends on all above)
+```
+
+Steps 2 and 4-6 can proceed in parallel since they both depend only on Step 1. Step 3 depends on Step 2 for `__fullSchema_*` exports. The before/after reference in section 4 serves as the mechanical rewrite guide for step 8.
+
+See `docs/plans/minimal-schema-reform/plan-core.md` for detailed implementation sequence.
