@@ -748,4 +748,29 @@ describe("tagged template operation integration", () => {
       expect(printed).toContain("user(id: $id)");
     });
   });
+
+  describe("zero-interpolation tagged template field extraction", () => {
+    it("produces non-empty fields via documentSource (regression: previously returned {})", () => {
+      const GetUser = gql(({ query }) => query("GetUser")`($id: ID!) { user(id: $id) { id name } }`());
+
+      const fields = GetUser.documentSource();
+      // Must NOT be empty — prebuilt mode previously returned {}
+      expect(Object.keys(fields).length).toBeGreaterThan(0);
+      expect(fields).toHaveProperty("user");
+    });
+
+    it("produces correct nested field structure without interpolations", () => {
+      const GetUser = gql(({ query }) =>
+        query("GetUser")`{
+          user(id: "1") {
+            id
+            name
+          }
+        }`(),
+      );
+
+      const fields = GetUser.documentSource();
+      expect(fields).toHaveProperty("user");
+    });
+  });
 });

@@ -13,7 +13,7 @@ import type { AnyMetadataAdapter, DocumentTransformer } from "../types/metadata"
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
-import { buildFieldsFromSelectionSet } from "./fragment-tagged-template";
+import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
@@ -171,51 +171,26 @@ export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, 
       return (options?: OperationTemplateMetadataOptions): AnyOperationOf<TOperationType> => {
         const resolvedMetadata = resolveMetadataOption(options?.metadata);
 
-        if (interpolationMap.size === 0) {
-          // No interpolations: use pre-built document mode
-          return wrapArtifactAsOperation(
-            () =>
-              buildOperationArtifact({
-                mode: "prebuilt",
+        return wrapArtifactAsOperation(() =>
+          buildOperationArtifact({
+            schema,
+            operationType,
+            operationTypeName,
+            operationName,
+            variables: varSpecifiers,
+            fieldsFactory: ({ $ }) => {
+              return buildFieldsFromSelectionSet(
+                filterUnresolvedFragmentSpreads(opNode.selectionSet, interpolationMap),
                 schema,
-                operationType,
                 operationTypeName,
-                operationName,
-                variables: varSpecifiers,
-                prebuiltDocument: document,
-                prebuiltVariableNames: Object.keys(varSpecifiers),
-                adapter: resolvedAdapter,
-                metadata: resolvedMetadata,
-                adapterTransformDocument,
-              }),
-            true,
-          );
-        }
-
-        // Interpolations present: use fieldsFactory mode for fragment usage tracking
-        return wrapArtifactAsOperation(
-          () =>
-            buildOperationArtifact({
-              mode: "fieldsFactory",
-              schema,
-              operationType,
-              operationTypeName,
-              operationName,
-              variables: varSpecifiers,
-              fieldsFactory: ({ $ }) => {
-                return buildFieldsFromSelectionSet(
-                  opNode.selectionSet,
-                  schema,
-                  operationTypeName,
-                  $ as Readonly<Record<string, AnyVarRef>>,
-                  interpolationMap,
-                );
-              },
-              adapter: resolvedAdapter,
-              metadata: resolvedMetadata,
-              adapterTransformDocument,
-            }),
-          false,
+                $ as Readonly<Record<string, AnyVarRef>>,
+                interpolationMap,
+              );
+            },
+            adapter: resolvedAdapter,
+            metadata: resolvedMetadata,
+            adapterTransformDocument,
+          }),
         );
       };
     };

@@ -76,6 +76,36 @@ export function extractFragmentVariables(rawSource: string, schemaIndex: SchemaI
 }
 
 /**
+ * Filters out named fragment spreads that cannot be resolved without an interpolation map.
+ * Used when building fields from compat templates or zero-interpolation tagged templates
+ * that may contain standard GraphQL `...FragmentName` spreads.
+ */
+export function filterUnresolvedFragmentSpreads(
+  selectionSet: SelectionSetNode,
+  interpolationMap?: ReadonlyMap<string, unknown>,
+): SelectionSetNode {
+  return {
+    ...selectionSet,
+    selections: selectionSet.selections
+      .filter((sel) => {
+        if (sel.kind !== Kind.FRAGMENT_SPREAD) return true;
+        // Keep spreads that are in the interpolation map (e.g., __INTERPOLATION_N__)
+        return interpolationMap?.has(sel.name.value) ?? false;
+      })
+      .map((sel) => {
+        // Recurse into field and inline fragment selection sets
+        if (sel.kind === Kind.FIELD && sel.selectionSet) {
+          return { ...sel, selectionSet: filterUnresolvedFragmentSpreads(sel.selectionSet, interpolationMap) };
+        }
+        if (sel.kind === Kind.INLINE_FRAGMENT && sel.selectionSet) {
+          return { ...sel, selectionSet: filterUnresolvedFragmentSpreads(sel.selectionSet, interpolationMap) };
+        }
+        return sel;
+      }),
+  };
+}
+
+/**
  * Builds field selections from a GraphQL AST SelectionSet by driving field factories.
  * Converts parsed AST selections into the AnyFieldsExtended format that the document builder expects.
  * Also used by typegen for static field extraction from tagged templates.

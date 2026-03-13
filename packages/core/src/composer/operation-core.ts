@@ -56,59 +56,10 @@ type OperationCoreParamsBase<
 };
 
 /**
- * Field factory mode: evaluates fields and builds document at runtime.
- * @internal
- */
-type FieldsFactoryParams<
-  TSchema extends AnyGraphqlSchema,
-  TOperationType extends OperationType,
-  TOperationName extends string,
-  TVarDefinitions extends VariableDefinitions,
-  TFields extends AnyFieldsExtended,
-  TOperationMetadata,
-  TAdapter extends AnyMetadataAdapter,
-> = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
-  readonly mode: "fieldsFactory";
-  readonly fieldsFactory: FieldsBuilder<
-    TSchema,
-    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
-    TVarDefinitions,
-    TFields
-  >;
-  readonly prebuiltDocument?: never;
-  readonly prebuiltVariableNames?: never;
-};
-
-/**
- * Pre-built document mode: uses pre-parsed DocumentNode directly.
- * Fragment usages are empty (GraphQL-level fragment spreads in the AST
- * don't participate in soda-gql metadata pipeline).
- * @internal
- */
-type PrebuiltDocumentParams<
-  TSchema extends AnyGraphqlSchema,
-  TOperationType extends OperationType,
-  TOperationName extends string,
-  TVarDefinitions extends VariableDefinitions,
-  // biome-ignore lint/correctness/noUnusedVariables: TFields required for union type compatibility with FieldsFactoryParams
-  TFields extends AnyFieldsExtended,
-  TOperationMetadata,
-  TAdapter extends AnyMetadataAdapter,
-> = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
-  readonly mode: "prebuilt";
-  readonly prebuiltDocument: import("graphql").DocumentNode;
-  readonly prebuiltVariableNames?: string[];
-  readonly fieldsFactory?: never;
-};
-
-/**
  * Parameters for building an operation artifact.
- * Used by both operation and extend composers.
+ * Uses `fieldsFactory` to evaluate fields and build document.
  *
- * Discriminated union of two mutually exclusive modes:
- * - **Field factory mode**: Uses `fieldsFactory` to evaluate fields and build document.
- * - **Pre-built document mode**: Uses `prebuiltDocument` and `prebuiltVariableNames` to skip
- *   field evaluation and document building.
+ * @internal Used by operation.ts, extend.ts, and operation-tagged-template.ts
  */
 export type OperationCoreParams<
   TSchema extends AnyGraphqlSchema,
@@ -118,9 +69,14 @@ export type OperationCoreParams<
   TFields extends AnyFieldsExtended,
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
-> =
-  | FieldsFactoryParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>
-  | PrebuiltDocumentParams<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields, TOperationMetadata, TAdapter>;
+> = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
+  readonly fieldsFactory: FieldsBuilder<
+    TSchema,
+    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
+    TVarDefinitions,
+    TFields
+  >;
+};
 
 /**
  * Result type from buildOperationArtifact.
@@ -189,47 +145,31 @@ export const buildOperationArtifact = <
   // Create variable refs (needed for both field factory and metadata builder)
   const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
 
-  let document: import("graphql").DocumentNode;
-  let variableNames: (keyof TVarDefinitions & string)[];
-  let fields: TFields;
+  const { fieldsFactory } = params;
+  const f = createFieldFactories(schema, operationTypeName);
+
+  // Evaluate fields with fragment tracking
+  const collected = withFragmentUsageCollection(() => fieldsFactory({ f, $ }));
+  const fields = collected.result;
   type FragmentUsage = ReturnType<typeof withFragmentUsageCollection>["usages"];
-  let fragmentUsages: FragmentUsage;
+  const fragmentUsages: FragmentUsage = collected.usages;
 
-  if (params.mode === "prebuilt") {
-    // Pre-built document mode: skip field eval + doc build.
-    // GraphQL-level ...FragmentName exists in AST but doesn't participate
-    // in soda-gql metadata pipeline (resolved by GraphQL runtime).
-    document = params.prebuiltDocument;
-    variableNames = (params.prebuiltVariableNames ?? Object.keys(variables)) as (keyof TVarDefinitions & string)[];
-    fields = {} as TFields;
-    fragmentUsages = [];
-  } else {
-    // Field factory mode: full field eval + doc build
-    const { fieldsFactory } = params;
-    const f = createFieldFactories(schema, operationTypeName);
+  // Build document
+  const document = buildDocument<
+    TSchema,
+    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
+    TFields,
+    TVarDefinitions
+  >({
+    operationName,
+    operationType,
+    operationTypeName,
+    variables,
+    fields,
+    schema,
+  });
 
-    // Evaluate fields with fragment tracking
-    const collected = withFragmentUsageCollection(() => fieldsFactory({ f, $ }));
-    fields = collected.result;
-    fragmentUsages = collected.usages;
-
-    // Build document
-    document = buildDocument<
-      TSchema,
-      TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
-      TFields,
-      TVarDefinitions
-    >({
-      operationName,
-      operationType,
-      operationTypeName,
-      variables,
-      fields,
-      schema,
-    });
-
-    variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
-  }
+  const variableNames = Object.keys(variables) as (keyof TVarDefinitions & string)[];
 
   // 4. Check if any fragment has a metadata builder
   const hasFragmentMetadata = fragmentUsages.some((u) => u.metadataBuilder);
@@ -342,9 +282,6 @@ export const buildOperationArtifact = <
  * handling both sync and async artifact results.
  *
  * @param artifactFactory - Factory that produces the artifact (may return Promise for async metadata)
- * @param overrideDocumentSource - When true, overrides documentSource to return empty object.
- *   Required for pre-built document mode where fields = {} and the real documentSource is meaningless.
- *   Must be false for fieldsFactory mode to preserve real field selections.
  *
  * @internal Used by extend.ts and operation-tagged-template.ts
  */
@@ -352,20 +289,7 @@ export const wrapArtifactAsOperation = <TOperationType extends OperationType>(
   artifactFactory: () =>
     | OperationArtifactResult<TOperationType, string, VariableDefinitions, AnyFieldsExtended, unknown>
     | Promise<OperationArtifactResult<TOperationType, string, VariableDefinitions, AnyFieldsExtended, unknown>>,
-  overrideDocumentSource: boolean,
 ): AnyOperationOf<TOperationType> => {
-  return Operation.create((() => {
-    const artifact = artifactFactory();
-    if (overrideDocumentSource) {
-      if (isPromiseLike(artifact)) {
-        return artifact.then((a) => ({ ...a, documentSource: () => ({}) as never }));
-      }
-      return { ...artifact, documentSource: () => ({}) as never };
-    }
-    if (isPromiseLike(artifact)) {
-      return artifact;
-    }
-    return artifact;
-    // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with dynamic artifact
-  }) as never) as any;
+  // biome-ignore lint/suspicious/noExplicitAny: Type cast required for Operation.create with dynamic artifact
+  return Operation.create(artifactFactory as never) as any;
 };
