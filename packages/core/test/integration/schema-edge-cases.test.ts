@@ -52,7 +52,7 @@ describe("Schema Edge Cases", () => {
       expect(() => {
         const factories = createFieldFactories(schema, "Query");
         // Trigger the factory to execute by accessing the invalid field
-        (factories as any).weirdField();
+        (factories as any)("weirdField")();
       }).toThrow("Unsupported field type kind: excluded");
     });
   });

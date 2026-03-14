@@ -151,13 +151,9 @@ describe("async metadata resolution", () => {
 import { gql } from "./graphql-system";
 
 export const syncMetadataQuery = gql.default(({ query }) =>
-  query("SyncMetadataQuery")({
-    variables: \`($id: ID!)\`,
-    metadata: () => {
-      return { syncKey: "syncValue", value: 42 };
-    },
-    fields: ({ f, $ }) => ({ ...f("employee", { id: $.id })(() => ({ ...f("id")() })) }),
-  })(),
+  query("SyncMetadataQuery")\`($id: ID!) { employee(id: $id) { id } }\`({
+    metadata: { syncKey: "syncValue", value: 42 },
+  }),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "sync-operation.ts"), sourceContent);
@@ -197,18 +193,13 @@ export const syncMetadataQuery = gql.default(({ query }) =>
 import { gql } from "./graphql-system";
 
 export const nestedAsyncMetadataQuery = gql.default(({ query }) =>
-  query("NestedAsyncMetadataQuery")({
-    variables: \`($id: ID!)\`,
-    metadata: async () => {
-      await Promise.resolve();
-      return {
-        headers: { "X-Custom": "value", "Authorization": "Bearer token" },
-        options: { retry: true, timeout: 5000 },
-        tags: ["important", "async"],
-      };
+  query("NestedAsyncMetadataQuery")\`($id: ID!) { employee(id: $id) { id } }\`({
+    metadata: {
+      headers: { "X-Custom": "value", "Authorization": "Bearer token" },
+      options: { retry: true, timeout: 5000 },
+      tags: ["important", "async"],
     },
-    fields: ({ f, $ }) => ({ ...f("employee", { id: $.id })(() => ({ ...f("id")() })) }),
-  })(),
+  }),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "nested-async-operation.ts"), sourceContent);

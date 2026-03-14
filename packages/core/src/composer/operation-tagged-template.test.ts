@@ -104,7 +104,7 @@ describe("createOperationTaggedTemplate", () => {
     const query = createOperationTaggedTemplate(schema, "query");
 
     it("throws when interpolated value is not a Fragment or callback", () => {
-      expect(() => (query("Foo") as any)(["part1", "part2"], "interpolated")).toThrow(
+      expect(() => (query("Foo") as any)(Object.assign(["part1", "part2"], { raw: ["part1", "part2"] }), "interpolated")).toThrow(
         "Tagged templates only accept Fragment instances or callback functions as interpolated values",
       );
     });

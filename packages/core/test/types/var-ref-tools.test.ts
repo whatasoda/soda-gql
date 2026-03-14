@@ -9,19 +9,19 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
-import { createVarRefFromVariable, VarRef } from "../../src/types/type-foundation/var-ref";
+import { getVarRefName } from "../../src/composer/var-ref-tools";
+import { createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
 
 describe("var-ref-tools", () => {
-  it("getValueAt returns value for a simple VarRef", () => {
+  it("getVarRefName returns name for a variable VarRef", () => {
     const varRef = createVarRefFromVariable("testVar");
-    const value = getValueAt(varRef, (p: { value: string }) => p.value);
-    expect(typeof value).toBe("string");
+    const name = getVarRefName(varRef);
+    expect(name).toBe("testVar");
   });
 
-  it("getNameAt returns name string for VarRef", () => {
-    const varRef = createVarRefFromVariable("testVar");
-    const name = getNameAt(varRef, (p: { value: string }) => p.value);
-    expect(typeof name).toBe("string");
+  it("getVarRefName returns correct name for different variable names", () => {
+    const varRef = createVarRefFromVariable("userId");
+    const name = getVarRefName(varRef);
+    expect(name).toBe("userId");
   });
 });

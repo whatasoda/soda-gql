@@ -22,6 +22,8 @@ export type EmitOptions = {
   readonly schemaDocument?: DocumentNode;
   /** Operation document containing parsed definitions (for print-based emission) */
   readonly operationDocument?: DocumentNode;
+  /** Cross-file fragment imports: fragmentName -> import path (same-file fragments are omitted) */
+  readonly fragmentImports?: ReadonlyMap<string, string>;
 };
 
 /**
@@ -97,6 +99,23 @@ const findFragmentNode = (document: DocumentNode, name: string): FragmentDefinit
 };
 
 /**
+ * Replace `...FragmentName` patterns in a GraphQL body with tagged template interpolations
+ * that reference the fragment's `.spread()` method via a callback.
+ *
+ * @param body - Collapsed single-line GraphQL body
+ * @param fragmentDependencies - Fragment names used by this operation
+ * @returns Body with fragment spreads replaced by interpolation expressions
+ */
+const replaceFragmentSpreads = (body: string, fragmentDependencies: readonly string[]): string => {
+  let result = body;
+  for (const fragName of fragmentDependencies) {
+    const pattern = new RegExp(`\\.\\.\\.${escapeRegExp(fragName)}(?![\\w])`, "g");
+    result = result.replace(pattern, `...\${() => ${fragName}Fragment.spread()}`);
+  }
+  return result;
+};
+
+/**
  * Emit TypeScript code for an operation.
  */
 export const emitOperation = (operation: EnrichedOperation, options: EmitOptions): Result<string, GraphqlCompatError> => {
@@ -119,9 +138,24 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
     graphqlBody = "{ }";
   }
 
+  const hasFragmentSpreads = operation.fragmentDependencies.length > 0;
+
+  // When fragment spreads are present, use regular tagged template with interpolation
+  // instead of compat (which rejects interpolation)
+  if (hasFragmentSpreads) {
+    graphqlBody = replaceFragmentSpreads(graphqlBody, operation.fragmentDependencies);
+  }
+
   const lines: string[] = [];
   lines.push(`export const ${exportName} = gql.${options.schemaName}(({ ${operationType} }) =>`);
-  lines.push(`  ${operationType}.compat(${JSON.stringify(operation.name)})\`${graphqlBody}\`,`);
+
+  if (hasFragmentSpreads) {
+    // Use regular tagged template with ()  call to resolve the TemplateResult
+    lines.push(`  ${operationType}(${JSON.stringify(operation.name)})\`${graphqlBody}\`(),`);
+  } else {
+    lines.push(`  ${operationType}.compat(${JSON.stringify(operation.name)})\`${graphqlBody}\`,`);
+  }
+
   lines.push(`);`);
 
   return ok(lines.join("\n"));

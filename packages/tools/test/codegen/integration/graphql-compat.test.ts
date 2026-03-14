@@ -260,10 +260,10 @@ describe("graphql-compat integration", () => {
       operationDocument,
     })._unsafeUnwrap();
 
-    // Fragment spreads should be in the GraphQL body
+    // Fragment spreads should be emitted as interpolated .spread() calls
     expect(output).not.toContain("import");
-    expect(output).toContain("...UserBasicFields");
-    expect(output).toContain("...PostFields");
+    expect(output).toContain("UserBasicFieldsFragment.spread()");
+    expect(output).toContain("PostFieldsFragment.spread()");
   });
 
   test("end-to-end: handles complex variable types in tagged template body", async () => {
@@ -453,8 +453,8 @@ describe("graphql-compat integration", () => {
 
     // Should NOT have import (same file)
     expect(operationOutput).not.toContain("import { UserFieldsFragment }");
-    // Should contain fragment spread in GraphQL body
-    expect(operationOutput).toContain("...UserFields");
+    // Should contain fragment spread as interpolated .spread() call
+    expect(operationOutput).toContain("UserFieldsFragment.spread()");
 
     // Emit fragment
     const fragmentOutput = emitFragment(fragments[0]!, {
@@ -524,9 +524,9 @@ describe("graphql-compat integration", () => {
     // Neither should have import
     expect(queryOutput).not.toContain("import { UserFieldsFragment }");
     expect(mutationOutput).not.toContain("import { UserFieldsFragment }");
-    // Both should have fragment spread in GraphQL body
-    expect(queryOutput).toContain("...UserFields");
-    expect(mutationOutput).toContain("...UserFields");
+    // Both should have fragment spread as interpolated .spread() call
+    expect(queryOutput).toContain("UserFieldsFragment.spread()");
+    expect(mutationOutput).toContain("UserFieldsFragment.spread()");
   });
 
   test("end-to-end: nested fragments in same file", async () => {
@@ -592,8 +592,9 @@ describe("graphql-compat integration", () => {
     expect(operationOutput).not.toContain("import { UserFullFieldsFragment }");
     expect(fragmentOutput).not.toContain("import { UserBasicFieldsFragment }");
 
-    // Fragment spreads should be in GraphQL bodies
-    expect(operationOutput).toContain("...UserFullFields");
+    // Operation fragment spreads should be emitted as interpolated .spread() calls
+    expect(operationOutput).toContain("UserFullFieldsFragment.spread()");
+    // Fragment-in-fragment spreads remain as raw text
     expect(fragmentOutput).toContain("...UserBasicFields");
   });
 });

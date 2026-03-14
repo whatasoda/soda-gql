@@ -227,6 +227,13 @@ function handleTaggedTemplate<TSchema extends MinimalSchema, TOperationType exte
   // Merge variable definitions from interpolated fragments
   varSpecifiers = mergeVariableDefinitions(varSpecifiers, interpolationMap);
 
+  // Check if any interpolated fragments contributed new variables.
+  // If so, varDefNodes (from the parsed template) is incomplete — omit it so that
+  // buildDocument derives VariableDefinitionNodes from the merged varSpecifiers instead.
+  const hasInterpolatedFragmentVars = [...interpolationMap.values()].some(
+    (v) => v instanceof Fragment && Object.keys(v.variableDefinitions).length > 0,
+  );
+
   // Determine root type name based on operation type
   const operationTypeName = schema.operations[operationType];
   if (operationTypeName === null) {
@@ -245,7 +252,7 @@ function handleTaggedTemplate<TSchema extends MinimalSchema, TOperationType exte
         operationTypeName,
         operationName,
         variables: varSpecifiers,
-        variableDefinitionNodes: varDefNodes,
+        variableDefinitionNodes: hasInterpolatedFragmentVars ? undefined : varDefNodes,
         fieldsFactory: ({ $ }) => {
           return buildFieldsFromSelectionSet(
             filterUnresolvedFragmentSpreads(opNode.selectionSet, interpolationMap),

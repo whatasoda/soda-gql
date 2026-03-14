@@ -189,8 +189,10 @@ describe("emitOperation", () => {
 
     // Note: imports are handled by the caller (CLI), not the emitter
     expect(output).not.toContain("import");
-    // Fragment spread should be in the GraphQL body
-    expect(output).toContain("...UserFields");
+    // Fragment spread should be emitted as interpolated .spread() call
+    expect(output).toContain("UserFieldsFragment.spread()");
+    // Should use regular tagged template (not compat) when fragment spreads are present
+    expect(output).not.toContain(".compat(");
   });
 
   it("emits inline fragments in tagged template body", () => {

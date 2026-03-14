@@ -350,7 +350,7 @@ export const getEmployeeQuery = gql.default(({ query }) =>
   query("GetEmployee")({
     variables: \`($id: ID!)\`,
     fields: ({ f, $ }) => ({
-      ...f("employee", { id: $.id })(() => ({
+      ...f("employee", { id: $.id })(({ f }) => ({
         ...employeeFragment.spread(),
         ...f("role")(),
       })),
