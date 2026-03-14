@@ -44,7 +44,7 @@ export {
 export type { FileStats } from "./scheduler";
 export { BuilderEffects, FileReadEffect, FileStatEffect } from "./scheduler";
 // Schema loading
-export { type LoadSchemasResult, loadSchemasFromBundle } from "./schema-loader";
+export { type LoadSchemasResult, loadFullSchemasFromBundle, loadSchemasFromBundle } from "./schema-loader";
 export { BuilderArtifactSchema } from "./schemas/artifact";
 export type { BuilderService, BuilderServiceConfig } from "./service";
 export { createBuilderService } from "./service";

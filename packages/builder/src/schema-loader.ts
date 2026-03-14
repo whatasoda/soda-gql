@@ -125,3 +125,100 @@ export const loadSchemasFromBundle = (cjsPath: string, schemaNames: readonly str
 
   return ok(schemas);
 };
+
+/**
+ * Load AnyGraphqlSchema from a generated CJS bundle using `__fullSchema_*` exports.
+ *
+ * Unlike `loadSchemasFromBundle` which reads schemas from `gql.$schema`,
+ * this function reads the `__fullSchema_*` named exports directly.
+ * These contain the full AnyGraphqlSchema with complete scalar/enum/input
+ * definitions needed for type generation.
+ *
+ * @param cjsPath - Absolute path to the CJS bundle file
+ * @param schemaNames - Names of schemas to load (e.g., ["default", "admin"])
+ * @returns Record mapping schema names to AnyGraphqlSchema objects
+ *
+ * @example
+ * ```typescript
+ * const result = loadFullSchemasFromBundle(
+ *   "/path/to/generated/index.cjs",
+ *   ["default"]
+ * );
+ *
+ * if (result.isOk()) {
+ *   const schemas = result.value;
+ *   console.log(schemas.default); // AnyGraphqlSchema
+ * }
+ * ```
+ */
+export const loadFullSchemasFromBundle = (cjsPath: string, schemaNames: readonly string[]): LoadSchemasResult => {
+  const resolvedPath = resolve(cjsPath);
+
+  // Check if file exists
+  if (!existsSync(resolvedPath)) {
+    return err({
+      code: "CONFIG_NOT_FOUND",
+      message: `CJS bundle not found: ${resolvedPath}. Run 'soda-gql codegen' first.`,
+      path: resolvedPath,
+    });
+  }
+
+  // Read the bundled code
+  let bundledCode: string;
+  try {
+    bundledCode = readFileSync(resolvedPath, "utf-8");
+  } catch (error) {
+    return err({
+      code: "DISCOVERY_IO_ERROR",
+      message: `Failed to read CJS bundle: ${error instanceof Error ? error.message : String(error)}`,
+      path: resolvedPath,
+      cause: error,
+    });
+  }
+
+  // Execute the bundle in sandbox
+  let finalExports: Record<string, unknown>;
+  try {
+    finalExports = executeSandbox(bundledCode, resolvedPath);
+  } catch (error) {
+    return err({
+      code: "RUNTIME_MODULE_LOAD_FAILED",
+      message: `Failed to execute CJS bundle: ${error instanceof Error ? error.message : String(error)}`,
+      filePath: resolvedPath,
+      astPath: "",
+      cause: error,
+    });
+  }
+
+  const schemas: Record<string, AnyGraphqlSchema> = {};
+
+  for (const name of schemaNames) {
+    const exportKey = `__fullSchema_${name}`;
+    const schema = finalExports[exportKey];
+
+    if (!schema || typeof schema !== "object") {
+      // Fall back to __schema_* exports for backward compatibility
+      const fallbackKey = `__schema_${name}`;
+      const fallbackSchema = finalExports[fallbackKey];
+
+      if (!fallbackSchema || typeof fallbackSchema !== "object") {
+        const availableExports = Object.keys(finalExports)
+          .filter((k) => k.startsWith("__fullSchema_") || k.startsWith("__schema_"))
+          .join(", ");
+        return err({
+          code: "SCHEMA_NOT_FOUND",
+          message: `Full schema '${name}' not found in exports (tried ${exportKey}, ${fallbackKey}). Available: ${availableExports || "(none)"}`,
+          schemaLabel: name,
+          canonicalId: exportKey,
+        });
+      }
+
+      schemas[name] = fallbackSchema as AnyGraphqlSchema;
+      continue;
+    }
+
+    schemas[name] = schema as AnyGraphqlSchema;
+  }
+
+  return ok(schemas);
+};
