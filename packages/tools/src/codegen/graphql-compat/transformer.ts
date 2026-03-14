@@ -17,7 +17,7 @@ import type {
   ParsedOperation,
   ParsedSelection,
   ParsedValue,
-  ParseResult,
+  ParseResultBase as ParseResult,
   TransformOptions,
   TransformResult,
   TypeInfo,

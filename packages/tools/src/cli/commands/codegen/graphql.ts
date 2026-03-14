@@ -252,6 +252,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
       graphqlSystemPath,
       fragmentImports,
       schemaDocument,
+      operationDocument: parsed.document,
     };
 
     const imports: string[] = [];

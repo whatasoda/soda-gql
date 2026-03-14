@@ -101,7 +101,7 @@ const extractFromDocument = (document: DocumentNode, sourceFile: string): ParseR
     }
   }
 
-  return { operations, fragments };
+  return { operations, fragments, document };
 };
 
 /**
