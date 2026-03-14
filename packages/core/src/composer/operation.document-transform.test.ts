@@ -1,14 +1,14 @@
 import { describe, expect, it } from "bun:test";
 import { type DocumentNode, Kind, print, visit } from "graphql";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { DocumentTransformArgs, OperationDocumentTransformArgs } from "../types/metadata";
-import type { MinimalSchema } from "../types/schema/schema";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
 
-const schema = {
+const fullSchema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -40,9 +40,9 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
+const schema = asMinimalSchema(fullSchema);
 type Schema = typeof schema & { _?: never };
 
 describe("document transformation via adapter", () => {
@@ -241,10 +241,10 @@ describe("document transformation via adapter", () => {
   it("works with mutation operation type", () => {
     let capturedOperationType: string | undefined;
 
-    const mutationSchema = {
-      ...schema,
+    const mutationSchema = asMinimalSchema({
+      ...fullSchema,
       object: {
-        ...schema.object,
+        ...fullSchema.object,
         Mutation: define("Mutation").object({
           createUser: unsafeOutputType.object("User:!", {
             arguments: {
@@ -253,7 +253,7 @@ describe("document transformation via adapter", () => {
           }),
         }),
       },
-    } satisfies MinimalSchema;
+    } satisfies AnyGraphqlSchema);
 
     type MutationSchema = typeof mutationSchema & { _?: never };
 
@@ -360,8 +360,7 @@ describe("document transformation via adapter", () => {
 
 describe("operation-level transformDocument", () => {
   it("receives typed operation metadata", () => {
-    type OperationMeta = { cacheHint: number; requiresAuth: boolean };
-    let capturedArgs: OperationDocumentTransformArgs<OperationMeta> | undefined;
+    let capturedArgs: OperationDocumentTransformArgs<unknown> | undefined;
 
     const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
@@ -401,7 +400,8 @@ describe("operation-level transformDocument", () => {
         }),
       })({
         metadata: () => ({ addCacheDirective: true, ttl: 300 }),
-        transformDocument: ({ document, metadata }) => {
+        transformDocument: ({ document, metadata: rawMeta }) => {
+          const metadata = rawMeta as { addCacheDirective?: boolean; ttl?: number } | undefined;
           if (metadata?.addCacheDirective) {
             return visit(document, {
               OperationDefinition: (node) => ({

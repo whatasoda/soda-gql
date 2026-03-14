@@ -8,9 +8,9 @@ import { createExecutionResultParser, createProjection } from "@soda-gql/colocat
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema } from "../fixtures";
+import { basicTestMinimalSchema } from "../fixtures";
 
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {});
+const gql = createGqlElementComposer(basicTestMinimalSchema, {});
 
 describe("$colocate end-to-end workflow", () => {
   it("combines multiple query fragments with $colocate and parses results", () => {

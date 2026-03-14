@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
-import type { MinimalSchema } from "../types/schema/schema";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
 
-const schema = {
+const schema = asMinimalSchema({
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -37,8 +37,7 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema);
 
 type Schema = typeof schema & { _?: never };
 
@@ -115,7 +114,7 @@ describe("helpers injection via adapter", () => {
 
       return query("Test")({
         variables: `($id: ID!)`,
-        fields: ({ f, $ }) => ({ ...f("user", { id: $.id })(({ f }) => ({ ...f("id")() })) }),
+        fields: ({ f, $ }) => ({ ...f("user", { id: $.id })(({ f: innerF }) => ({ ...innerF("id")() })) }),
       })({});
     });
 

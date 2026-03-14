@@ -112,19 +112,19 @@ export const getEmployeeWithFragmentCallbackQuery = gql.default(({ query }) =>
 export const getEmployeeWithMetadataAggregationQuery = gql.default(({ query }) =>
   query("GetEmployeeWithMetadataAggregation")({
     variables: `($employeeId: ID!, $taskLimit: Int)`,
-    metadata: ({ $, fragmentMetadata }) => ({
-      operationType: "read",
-      entityId: $.employeeId,
-      // Aggregate cache hints from all spread fragments
-      maxCacheTTL: Math.max(0, ...(fragmentMetadata?.map((meta) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? [])),
-      fragmentCount: fragmentMetadata?.length ?? 0,
-    }),
     fields: ({ f, $ }) => ({
       ...f("employee", { id: $.employeeId })(() => ({
         ...employeeFragment.spread({ taskLimit: $.taskLimit }),
       })),
     }),
-  })(),
+  })({
+    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+      operationType: "read",
+      entityId: $.employeeId,
+      maxCacheTTL: Math.max(0, ...(fragmentMetadata?.map((meta: unknown) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? [])),
+      fragmentCount: fragmentMetadata?.length ?? 0,
+    }),
+  }),
 );
 
 // ============================================================================

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import type { AnyGraphqlSchema } from "../types/schema";
@@ -61,9 +61,10 @@ const schema = {
     SearchResult: define("SearchResult").union({ Article: true, Video: true }),
   },
 } satisfies AnyGraphqlSchema;
+const minimalSchema = asMinimalSchema(schema);
 
 describe("createFragmentTaggedTemplate", () => {
-  const fragment = createFragmentTaggedTemplate(schema);
+  const fragment = createFragmentTaggedTemplate(minimalSchema);
 
   describe("fragment spread in tagged templates", () => {
     it("throws error when fragment spread is used without interpolation", () => {
@@ -188,7 +189,7 @@ describe("createFragmentTaggedTemplate", () => {
     });
 
     it("throws when interpolated value is not a Fragment or callback", () => {
-      const fn = createFragmentTaggedTemplate(schema);
+      const fn = createFragmentTaggedTemplate(minimalSchema);
       expect(() => (fn("Foo", "User") as any)(["part1", "part2"], "interpolated")).toThrow(
         "Tagged templates only accept Fragment instances or callback functions as interpolated values",
       );

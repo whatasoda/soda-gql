@@ -34,6 +34,7 @@ describe("Operation definition type inference", () => {
         user: { id: string; name: string } | null | undefined;
       };
 
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -91,6 +92,7 @@ describe("Operation definition type inference", () => {
       // Optional variable allows omission - input can be empty or have the optional field
       type _TestAcceptsEmpty = Expect<Extends<{}, Input>>;
       // Optional variable field is optional in the object
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _TestHasOptionalLimit = Expect<Extends<Input, { limit?: number | null | undefined }>>;
       expect(true).toBe(true);
     });

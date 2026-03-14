@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { type BasicTestSchema, basicTestSchema } from "../../test/fixtures";
+import { type BasicTestSchema, basicTestMinimalSchema } from "../../test/fixtures";
 import { GqlDefine, GqlElement, Operation } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 import { createExtendComposer } from "./extend";
 
-const schema = basicTestSchema;
+const schema = basicTestMinimalSchema;
 
 describe("createExtendComposer", () => {
   describe("extend with TemplateCompatSpec", () => {

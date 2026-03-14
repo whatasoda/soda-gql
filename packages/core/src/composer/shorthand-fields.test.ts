@@ -1,15 +1,16 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import type { FieldAccessorFunction } from "./fields-builder";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { MinimalSchema } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
 
 /**
  * Schema for testing shorthand field selection.
  */
-const schema = {
+const fullSchema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -88,8 +89,9 @@ const schema = {
       Video: true,
     }),
   },
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["Status", "Role"], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema;
+
+const schema = asMinimalSchema(fullSchema);
 
 type Schema = typeof schema & { _?: never };
 
@@ -339,12 +341,12 @@ describe("Shorthand Field Selection", () => {
           variables: `($query: String!)`,
           fields: ({ f, $ }) => ({
             ...f("search", { query: $.query })({
-              Article: ({ f }) => ({
+              Article: ({ f }: { f: FieldAccessorFunction }) => ({
                 id: true,
                 ...f("title")(),
                 author: true,
               }),
-              Video: ({ f }) => ({
+              Video: ({ f }: { f: FieldAccessorFunction }) => ({
                 ...f("id")(),
                 title: true,
                 ...f("duration")(),

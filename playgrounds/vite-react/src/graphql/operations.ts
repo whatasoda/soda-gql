@@ -401,9 +401,9 @@ export const getProjectWithMultipleFragmentsQuery = gql.default(({ query }) =>
     fields: ({ f, $ }) => ({
       ...f("project", { id: $.projectId })(({ f }) => ({
         ...projectTasksFragment.spread({ limit: $.limit }),
-        ...f("tasks")()(({ f }) => ({
-          ...f("id")(),
-          ...f("title")(),
+        ...f("tasks")(({ f: taskF }) => ({
+          ...taskF("id")(),
+          ...taskF("title")(),
           ...taskDetailConditionalFragment.spread({
             includeProject: $.includeProject,
             skipAssignee: $.skipAssignee,
@@ -987,21 +987,21 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
 export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
   query("GetEmployeeWithFragmentMetadata")({
     variables: `($employeeId: ID!)`,
-    metadata: ({ $, fragmentMetadata }) => ({
-      operationType: "read",
-      entityType: "employee",
-      entityId: $.employeeId,
-      hasFragmentMetadata: fragmentMetadata !== undefined && fragmentMetadata.length > 0,
-      fragmentCount: fragmentMetadata?.length ?? 0,
-      // Access first fragment's metadata if available
-      fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
-    }),
     fields: ({ f, $ }) => ({
       ...f("employee", { id: $.employeeId })(() => ({
         ...employeeWithStaticMetadataFragment.spread(),
       })),
     }),
-  })(),
+  })({
+    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+      operationType: "read",
+      entityType: "employee",
+      entityId: $.employeeId,
+      hasFragmentMetadata: fragmentMetadata !== undefined && fragmentMetadata.length > 0,
+      fragmentCount: fragmentMetadata?.length ?? 0,
+      fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
+    }),
+  }),
 );
 
 /**
@@ -1011,16 +1011,6 @@ export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
 export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query }) =>
   query("GetProjectWithFragmentCallbackMetadata")({
     variables: `($projectId: ID!, $priority: Int)`,
-    metadata: ({ $, fragmentMetadata }) => ({
-      operationType: "read",
-      entityType: "project",
-      entityId: $.projectId,
-      priority: $.priority,
-      // Fragment metadata propagation
-      fragmentMetadataCount: fragmentMetadata?.length ?? 0,
-      hasFragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey !== undefined,
-      fragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey,
-    }),
     fields: ({ f, $ }) => ({
       ...f("project", { id: $.projectId })(() => ({
         ...projectWithCallbackMetadataFragment.spread({
@@ -1029,5 +1019,15 @@ export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query 
         }),
       })),
     }),
-  })(),
+  })({
+    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+      operationType: "read",
+      entityType: "project",
+      entityId: $.projectId,
+      priority: $.priority,
+      fragmentMetadataCount: fragmentMetadata?.length ?? 0,
+      hasFragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey !== undefined,
+      fragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey,
+    }),
+  }),
 );

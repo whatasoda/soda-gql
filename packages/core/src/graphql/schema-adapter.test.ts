@@ -1,17 +1,19 @@
 import { describe, expect, it } from "bun:test";
-import type { AnyGraphqlSchema } from "../types/schema/schema";
+import type { MinimalSchema } from "../types/schema/schema";
 import { createSchemaIndexFromSchema } from "./schema-adapter";
 
 describe("createSchemaIndexFromSchema", () => {
-  const schema = {
+  const schema: MinimalSchema = {
     label: "test",
     operations: { query: "Query", mutation: "Mutation", subscription: null },
-    scalar: { DateTime: { name: "DateTime", $type: {} } },
-    enum: { Status: { name: "Status", values: { ACTIVE: true, INACTIVE: true } } },
-    input: { UserFilter: { name: "UserFilter", fields: {} } },
-    object: { User: { name: "User", fields: {} }, Query: { name: "Query", fields: {} } },
-    union: { SearchResult: { name: "SearchResult", types: { User: true } } },
-  } as unknown as AnyGraphqlSchema;
+    object: { User: {}, Query: {} },
+    union: { SearchResult: ["User"] },
+    typeNames: {
+      scalar: ["DateTime"],
+      enum: ["Status"],
+      input: ["UserFilter"],
+    },
+  };
 
   it("scalars.has() returns true for schema scalars", () => {
     const index = createSchemaIndexFromSchema(schema);

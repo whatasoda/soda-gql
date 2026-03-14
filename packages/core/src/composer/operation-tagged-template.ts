@@ -24,16 +24,20 @@ export type FragmentTemplateMetadataOptions = {
   metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
 };
 
+/** Context provided to operation metadata callbacks. */
+export type OperationMetadataContext = {
+  // biome-ignore lint/suspicious/noExplicitAny: Metadata context types are adapter-dependent; any allows test flexibility
+  readonly $: Readonly<Record<string, any>>;
+  readonly document: import("graphql").DocumentNode;
+  // biome-ignore lint/suspicious/noExplicitAny: Aggregated fragment metadata shape depends on adapter
+  readonly fragmentMetadata: any;
+  // biome-ignore lint/suspicious/noExplicitAny: Schema-level metadata shape depends on adapter
+  readonly schemaLevel: any;
+};
+
 /** Options for operation TemplateResult resolution — receives full metadata pipeline context. */
 export type OperationTemplateMetadataOptions = {
-  metadata?:
-    | unknown
-    | ((context: {
-        $: Readonly<Record<string, unknown>>;
-        document: import("graphql").DocumentNode;
-        fragmentMetadata: unknown;
-        schemaLevel: unknown;
-      }) => unknown | Promise<unknown>);
+  metadata?: unknown;
   /** Optional per-operation document transformer */
   transformDocument?: OperationDocumentTransformer<unknown>;
 };

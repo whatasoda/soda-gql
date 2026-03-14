@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 import { createOperationTaggedTemplate } from "./operation-tagged-template";
 
-const schema = {
+const schema = asMinimalSchema({
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -53,7 +53,7 @@ const schema = {
   union: {
     SearchResult: define("SearchResult").union({ Article: true, Video: true }),
   },
-} satisfies AnyGraphqlSchema;
+} satisfies AnyGraphqlSchema);
 
 describe("createOperationTaggedTemplate", () => {
   describe("query tagged template", () => {

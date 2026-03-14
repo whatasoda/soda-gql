@@ -3,12 +3,12 @@ import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
-import type { MinimalSchema } from "../../src/types/schema";
+import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
-import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
 
-const schema = {
+const schema = asMinimalSchema({
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -46,8 +46,7 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema);
 
 type Schema = typeof schema & { _?: never };
 

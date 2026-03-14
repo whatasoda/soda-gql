@@ -161,7 +161,8 @@ export function buildFieldsFromSelectionSet(
                 const memberName = sel.typeCondition.name.value;
                 // Validate member is part of the union
                 const unionDef = schema.union[parsedType.name];
-                if (!unionDef?.includes(memberName)) {
+                const isMember = Array.isArray(unionDef) ? unionDef.includes(memberName) : unionDef && "types" in unionDef && memberName in unionDef.types;
+                if (!isMember) {
                   throw new Error(
                     `Type "${memberName}" is not a member of union "${parsedType.name}" in tagged template inline fragment`,
                   );

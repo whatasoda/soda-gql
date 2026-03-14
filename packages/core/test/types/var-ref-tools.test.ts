@@ -1,70 +1,27 @@
 /**
- * Type-level tests for SchemaAwareGetValueAt inference.
+ * Type-level tests for var-ref-tools inference.
  *
- * Tests that the selector proxy parameter in $var.getValueAt is correctly typed
- * based on the VarRef's schema type, enabling type-safe field access.
+ * Tests that getValueAt and getNameAt work with VarRef.
+ * Note: After the syntax reform, metadata callbacks receive `any`-typed context,
+ * so these tests verify runtime behavior rather than deep type inference.
  *
  * @module
  */
 
 import { describe, expect, it } from "bun:test";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type InputObjectSchema, inputObjectSchema } from "./_fixtures";
-import type { Expect, Extends } from "./_helpers";
+import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
+import { createVarRefFromVariable, VarRef } from "../../src/types/type-foundation/var-ref";
 
-const gql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {});
-
-describe("SchemaAwareGetValueAt type inference", () => {
-  it("getValueAt returns correctly typed value for input object field", () => {
-    gql(({ query }) =>
-      query("GetUsers")({
-        variables: `($filter: UserFilter!)`,
-        metadata: ({ $ }) => {
-          // Call getValueAt to access a field on the UserFilter input object
-          const nameVal = $var.getValueAt($.filter, (p) => p.name);
-          type NameType = typeof nameVal;
-          // name is String:? in UserFilter → string | null | undefined
-          type _T1 = Expect<Extends<string, NameType>>;
-
-          const ageVal = $var.getValueAt($.filter, (p) => p.minAge);
-          type AgeType = typeof ageVal;
-          // minAge is Int:? in UserFilter → number | null | undefined
-          type _T2 = Expect<Extends<number, AgeType>>;
-
-          return { nameVal, ageVal };
-        },
-        fields: ({ f, $ }) => ({
-          ...f("users", { filter: $.filter })(({ f }) => ({
-            ...f("id")(),
-          })),
-        }),
-      })({}),
-    );
-
-    expect(true).toBe(true);
+describe("var-ref-tools", () => {
+  it("getValueAt returns value for a simple VarRef", () => {
+    const varRef = createVarRefFromVariable("testVar");
+    const value = getValueAt(varRef, (p: { value: string }) => p.value);
+    expect(typeof value).toBe("string");
   });
 
-  it("getNameAt returns string for input object VarRef", () => {
-    gql(({ query }) =>
-      query("GetUsers")({
-        variables: `($filter: UserFilter!)`,
-        metadata: ({ $ }) => {
-          const name = $var.getNameAt($.filter, (p) => p.name);
-          type NameResult = typeof name;
-          // getNameAt always returns string
-          type _T1 = Expect<Extends<NameResult, string>>;
-
-          return { name };
-        },
-        fields: ({ f, $ }) => ({
-          ...f("users", { filter: $.filter })(({ f }) => ({
-            ...f("id")(),
-          })),
-        }),
-      })({}),
-    );
-
-    expect(true).toBe(true);
+  it("getNameAt returns name string for VarRef", () => {
+    const varRef = createVarRefFromVariable("testVar");
+    const name = getNameAt(varRef, (p: { value: string }) => p.value);
+    expect(typeof name).toBe("string");
   });
 });

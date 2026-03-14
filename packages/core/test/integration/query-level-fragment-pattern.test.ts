@@ -14,9 +14,9 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema } from "../fixtures";
+import { basicTestMinimalSchema } from "../fixtures";
 
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
+const gql = createGqlElementComposer(basicTestMinimalSchema, {
   });
 
 describe("query-level fragment pattern", () => {

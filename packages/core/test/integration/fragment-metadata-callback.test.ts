@@ -2,11 +2,12 @@ import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import type { OperationMetadata } from "../../src/types/metadata";
-import type { MinimalSchema } from "../../src/types/schema";
-import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import type { AnyGraphqlSchema } from "../../src/types/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
-const schema = {
+const schema = asMinimalSchema({
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -39,8 +40,7 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema);
 
 type Schema = typeof schema & { _?: never };
 
@@ -67,7 +67,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
           })),
         }),
       })({
-        metadata: ({ fragmentMetadata }) => ({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
           custom: {
             fragmentCount: fragmentMetadata?.length ?? 0,
             firstFragmentHasHeaders: fragmentMetadata?.[0]?.headers !== undefined,
@@ -111,7 +111,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
           })),
         }),
       })({
-        metadata: ({ fragmentMetadata }) => ({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
           custom: {
             fragmentCount: fragmentMetadata?.length ?? 0,
           },
@@ -144,7 +144,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
           })),
         }),
       })({
-        metadata: ({ fragmentMetadata }) => ({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
           custom: {
             firstFragmentMetadata: fragmentMetadata?.[0],
           },

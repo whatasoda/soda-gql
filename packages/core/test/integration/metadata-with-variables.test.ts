@@ -4,13 +4,14 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import type { OperationMetadata } from "../../src/types/metadata";
-import type { MinimalSchema } from "../../src/types/schema";
+import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { VarRef } from "../../src/types/type-foundation";
-import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 import { getVarRefName } from "../../src/composer/var-ref-tools";
 
-const schema = {
+const schema = asMinimalSchema({
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -53,8 +54,7 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema);
 
 type Schema = typeof schema & { _?: never };
 
@@ -68,7 +68,7 @@ describe("metadata with variable access", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
         })({
-          metadata: ({ $ }) => ({
+          metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
               trackedVariables: [VarRef.getInner($.userId)],
             },
@@ -89,7 +89,7 @@ describe("metadata with variable access", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
         })({
-          metadata: ({ $ }) => ({
+          metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
               variableNames: [getVarRefName($.userId)],
             },
@@ -110,7 +110,7 @@ describe("metadata with variable access", () => {
           variables: `($userId: ID!, $userName: String!)`,
           fields: ({ f, $ }) => ({ ...f("updateUser", { id: $.userId, name: $.userName })(({ f }) => ({ ...f("id")() })) })
         })({
-          metadata: ({ $ }) => ({
+          metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
               trackedVars: {
                 userId: getVarRefName($.userId),
@@ -149,7 +149,7 @@ describe("metadata with variable access", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
         })({
-          metadata: ({ document }) => ({
+          metadata: ({ document }: OperationMetadataContext) => ({
             custom: {
               documentHash: createHash("sha256").update(print(document)).digest("hex"),
             },
@@ -170,7 +170,7 @@ describe("metadata with variable access", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
         })({
-          metadata: ({ $, document }) => ({
+          metadata: ({ $, document }: OperationMetadataContext) => ({
             headers: {
               "X-Variable-Name": getVarRefName($.userId),
             },

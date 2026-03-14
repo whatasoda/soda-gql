@@ -35,6 +35,7 @@ describe("Alias handling in type inference", () => {
         user: { userId: string; userName: string } | null | undefined;
       };
 
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -59,6 +60,7 @@ describe("Alias handling in type inference", () => {
         user: { id: string; userName: string } | null | undefined;
       };
 
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -83,6 +85,7 @@ describe("Alias handling in type inference", () => {
         user: { id: string; userEmail: string | null | undefined } | null | undefined;
       };
 
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });

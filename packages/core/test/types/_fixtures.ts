@@ -8,7 +8,7 @@
  */
 
 import { defineOperationRoots, defineScalar } from "../../src/schema";
-import type { MinimalSchema } from "../../src/types/schema";
+import type { AnyGraphqlSchema, MinimalSchema } from "../../src/types/schema";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 // =============================================================================
@@ -65,7 +65,7 @@ export const basicSchema = {
   },
   union: {},
   typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type BasicSchema = typeof basicSchema & { _?: never };
 
@@ -136,7 +136,7 @@ export const nestedSchema = {
   },
   union: {},
   typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type NestedSchema = typeof nestedSchema & { _?: never };
 
@@ -204,7 +204,7 @@ export const unionSchema = {
     }),
   },
   typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type UnionSchema = typeof unionSchema & { _?: never };
 
@@ -280,7 +280,7 @@ export const enumSchema = {
   },
   union: {},
   typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["UserRole", "PostStatus", "SortOrder"], input: [] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type EnumSchema = typeof enumSchema & { _?: never };
 
@@ -355,7 +355,7 @@ export const inputObjectSchema = {
   },
   union: {},
   typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["SortOrder"], input: ["UserFilter", "UserOrderBy", "CreateUserInput"] },
-} satisfies MinimalSchema;
+} satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type InputObjectSchema = typeof inputObjectSchema & { _?: never };
 

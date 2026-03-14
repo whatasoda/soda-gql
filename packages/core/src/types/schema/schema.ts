@@ -63,8 +63,10 @@ export type OperationRoots = {
 export type MinimalSchema = {
   readonly label: string;
   readonly operations: OperationRoots;
-  readonly object: { readonly [typename: string]: { readonly [field: string]: string } };
-  readonly union: { readonly [typename: string]: readonly string[] };
+  // biome-ignore lint/suspicious/noExplicitAny: Accept both flat `{ field: string }` and full ObjectDefinition shape
+  readonly object: { readonly [typename: string]: { readonly [field: string]: any } };
+  // biome-ignore lint/suspicious/noExplicitAny: Accept both `string[]` and full UnionDefinition shape
+  readonly union: { readonly [typename: string]: readonly string[] | { readonly types: Record<string, any>; readonly name: string } };
   readonly typeNames: {
     readonly scalar: readonly string[];
     readonly enum: readonly string[];

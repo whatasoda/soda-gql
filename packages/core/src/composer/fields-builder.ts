@@ -34,12 +34,18 @@ export type NestedUnionFieldsBuilder = {
 // ============================================================================
 
 /**
- * Type-erased field selection factory return.
- * A field accessor returns either a direct field selection record (scalar/enum)
- * or a curried function expecting a nested builder (object/union).
+ * Type-erased return from field accessor.
+ * The actual runtime shape is a function: for scalar/enum fields it takes no args,
+ * for object fields it takes a NestedObjectFieldsBuilder, for union fields a NestedUnionFieldsBuilder.
+ * This type preserves enough structure so that nested `({ f })` callbacks infer `f` properly.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Type-erased return from field accessor — actual shape varies by field kind
-type AnyFieldAccessorReturn = any;
+/**
+ * Type-erased return from field accessor.
+ * For object fields: accepts NestedObjectFieldsBuilder (typed `{ f }` callback).
+ * For union fields and scalar thunks: uses catch-all signature.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor return — actual shapes vary by field kind
+type AnyFieldAccessorReturn = ((nest: NestedObjectFieldsBuilder) => any) & ((...args: any[]) => any);
 
 /** Function-call field accessor: f("fieldName", args, extras) */
 export type FieldAccessorFunction = (
@@ -109,7 +115,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
     // __typename is an implicit introspection field
     if (fieldName === "__typename") {
       const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName), value);
-      return wrap({
+      return (() => wrap({
         parent: typeName,
         field: fieldName,
         type: "s|String|!",
@@ -117,7 +123,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
         directives: extras?.directives ?? [],
         object: null,
         union: null,
-      }) as AnyFieldAccessorReturn;
+      })) as unknown as AnyFieldAccessorReturn;
     }
 
     // Runtime duck-typing: MinimalSchema sees string, but codegen may emit { spec, arguments }
@@ -154,7 +160,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
           object: nestedFields,
           union: null,
         });
-      }) as AnyFieldAccessorReturn;
+      }) as unknown as AnyFieldAccessorReturn;
 
       return factoryReturn;
     }
@@ -204,13 +210,13 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
             __typename: typenameFlag === true,
           },
         });
-      }) as AnyFieldAccessorReturn;
+      }) as unknown as AnyFieldAccessorReturn;
 
       return factoryReturn;
     }
 
     if (parsedType.kind === "scalar" || parsedType.kind === "enum") {
-      const factoryReturn = wrap({
+      const factoryReturn = (() => wrap({
         parent: typeName,
         field: fieldName,
         type: typeSpecifier,
@@ -218,7 +224,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
         directives,
         object: null,
         union: null,
-      }) as AnyFieldAccessorReturn;
+      })) as unknown as AnyFieldAccessorReturn;
       return factoryReturn;
     }
 

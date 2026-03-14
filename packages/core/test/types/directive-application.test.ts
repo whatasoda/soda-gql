@@ -44,7 +44,7 @@ describe("Directive application type safety", () => {
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
               ...f("name")(),
-              ...f("email", null, { directives: [$dir.skip({ if: $.hideEmail })] }),
+              ...f("email", null, { directives: [$dir.skip({ if: $.hideEmail! })] }),
             })),
           }),
         })({}),
@@ -83,7 +83,7 @@ describe("Directive application type safety", () => {
           fields: ({ f, $ }) => ({
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
-              ...f("email", null, { directives: [$dir.include({ if: $.showEmail })] }),
+              ...f("email", null, { directives: [$dir.include({ if: $.showEmail! })] }),
             })),
           }),
         })({}),
@@ -100,15 +100,13 @@ describe("Directive application type safety", () => {
     it("allows multiple directives on a field", () => {
       const GetUser = gql(({ query, $dir }) =>
         query("GetUser")({
-          variables: {
-
-          },
+          variables: `($id: ID!, $showEmail: Boolean, $skipAge: Boolean)`,
           fields: ({ f, $ }) => ({
-            ...f("user", { id: $.id })(({ f }) => ({
+            ...f("user", { id: $.id! })(({ f }) => ({
               ...f("id")(),
               // Multiple directives on same field
               ...f("email", null, {
-                directives: [$dir.include({ if: $.showEmail }), $dir.skip({ if: $.skipAge })],
+                directives: [$dir.include({ if: $.showEmail! }), $dir.skip({ if: $.skipAge! })],
               }),
             })),
           }),
@@ -131,7 +129,7 @@ describe("Directive application type safety", () => {
             ...f("users", { limit: $.limit })(({ f }) => ({
               ...f("id")(),
               ...f("name")(),
-              ...f("email", null, { directives: [$dir.include({ if: $.includeEmail })] }),
+              ...f("email", null, { directives: [$dir.include({ if: $.includeEmail! })] }),
             })),
           }),
         })({}),
@@ -152,7 +150,7 @@ describe("Directive application type safety", () => {
           fields: ({ f, $ }) => ({
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
-              ...f("email", null, { directives: [$dir.include({ if: $.showEmail })] }),
+              ...f("email", null, { directives: [$dir.include({ if: $.showEmail! })] }),
             })),
           }),
         })({}),
@@ -163,6 +161,7 @@ describe("Directive application type safety", () => {
         user: { id: string; email: string | null | undefined } | null | undefined;
       };
       // Directive-conditional fields are still in the output type
+      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });

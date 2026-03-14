@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { Kind, print } from "graphql";
 import type { AnyFields } from "../types/fragment";
-import type { AnyGraphqlSchema } from "../types/schema";
+import type { MinimalSchema } from "../types/schema";
 import type { TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
@@ -11,18 +11,16 @@ import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeMo
  * Minimal schema for testing buildDocument.
  * Contains minimal type definitions to satisfy the schema interface.
  */
-const emptySchema: AnyGraphqlSchema = {
+const emptySchema: MinimalSchema = {
   label: "test",
   operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  scalar: {},
-  enum: {},
-  input: {},
   object: {
-    Query: { name: "Query", fields: {} },
-    Mutation: { name: "Mutation", fields: {} },
-    Subscription: { name: "Subscription", fields: {} },
+    Query: {},
+    Mutation: {},
+    Subscription: {},
   },
   union: {},
+  typeNames: { scalar: [], enum: [], input: [] },
 };
 
 /** EnumLookup with no type specifier - enum detection is skipped */
@@ -729,7 +727,7 @@ describe("Enum value handling", () => {
     },
     object: {},
     union: {},
-  } as unknown as AnyGraphqlSchema;
+  } as unknown as MinimalSchema;
 
   describe("buildArgumentValue with enumLookup", () => {
     it("outputs Kind.ENUM for enum type specifier", () => {
@@ -914,7 +912,7 @@ describe("Enum value handling", () => {
           },
         },
       },
-    } as unknown as AnyGraphqlSchema;
+    } as unknown as MinimalSchema;
 
     it("outputs Kind.ENUM for field arguments", () => {
       const fields = {
@@ -969,7 +967,7 @@ describe("Directive enum argument handling", () => {
     input: {},
     object: {},
     union: {},
-  } as unknown as AnyGraphqlSchema;
+  } as unknown as MinimalSchema;
 
   it("outputs Kind.ENUM for directive arguments with enum type specifiers", () => {
     // Create directive with argument specifiers (simulating codegen output)
@@ -1107,7 +1105,7 @@ describe("Union selection with __typename flag", () => {
         types: { User: true, Post: true },
       },
     },
-  } as unknown as AnyGraphqlSchema;
+  } as unknown as MinimalSchema;
 
   it("includes __typename field when __typename: true is set", () => {
     const fields = {

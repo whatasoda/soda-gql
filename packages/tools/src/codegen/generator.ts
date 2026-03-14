@@ -1100,23 +1100,20 @@ type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TNa
 type PrebuiltCurriedFragment_${name} = <TKey extends string>(
   name: TKey,
   typeName: string,
-) => (...args: unknown[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>;
+) => ((options: { fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>);
 
 type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
   operationName: TName,
-) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
 
-type FieldFactoryFn_${name} = (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>);
-${(() => {
-  const fieldNames = allFieldNames?.get(name);
-  if (fieldNames && fieldNames.length > 0) {
-    const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
-    return `type AllObjectFieldNames_${name} = ${union};
-type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]: FieldFactoryFn_${name} } & Record<string, FieldFactoryFn_${name}>;`;
-  }
-  return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
-})()}
-type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
+// biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor — returns callable result for nested builders
+type GenericFieldAccessor_${name} = (fieldName: string, ...args: any[]) => {
+  (callback: (tools: { f: GenericFieldAccessor_${name} }) => Record<string, unknown>): Record<string, unknown>;
+  (...args: any[]): Record<string, unknown>;
+};
+type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldAccessor_${name}; readonly $: Readonly<Record<string, never>> };
 
 export type PrebuiltContext_${name} = {
   readonly fragment: PrebuiltCurriedFragment_${name};
@@ -1156,7 +1153,7 @@ import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
-import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, MinimalSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, MinimalSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 ${perSchemaTypes}
 
 export const gql = {

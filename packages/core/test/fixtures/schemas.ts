@@ -7,8 +7,8 @@
  */
 
 import { defineOperationRoots, defineScalar } from "../../src/schema";
-import type { AnyGraphqlSchema } from "../../src/types/schema";
-import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import type { AnyGraphqlSchema, MinimalSchema } from "../../src/types/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 /**
  * Basic test schema with ID and String scalars.
@@ -74,6 +74,11 @@ export const basicTestSchema = {
 export type BasicTestSchema = typeof basicTestSchema & { _?: never };
 
 /**
+ * MinimalSchema-compatible version of basicTestSchema for use with composer functions.
+ */
+export const basicTestMinimalSchema: MinimalSchema = asMinimalSchema(basicTestSchema);
+
+/**
  * Extended test schema with Int scalar and users query.
  *
  * Used by: compat-extend.test.ts
@@ -129,3 +134,8 @@ export const extendedTestSchema = {
 } satisfies AnyGraphqlSchema;
 
 export type ExtendedTestSchema = typeof extendedTestSchema & { _?: never };
+
+/**
+ * MinimalSchema-compatible version of extendedTestSchema for use with composer functions.
+ */
+export const extendedTestMinimalSchema: MinimalSchema = asMinimalSchema(extendedTestSchema);

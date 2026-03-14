@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import { GqlDefine } from "../types/element";
-import type { AnyGraphqlSchema } from "../types/schema";
+import type { AnyGraphqlSchema, MinimalSchema } from "../types/schema";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 
-const schema = {
+const fullSchema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -40,8 +40,8 @@ const schema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
 } satisfies AnyGraphqlSchema;
+const schema = asMinimalSchema(fullSchema);
 
 describe("createCompatTaggedTemplate", () => {
   describe("query compat tagged template", () => {
@@ -110,7 +110,7 @@ describe("createCompatTaggedTemplate", () => {
           mutation: "Mutation",
           subscription: null,
         }),
-      };
+      } as MinimalSchema;
 
       expect(() => createCompatTaggedTemplate(noSubscriptionSchema, "subscription")).toThrow(
         "Operation type subscription is not defined in schema roots",

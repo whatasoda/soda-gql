@@ -2,9 +2,11 @@ import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema } from "../fixtures";
+import type { FieldAccessorFunction } from "../../src/composer/fields-builder";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
+import { basicTestMinimalSchema } from "../fixtures";
 
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {});
+const gql = createGqlElementComposer(basicTestMinimalSchema, {});
 
 describe("tagged template operation integration", () => {
   describe("query", () => {
@@ -252,7 +254,7 @@ describe("tagged template operation integration", () => {
             })),
           }),
         })({
-          metadata: ({ document }) => {
+          metadata: ({ document }: OperationMetadataContext) => {
             cbDocKind = document.kind;
             return {};
           },
@@ -287,7 +289,7 @@ describe("tagged template operation integration", () => {
             })),
           }),
         })({
-          metadata: ({ $ }) => ({ hasUserId: $.userId !== undefined }),
+          metadata: ({ $ }: OperationMetadataContext) => ({ hasUserId: $.userId !== undefined }),
         }),
       );
 
@@ -324,7 +326,7 @@ describe("tagged template operation integration", () => {
             })),
           }),
         })({
-          metadata: ({ fragmentMetadata }) => ({
+          metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
             fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
           }),
         }),
@@ -350,8 +352,8 @@ describe("tagged template operation integration", () => {
         query("Search")({
           fields: ({ f }) => ({
             ...f("search")({
-              Article: ({ f }) => ({ ...f("id")(), ...f("title")() }),
-              Video: ({ f }) => ({ ...f("id")(), ...f("duration")() }),
+              Article: ({ f }: { f: FieldAccessorFunction }) => ({ ...f("id")(), ...f("title")() }),
+              Video: ({ f }: { f: FieldAccessorFunction }) => ({ ...f("id")(), ...f("duration")() }),
             }),
           }),
         })({}),
