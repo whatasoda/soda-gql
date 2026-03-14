@@ -267,20 +267,12 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
 
     for (const op of operations) {
-      const emitResult = emitOperation(op as EnrichedOperation, emitOptions);
-      if (emitResult.isErr()) {
-        return err(cliErrors.parseError(emitResult.error.message, file));
-      }
-      bodies.push(emitResult.value);
+      bodies.push(emitOperation(op as EnrichedOperation, emitOptions));
       operationCount++;
     }
 
     for (const frag of fragments) {
-      const emitResult = emitFragment(frag as EnrichedFragment, emitOptions);
-      if (emitResult.isErr()) {
-        return err(cliErrors.parseError(emitResult.error.message, file));
-      }
-      bodies.push(emitResult.value);
+      bodies.push(emitFragment(frag as EnrichedFragment, emitOptions));
       fragmentCount++;
     }
 

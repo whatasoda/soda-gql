@@ -114,7 +114,7 @@ describe("graphql-compat integration", () => {
     expect(operations).toHaveLength(1);
 
     const operationDocument = parse(operationSource);
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Verify tagged template compat structure
     expect(output).not.toContain("import");
@@ -173,11 +173,11 @@ describe("graphql-compat integration", () => {
     const operationDocument = parse(operationSource);
 
     // Check each operation type uses tagged template compat
-    const queryOutput = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const queryOutput = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
     expect(queryOutput).toContain("({ query })");
     expect(queryOutput).toContain("query.compat(");
 
-    const mutationOutput = emitOperation(operations[1]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const mutationOutput = emitOperation(operations[1]!, { ...emitOptions, schemaDocument, operationDocument });
     expect(mutationOutput).toContain("({ mutation })");
     expect(mutationOutput).toContain("mutation.compat(");
 
@@ -185,7 +185,7 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
     expect(subscriptionOutput).toContain("({ subscription })");
     expect(subscriptionOutput).toContain("subscription.compat(");
   });
@@ -215,7 +215,7 @@ describe("graphql-compat integration", () => {
     expect(fragments).toHaveLength(1);
 
     const operationDocument = parse(fragmentSource);
-    const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Verify tagged template compat structure
     expect(output).not.toContain("import");
@@ -262,7 +262,7 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     // Fragment spreads should be emitted as interpolated .spread() calls
     expect(output).not.toContain("import");
@@ -301,7 +301,7 @@ describe("graphql-compat integration", () => {
 
     const { operations } = transformResult._unsafeUnwrap();
     const operationDocument = parse(operationSource);
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Variable definitions should be in the GraphQL body
     expect(output).toContain("$id: ID!");
@@ -342,7 +342,7 @@ describe("graphql-compat integration", () => {
 
     const { operations } = transformResult._unsafeUnwrap();
     const operationDocument = parse(operationSource);
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Nested selections should be in the GraphQL body
     expect(output).toContain("posts");
@@ -372,7 +372,7 @@ describe("graphql-compat integration", () => {
 
     const { operations } = transformResult._unsafeUnwrap();
     const operationDocument = parse(operationSource);
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Literal arguments should be in the GraphQL body
     expect(output).toContain("John");
@@ -402,7 +402,7 @@ describe("graphql-compat integration", () => {
 
     const { operations } = transformResult._unsafeUnwrap();
     const operationDocument = parse(operationSource);
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Write to file
     const outputPath = join(outDir, "GetUser.compat.ts");
@@ -453,7 +453,7 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     // Should NOT have import (same file)
     expect(operationOutput).not.toContain("import { UserFieldsFragment }");
@@ -465,7 +465,7 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     expect(fragmentOutput).toContain("export const UserFieldsFragment = gql.mySchema");
     expect(fragmentOutput).toContain('fragment("UserFields", "User")');
@@ -517,13 +517,13 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     const mutationOutput = emitOperation(operations[1]!, {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     // Neither should have import
     expect(queryOutput).not.toContain("import { UserFieldsFragment }");
@@ -583,14 +583,14 @@ describe("graphql-compat integration", () => {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     // Emit fragment
     const fragmentOutput = emitFragment(userFullFields!, {
       ...emitOptions,
       schemaDocument,
       operationDocument,
-    })._unsafeUnwrap();
+    });
 
     // No imports (all same-file)
     expect(operationOutput).not.toContain("import { UserFullFieldsFragment }");

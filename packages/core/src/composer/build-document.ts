@@ -43,6 +43,7 @@ import type {
   InputTypeSpecifiers,
   TypeModifier,
   VariableDefinitions,
+  VarSpecifier,
 } from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
 import { type ParsedInputSpecifier, parseInputSpecifier, parseOutputField } from "../utils/deferred-specifier-parser";
@@ -550,24 +551,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
 };
 
 /**
- * VarSpecifier shape from $var() at runtime.
- * Operation variables use structured objects, not deferred strings.
- */
-export type AnyVarSpecifier = {
-  kind: "scalar" | "enum" | "input";
-  name: string;
-  modifier: TypeModifier;
-  defaultValue: null | { default: ConstValue };
-  directives: Record<string, unknown>;
-};
-
-// VariableDefinitions is imported from type-foundation
-
-/**
  * Builds VariableDefinitionNode[] from VarSpecifier records.
  * Kept as private fallback for callers that don't provide pre-parsed nodes.
  */
-const buildVariables = (variables: Record<string, AnyVarSpecifier>, schema: MinimalSchema): VariableDefinitionNode[] => {
+const buildVariables = (variables: Record<string, VarSpecifier>, schema: MinimalSchema): VariableDefinitionNode[] => {
   return Object.entries(variables).map(([name, varSpec]): VariableDefinitionNode => {
     // Build default value if present
     let defaultValue: ConstValueNode | undefined;

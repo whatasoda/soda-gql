@@ -66,7 +66,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     // Note: imports are handled by the caller (CLI), not the emitter
     expect(output).not.toContain("import");
@@ -94,7 +94,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     expect(output).toContain("query.compat(");
     expect(output).toContain("$userId: ID!");
@@ -114,7 +114,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     expect(output).toContain("({ mutation })");
     expect(output).toContain("mutation.compat(");
@@ -132,7 +132,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     expect(output).toContain("({ subscription })");
     expect(output).toContain("subscription.compat(");
@@ -169,7 +169,7 @@ describe("emitOperation", () => {
     const output = emitOperation(operations[0]!, {
       ...defaultOptions,
       operationDocument: parse(source),
-    })._unsafeUnwrap();
+    });
 
     expect(output).toContain("profile");
     expect(output).toContain("avatar");
@@ -185,7 +185,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     // Note: imports are handled by the caller (CLI), not the emitter
     expect(output).not.toContain("import");
@@ -221,7 +221,7 @@ describe("emitOperation", () => {
       ...defaultOptions,
       schemaDocument: unionSchema,
       operationDocument: parse(source),
-    })._unsafeUnwrap();
+    });
 
     // Inline fragments should be in the GraphQL body
     expect(output).toContain("... on User");
@@ -239,7 +239,7 @@ describe("emitOperation", () => {
     const { operations } = parseAndTransform(source);
 
     // Without operationDocument
-    const output = emitOperation(operations[0]!, defaultOptions)._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, defaultOptions);
 
     expect(output).toContain("{ }");
   });
@@ -256,7 +256,7 @@ describe("emitOperation", () => {
     `;
     const { operations, operationDocument } = parseAndTransform(source);
 
-    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument })._unsafeUnwrap();
+    const output = emitOperation(operations[0]!, { ...defaultOptions, operationDocument });
 
     // Body should be collapsed to single line (no newlines in the template literal)
     const templateContent = output.match(/`([^`]*)`/)?.[1];
@@ -279,7 +279,7 @@ describe("emitFragment", () => {
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
       operationDocument: parse(source),
-    })._unsafeUnwrap();
+    });
 
     // Note: imports are handled by the caller (CLI), not the emitter
     expect(output).not.toContain("import");
@@ -319,7 +319,7 @@ describe("emitFragment", () => {
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
       operationDocument: parse(source),
-    })._unsafeUnwrap();
+    });
 
     expect(output).toContain("profile");
     expect(output).toContain("avatar");
@@ -338,7 +338,7 @@ describe("emitFragment", () => {
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
       operationDocument: parse(source),
-    })._unsafeUnwrap();
+    });
 
     // Note: imports are handled by the caller (CLI), not the emitter
     expect(output).not.toContain("import");
@@ -357,7 +357,7 @@ describe("emitFragment", () => {
     const { fragments } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
 
     // Without operationDocument
-    const output = emitFragment(fragments[0]!, defaultOptions)._unsafeUnwrap();
+    const output = emitFragment(fragments[0]!, defaultOptions);
 
     expect(output).toContain("{ }");
   });

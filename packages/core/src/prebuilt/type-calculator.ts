@@ -582,7 +582,7 @@ export const generateInputTypeFromSpecifiers = (
  * Generate a TypeScript type string for input variables from VariableDefinitions.
  *
  * Unlike generateInputTypeFromSpecifiers which works with deferred specifier strings,
- * this function works with VarSpecifier objects created by $var().
+ * this function works with VarSpecifier objects from variable definitions.
  * Used for generating Fragment input types in prebuilt mode.
  *
  * @param schema - The GraphQL schema

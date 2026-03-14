@@ -7,8 +7,7 @@
  */
 
 import { type DocumentNode, type FragmentDefinitionNode, Kind, type OperationDefinitionNode, print } from "graphql";
-import { ok, type Result } from "neverthrow";
-import type { EnrichedFragment, EnrichedOperation, GraphqlCompatError } from "./types";
+import type { EnrichedFragment, EnrichedOperation } from "./types";
 
 /**
  * Options for code emission.
@@ -118,7 +117,7 @@ const replaceFragmentSpreads = (body: string, fragmentDependencies: readonly str
 /**
  * Emit TypeScript code for an operation.
  */
-export const emitOperation = (operation: EnrichedOperation, options: EmitOptions): Result<string, GraphqlCompatError> => {
+export const emitOperation = (operation: EnrichedOperation, options: EmitOptions): string => {
   const operationType = operation.kind;
   const exportName = `${operation.name}Compat`;
 
@@ -158,13 +157,13 @@ export const emitOperation = (operation: EnrichedOperation, options: EmitOptions
 
   lines.push(`);`);
 
-  return ok(lines.join("\n"));
+  return lines.join("\n");
 };
 
 /**
  * Emit TypeScript code for a fragment.
  */
-export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): Result<string, GraphqlCompatError> => {
+export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): string => {
   const exportName = `${fragment.name}Fragment`;
 
   // Get the GraphQL body from the original AST node
@@ -186,5 +185,5 @@ export const emitFragment = (fragment: EnrichedFragment, options: EmitOptions): 
   lines.push(`  fragment(${JSON.stringify(fragment.name)}, ${JSON.stringify(fragment.onType)})\`${graphqlBody}\`,`);
   lines.push(`);`);
 
-  return ok(lines.join("\n"));
+  return lines.join("\n");
 };
