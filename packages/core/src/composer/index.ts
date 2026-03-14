@@ -1,6 +1,5 @@
 export * from "./build-document";
 export * from "./colocate";
-export * from "./compat";
 export * from "./compat-tagged-template";
 export * from "./directive-builder";
 export * from "./extend";
@@ -10,7 +9,6 @@ export * from "./fragment-tagged-template";
 export * from "./fragment-usage-context";
 export * from "./gql-composer";
 export * from "./input";
-export * from "./operation";
 export * from "./operation-core";
 export * from "./operation-tagged-template";
-export * from "./var-builder";
+export * from "./var-ref-tools";

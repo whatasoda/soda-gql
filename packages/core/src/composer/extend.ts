@@ -1,13 +1,13 @@
 /**
- * Extend composer factory for creating Operations from compat specs.
+ * Extend composer factory for creating Operations from TemplateCompatSpec.
  * @module
  */
 
 import { Kind, type OperationDefinitionNode, parse as parseGraphql } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
 import { type GqlDefine, Operation } from "../types/element";
-import { type AnyCompatSpec, type CompatSpec, isTemplateCompatSpec, type TemplateCompatSpec } from "../types/element/compat-spec";
-import type { AnyFields, DeclaredVariables } from "../types/fragment";
+import type { TemplateCompatSpec } from "../types/element/compat-spec";
+import type { AnyFields } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
   DefaultMetadataAdapter,
@@ -17,9 +17,10 @@ import type {
   OperationDocumentTransformer,
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
-import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { MinimalSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
 
+import type { AnyVarRef } from "../types/type-foundation";
 import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
@@ -27,7 +28,7 @@ import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-cor
  * Options for extending a compat spec into a full operation.
  */
 export type ExtendOptions<
-  TSchema extends AnyGraphqlSchema,
+  TSchema extends MinimalSchema,
   TVarDefinitions extends VariableDefinitions,
   TOperationMetadata,
   TAggregatedFragmentMetadata,
@@ -35,7 +36,7 @@ export type ExtendOptions<
 > = {
   /** Optional metadata builder */
   metadata?: MetadataBuilder<
-    DeclaredVariables<TSchema, TVarDefinitions>,
+    Readonly<Record<string, AnyVarRef>>,
     TOperationMetadata,
     TAggregatedFragmentMetadata,
     TSchemaLevel
@@ -47,8 +48,8 @@ export type ExtendOptions<
 /**
  * Creates a factory for extending compat specs into full operations.
  *
- * The extend function takes a compat spec (created by `query.compat()`) and
- * optional metadata/transformDocument options, then creates a full Operation.
+ * The extend function takes a TemplateCompatSpec (created by `query.compat("Name")\`...\``)
+ * and optional metadata/transformDocument options, then creates a full Operation.
  *
  * @param schema - The GraphQL schema definition
  * @param adapter - Optional metadata adapter for custom metadata handling
@@ -58,7 +59,7 @@ export type ExtendOptions<
  * @internal Used by `createGqlElementComposer`
  */
 export const createExtendComposer = <
-  TSchema extends AnyGraphqlSchema,
+  TSchema extends MinimalSchema,
   TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
 >(
   schema: NoInfer<TSchema>,
@@ -80,48 +81,19 @@ export const createExtendComposer = <
     TFields extends AnyFields,
     TOperationMetadata = unknown,
   >(
-    compat:
-      | GqlDefine<CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>
-      | GqlDefine<TemplateCompatSpec>,
+    compat: GqlDefine<TemplateCompatSpec>,
     options?: ExtendOptions<TSchema, TVarDefinitions, TOperationMetadata, TAggregatedFragmentMetadata, TSchemaLevel>,
   ) => {
-    // Extract the spec from GqlDefine
     const spec = compat.value;
 
-    // TemplateCompatSpec path — parse GraphQL and build operation directly
-    if (isTemplateCompatSpec(spec as AnyCompatSpec | TemplateCompatSpec)) {
-      return buildOperationFromTemplateSpec(
-        schema,
-        spec as TemplateCompatSpec,
-        resolvedAdapter,
-        // biome-ignore lint/suspicious/noExplicitAny: Options type narrowing not possible across union
-        options as any,
-        transformDocument,
-      );
-    }
-
-    // Existing CompatSpec path — delegate to buildOperationArtifact
-    const compatSpec = spec as CompatSpec<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>;
-    const { operationType, operationName, variables, fieldsBuilder } = compatSpec;
-
-    type TTypeName = TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
-    const operationTypeName = schema.operations[operationType] as TTypeName;
-
-    type DefineResult = Parameters<typeof Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>>[0];
-    return Operation.create<TSchema, TOperationType, TOperationName, TVarDefinitions, TFields>((() =>
-      buildOperationArtifact({
-        schema,
-        operationType,
-        operationTypeName,
-        operationName,
-        variables: variables as TVarDefinitions,
-        // biome-ignore lint/suspicious/noExplicitAny: Type cast needed for compat spec fieldsBuilder
-        fieldsFactory: fieldsBuilder as any,
-        adapter: resolvedAdapter,
-        metadata: options?.metadata,
-        transformDocument: options?.transformDocument,
-        adapterTransformDocument: transformDocument,
-      })) as unknown as DefineResult);
+    return buildOperationFromTemplateSpec(
+      schema,
+      spec,
+      resolvedAdapter,
+      // biome-ignore lint/suspicious/noExplicitAny: Options type narrowing not possible across union
+      options as any,
+      transformDocument,
+    );
   };
 };
 
@@ -129,7 +101,7 @@ export const createExtendComposer = <
  * Builds an Operation from a TemplateCompatSpec by parsing the raw GraphQL source.
  * Evaluates fields via buildFieldsFromSelectionSet for correct typegen output.
  */
-const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyMetadataAdapter>(
+const buildOperationFromTemplateSpec = <TSchema extends MinimalSchema, TAdapter extends AnyMetadataAdapter>(
   schema: TSchema,
   spec: TemplateCompatSpec,
   adapter: TAdapter,
@@ -170,7 +142,7 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
   // 5. Filter named fragment spreads that can't be resolved without interpolation context
   const filteredSelectionSet = filterUnresolvedFragmentSpreads(opDef.selectionSet);
 
-  // 6. Delegate to buildOperationArtifact with fieldsFactory
+  // 6. Delegate to buildOperationArtifact with fieldsFactory and pre-parsed variableDefinitionNodes
   return wrapArtifactAsOperation(
     () =>
       buildOperationArtifact({
@@ -179,6 +151,7 @@ const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapt
         operationTypeName,
         operationName,
         variables: varSpecifiers as unknown as VariableDefinitions,
+        variableDefinitionNodes: opDef.variableDefinitions ?? [],
         fieldsFactory: ({ $ }) => {
           return buildFieldsFromSelectionSet(
             filteredSelectionSet,

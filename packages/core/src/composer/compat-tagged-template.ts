@@ -1,13 +1,12 @@
 /**
  * Compat tagged template function for creating deferred GraphQL operation specs.
- * Callback builder compat path is in compat.ts.
  * @module
  */
 
 import { Kind, parse as parseGraphql } from "graphql";
 import { GqlDefine } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
-import type { AnyGraphqlSchema, OperationType } from "../types/schema";
+import type { MinimalSchema, OperationType } from "../types/schema";
 
 /** Tagged template function type for compat operations. */
 export type CompatTaggedTemplate = (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<TemplateCompatSpec>;
@@ -22,7 +21,7 @@ export type CurriedCompatFunction = (operationName: string) => CompatTaggedTempl
  * @param schema - The GraphQL schema definition
  * @param operationType - The operation type (query, mutation, subscription)
  */
-export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
+export const createCompatTaggedTemplate = <TSchema extends MinimalSchema>(
   schema: TSchema,
   operationType: OperationType,
 ): CurriedCompatFunction => {
