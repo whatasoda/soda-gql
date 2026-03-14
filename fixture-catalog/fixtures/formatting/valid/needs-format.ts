@@ -16,5 +16,7 @@ export const fragment2 = gql.default(({ fragment }) =>
 
 // Query operation
 export const query1 = gql.default(({ query }) =>
-  query.operation({ name: "GetUsers", fields: ({ f }) => ({ ...f.employees({})(({ f }) => ({ ...f.id(), ...f.name() })) }) }),
+  query("GetUsers")({
+    fields: ({ f }) => ({ ...f("employees", {})(({ f }) => ({ ...f("id")(), ...f("name")() })) }),
+  })(),
 );

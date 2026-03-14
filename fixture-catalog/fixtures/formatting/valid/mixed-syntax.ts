@@ -7,5 +7,7 @@ export const query1 = gql.default(({ query }) =>
 
 // Callback builder - should always be formatted (newline after brace)
 export const query2 = gql.default(({ query }) =>
-  query.operation({ name: "GetUser", fields: ({ f }) => ({ ...f.id(), ...f.name() }) }),
+  query("GetUser")({
+    fields: ({ f }) => ({ ...f("id")(), ...f("name")() }),
+  })(),
 );

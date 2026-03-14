@@ -1,12 +1,11 @@
 import { gql } from "../../../graphql-system";
 
 // Config objects should NOT be touched (variables object)
-export const userQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
-  }),
+export const userQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
+    fields: ({ f, $ }) => ({ ...f("employee", { id: $.id })(({ f }) => ({ ...f("id")(), ...f("name")() })) }),
+  })(),
 );
 
 // Regular arrays outside gql.default should not be touched

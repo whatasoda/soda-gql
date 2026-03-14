@@ -10,12 +10,11 @@ export const adminFragment = gql.admin(({ fragment }) =>
 
 // Multi-schema: default schema (already formatted)
 export const defaultQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "GetData",
+  query("GetData")({
     fields: ({ f }) => ({
-      ...f.employees({})(({ f }) => ({
-        ...f.id(),
+      ...f("employees", {})(({ f }) => ({
+        ...f("id")(),
       })),
     }),
-  }),
+  })(),
 );

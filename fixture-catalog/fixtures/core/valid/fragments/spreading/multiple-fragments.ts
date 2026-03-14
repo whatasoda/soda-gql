@@ -17,13 +17,12 @@ export const simplePostFragment = gql.default(({ fragment }) =>
 /**
  * Operation that spreads multiple fragments in different fields
  */
-export const getDashboardQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetDashboard",
-    variables: { ...$var("userId").ID("!"), ...$var("postLimit").Int("?") },
+export const getDashboardQuery = gql.default(({ query }) =>
+  query("GetDashboard")({
+    variables: `($userId: ID!, $postLimit: Int)`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.userId })(() => ({ ...simpleUserFragment.spread() })),
-      ...f.tasks({ limit: $.postLimit })(() => ({ ...simplePostFragment.spread() })),
+      ...f("employee", { id: $.userId })(() => ({ ...simpleUserFragment.spread() })),
+      ...f("tasks", { limit: $.postLimit })(() => ({ ...simplePostFragment.spread() })),
     }),
-  }),
+  })(),
 );

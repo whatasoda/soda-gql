@@ -3,13 +3,12 @@ import { topLevelModel } from "./common/top-level";
 
 export const taskFragment = gql.default(({ fragment }) => fragment("TaskFragment", "Task")`{ id }`());
 
-export const pageQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "PageQuery",
-    variables: { ...$var("employeeId").ID("!"), ...$var("taskId").ID("!") },
+export const pageQuery = gql.default(({ query }) =>
+  query("PageQuery")({
+    variables: `($employeeId: ID!, $taskId: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(() => ({ ...topLevelModel.spread() })),
-      ...f.task({ id: $.taskId })(() => ({ ...taskFragment.spread() })),
+      ...f("employee", { id: $.employeeId })(() => ({ ...topLevelModel.spread() })),
+      ...f("task", { id: $.taskId })(() => ({ ...taskFragment.spread() })),
     }),
-  }),
+  })(),
 );
