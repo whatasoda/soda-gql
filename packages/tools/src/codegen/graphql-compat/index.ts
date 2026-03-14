@@ -6,7 +6,19 @@
  * @module
  */
 
+export {
+  collectVariableUsages,
+  getArgumentType,
+  getFieldReturnType,
+  getInputFieldType,
+  inferVariablesFromUsages,
+  isModifierAssignable,
+  mergeModifiers,
+  mergeVariableUsages,
+  sortFragmentsByDependency,
+  transformParsedGraphql,
+  type VariableUsage,
+} from "@soda-gql/core";
 export * from "./emitter";
 export * from "./parser";
-export * from "./transformer";
 export * from "./types";

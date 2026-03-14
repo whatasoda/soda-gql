@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { parse } from "graphql";
+import { transformParsedGraphql } from ".";
 import { emitFragment, emitOperation } from "./emitter";
 import { parseGraphqlSource } from "./parser";
-import { transformParsedGraphql } from "./transformer";
 
 // Simple test schema
 const testSchema = parse(`
@@ -45,13 +45,16 @@ const defaultOptions = {
   schemaDocument: testSchema,
 };
 
+const transform = (parsed: Parameters<typeof transformParsedGraphql>[0], schemaDoc: ReturnType<typeof parse>) => {
+  const result = transformParsedGraphql(parsed, { schemaDocument: schemaDoc });
+  if (!result.ok) throw new Error(result.error.message);
+  return result.value;
+};
+
 const parseAndTransform = (source: string) => {
   const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
   const operationDocument = parse(source);
-  return {
-    ...transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap(),
-    operationDocument,
-  };
+  return { ...transform(parsed, testSchema), operationDocument };
 };
 
 describe("emitOperation", () => {
@@ -162,9 +165,7 @@ describe("emitOperation", () => {
       }
     `;
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { operations } = transformParsedGraphql(parsed, {
-      schemaDocument: nestedSchema,
-    })._unsafeUnwrap();
+    const { operations } = transform(parsed, nestedSchema);
 
     const output = emitOperation(operations[0]!, {
       ...defaultOptions,
@@ -213,9 +214,7 @@ describe("emitOperation", () => {
     `;
 
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { operations } = transformParsedGraphql(parsed, {
-      schemaDocument: unionSchema,
-    })._unsafeUnwrap();
+    const { operations } = transform(parsed, unionSchema);
 
     const output = emitOperation(operations[0]!, {
       ...defaultOptions,
@@ -274,7 +273,7 @@ describe("emitFragment", () => {
       }
     `;
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { fragments } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
+    const { fragments } = transform(parsed, testSchema);
 
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
@@ -312,9 +311,7 @@ describe("emitFragment", () => {
       }
     `;
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { fragments } = transformParsedGraphql(parsed, {
-      schemaDocument: nestedSchema,
-    })._unsafeUnwrap();
+    const { fragments } = transform(parsed, nestedSchema);
 
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
@@ -333,7 +330,7 @@ describe("emitFragment", () => {
       }
     `;
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { fragments } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
+    const { fragments } = transform(parsed, testSchema);
 
     const output = emitFragment(fragments[0]!, {
       ...defaultOptions,
@@ -354,7 +351,7 @@ describe("emitFragment", () => {
       }
     `;
     const parsed = parseGraphqlSource(source, "test.graphql")._unsafeUnwrap();
-    const { fragments } = transformParsedGraphql(parsed, { schemaDocument: testSchema })._unsafeUnwrap();
+    const { fragments } = transform(parsed, testSchema);
 
     // Without operationDocument
     const output = emitFragment(fragments[0]!, defaultOptions);

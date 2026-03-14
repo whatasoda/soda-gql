@@ -3,9 +3,9 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse } from "graphql";
+import { transformParsedGraphql } from "../../../src/codegen/graphql-compat";
 import { emitFragment, emitOperation } from "../../../src/codegen/graphql-compat/emitter";
 import { parseGraphqlSource } from "../../../src/codegen/graphql-compat/parser";
-import { transformParsedGraphql } from "../../../src/codegen/graphql-compat/transformer";
 import { loadSchema } from "../../../src/codegen/schema";
 
 describe("graphql-compat integration", () => {
@@ -108,9 +108,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(1);
 
     const operationDocument = parse(operationSource);
@@ -165,9 +166,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(3);
 
     const operationDocument = parse(operationSource);
@@ -209,9 +211,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { fragments } = transformResult._unsafeUnwrap();
+    const { fragments } = transformResult.value;
     expect(fragments).toHaveLength(1);
 
     const operationDocument = parse(fragmentSource);
@@ -250,9 +253,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserBasicFields");
     expect(operations[0]!.fragmentDependencies).toContain("PostFields");
@@ -297,9 +301,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     const operationDocument = parse(operationSource);
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
@@ -338,9 +343,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     const operationDocument = parse(operationSource);
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
@@ -368,9 +374,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     const operationDocument = parse(operationSource);
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
@@ -398,9 +405,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     const operationDocument = parse(operationSource);
     const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
@@ -439,9 +447,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(fragments).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
@@ -500,9 +509,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(2);
     expect(fragments).toHaveLength(1);
 
@@ -562,9 +572,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(fragments).toHaveLength(2);
 

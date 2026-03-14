@@ -188,9 +188,8 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
 
     const transformResult = transformParsedGraphql(parsed, { schemaDocument });
-    if (transformResult.isErr()) {
-      const error = transformResult.error;
-      return err(cliErrors.parseError(error.message, file));
+    if (!transformResult.ok) {
+      return err(cliErrors.parseError(transformResult.error.message, file));
     }
 
     const { operations, fragments } = transformResult.value;
