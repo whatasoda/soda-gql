@@ -21,8 +21,8 @@ export interface BenchmarkResult {
   timestamp: string;
   fixtures: {
     types: number;
-    models: number;
-    slices: number;
+    fragments: number;
+    queries: number;
     operations: number;
   };
   metrics: DiagnosticsMetrics;
