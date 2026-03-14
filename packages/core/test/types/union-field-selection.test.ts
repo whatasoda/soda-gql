@@ -40,7 +40,7 @@ describe("Union field selection type inference", () => {
 
       type Output = typeof Search.$infer.output;
       // search returns array of union results
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _TestHasSearch = Expect<Extends<Output, { search: unknown[] }>>;
       expect(true).toBe(true);
     });
@@ -70,7 +70,7 @@ describe("Union field selection type inference", () => {
       type SearchResult = Output["search"][number];
 
       // User member should have name field
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _TestUnion = Expect<Extends<SearchResult, { id: string; name: string } | { id: string; title: string }>>;
       expect(true).toBe(true);
     });
@@ -95,7 +95,7 @@ describe("Union field selection type inference", () => {
 
       type Output = typeof Search.$infer.output;
       // Result type still compiles when only selecting some members
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _TestCompiles = Expect<Extends<Output, { search: unknown[] }>>;
       expect(true).toBe(true);
     });
@@ -121,7 +121,7 @@ describe("Union field selection type inference", () => {
 
       type Output = typeof GetNode.$infer.output;
       // node is nullable (SearchResult?)
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _TestNullable = Expect<Extends<Output, { node: object | null | undefined }>>;
       expect(true).toBe(true);
     });
@@ -194,7 +194,7 @@ describe("Union field selection type inference", () => {
       type SearchResult = Output["search"][number];
 
       // Without __typename flag, only User appears with id (no __typename)
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _TestOnlyUser = Expect<Extends<SearchResult, { readonly id: string }>>;
       expect(true).toBe(true);
     });
@@ -215,7 +215,7 @@ describe("Union field selection type inference", () => {
       type Output = typeof GetNode.$infer.output;
       // node is nullable and all members should have __typename
       type _TestNullable = Expect<
-        // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+        // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
         Extends<Output, { readonly node: { readonly __typename: "User" | "Post" | "Comment" } | null | undefined }>
       >;
       expect(true).toBe(true);

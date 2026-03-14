@@ -162,7 +162,7 @@ describe("Directive application type safety", () => {
         user: { id: string; email: string | null | undefined } | null | undefined;
       };
       // Directive-conditional fields are still in the output type
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
