@@ -21,9 +21,7 @@ import type { SchemaIndex } from "./schema-index";
  * use createSchemaIndex(DocumentNode) from schema-index.ts.
  */
 export const createSchemaIndexFromSchema = (schema: MinimalSchema): SchemaIndex => {
-  const scalars: SchemaIndex["scalars"] = new Map(
-    schema.typeNames.scalar.map((n) => [n, { name: n, directives: [] }]),
-  );
+  const scalars: SchemaIndex["scalars"] = new Map(schema.typeNames.scalar.map((n) => [n, { name: n, directives: [] }]));
   const enums: SchemaIndex["enums"] = new Map(
     schema.typeNames.enum.map((n) => [n, { name: n, values: new Map(), directives: [] }]),
   );

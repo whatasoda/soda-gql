@@ -354,8 +354,11 @@ export const inputObjectSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["SortOrder"], input: ["UserFilter", "UserOrderBy", "CreateUserInput"] },
+  typeNames: {
+    scalar: ["ID", "String", "Int", "Boolean"],
+    enum: ["SortOrder"],
+    input: ["UserFilter", "UserOrderBy", "CreateUserInput"],
+  },
 } satisfies AnyGraphqlSchema & MinimalSchema;
 
 export type InputObjectSchema = typeof inputObjectSchema & { _?: never };
-

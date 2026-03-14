@@ -9,9 +9,9 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
+import { asMinimalSchema } from "../utils/schema";
 import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { Expect, Extends, HasKey } from "./_helpers";
-import { asMinimalSchema } from "../utils/schema";
 
 const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(asMinimalSchema(basicSchema), {});
 

@@ -18,10 +18,9 @@ import type {
 } from "../types/metadata";
 import type { MinimalSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-
-import type { FieldsBuilder } from "./fields-builder";
 import { isPromiseLike } from "../utils/promise";
 import { buildDocument } from "./build-document";
+import type { FieldsBuilder } from "./fields-builder";
 import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs } from "./input";

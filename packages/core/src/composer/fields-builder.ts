@@ -17,12 +17,15 @@ import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./
 // ============================================================================
 
 /** Builder callback for top-level field selections (has $ variable access) */
-export type FieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> =
-  (tools: { f: FieldAccessorFunction; $: Readonly<Record<string, AnyVarRef>> }) => TFields;
+export type FieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> = (tools: {
+  f: FieldAccessorFunction;
+  $: Readonly<Record<string, AnyVarRef>>;
+}) => TFields;
 
 /** Builder callback for nested object field selections (no $ access) */
-export type NestedObjectFieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> =
-  (tools: { f: FieldAccessorFunction }) => TFields;
+export type NestedObjectFieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> = (tools: {
+  f: FieldAccessorFunction;
+}) => TFields;
 
 /** Builder for union type selections with per-member field definitions */
 export type NestedUnionFieldsBuilder = {
@@ -89,10 +92,7 @@ const ensureCacheMapBySchema = (schema: MinimalSchema) => {
  *
  * @internal Used by operation and fragment composers
  */
-export const createFieldFactories = <TSchema extends MinimalSchema>(
-  schema: TSchema,
-  typeName: string,
-): FieldAccessorFunction => {
+export const createFieldFactories = <TSchema extends MinimalSchema>(schema: TSchema, typeName: string): FieldAccessorFunction => {
   const cacheMap = ensureCacheMapBySchema(schema);
   const cached = cacheMap.get(typeName);
   if (cached) {
@@ -114,16 +114,17 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
   return (fieldName, fieldArgs, extras) => {
     // __typename is an implicit introspection field
     if (fieldName === "__typename") {
-      const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName), value);
-      return (() => wrap({
-        parent: typeName,
-        field: fieldName,
-        type: "s|String|!",
-        args: {},
-        directives: extras?.directives ?? [],
-        object: null,
-        union: null,
-      })) as unknown as AnyFieldAccessorReturn;
+      const wrap = <T>(value: T) => wrapByKey(extras?.alias ?? fieldName, value);
+      return (() =>
+        wrap({
+          parent: typeName,
+          field: fieldName,
+          type: "s|String|!",
+          args: {},
+          directives: extras?.directives ?? [],
+          object: null,
+          union: null,
+        })) as unknown as AnyFieldAccessorReturn;
     }
 
     // Runtime duck-typing: MinimalSchema sees string, but codegen may emit { spec, arguments }
@@ -135,7 +136,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
     const typeSpecifier = typeof fieldDef === "string" ? fieldDef : (fieldDef as { spec: string }).spec;
     const parsedType = parseOutputField(typeSpecifier as DeferredOutputField);
 
-    const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName), value);
+    const wrap = <T>(value: T) => wrapByKey(extras?.alias ?? fieldName, value);
     const directives = extras?.directives ?? [];
 
     if (parsedType.kind === "object") {
@@ -166,9 +167,7 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
     }
 
     if (parsedType.kind === "union") {
-      const factoryReturn = (<TNested extends AnyNestedUnion>(
-        nest: NestedUnionFieldsBuilder & TNested,
-      ) => {
+      const factoryReturn = (<TNested extends AnyNestedUnion>(nest: NestedUnionFieldsBuilder & TNested) => {
         // Build new path for this field
         const currentPath = getCurrentFieldPath();
         const newPath = appendToPath(currentPath, {
@@ -216,15 +215,16 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
     }
 
     if (parsedType.kind === "scalar" || parsedType.kind === "enum") {
-      const factoryReturn = (() => wrap({
-        parent: typeName,
-        field: fieldName,
-        type: typeSpecifier,
-        args: fieldArgs ?? {},
-        directives,
-        object: null,
-        union: null,
-      })) as unknown as AnyFieldAccessorReturn;
+      const factoryReturn = (() =>
+        wrap({
+          parent: typeName,
+          field: fieldName,
+          type: typeSpecifier,
+          args: fieldArgs ?? {},
+          directives,
+          object: null,
+          union: null,
+        })) as unknown as AnyFieldAccessorReturn;
       return factoryReturn;
     }
 

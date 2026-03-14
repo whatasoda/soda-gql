@@ -28,15 +28,15 @@ import { join } from "node:path";
 import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
 import type {
   AnyFieldSelection,
-  AnyFieldValue,
   AnyFieldsExtended,
+  AnyFieldValue,
   AnyGraphqlSchema,
   InputTypeSpecifiers,
   TypeFormatters,
 } from "@soda-gql/core";
 import {
-  calculateFieldType,
   calculateFieldsType,
+  calculateFieldType,
   generateInputObjectType,
   generateInputType,
   generateInputTypeFromVarDefs,

@@ -66,7 +66,9 @@ export type MinimalSchema = {
   // biome-ignore lint/suspicious/noExplicitAny: Accept both flat `{ field: string }` and full ObjectDefinition shape
   readonly object: { readonly [typename: string]: { readonly [field: string]: any } };
   // biome-ignore lint/suspicious/noExplicitAny: Accept both `string[]` and full UnionDefinition shape
-  readonly union: { readonly [typename: string]: readonly string[] | { readonly types: Record<string, any>; readonly name: string } };
+  readonly union: {
+    readonly [typename: string]: readonly string[] | { readonly types: Record<string, any>; readonly name: string };
+  };
   readonly typeNames: {
     readonly scalar: readonly string[];
     readonly enum: readonly string[];

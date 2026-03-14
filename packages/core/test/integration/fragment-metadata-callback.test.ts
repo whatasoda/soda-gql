@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
+import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";

@@ -21,7 +21,10 @@ describe("attach type inference", () => {
     const GetUser = gql(({ query }) =>
       query("GetUser")({
         fields: ({ f }) => ({
-          ...f("users", {})(({ f }) => ({
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
             ...f("id")(),
           })),
         }),
@@ -44,7 +47,10 @@ describe("attach type inference", () => {
     const GetUsers = gql(({ query }) =>
       query("GetUsers")({
         fields: ({ f }) => ({
-          ...f("users", {})(({ f }) => ({
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
             ...f("id")(),
           })),
         }),
@@ -69,7 +75,10 @@ describe("attach type inference", () => {
     const GetUser = gql(({ query }) =>
       query("GetUser")({
         fields: ({ f }) => ({
-          ...f("users", {})(({ f }) => ({
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
             ...f("id")(),
           })),
         }),

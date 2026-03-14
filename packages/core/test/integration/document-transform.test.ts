@@ -151,7 +151,8 @@ describe("document transformation integration", () => {
       });
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
-        adapter, });
+        adapter,
+      });
 
       const operation = gql(({ query }) =>
         query("GetUser")({
@@ -185,7 +186,8 @@ describe("document transformation integration", () => {
       });
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
-        adapter, });
+        adapter,
+      });
 
       const queryOp = gql(({ query }) =>
         query("GetUser")({
@@ -218,7 +220,8 @@ describe("document transformation integration", () => {
       });
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
-        adapter, });
+        adapter,
+      });
 
       const adminOp = gql(({ query }) =>
         query("GetAdminUser")({
@@ -262,7 +265,8 @@ describe("document transformation integration", () => {
       });
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
-        adapter, });
+        adapter,
+      });
 
       const operation = gql(({ query }) =>
         query("GetUser")({

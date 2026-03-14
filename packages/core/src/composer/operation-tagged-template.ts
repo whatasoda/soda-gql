@@ -65,8 +65,8 @@ export type OperationOptionsObject = {
 
 /** Dispatch: tagged template OR options object */
 export type OperationBuilderDispatch<TOperationType extends OperationType = OperationType> =
-  & OperationTaggedTemplateFunction<TOperationType>
-  & ((options: OperationOptionsObject) => TemplateResult<AnyOperationOf<TOperationType>>);
+  OperationTaggedTemplateFunction<TOperationType> &
+    ((options: OperationOptionsObject) => TemplateResult<AnyOperationOf<TOperationType>>);
 
 /** Curried operation function type: query("name")`($var: Type!) { fields }` or query("name")({ variables, fields }) */
 export type CurriedOperationFunction<TOperationType extends OperationType = OperationType> = (

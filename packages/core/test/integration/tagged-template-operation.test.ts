@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
-import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { FieldAccessorFunction } from "../../src/composer/fields-builder";
+import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import { basicTestMinimalSchema } from "../fixtures";
 

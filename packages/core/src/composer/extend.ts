@@ -18,9 +18,7 @@ import type {
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { MinimalSchema, OperationType } from "../types/schema";
-import type { VariableDefinitions } from "../types/type-foundation";
-
-import type { AnyVarRef } from "../types/type-foundation";
+import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
@@ -35,12 +33,7 @@ export type ExtendOptions<
   TSchemaLevel,
 > = {
   /** Optional metadata builder */
-  metadata?: MetadataBuilder<
-    Readonly<Record<string, AnyVarRef>>,
-    TOperationMetadata,
-    TAggregatedFragmentMetadata,
-    TSchemaLevel
-  >;
+  metadata?: MetadataBuilder<Readonly<Record<string, AnyVarRef>>, TOperationMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
   /** Optional document transformer */
   transformDocument?: OperationDocumentTransformer<TOperationMetadata>;
 };
@@ -58,10 +51,7 @@ export type ExtendOptions<
  *
  * @internal Used by `createGqlElementComposer`
  */
-export const createExtendComposer = <
-  TSchema extends MinimalSchema,
-  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
->(
+export const createExtendComposer = <TSchema extends MinimalSchema, TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter>(
   schema: NoInfer<TSchema>,
   adapter?: TAdapter,
   transformDocument?: DocumentTransformer<

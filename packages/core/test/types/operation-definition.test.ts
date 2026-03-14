@@ -44,7 +44,10 @@ describe("Operation definition type inference", () => {
       const GetUsers = gql(({ query }) =>
         query("GetUsers")({
           fields: ({ f }) => ({
-            ...f("users", {})(({ f }) => ({
+            ...f(
+              "users",
+              {},
+            )(({ f }) => ({
               ...f("id")(),
               ...f("name")(),
             })),
@@ -147,7 +150,10 @@ describe("Operation definition type inference", () => {
       const GetUsers = gql(({ query }) =>
         query("GetUsers")({
           fields: ({ f }) => ({
-            ...f("users", {})(({ f }) => ({
+            ...f(
+              "users",
+              {},
+            )(({ f }) => ({
               ...f("id")(),
             })),
           }),

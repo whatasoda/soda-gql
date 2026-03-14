@@ -215,7 +215,7 @@ describe("Union field selection type inference", () => {
       type Output = typeof GetNode.$infer.output;
       // node is nullable and all members should have __typename
       type _TestNullable = Expect<
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+        // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
         Extends<Output, { readonly node: { readonly __typename: "User" | "Post" | "Comment" } | null | undefined }>
       >;
       expect(true).toBe(true);

@@ -3,13 +3,13 @@ import { createHash } from "node:crypto";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
+import { getVarRefName } from "../../src/composer/var-ref-tools";
+import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { VarRef } from "../../src/types/type-foundation";
 import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
-import { getVarRefName } from "../../src/composer/var-ref-tools";
 
 const schema = asMinimalSchema({
   label: "test" as const,
@@ -66,7 +66,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
@@ -87,7 +87,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
@@ -108,7 +108,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ mutation }) =>
         mutation("UpdateUser")({
           variables: `($userId: ID!, $userName: String!)`,
-          fields: ({ f, $ }) => ({ ...f("updateUser", { id: $.userId, name: $.userName })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("updateUser", { id: $.userId, name: $.userName })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
@@ -147,7 +147,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: ({ document }: OperationMetadataContext) => ({
             custom: {
@@ -168,7 +168,7 @@ describe("metadata with variable access", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: ({ $, document }: OperationMetadataContext) => ({
             headers: {

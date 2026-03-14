@@ -181,7 +181,11 @@ describe("graphql-compat integration", () => {
     expect(mutationOutput).toContain("({ mutation })");
     expect(mutationOutput).toContain("mutation.compat(");
 
-    const subscriptionOutput = emitOperation(operations[2]!, { ...emitOptions, schemaDocument, operationDocument })._unsafeUnwrap();
+    const subscriptionOutput = emitOperation(operations[2]!, {
+      ...emitOptions,
+      schemaDocument,
+      operationDocument,
+    })._unsafeUnwrap();
     expect(subscriptionOutput).toContain("({ subscription })");
     expect(subscriptionOutput).toContain("subscription.compat(");
   });

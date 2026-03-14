@@ -6,7 +6,7 @@
  * @module
  */
 
-import { type DocumentNode, Kind, type OperationDefinitionNode, type FragmentDefinitionNode, print } from "graphql";
+import { type DocumentNode, type FragmentDefinitionNode, Kind, type OperationDefinitionNode, print } from "graphql";
 import { ok, type Result } from "neverthrow";
 import type { EnrichedFragment, EnrichedOperation, GraphqlCompatError } from "./types";
 

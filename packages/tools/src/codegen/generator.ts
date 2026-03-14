@@ -324,12 +324,7 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
 const collectDirectiveNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.directives.keys()).sort((left, right) => left.localeCompare(right));
 
-const renderTypeNamesObject = (
-  schemaName: string,
-  scalarNames: string[],
-  enumNames: string[],
-  inputNames: string[],
-): string => {
+const renderTypeNamesObject = (schemaName: string, scalarNames: string[], enumNames: string[], inputNames: string[]): string => {
   const scalarList = scalarNames.map((n) => `"${n}"`).join(", ");
   const enumList = enumNames.map((n) => `"${n}"`).join(", ");
   const inputList = inputNames.map((n) => `"${n}"`).join(", ");
@@ -718,10 +713,7 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         : "{}";
 
     // MinimalSchema union: inline string arrays
-    const minimalUnionBlock =
-      config.minimalUnionEntries.length > 0
-        ? `{\n${config.minimalUnionEntries.join(",\n")},\n}`
-        : "{}";
+    const minimalUnionBlock = config.minimalUnionEntries.length > 0 ? `{\n${config.minimalUnionEntries.join(",\n")},\n}` : "{}";
 
     schemaBlocks.push(`
 // Individual scalar definitions

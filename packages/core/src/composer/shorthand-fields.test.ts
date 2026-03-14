@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
 import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
-import type { FieldAccessorFunction } from "./fields-builder";
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
+import type { FieldAccessorFunction } from "./fields-builder";
 import { createGqlElementComposer } from "./gql-composer";
 
 /**

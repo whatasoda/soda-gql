@@ -3,8 +3,8 @@
  * @module
  */
 
-import type { MinimalSchema } from "../schema/schema";
 import type { OperationType } from "../schema";
+import type { MinimalSchema } from "../schema/schema";
 
 /**
  * Specification for a tagged template compat operation.

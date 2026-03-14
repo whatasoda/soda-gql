@@ -314,6 +314,6 @@ export const asMinimalSchema = <T extends AnyGraphqlSchema>(schema: T): T & Mini
       enum: Object.keys(schema.enum),
       input: Object.keys(schema.input),
     },
-  // biome-ignore lint/suspicious/noExplicitAny: runtime transformation loses static type info
+    // biome-ignore lint/suspicious/noExplicitAny: runtime transformation loses static type info
   } as any;
 };

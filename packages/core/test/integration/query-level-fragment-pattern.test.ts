@@ -16,8 +16,7 @@ import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { basicTestMinimalSchema } from "../fixtures";
 
-const gql = createGqlElementComposer(basicTestMinimalSchema, {
-  });
+const gql = createGqlElementComposer(basicTestMinimalSchema, {});
 
 describe("query-level fragment pattern", () => {
   describe("single entity fragment spread in operation", () => {

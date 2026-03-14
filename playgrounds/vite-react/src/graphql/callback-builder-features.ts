@@ -121,7 +121,10 @@ export const getEmployeeWithMetadataAggregationQuery = gql.default(({ query }) =
     metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
       operationType: "read",
       entityId: $.employeeId,
-      maxCacheTTL: Math.max(0, ...(fragmentMetadata?.map((meta: unknown) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? [])),
+      maxCacheTTL: Math.max(
+        0,
+        ...(fragmentMetadata?.map((meta: unknown) => (meta as { cacheTTL?: number }).cacheTTL ?? 0) ?? []),
+      ),
       fragmentCount: fragmentMetadata?.length ?? 0,
     }),
   }),

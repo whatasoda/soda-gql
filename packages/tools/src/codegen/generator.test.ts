@@ -517,7 +517,9 @@ describe("generateMultiSchemaModule", () => {
     expect(result.code).not.toContain("FragmentBuilders_default");
 
     // Should use simplified call in createGqlElementComposer (no FragmentBuilders)
-    expect(result.code).toContain("createGqlElementComposer(minimalSchema_default, { directiveMethods: customDirectives_default });");
+    expect(result.code).toContain(
+      "createGqlElementComposer(minimalSchema_default, { directiveMethods: customDirectives_default });",
+    );
   });
 
   test("does not generate fragment builder types for multiple schemas", () => {

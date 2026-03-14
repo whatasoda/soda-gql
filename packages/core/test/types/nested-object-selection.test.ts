@@ -61,7 +61,10 @@ describe("Nested object selection type inference", () => {
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
               ...f("name")(),
-              ...f("posts", {})(({ f }) => ({
+              ...f(
+                "posts",
+                {},
+              )(({ f }) => ({
                 ...f("id")(),
                 ...f("title")(),
                 ...f("comments")(({ f }) => ({
@@ -78,7 +81,7 @@ describe("Nested object selection type inference", () => {
       // User -> posts -> comments (3 levels)
       // Output extends the expected shape (has user with nested structure)
       type _TestHasUser = Expect<
-      // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
+        // @ts-expect-error Type inference deferred — FieldAccessorFunction returns any
         Extends<
           Output,
           {
@@ -105,7 +108,10 @@ describe("Nested object selection type inference", () => {
           fields: ({ f, $ }) => ({
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
-              ...f("posts", {})(({ f }) => ({
+              ...f(
+                "posts",
+                {},
+              )(({ f }) => ({
                 ...f("id")(),
                 ...f("author")(({ f }) => ({
                   ...f("id")(),
@@ -144,7 +150,10 @@ describe("Nested object selection type inference", () => {
           variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
             ...f("user", { id: $.id })(({ f }) => ({
-              ...f("posts", {})(({ f }) => ({
+              ...f(
+                "posts",
+                {},
+              )(({ f }) => ({
                 ...f("id")(),
                 ...f("title")(),
               })),
@@ -171,7 +180,10 @@ describe("Nested object selection type inference", () => {
           fields: ({ f, $ }) => ({
             ...f("user", { id: $.id })(({ f }) => ({
               ...f("id")(),
-              ...f("posts", {})(() => ({
+              ...f(
+                "posts",
+                {},
+              )(() => ({
                 ...postFragment.spread(),
               })),
             })),

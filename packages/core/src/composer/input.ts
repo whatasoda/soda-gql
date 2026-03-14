@@ -3,12 +3,7 @@
  * @module
  */
 
-import {
-  type AnyAssignableInput,
-  createVarRefFromNestedValue,
-  createVarRefFromVariable,
-  VarRef,
-} from "../types/fragment";
+import { type AnyAssignableInput, createVarRefFromNestedValue, createVarRefFromVariable, VarRef } from "../types/fragment";
 import type { AnyVarRef, NestedValue, VariableDefinitions } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 

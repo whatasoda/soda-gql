@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
+import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
 import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
-import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
 
 const schema = asMinimalSchema({
   label: "test" as const,
@@ -50,7 +50,6 @@ const schema = asMinimalSchema({
 
 type Schema = typeof schema & { _?: never };
 
-
 // NOTE: The `(p: any)` annotations in getNameAt/getValueAt/getVariablePath selectors below
 // are intentional and cannot be removed. These tests use VarRefs created via
 // `createVarRefFromNestedValue` (which returns `AnyVarRef`) rather than the schema-aware
@@ -80,7 +79,7 @@ describe("nested VarRef with var-ref-tools helpers", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: () => ({
             custom: {
@@ -114,7 +113,7 @@ describe("nested VarRef with var-ref-tools helpers", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: () => ({
             custom: {
@@ -148,7 +147,7 @@ describe("nested VarRef with var-ref-tools helpers", () => {
       const operation = gql(({ query }) =>
         query("GetUser")({
           variables: `($userId: ID!, $userAge: Int)`,
-          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) })
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
           metadata: () => ({
             custom: {
