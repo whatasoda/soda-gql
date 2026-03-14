@@ -711,6 +711,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         : `const scalar_${name} = ${scalarAssembly} as const;`;
     const scalarRef = $$.injection.mode === "inject" ? (scalarAliases.get(name) ?? `scalar_${name}`) : `scalar_${name}`;
 
+    // MinimalSchema object: flatten ObjectDefinition to field maps
+    const minimalObjectAssembly =
+      config.objectNames.length > 0
+        ? `{ ${config.objectNames.map((n) => `${n}: object_${name}_${n}.fields`).join(", ")} }`
+        : "{}";
+
     // MinimalSchema union: inline string arrays
     const minimalUnionBlock =
       config.minimalUnionEntries.length > 0
@@ -755,7 +761,7 @@ const ${fullSchemaVar} = {
 const ${minimalSchemaVar} = {
   label: "${name}" as const,
   operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
-  object: object_${name} as unknown as MinimalSchema["object"],
+  object: ${minimalObjectAssembly} as unknown as MinimalSchema["object"],
   union: ${minimalUnionBlock} as const,
   typeNames: typeNames_${name},
 } as const satisfies MinimalSchema;

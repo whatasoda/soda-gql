@@ -291,7 +291,7 @@ export const define = <const TName extends string>(name: TName) => ({
  * format and union definitions from `{ name, types: { Member: true } }` to `string[]`.
  * Also adds the required `typeNames` property.
  */
-export const asMinimalSchema = (schema: AnyGraphqlSchema): MinimalSchema => {
+export const asMinimalSchema = <T extends AnyGraphqlSchema>(schema: T): T & MinimalSchema => {
   // Flatten object definitions: { name, fields: { field: specObj } } -> { field: specObj }
   const flatObject: Record<string, Record<string, unknown>> = {};
   for (const [typeName, objDef] of Object.entries(schema.object)) {
@@ -314,5 +314,6 @@ export const asMinimalSchema = (schema: AnyGraphqlSchema): MinimalSchema => {
       enum: Object.keys(schema.enum),
       input: Object.keys(schema.input),
     },
-  } as unknown as MinimalSchema;
+  // biome-ignore lint/suspicious/noExplicitAny: runtime transformation loses static type info
+  } as any;
 };

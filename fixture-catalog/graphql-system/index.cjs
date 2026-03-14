@@ -476,7 +476,7 @@ var fullSchema_default = {
 var minimalSchema_default = {
   label: "default",
   operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  object: object_default,
+  object: { Comment: object_default_Comment.fields, Company: object_default_Company.fields, Department: object_default_Department.fields, Employee: object_default_Employee.fields, Mutation: object_default_Mutation.fields, Project: object_default_Project.fields, Query: object_default_Query.fields, Subscription: object_default_Subscription.fields, Task: object_default_Task.fields, Team: object_default_Team.fields },
   union: {
     ActivityItem: ["Comment", "Project", "Task"],
     SearchResult: ["Comment", "Employee", "Project", "Task"]
@@ -535,7 +535,7 @@ var fullSchema_admin = {
 var minimalSchema_admin = {
   label: "admin",
   operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  object: object_admin,
+  object: { Comment: object_admin_Comment.fields, Company: object_admin_Company.fields, Department: object_admin_Department.fields, Employee: object_admin_Employee.fields, Mutation: object_admin_Mutation.fields, Project: object_admin_Project.fields, Query: object_admin_Query.fields, Subscription: object_admin_Subscription.fields, Task: object_admin_Task.fields, Team: object_admin_Team.fields },
   union: {},
   typeNames: typeNames_admin
 };

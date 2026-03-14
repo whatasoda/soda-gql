@@ -10,8 +10,9 @@ import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { type BasicSchema, basicSchema } from "./_fixtures";
+import { asMinimalSchema } from "../utils/schema";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(asMinimalSchema(basicSchema), {});
 
 describe("Fragment spreading type inference", () => {
   describe("Fragment spread without variables", () => {

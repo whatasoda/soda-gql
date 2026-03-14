@@ -51,7 +51,7 @@ const fullSchema_default = {
 const minimalSchema_default = {
   label: "default" as const,
   operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" } as const,
-  object: object_default as unknown as MinimalSchema["object"],
+  object: { Comment: object_default_Comment.fields, Company: object_default_Company.fields, Department: object_default_Department.fields, Employee: object_default_Employee.fields, Mutation: object_default_Mutation.fields, Project: object_default_Project.fields, Query: object_default_Query.fields, Subscription: object_default_Subscription.fields, Task: object_default_Task.fields, Team: object_default_Team.fields } as unknown as MinimalSchema["object"],
   union: {
   ActivityItem: ["Comment", "Project", "Task"],
   SearchResult: ["Comment", "Employee", "Project", "Task"],
