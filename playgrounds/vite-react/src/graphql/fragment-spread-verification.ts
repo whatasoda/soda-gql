@@ -3,7 +3,7 @@
  *
  * IMPORTANT FINDING: Fragment variables are NOT automatically merged!
  *
- * Parent operations must EXPLICITLY declare all variables using $var(),
+ * Parent operations must EXPLICITLY declare all variables using the variables string,
  * including those required by child fragments. This explicit pattern makes
  * dependencies clear and prevents unexpected variable pollution.
  *

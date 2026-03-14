@@ -12,16 +12,15 @@ import {
 /**
  * Query operation to fetch a single employee
  */
-export const getEmployeeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployee",
-    variables: { ...$var("employeeId").ID("!"), ...$var("taskLimit").Int("?") },
+export const getEmployeeQuery = gql.default(({ query }) =>
+  query("GetEmployee")({
+    variables: `($employeeId: ID!, $taskLimit: Int)`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(() => ({
+      ...f("employee", { id: $.employeeId })(() => ({
         ...employeeFragment.spread({ taskLimit: $.taskLimit }),
       })),
     }),
-  }),
+  })(),
 );
 
 /**
@@ -348,36 +347,30 @@ export const updateTaskWithDirectivesMutation = gql.default(({ mutation }) =>
 // ============================================================================
 // Phase 2.1: Fragment spread with direct interpolation
 // ============================================================================
-// NOTE: Fragment spreading requires callback builder syntax because tagged templates
+// NOTE: Fragment spreading requires the options object path because tagged templates
 // reject all interpolated expressions (${...}).
 //
 // IMPORTANT: Fragment variables are NOT auto-merged. Parent operations must explicitly
-// declare all variables (both their own and those needed by fragments) using $var().
+// declare all variables in the variables string.
 // Fragments define their requirements; operations declare their contract.
 
 /**
  * Phase 2.1: Fragment spread with explicit variable declaration
  *
  * IMPORTANT: Tagged templates reject interpolation! Operations with fragment spreads
- * MUST use callback builder syntax. See fragment-spread-patterns.md for details.
+ * MUST use the options object path. See fragment-spread-patterns.md for details.
  *
  * This example demonstrates:
  * 1. Spreading a single fragment using ...fragment.spread() syntax
- * 2. EXPLICIT variable declaration - parent operation MUST declare ALL variables
- *    (including those needed by the fragment) using $var()
+ * 2. EXPLICIT variable declaration via variables string
  * 3. Explicit variable passing - variables are passed via spread({ var: $.var })
  *
  * Variables declared: $employeeId, $completed, $taskLimit
  * Fragment used: employeeTasksDetailFragment (declares the same variables)
  */
-export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployeeWithFragment",
-    variables: {
-      ...$var("employeeId").ID("!"),
-      ...$var("completed").Boolean("?"),
-      ...$var("taskLimit").Int("?"),
-    },
+export const getEmployeeWithFragmentQuery = gql.default(({ query }) =>
+  query("GetEmployeeWithFragment")({
+    variables: `($employeeId: ID!, $completed: Boolean, $taskLimit: Int)`,
     fields: ({ $ }) => ({
       ...employeeTasksDetailFragment.spread({
         employeeId: $.employeeId,
@@ -385,13 +378,13 @@ export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
         taskLimit: $.taskLimit,
       }),
     }),
-  }),
+  })(),
 );
 
 /**
  * Phase 2.2: Fragment spread with callback interpolation (multiple fragments)
  *
- * This example demonstrates callback builder pattern for spreading multiple fragments.
+ * This example demonstrates options object path for spreading multiple fragments.
  * The fields callback ({ f, $ }) provides the $ context for variable passing.
  *
  * Key points:
@@ -401,25 +394,16 @@ export const getEmployeeWithFragmentQuery = gql.default(({ query, $var }) =>
  *    - Operation's own: $projectId
  *    - From projectTasksFragment: $limit
  *    - From taskDetailConditionalFragment: $includeProject, $skipAssignee
- *
- * This is "callback interpolation" because the fields are constructed inside
- * the fields: ({ f, $ }) => {...} callback, where $ provides variable context.
  */
-export const getProjectWithMultipleFragmentsQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetProjectWithMultipleFragments",
-    variables: {
-      ...$var("projectId").ID("!"),
-      ...$var("limit").Int("?"),
-      ...$var("includeProject").Boolean("!"),
-      ...$var("skipAssignee").Boolean("!"),
-    },
+export const getProjectWithMultipleFragmentsQuery = gql.default(({ query }) =>
+  query("GetProjectWithMultipleFragments")({
+    variables: `($projectId: ID!, $limit: Int, $includeProject: Boolean!, $skipAssignee: Boolean!)`,
     fields: ({ f, $ }) => ({
-      ...f.project({ id: $.projectId })(({ f }) => ({
+      ...f("project", { id: $.projectId })(({ f }) => ({
         ...projectTasksFragment.spread({ limit: $.limit }),
-        ...f.tasks()(({ f }) => ({
-          ...f.id(),
-          ...f.title(),
+        ...f("tasks")()(({ f }) => ({
+          ...f("id")(),
+          ...f("title")(),
           ...taskDetailConditionalFragment.spread({
             includeProject: $.includeProject,
             skipAssignee: $.skipAssignee,
@@ -427,41 +411,31 @@ export const getProjectWithMultipleFragmentsQuery = gql.default(({ query, $var }
         })),
       })),
     }),
-  }),
+  })(),
 );
 
 /**
  * Phase 2.2: Mixed operation-level and fragment-level variables
  *
- * This example demonstrates callback builder pattern with mixed variables:
+ * This example demonstrates options object path with mixed variables:
  * - Some variables are used by the operation's own fields ($teamId, $projectStatus)
  * - Some variables are passed to fragments ($limit)
  *
- * All variables must be explicitly declared by the parent operation:
- * - Operation's own: $teamId, $projectStatus
- * - From projectTasksFragment: $limit
- *
- * The fragment is spread within nested field selection:
- * team.projects.{...fragment.spread()}
+ * All variables must be explicitly declared by the parent operation.
  */
-export const getTeamProjectsWithFragmentQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetTeamProjectsWithFragment",
-    variables: {
-      ...$var("teamId").ID("!"),
-      ...$var("projectStatus").ProjectStatus("?"),
-      ...$var("limit").Int("?"),
-    },
+export const getTeamProjectsWithFragmentQuery = gql.default(({ query }) =>
+  query("GetTeamProjectsWithFragment")({
+    variables: `($teamId: ID!, $projectStatus: ProjectStatus, $limit: Int)`,
     fields: ({ f, $ }) => ({
-      ...f.team({ id: $.teamId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.projects({ status: $.projectStatus, limit: 10 })(() => ({
+      ...f("team", { id: $.teamId })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
+        ...f("projects", { status: $.projectStatus, limit: 10 })(() => ({
           ...projectTasksFragment.spread({ limit: $.limit }),
         })),
       })),
     }),
-  }),
+  })(),
 );
 
 // ============================================================================
@@ -601,7 +575,7 @@ export const activityFeedQuery = gql.default(({ query }) =>
  * - Fragment C (taskBasicFieldsFragment): innermost - basic task fields (id, title, completed)
  * - Fragment B (taskExtendedFieldsFragment): spreads C via ...${C} + adds priority, dueDate
  * - Fragment A (taskWithProjectFragment): spreads B via ...${B} + adds assignee, project
- * - Operation: spreads A using callback builder syntax
+ * - Operation: spreads A using options object path
  *
  * Variable propagation through all 3 levels:
  * - Fragment C: no variables
@@ -611,26 +585,21 @@ export const activityFeedQuery = gql.default(({ query }) =>
  *
  * Key observations:
  * - Fragment-to-fragment spreading uses tagged template interpolation: ...${fragment}
- * - Operation-to-fragment spreading uses callback builder: ...fragment.spread({...})
+ * - Operation-to-fragment spreading uses options object path: ...fragment.spread({...})
  * - Parent operation must explicitly declare ALL variables from the entire fragment hierarchy
  */
-export const getTaskWithNestedFragmentsQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetTaskWithNestedFragments",
-    variables: {
-      ...$var("taskId").ID("!"),
-      ...$var("includePriority").Boolean("?"),
-      ...$var("includeAssignee").Boolean("?"),
-    },
+export const getTaskWithNestedFragmentsQuery = gql.default(({ query }) =>
+  query("GetTaskWithNestedFragments")({
+    variables: `($taskId: ID!, $includePriority: Boolean, $includeAssignee: Boolean)`,
     fields: ({ f, $ }) => ({
-      ...f.task({ id: $.taskId })(() => ({
+      ...f("task", { id: $.taskId })(() => ({
         ...taskWithProjectFragment.spread({
           includePriority: $.includePriority,
           includeAssignee: $.includeAssignee,
         }),
       })),
     }),
-  }),
+  })(),
 );
 
 // ============================================================================
@@ -1015,10 +984,9 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
  * Demonstrates how fragment metadata propagates to the parent operation
  * through fragmentMetadata in the operation's metadata callback
  */
-export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployeeWithFragmentMetadata",
-    variables: { ...$var("employeeId").ID("!") },
+export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
+  query("GetEmployeeWithFragmentMetadata")({
+    variables: `($employeeId: ID!)`,
     metadata: ({ $, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "employee",
@@ -1029,24 +997,20 @@ export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query, $var }
       fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
     }),
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(() => ({
+      ...f("employee", { id: $.employeeId })(() => ({
         ...employeeWithStaticMetadataFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 /**
  * Operation spreading fragment with callback metadata
  * Demonstrates operation accessing fragment metadata from a fragment with callback metadata
  */
-export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetProjectWithFragmentCallbackMetadata",
-    variables: {
-      ...$var("projectId").ID("!"),
-      ...$var("priority").Int("?"),
-    },
+export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query }) =>
+  query("GetProjectWithFragmentCallbackMetadata")({
+    variables: `($projectId: ID!, $priority: Int)`,
     metadata: ({ $, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "project",
@@ -1058,12 +1022,12 @@ export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query,
       fragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey,
     }),
     fields: ({ f, $ }) => ({
-      ...f.project({ id: $.projectId })(() => ({
+      ...f("project", { id: $.projectId })(() => ({
         ...projectWithCallbackMetadataFragment.spread({
           projectId: $.projectId,
           priority: $.priority,
         }),
       })),
     }),
-  }),
+  })(),
 );

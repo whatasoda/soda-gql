@@ -66,12 +66,8 @@ export const employeeFragment = gql.default(({ fragment }) =>
   fragment("EmployeeFragment", "Employee")\`{ id name }\`()
 );
 
-export const employeeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployee",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.employee({ id: $.id })(({ f }) => ({ ...f.id() })) }),
-  })
+export const employeeQuery = gql.default(({ query }) =>
+  query("GetEmployee")\`($id: ID!) { employee(id: $id) { id } }\`()
 );
 `,
     );

@@ -90,12 +90,7 @@ export const UserFragment = gql.default(({ fragment }) =>
 import { gql } from "../graphql-system";
 
 export const HelloQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "HelloQuery",
-    fields: ({ f }) => ({
-      ...f.hello(),
-    }),
-  }),
+  query("HelloQuery")\`{ hello }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src", "pages", "hello.ts"), operationContent);

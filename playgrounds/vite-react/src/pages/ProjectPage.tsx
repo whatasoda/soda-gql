@@ -9,19 +9,15 @@ import { taskListFragment } from "../components/TaskList/fragment";
  * Operation that composes multiple fragments using $colocate.
  * Each label must match the parser's label for result distribution.
  */
-export const projectPageQuery = gql.default(({ query, $var, $colocate }) =>
-  query.operation({
-    name: "ProjectPage",
-    variables: {
-      ...$var("projectId").ID("!"),
-      ...$var("leadId").ID("!"),
-    },
+export const projectPageQuery = gql.default(({ query, $colocate }) =>
+  query("ProjectPage")({
+    variables: `($projectId: ID!, $leadId: ID!)`,
     fields: ({ $ }) =>
       $colocate({
         employeeCard: employeeCardFragment.spread({ employeeId: $.leadId }),
         taskList: taskListFragment.spread({ projectId: $.projectId }),
       }),
-  }),
+  })(),
 );
 
 /**
