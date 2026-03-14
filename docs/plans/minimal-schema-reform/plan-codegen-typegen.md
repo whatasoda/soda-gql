@@ -52,7 +52,7 @@ export type CategoryVars = {
   readonly inputs: readonly DefinitionVar[];
   readonly objects: readonly DefinitionVar[];
   readonly unions: readonly DefinitionVar[];
-  readonly typeNames: readonly DefinitionVar[];
+  readonly "type-names": readonly DefinitionVar[];
 };
 ```
 
@@ -241,7 +241,6 @@ Add to `schemaConfigs`:
 ```typescript
 schemaConfigs[name] = {
   // ...existing fields...
-  graphEntries,         // NEW
   typeNamesCode,        // NEW
   minimalUnionEntries,  // NEW
 };
@@ -249,7 +248,7 @@ schemaConfigs[name] = {
 
 #### `SplittingMode` update
 
-Add new import paths:
+Add new import path for `type-names`:
 ```typescript
 type SplittingMode = {
   readonly importPaths: {
@@ -257,7 +256,6 @@ type SplittingMode = {
     readonly inputs: string;
     readonly objects: string;
     readonly unions: string;
-    readonly graph: string;       // NEW
     readonly typeNames: string;   // NEW
   };
 };
@@ -271,7 +269,6 @@ const splitting: SplittingMode = {
     inputs: "./_defs/inputs",
     objects: "./_defs/objects",
     unions: "./_defs/unions",
-    graph: "./_defs/graph",           // NEW
     typeNames: "./_defs/type-names",  // NEW
   },
 };
@@ -346,8 +343,7 @@ return [
     objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
     unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
     // New for MinimalSchema _defs/ files
-    graph: [{ name: `graph_${schemaName}`, code: graphObjectCode }],
-    typeNames: [{ name: `typeNames_${schemaName}`, code: typeNamesCode }],
+    "type-names": [{ name: `typeNames_${schemaName}`, code: typeNamesCode }],
   },
 ];
 ```
@@ -361,26 +357,23 @@ return [
 
 The simplest approach: expand `CategoryVars` to include all 6 categories, and `generateDefsStructure` handles them all. But this changes the `DefinitionCategory` type to include both old and new.
 
-**Better approach**: Keep two separate `CategoryVars` types — one for legacy (`LegacyCategoryVars`) and one for MinimalSchema (`MinimalCategoryVars`). Generate two sets of defs files.
-
-**Simplest approach (recommended)**: Since all 6 categories are independent, just generate all 6 in the runner loop. Expand `CategoryVars` union:
+**Simplest approach (recommended)**: Since all 5 categories are independent, just generate all 5 in the runner loop. Expand `CategoryVars` with `"type-names"`:
 
 ```typescript
-export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions" | "graph" | "type-names";
+export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions" | "type-names";
 
 export type CategoryVars = {
   readonly enums: readonly DefinitionVar[];
   readonly inputs: readonly DefinitionVar[];
   readonly objects: readonly DefinitionVar[];
   readonly unions: readonly DefinitionVar[];
-  readonly graph: readonly DefinitionVar[];
-  readonly typeNames: readonly DefinitionVar[];
+  readonly "type-names": readonly DefinitionVar[];
 };
 ```
 
 The `generateDefsStructure` function already iterates over categories dynamically. Just update the `categories` array and `importPaths`.
 
-**Note**: `graph.ts` and `type-names.ts` are single-export files (one consolidated object), so they don't need the chunk/variable-per-type pattern. They can use `generateDefinitionFile` directly.
+**Note**: `type-names.ts` is a single-export file (one consolidated object), so it doesn't need the chunk/variable-per-type pattern. It can use `generateDefinitionFile` directly.
 
 ### 2.4 ~~`_defs/graph.ts`~~ — NOT GENERATED
 
@@ -927,77 +920,7 @@ Similarly, fragment emission switches to tagged template format.
 **Test updates:**
 All emitter test expectations must be updated to match the new tagged template output format. This significantly simplifies the emitter tests since the output is just the GraphQL source wrapped in a tagged template.
 
-**Benefit**: This dramatically simplifies the emitter — it no longer needs to transform GraphQL AST into callback builder syntax. The transformation is now just "wrap the GraphQL source in a tagged template call".
-
-For the emitter:
-```typescript
-// Leaf field (no args, no selections):
-// BEFORE: ...f.name(),
-// AFTER:  ...f("name")(),
-
-// Field with args and selections:
-// BEFORE: ...f.employee({ id: $.id })(({ f }) => ({ ... })),
-// AFTER:  ...f("employee", { id: $.id })(({ f }) => ({ ... })),
-```
-
-Updated `emitFieldSelection`:
-```typescript
-// BEFORE:
-let line = `${padding}...f.${field.name}(`;
-
-// AFTER:
-let line = `${padding}...f(${JSON.stringify(field.name)}`;
-if (hasArgs) {
-  line += `, ${argsResult.value}`;
-}
-if (field.alias) {
-  if (!hasArgs) line += `, null`;
-  line += `, { alias: ${JSON.stringify(field.alias)} }`;
-}
-line += ")(";  // close f() call, open result call
-
-// For nested selections:
-if (hasSelections) {
-  line += "({ f }) => ({\n";
-  // ... nested fields ...
-  line += `${padding}}))`;  // close callback, close result call
-} else {
-  line += ")";  // close result call (leaf field)
-}
-```
-
-Wait, looking at the existing emitter more carefully. The current output is:
-```typescript
-...f.employee({ id: $.id })(({ f }) => ({ ... })),
-```
-
-Which means `f.employee(args)` returns a function, and that function is called with a callback. After reform:
-```typescript
-...f("employee", { id: $.id })(({ f }) => ({ ... })),
-```
-
-So the structure is the same — just the initial accessor changes from property to function call. The emitter changes are:
-
-```typescript
-// Line 347, BEFORE:
-let line = `${padding}...f.${field.name}(`;
-// ... args handling ...
-line += ")";  // close f.fieldName(args) call
-
-// AFTER:
-let line = `${padding}...f(${JSON.stringify(field.name)}`;
-if (hasArgs) {
-  const argsResult = emitArguments(...);
-  line += `, ${argsResult.value}`;
-}
-if (field.alias) {
-  if (!hasArgs) line += `, null`;
-  line += `, { alias: ${JSON.stringify(field.alias)} }`;
-}
-line += ")";  // close f(fieldName, args) call
-```
-
-The rest of the nested selection handling stays the same.
+**Benefit**: This dramatically simplifies the emitter — it no longer needs to transform GraphQL AST into callback builder syntax. The transformation is now just "wrap the GraphQL source in a tagged template call". Functions like `emitVariables`, `emitFieldSelection`, and related callback builder code generation helpers can be deleted entirely.
 
 ### 8.5 Test Files — Scope of Changes
 

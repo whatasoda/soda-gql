@@ -1,6 +1,35 @@
-# Implementation Plan: Steps 4-6 — Core Changes
+# Implementation Plan: Steps 1, 4-6 — Core Changes
 
-## Overview
+## Step 1: MinimalSchema Type Definition
+
+### `packages/core/src/types/schema/schema.ts`
+
+**Change**: Add `MinimalSchema` type alongside existing `AnyGraphqlSchema`.
+
+```typescript
+/** Slim schema type for composer — reduces TS type-checking cost.
+ *  At JS runtime, codegen output retains full field argument data ({ spec, arguments }).
+ *  MinimalSchema sees object fields as string, but runtime duck-typing accesses richer data. */
+export type MinimalSchema = {
+  readonly label: string;
+  readonly operations: OperationRoots;
+  readonly object: { readonly [typename: string]: { readonly [field: string]: string } };
+  readonly union: { readonly [typename: string]: readonly string[] };
+  readonly typeNames: {
+    readonly scalar: readonly string[];
+    readonly enum: readonly string[];
+    readonly input: readonly string[];
+  };
+};
+```
+
+- `OperationRoots` は既存の型を再利用（`{ query: string | null; mutation: string | null; subscription: string | null }`）
+- `AnyGraphqlSchema` は typegen が引き続き使用するため削除しない
+- `MinimalSchema` を `packages/core/src/types/schema/index.ts` 経由で export
+
+---
+
+## Steps 4-6 Overview
 
 This plan covers three tightly coupled changes in `packages/core/`:
 
