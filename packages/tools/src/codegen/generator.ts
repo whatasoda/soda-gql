@@ -324,30 +324,20 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
 const collectDirectiveNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.directives.keys()).sort((left, right) => left.localeCompare(right));
 
-const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
-  `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
-
-const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, excluded: Set<string>): string => {
-  const scalarMethods = Array.from(builtinScalarTypes.keys())
-    .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
-
-  const enumMethods = collectEnumTypeNames(schema)
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "enum", name));
-
-  const inputMethods = collectInputTypeNames(schema)
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "input", name));
-
-  const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
-    const leftName = left.split(":")[0] ?? "";
-    const rightName = right.split(":")[0] ?? "";
-    return leftName.localeCompare(rightName);
-  });
-
-  return renderPropertyLines({ entries: allMethods, indentSize: 2 });
+const renderTypeNamesObject = (
+  schemaName: string,
+  scalarNames: string[],
+  enumNames: string[],
+  inputNames: string[],
+): string => {
+  const scalarList = scalarNames.map((n) => `"${n}"`).join(", ");
+  const enumList = enumNames.map((n) => `"${n}"`).join(", ");
+  const inputList = inputNames.map((n) => `"${n}"`).join(", ");
+  return `const typeNames_${schemaName} = {
+  scalar: [${scalarList}],
+  enum: [${enumList}],
+  input: [${inputList}],
+} as const;`;
 };
 
 /**
@@ -478,6 +468,7 @@ type SplittingMode = {
     readonly inputs: string;
     readonly objects: string;
     readonly unions: string;
+    readonly typeNames: string;
   };
 };
 
@@ -500,8 +491,9 @@ type MultiRuntimeTemplateOptions = {
       readonly inputNames: string[];
       readonly objectNames: string[];
       readonly unionNames: string[];
-      readonly inputTypeMethodsBlock: string;
       readonly directiveMethodsBlock: string;
+      readonly typeNamesCode: string;
+      readonly minimalUnionEntries: string[];
 
       readonly defaultInputDepth?: number;
       readonly inputDepthOverrides?: Readonly<Record<string, number>>;
@@ -626,6 +618,8 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         const unionImports = config.unionNames.map((n) => `union_${name}_${n}`).join(", ");
         imports.push(`import { ${unionImports} } from "${importPaths.unions}";`);
       }
+      // Import typeNames
+      imports.push(`import { typeNames_${name} } from "${importPaths.typeNames}";`);
     }
   }
 
@@ -636,19 +630,18 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const gqlExports: string[] = [];
 
   for (const [name, config] of Object.entries($$.schemas)) {
-    const schemaVar = `${name}Schema`;
+    const fullSchemaVar = `fullSchema_${name}`;
+    const minimalSchemaVar = `minimalSchema_${name}`;
 
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
 
     // Build type exports
-    const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
+    const typeExports = [`export type Schema_${name} = typeof ${fullSchemaVar} & { _?: never };`];
     if (adapterVar) {
       typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
 
-    const inputTypeMethodsVar = `inputTypeMethods_${name}`;
-    const factoryVar = `createMethod_${name}`;
     const customDirectivesVar = `customDirectives_${name}`;
 
     // Generate __defaultInputDepth block if non-default value
@@ -718,6 +711,12 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
         : `const scalar_${name} = ${scalarAssembly} as const;`;
     const scalarRef = $$.injection.mode === "inject" ? (scalarAliases.get(name) ?? `scalar_${name}`) : `scalar_${name}`;
 
+    // MinimalSchema union: inline string arrays
+    const minimalUnionBlock =
+      config.minimalUnionEntries.length > 0
+        ? `{\n${config.minimalUnionEntries.join(",\n")},\n}`
+        : "{}";
+
     schemaBlocks.push(`
 // Individual scalar definitions
 ${scalarVarsSection}
@@ -741,8 +740,8 @@ const input_${name} = ${inputAssembly} as const;
 const object_${name} = ${objectAssembly} as const;
 const union_${name} = ${unionAssembly} as const;
 
-// Schema assembly
-const ${schemaVar} = {
+// --- FULL SCHEMA (for typegen) ---
+const ${fullSchemaVar} = {
   label: "${name}" as const,
   operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
   scalar: ${scalarRef},
@@ -752,8 +751,15 @@ const ${schemaVar} = {
   union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
 } as const satisfies AnyGraphqlSchema;
 
-const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
-const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
+// --- MINIMAL SCHEMA (for composer) ---
+const ${minimalSchemaVar} = {
+  label: "${name}" as const,
+  operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
+  object: object_${name} as unknown as MinimalSchema["object"],
+  union: ${minimalUnionBlock} as const,
+  typeNames: typeNames_${name},
+} as const satisfies MinimalSchema;
+
 const ${customDirectivesVar} = { ...createStandardDirectives(), ...${config.directiveMethodsBlock} };
 
 ${typeExports.join("\n")}`);
@@ -761,14 +767,12 @@ ${typeExports.join("\n")}`);
     // Build gql composer as a named variable for Context type extraction
     const gqlVarName = `gql_${name}`;
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
       schemaBlocks.push(
-        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+        `const ${gqlVarName} = createGqlElementComposer(${minimalSchemaVar}, { adapter: ${adapterVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     } else {
-      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}>`;
       schemaBlocks.push(
-        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+        `const ${gqlVarName} = createGqlElementComposer(${minimalSchemaVar}, { directiveMethods: ${customDirectivesVar} });`,
       );
     }
 
@@ -779,8 +783,8 @@ ${typeExports.join("\n")}`);
 
     // Prebuilt module exports (for typegen)
     const prebuiltExports: string[] = [
-      `export { ${schemaVar} as __schema_${name} }`,
-      `export { ${inputTypeMethodsVar} as __inputTypeMethods_${name} }`,
+      `export { ${minimalSchemaVar} as __schema_${name} }`,
+      `export { ${fullSchemaVar} as __fullSchema_${name} }`,
       `export { ${customDirectivesVar} as __directiveMethods_${name} }`,
     ];
     if (adapterVar) {
@@ -797,11 +801,11 @@ ${typeExports.join("\n")}`);
   return `\
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
   type AnyGraphqlSchema,
+  type MinimalSchema,
   createDirectiveMethod,
   createTypedDirectiveMethod,
   createGqlElementComposer,
   createStandardDirectives,
-  createVarMethodFactory,
 } from "@soda-gql/core";
 ${extraImports}
 ${schemaBlocks.join("\n")}
@@ -905,10 +909,24 @@ export const generateMultiSchemaModule = (
     // Type name lists for assembly
     const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
 
-    const factoryVar = `createMethod_${name}`;
-    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
     const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
     // Fragment callback builders removed in Phase 3 — adapter type for fragments no longer needed
+
+    // Generate typeNames for _defs/type-names.ts
+    const typeNamesCode = renderTypeNamesObject(name, allScalarNames, enumTypeNames, inputTypeNames);
+
+    // Generate MinimalSchema union entries (inline in _internal.ts)
+    const minimalUnionEntries = unionTypeNames
+      .map((uName) => {
+        const record = schema.unions.get(uName);
+        if (!record) return null;
+        const members = Array.from(record.members.values())
+          .filter((m) => !excluded.has(m.name.value))
+          .sort((a, b) => a.name.value.localeCompare(b.name.value))
+          .map((m) => `"${m.name.value}"`);
+        return `  ${uName}: [${members.join(", ")}]`;
+      })
+      .filter((e): e is string => e !== null);
 
     const queryType = schema.operationTypes.query ?? "Query";
     const mutationType = schema.operationTypes.mutation ?? "Mutation";
@@ -930,8 +948,9 @@ export const generateMultiSchemaModule = (
       inputNames: inputTypeNames,
       objectNames: objectTypeNames,
       unionNames: unionTypeNames,
-      inputTypeMethodsBlock,
       directiveMethodsBlock,
+      typeNamesCode,
+      minimalUnionEntries,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),
     };
@@ -954,6 +973,7 @@ export const generateMultiSchemaModule = (
       inputs: "./_defs/inputs",
       objects: "./_defs/objects",
       unions: "./_defs/unions",
+      typeNames: "./_defs/type-names",
     },
   };
 
@@ -985,6 +1005,7 @@ export const generateMultiSchemaModule = (
           inputs: (config.inputVars as string[]).map((c) => toDefVar(c, "input")),
           objects: (config.objectVars as string[]).map((c) => toDefVar(c, "object")),
           unions: (config.unionVars as string[]).map((c) => toDefVar(c, "union")),
+          "type-names": [{ name: `typeNames_${schemaName}`, code: config.typeNamesCode as string }],
         } satisfies CategoryVars,
       ];
     }),
@@ -1097,34 +1118,26 @@ type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]
 })()}
 type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
 
-type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
-  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: (tools: { readonly $: Readonly<Record<string, never>>; readonly fragmentMetadata: unknown[] | undefined }) => Record<string, unknown> },
-) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
-
 export type PrebuiltContext_${name} = {
   readonly fragment: PrebuiltCurriedFragment_${name};
   readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"query">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly mutation: PrebuiltCurriedOperation_${name}<"mutation"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"mutation">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly subscription: PrebuiltCurriedOperation_${name}<"subscription"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"subscription">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly extend: (...args: unknown[]) => AnyOperation;
-  readonly $var: VarBuilder<Schema_${name}>;
   readonly $dir: typeof __directiveMethods_${name};
   readonly $colocate: <T extends Record<string, unknown>>(projections: T) => T;
 };
 
 type GqlComposer_${name} = {
   <TResult>(composeElement: (context: PrebuiltContext_${name}) => TResult): TResult;
-  readonly $schema: AnyGraphqlSchema;
+  readonly $schema: MinimalSchema;
 };`,
     )
     .join("\n");
@@ -1143,7 +1156,7 @@ import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
-import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, VarBuilder, GqlDefine } from "@soda-gql/core";
+import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, MinimalSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 ${perSchemaTypes}
 
 export const gql = {

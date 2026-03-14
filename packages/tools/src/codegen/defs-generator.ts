@@ -3,7 +3,7 @@
  * Generates separate files for each definition category (enums, inputs, objects, unions).
  */
 
-export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions";
+export type DefinitionCategory = "enums" | "inputs" | "objects" | "unions" | "type-names";
 
 export type DefinitionVar = {
   readonly name: string;
@@ -189,6 +189,7 @@ export type CategoryVars = {
   readonly inputs: readonly DefinitionVar[];
   readonly objects: readonly DefinitionVar[];
   readonly unions: readonly DefinitionVar[];
+  readonly "type-names": readonly DefinitionVar[];
 };
 
 /**
@@ -205,9 +206,10 @@ export const generateDefsStructure = (
     inputs: "./_defs/inputs",
     objects: "./_defs/objects",
     unions: "./_defs/unions",
+    "type-names": "./_defs/type-names",
   };
 
-  const categories: DefinitionCategory[] = ["enums", "inputs", "objects", "unions"];
+  const categories: DefinitionCategory[] = ["enums", "inputs", "objects", "unions", "type-names"];
 
   for (const category of categories) {
     const vars = categoryVars[category];

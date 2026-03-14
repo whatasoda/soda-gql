@@ -235,6 +235,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       inputs: [] as DefinitionVar[],
       objects: [] as DefinitionVar[],
       unions: [] as DefinitionVar[],
+      "type-names": [] as DefinitionVar[],
     };
 
     for (const vars of Object.values(categoryVars)) {
@@ -242,6 +243,7 @@ export const runCodegen = async (options: CodegenOptions): Promise<CodegenResult
       combinedVars.inputs.push(...vars.inputs);
       combinedVars.objects.push(...vars.objects);
       combinedVars.unions.push(...vars.unions);
+      combinedVars["type-names"].push(...vars["type-names"]);
     }
 
     // Generate defs structure for all schemas combined
