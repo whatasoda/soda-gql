@@ -9,28 +9,25 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { EqualPublic, Expect } from "./_helpers";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
-  inputTypeMethods: basicInputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("Alias handling in type inference", () => {
   describe("Simple alias", () => {
     it("uses alias option to set property name", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
+            ...f("user", { id: $.id })(({ f }) => ({
               // Use alias option: f.field(args, { alias: "newName" })
-              ...f.id(null, { alias: "userId" }),
-              ...f.name(null, { alias: "userName" }),
+              ...f("id", null, { alias: "userId" }),
+              ...f("name", null, { alias: "userName" }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUser.$infer.output;
@@ -45,17 +42,16 @@ describe("Alias handling in type inference", () => {
 
   describe("Mixed alias and non-alias", () => {
     it("preserves field names when no alias used", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(), // No alias, uses 'id'
-              ...f.name(null, { alias: "userName" }), // Alias, uses 'userName'
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(), // No alias, uses 'id'
+              ...f("name", null, { alias: "userName" }), // Alias, uses 'userName'
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUser.$infer.output;
@@ -70,17 +66,16 @@ describe("Alias handling in type inference", () => {
 
   describe("Type preservation with alias", () => {
     it("preserves nullable type with alias", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.email(null, { alias: "userEmail" }), // email is nullable
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("email", null, { alias: "userEmail" }), // email is nullable
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUser.$infer.output;

@@ -7,9 +7,8 @@
  * @module
  */
 
-import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema";
-import type { AnyGraphqlSchema } from "../../src/types/schema";
+import type { MinimalSchema } from "../../src/types/schema";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 // =============================================================================
@@ -65,7 +64,8 @@ export const basicSchema = {
     }),
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
+} satisfies MinimalSchema;
 
 export type BasicSchema = typeof basicSchema & { _?: never };
 
@@ -135,7 +135,8 @@ export const nestedSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
+} satisfies MinimalSchema;
 
 export type NestedSchema = typeof nestedSchema & { _?: never };
 
@@ -202,7 +203,8 @@ export const unionSchema = {
       Comment: true,
     }),
   },
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
+} satisfies MinimalSchema;
 
 export type UnionSchema = typeof unionSchema & { _?: never };
 
@@ -277,7 +279,8 @@ export const enumSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["UserRole", "PostStatus", "SortOrder"], input: [] },
+} satisfies MinimalSchema;
 
 export type EnumSchema = typeof enumSchema & { _?: never };
 
@@ -351,77 +354,8 @@ export const inputObjectSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["SortOrder"], input: ["UserFilter", "UserOrderBy", "CreateUserInput"] },
+} satisfies MinimalSchema;
 
 export type InputObjectSchema = typeof inputObjectSchema & { _?: never };
 
-// =============================================================================
-// Input Type Methods (for variable builders)
-// =============================================================================
-
-const createBasicMethod = createVarMethodFactory<BasicSchema>();
-
-/**
- * Input type methods for basicSchema.
- */
-export const basicInputTypeMethods = {
-  Boolean: createBasicMethod("scalar", "Boolean"),
-  ID: createBasicMethod("scalar", "ID"),
-  Int: createBasicMethod("scalar", "Int"),
-  String: createBasicMethod("scalar", "String"),
-} satisfies InputTypeMethods<BasicSchema>;
-
-const createNestedMethod = createVarMethodFactory<NestedSchema>();
-
-/**
- * Input type methods for nestedSchema.
- */
-export const nestedInputTypeMethods = {
-  Boolean: createNestedMethod("scalar", "Boolean"),
-  ID: createNestedMethod("scalar", "ID"),
-  Int: createNestedMethod("scalar", "Int"),
-  String: createNestedMethod("scalar", "String"),
-} satisfies InputTypeMethods<NestedSchema>;
-
-const createUnionMethod = createVarMethodFactory<UnionSchema>();
-
-/**
- * Input type methods for unionSchema.
- */
-export const unionInputTypeMethods = {
-  Boolean: createUnionMethod("scalar", "Boolean"),
-  ID: createUnionMethod("scalar", "ID"),
-  Int: createUnionMethod("scalar", "Int"),
-  String: createUnionMethod("scalar", "String"),
-} satisfies InputTypeMethods<UnionSchema>;
-
-const createEnumMethod = createVarMethodFactory<EnumSchema>();
-
-/**
- * Input type methods for enumSchema.
- */
-export const enumInputTypeMethods = {
-  Boolean: createEnumMethod("scalar", "Boolean"),
-  ID: createEnumMethod("scalar", "ID"),
-  Int: createEnumMethod("scalar", "Int"),
-  String: createEnumMethod("scalar", "String"),
-  UserRole: createEnumMethod("enum", "UserRole"),
-  PostStatus: createEnumMethod("enum", "PostStatus"),
-  SortOrder: createEnumMethod("enum", "SortOrder"),
-} satisfies InputTypeMethods<EnumSchema>;
-
-const createInputObjectMethod = createVarMethodFactory<InputObjectSchema>();
-
-/**
- * Input type methods for inputObjectSchema.
- */
-export const inputObjectInputTypeMethods = {
-  Boolean: createInputObjectMethod("scalar", "Boolean"),
-  ID: createInputObjectMethod("scalar", "ID"),
-  Int: createInputObjectMethod("scalar", "Int"),
-  String: createInputObjectMethod("scalar", "String"),
-  SortOrder: createInputObjectMethod("enum", "SortOrder"),
-  UserFilter: createInputObjectMethod("input", "UserFilter"),
-  UserOrderBy: createInputObjectMethod("input", "UserOrderBy"),
-  CreateUserInput: createInputObjectMethod("input", "CreateUserInput"),
-} satisfies InputTypeMethods<InputObjectSchema>;

@@ -9,27 +9,24 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
-  inputTypeMethods: basicInputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("Operation definition type inference", () => {
   describe("Query output type", () => {
     it("infers scalar fields in query result", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUser.$infer.output;
@@ -43,15 +40,14 @@ describe("Operation definition type inference", () => {
 
     it("infers list fields in query result", () => {
       const GetUsers = gql(({ query }) =>
-        query.operation({
-          name: "GetUsers",
+        query("GetUsers")({
           fields: ({ f }) => ({
-            ...f.users({})(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("users", {})(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUsers.$infer.output;
@@ -63,16 +59,15 @@ describe("Operation definition type inference", () => {
 
   describe("Query input type (variables)", () => {
     it("infers required variable", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -81,16 +76,15 @@ describe("Operation definition type inference", () => {
     });
 
     it("infers optional variable", () => {
-      const GetUsers = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUsers",
-          variables: { ...$var("limit").Int("?") },
+      const GetUsers = gql(({ query }) =>
+        query("GetUsers")({
+          variables: `($limit: Int)`,
           fields: ({ f, $ }) => ({
-            ...f.users({ limit: $.limit })(({ f }) => ({
-              ...f.id(),
+            ...f("users", { limit: $.limit })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUsers.$infer.input;
@@ -102,19 +96,15 @@ describe("Operation definition type inference", () => {
     });
 
     it("infers multiple variables", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: {
-            ...$var("id").ID("!"),
-            ...$var("limit").Int("?"),
-          },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $limit: Int)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -126,20 +116,16 @@ describe("Operation definition type inference", () => {
 
   describe("Mutation type inference", () => {
     it("infers mutation input and output", () => {
-      const UpdateUser = gql(({ mutation, $var }) =>
-        mutation.operation({
-          name: "UpdateUser",
-          variables: {
-            ...$var("id").ID("!"),
-            ...$var("name").String("!"),
-          },
+      const UpdateUser = gql(({ mutation }) =>
+        mutation("UpdateUser")({
+          variables: `($id: ID!, $name: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.updateUser({ id: $.id, name: $.name })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("updateUser", { id: $.id, name: $.name })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof UpdateUser.$infer.input;
@@ -156,14 +142,13 @@ describe("Operation definition type inference", () => {
   describe("Operation without variables", () => {
     it("infers empty input when no variables", () => {
       const GetUsers = gql(({ query }) =>
-        query.operation({
-          name: "GetUsers",
+        query("GetUsers")({
           fields: ({ f }) => ({
-            ...f.users({})(({ f }) => ({
-              ...f.id(),
+            ...f("users", {})(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUsers.$infer.input;

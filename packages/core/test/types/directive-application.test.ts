@@ -9,28 +9,25 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
-  inputTypeMethods: basicInputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("Directive application type safety", () => {
   describe("@skip directive", () => {
     it("accepts boolean literal for if argument", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-              ...f.email(null, { directives: [$dir.skip({ if: true })] }),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
+              ...f("email", null, { directives: [$dir.skip({ if: true })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Test that operation compiles and produces expected input type
@@ -40,18 +37,17 @@ describe("Directive application type safety", () => {
     });
 
     it("accepts variable reference for if argument", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!"), ...$var("hideEmail").Boolean("!") },
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $hideEmail: Boolean!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-              ...f.email(null, { directives: [$dir.skip({ if: $.hideEmail })] }),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
+              ...f("email", null, { directives: [$dir.skip({ if: $.hideEmail })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -63,17 +59,16 @@ describe("Directive application type safety", () => {
 
   describe("@include directive", () => {
     it("accepts boolean literal for if argument", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.email(null, { directives: [$dir.include({ if: false })] }),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("email", null, { directives: [$dir.include({ if: false })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -82,17 +77,16 @@ describe("Directive application type safety", () => {
     });
 
     it("accepts variable reference for if argument", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!"), ...$var("showEmail").Boolean("!") },
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $showEmail: Boolean!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.email(null, { directives: [$dir.include({ if: $.showEmail })] }),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("email", null, { directives: [$dir.include({ if: $.showEmail })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -104,24 +98,21 @@ describe("Directive application type safety", () => {
 
   describe("Multiple directives", () => {
     it("allows multiple directives on a field", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
           variables: {
-            ...$var("id").ID("!"),
-            ...$var("showEmail").Boolean("!"),
-            ...$var("skipAge").Boolean("!"),
+
           },
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
               // Multiple directives on same field
-              ...f.email(null, {
+              ...f("email", null, {
                 directives: [$dir.include({ if: $.showEmail }), $dir.skip({ if: $.skipAge })],
               }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUser.$infer.input;
@@ -133,18 +124,17 @@ describe("Directive application type safety", () => {
 
   describe("Directives on nested fields", () => {
     it("applies directive to nested object field", () => {
-      const GetUsers = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUsers",
-          variables: { ...$var("limit").Int("?"), ...$var("includeEmail").Boolean("!") },
+      const GetUsers = gql(({ query, $dir }) =>
+        query("GetUsers")({
+          variables: `($limit: Int, $includeEmail: Boolean!)`,
           fields: ({ f, $ }) => ({
-            ...f.users({ limit: $.limit })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
-              ...f.email(null, { directives: [$dir.include({ if: $.includeEmail })] }),
+            ...f("users", { limit: $.limit })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
+              ...f("email", null, { directives: [$dir.include({ if: $.includeEmail })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Input = typeof GetUsers.$infer.input;
@@ -156,17 +146,16 @@ describe("Directive application type safety", () => {
 
   describe("Output type with directives", () => {
     it("includes fields with directives in output type", () => {
-      const GetUser = gql(({ query, $var, $dir }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!"), ...$var("showEmail").Boolean("!") },
+      const GetUser = gql(({ query, $dir }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $showEmail: Boolean!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.email(null, { directives: [$dir.include({ if: $.showEmail })] }),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("email", null, { directives: [$dir.include({ if: $.showEmail })] }),
             })),
           }),
-        }),
+        })({}),
       );
 
       type Output = typeof GetUser.$infer.output;

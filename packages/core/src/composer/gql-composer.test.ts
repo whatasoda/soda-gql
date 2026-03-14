@@ -1,10 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyGraphqlSchema } from "../types/schema";
+import type { MinimalSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethodFactory } from "./var-builder";
 
 const schema = {
   label: "test" as const,
@@ -35,33 +34,13 @@ const schema = {
     }),
   },
   union: {},
-} satisfies AnyGraphqlSchema;
+  typeNames: { scalar: ["ID", "String"], enum: [], input: [] },
+} satisfies MinimalSchema;
 
 type Schema = typeof schema & { _?: never };
 
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  ID: createMethod("scalar", "ID"),
-  String: createMethod("scalar", "String"),
-};
-
 describe("createGqlInvoker", () => {
-  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
-
-  it("provides variable builders sourced from schema metadata", () => {
-    let idVarRef: Record<string, any> | undefined;
-
-    const userFragment = gql(({ fragment, $var }) => {
-      idVarRef = $var("id").ID("!");
-
-      return fragment("UserFields", "User")`{ id name }`();
-    });
-
-    expect(userFragment.typename).toBe("User");
-    expect(idVarRef?.id.kind).toBe("scalar");
-    expect(idVarRef?.id.name).toBe("ID");
-    expect(idVarRef?.id.modifier).toBe("!");
-  });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
   it("creates fragment descriptors with fragment wiring", () => {
     const userFragment = gql(({ fragment }) => fragment("UserFields", "User")`{ id name }`());
@@ -74,16 +53,15 @@ describe("createGqlInvoker", () => {
   it("creates inline operations with variable references", () => {
     const userFragment = gql(({ fragment }) => fragment("UserFields", "User")`{ id name }`());
 
-    const profileQuery = gql(({ query, $var }) =>
-      query.operation({
-        name: "ProfilePageQuery",
-        variables: { ...$var("userId").ID("!") },
+    const profileQuery = gql(({ query }) =>
+      query("ProfilePageQuery")({
+        variables: `($userId: ID!)`,
         fields: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(() => ({
+          ...f("user", { id: $.userId })(() => ({
             ...userFragment.spread(),
           })),
         }),
-      }),
+      })({}),
     );
 
     expect(profileQuery.operationName).toBe("ProfilePageQuery");

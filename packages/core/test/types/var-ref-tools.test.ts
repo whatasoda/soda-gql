@@ -10,19 +10,16 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type InputObjectSchema, inputObjectInputTypeMethods, inputObjectSchema } from "./_fixtures";
+import { type InputObjectSchema, inputObjectSchema } from "./_fixtures";
 import type { Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {
-  inputTypeMethods: inputObjectInputTypeMethods,
-});
+const gql = createGqlElementComposer<InputObjectSchema, StandardDirectives>(inputObjectSchema, {});
 
 describe("SchemaAwareGetValueAt type inference", () => {
   it("getValueAt returns correctly typed value for input object field", () => {
-    gql(({ query, $var }) =>
-      query.operation({
-        name: "GetUsers",
-        variables: { ...$var("filter").UserFilter("!") },
+    gql(({ query }) =>
+      query("GetUsers")({
+        variables: `($filter: UserFilter!)`,
         metadata: ({ $ }) => {
           // Call getValueAt to access a field on the UserFilter input object
           const nameVal = $var.getValueAt($.filter, (p) => p.name);
@@ -38,21 +35,20 @@ describe("SchemaAwareGetValueAt type inference", () => {
           return { nameVal, ageVal };
         },
         fields: ({ f, $ }) => ({
-          ...f.users({ filter: $.filter })(({ f }) => ({
-            ...f.id(),
+          ...f("users", { filter: $.filter })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
-      }),
+      })({}),
     );
 
     expect(true).toBe(true);
   });
 
   it("getNameAt returns string for input object VarRef", () => {
-    gql(({ query, $var }) =>
-      query.operation({
-        name: "GetUsers",
-        variables: { ...$var("filter").UserFilter("!") },
+    gql(({ query }) =>
+      query("GetUsers")({
+        variables: `($filter: UserFilter!)`,
         metadata: ({ $ }) => {
           const name = $var.getNameAt($.filter, (p) => p.name);
           type NameResult = typeof name;
@@ -62,11 +58,11 @@ describe("SchemaAwareGetValueAt type inference", () => {
           return { name };
         },
         fields: ({ f, $ }) => ({
-          ...f.users({ filter: $.filter })(({ f }) => ({
-            ...f.id(),
+          ...f("users", { filter: $.filter })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
-      }),
+      })({}),
     );
 
     expect(true).toBe(true);

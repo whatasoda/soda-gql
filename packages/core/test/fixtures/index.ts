@@ -4,5 +4,4 @@
  * @module
  */
 
-export * from "./input-type-methods";
 export * from "./schemas";

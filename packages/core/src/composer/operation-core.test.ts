@@ -17,8 +17,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -37,8 +37,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -57,8 +57,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -85,8 +85,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: { userId: mockVarDef },
         fieldsFactory: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: $.userId })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -105,9 +105,9 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
-            ...f.name(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
+            ...f("name")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -133,8 +133,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -155,8 +155,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -180,8 +180,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -207,8 +207,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -239,8 +239,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: { userId: mockVarDef },
         fieldsFactory: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: $.userId })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -266,8 +266,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -293,8 +293,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -320,8 +320,8 @@ describe("buildOperationArtifact", () => {
         operationName: "GetUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.user({ id: "1" })(({ f }) => ({
-            ...f.id(),
+          ...f("user", { id: "1" })(({ f }) => ({
+            ...f("id")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -350,9 +350,9 @@ describe("buildOperationArtifact", () => {
         operationName: "UpdateUser",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.updateUser({ id: "1", name: "Test" })(({ f }) => ({
-            ...f.id(),
-            ...f.name(),
+          ...f("updateUser", { id: "1", name: "Test" })(({ f }) => ({
+            ...f("id")(),
+            ...f("name")(),
           })),
         }),
         adapter: defaultMetadataAdapter,
@@ -374,9 +374,9 @@ describe("buildOperationArtifact", () => {
         operationName: "OnUserUpdated",
         variables: {},
         fieldsFactory: ({ f }) => ({
-          ...f.userUpdated({ userId: "1" })(({ f }) => ({
-            ...f.id(),
-            ...f.name(),
+          ...f("userUpdated", { userId: "1" })(({ f }) => ({
+            ...f("id")(),
+            ...f("name")(),
           })),
         }),
         adapter: defaultMetadataAdapter,

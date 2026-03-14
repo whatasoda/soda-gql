@@ -3,14 +3,13 @@ import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadata } from "../../src/types/metadata";
-import { createExtendedInputTypeMethods, type ExtendedTestSchema, extendedTestSchema } from "../fixtures";
+import { type ExtendedTestSchema, extendedTestSchema } from "../fixtures";
 
 const schema = extendedTestSchema;
 type Schema = ExtendedTestSchema;
-const inputTypeMethods = createExtendedInputTypeMethods<ExtendedTestSchema>();
 
 describe("compat-extend integration", () => {
-  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
   describe("basic compat -> extend flow", () => {
     it("creates operation from compat via extend", () => {

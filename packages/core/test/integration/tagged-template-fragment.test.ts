@@ -1,12 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema, createBasicInputTypeMethods } from "../fixtures";
+import { type BasicTestSchema, basicTestSchema } from "../fixtures";
 
-const inputTypeMethods = createBasicInputTypeMethods<BasicTestSchema>();
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
-  inputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {});
 
 describe("tagged template fragment integration", () => {
   describe("basic fragment", () => {
