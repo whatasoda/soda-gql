@@ -4,7 +4,7 @@
  */
 
 import type { OperationType } from "../schema";
-import type { MinimalSchema } from "../schema/schema";
+import type { AnyGraphqlSchema } from "../schema/schema";
 
 /**
  * Specification for a tagged template compat operation.
@@ -18,7 +18,7 @@ import type { MinimalSchema } from "../schema/schema";
  * at extend-time, preserving the deferred execution model.
  */
 export type TemplateCompatSpec = {
-  readonly schema: MinimalSchema;
+  readonly schema: AnyGraphqlSchema;
   readonly operationType: OperationType;
   readonly operationName: string;
   readonly graphqlSource: string;

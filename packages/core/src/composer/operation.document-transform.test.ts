@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { type DocumentNode, Kind, print, visit } from "graphql";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineAdapter } from "../adapter/define-adapter";
 import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { DocumentTransformArgs, OperationDocumentTransformArgs } from "../types/metadata";
@@ -42,7 +42,7 @@ const fullSchema = {
   union: {},
 } satisfies AnyGraphqlSchema;
 
-const schema = asMinimalSchema(fullSchema);
+const schema = fullSchema;
 type Schema = typeof schema & { _?: never };
 
 describe("document transformation via adapter", () => {
@@ -241,7 +241,7 @@ describe("document transformation via adapter", () => {
   it("works with mutation operation type", () => {
     let capturedOperationType: string | undefined;
 
-    const mutationSchema = asMinimalSchema({
+    const mutationSchema = {
       ...fullSchema,
       object: {
         ...fullSchema.object,
@@ -253,7 +253,7 @@ describe("document transformation via adapter", () => {
           }),
         }),
       },
-    } satisfies AnyGraphqlSchema);
+    } satisfies AnyGraphqlSchema;
 
     type MutationSchema = typeof mutationSchema & { _?: never };
 

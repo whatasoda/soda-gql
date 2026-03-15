@@ -26,8 +26,8 @@ __export(index_exports, {
   __fullSchema_default: () => fullSchema_default,
   __gql_admin: () => gql_admin,
   __gql_default: () => gql_default,
-  __schema_admin: () => minimalSchema_admin,
-  __schema_default: () => minimalSchema_default,
+  __schema_admin: () => fullSchema_admin,
+  __schema_default: () => fullSchema_default,
   gql: () => gql
 });
 module.exports = __toCommonJS(index_exports);
@@ -446,18 +446,6 @@ var object_admin_Team = { name: "Team", fields: {
 var union_default_ActivityItem = { name: "ActivityItem", types: { Comment: true, Project: true, Task: true } };
 var union_default_SearchResult = { name: "SearchResult", types: { Comment: true, Employee: true, Project: true, Task: true } };
 
-// fixture-catalog/graphql-system/_defs/type-names.ts
-var typeNames_default = {
-  scalar: ["ID", "String", "Int", "Float", "Boolean", "BigInt", "DateTime", "JSON"],
-  enum: ["CacheScope", "EmployeeRole", "LogLevel", "ProjectStatus", "SortOrder", "TaskPriority"],
-  input: ["BigIntFilter", "BooleanFilter", "CreateProjectInput", "CreateTaskInput", "DateTimeFilter", "DepartmentFilterInput", "EmployeeFilterInput", "EmployeeRoleFilter", "IntFilter", "PaginationInput", "ProjectFilterInput", "ProjectStatusFilter", "SortInput", "StringFilter", "TaskFilterInput", "TaskPriorityFilter", "TeamFilterInput", "TransferEmployeeInput", "UpdateProjectInput", "UpdateTaskInput"]
-};
-var typeNames_admin = {
-  scalar: ["ID", "String", "Int", "Float", "Boolean", "BigInt", "DateTime", "JSON"],
-  enum: ["EmployeeRole", "ProjectStatus", "TaskPriority"],
-  input: []
-};
-
 // fixture-catalog/graphql-system/_internal.ts
 var import_core4 = require("@soda-gql/core");
 var enum_default = { CacheScope: enum_default_CacheScope, EmployeeRole: enum_default_EmployeeRole, LogLevel: enum_default_LogLevel, ProjectStatus: enum_default_ProjectStatus, SortOrder: enum_default_SortOrder, TaskPriority: enum_default_TaskPriority };
@@ -472,16 +460,6 @@ var fullSchema_default = {
   input: input_default,
   object: object_default,
   union: union_default
-};
-var minimalSchema_default = {
-  label: "default",
-  operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  object: { Comment: object_default_Comment.fields, Company: object_default_Company.fields, Department: object_default_Department.fields, Employee: object_default_Employee.fields, Mutation: object_default_Mutation.fields, Project: object_default_Project.fields, Query: object_default_Query.fields, Subscription: object_default_Subscription.fields, Task: object_default_Task.fields, Team: object_default_Team.fields },
-  union: {
-    ActivityItem: ["Comment", "Project", "Task"],
-    SearchResult: ["Comment", "Employee", "Project", "Task"]
-  },
-  typeNames: typeNames_default
 };
 var customDirectives_default = { ...(0, import_core4.createStandardDirectives)(), ...{
   auth: (0, import_core4.createTypedDirectiveMethod)("auth", ["FIELD"], {
@@ -518,7 +496,7 @@ var customDirectives_default = { ...(0, import_core4.createStandardDirectives)()
     name: "s|String|!"
   })
 } };
-var gql_default = (0, import_core4.createGqlElementComposer)(minimalSchema_default, { directiveMethods: customDirectives_default });
+var gql_default = (0, import_core4.createGqlElementComposer)(fullSchema_default, { directiveMethods: customDirectives_default });
 var enum_admin = { EmployeeRole: enum_admin_EmployeeRole, ProjectStatus: enum_admin_ProjectStatus, TaskPriority: enum_admin_TaskPriority };
 var input_admin = {};
 var object_admin = { Comment: object_admin_Comment, Company: object_admin_Company, Department: object_admin_Department, Employee: object_admin_Employee, Mutation: object_admin_Mutation, Project: object_admin_Project, Query: object_admin_Query, Subscription: object_admin_Subscription, Task: object_admin_Task, Team: object_admin_Team };
@@ -532,15 +510,8 @@ var fullSchema_admin = {
   object: object_admin,
   union: union_admin
 };
-var minimalSchema_admin = {
-  label: "admin",
-  operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  object: { Comment: object_admin_Comment.fields, Company: object_admin_Company.fields, Department: object_admin_Department.fields, Employee: object_admin_Employee.fields, Mutation: object_admin_Mutation.fields, Project: object_admin_Project.fields, Query: object_admin_Query.fields, Subscription: object_admin_Subscription.fields, Task: object_admin_Task.fields, Team: object_admin_Team.fields },
-  union: {},
-  typeNames: typeNames_admin
-};
 var customDirectives_admin = { ...(0, import_core4.createStandardDirectives)(), ...{} };
-var gql_admin = (0, import_core4.createGqlElementComposer)(minimalSchema_admin, { directiveMethods: customDirectives_admin });
+var gql_admin = (0, import_core4.createGqlElementComposer)(fullSchema_admin, { directiveMethods: customDirectives_admin });
 
 // fixture-catalog/graphql-system/index.ts
 var gql = {

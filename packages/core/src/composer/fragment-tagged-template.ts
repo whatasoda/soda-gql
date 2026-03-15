@@ -12,7 +12,7 @@ import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyFieldSelection, AnyFieldsExtended } from "../types/fragment";
 import type { VarRefTools } from "../types/metadata/metadata";
-import type { MinimalSchema } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
@@ -114,7 +114,7 @@ export function filterUnresolvedFragmentSpreads(
  */
 export function buildFieldsFromSelectionSet(
   selectionSet: SelectionSetNode,
-  schema: MinimalSchema,
+  schema: AnyGraphqlSchema,
   typeName: string,
   varAssignments?: Readonly<Record<string, AnyVarRef>>,
   interpolationMap?: ReadonlyMap<string, AnyFragment | ((ctx: { $: Readonly<Record<string, AnyVarRef>> }) => AnyFieldsExtended)>,
@@ -142,7 +142,7 @@ export function buildFieldsFromSelectionSet(
         if (typeof curried === "function") {
           // Detect union type via field specifier (runtime duck-typing)
           const typeDef = schema.object[typeName];
-          const fieldDefRaw = typeDef?.[fieldName];
+          const fieldDefRaw = typeDef?.fields[fieldName];
           const fieldSpec = typeof fieldDefRaw === "string" ? fieldDefRaw : (fieldDefRaw as unknown as { spec: string })?.spec;
           const parsedType = parseOutputField(fieldSpec as import("../types/type-foundation").DeferredOutputField);
 
@@ -163,9 +163,10 @@ export function buildFieldsFromSelectionSet(
                 const memberName = sel.typeCondition.name.value;
                 // Validate member is part of the union
                 const unionDef = schema.union[parsedType.name];
-                const isMember = Array.isArray(unionDef)
-                  ? unionDef.includes(memberName)
-                  : unionDef && "types" in unionDef && memberName in unionDef.types;
+                if (!unionDef) {
+                  throw new Error(`Union "${parsedType.name}" is not defined in schema`);
+                }
+                const isMember = memberName in unionDef.types;
                 if (!isMember) {
                   throw new Error(
                     `Type "${memberName}" is not a member of union "${parsedType.name}" in tagged template inline fragment`,
@@ -374,13 +375,13 @@ function extractASTValue(
  * Looks up the field's type specifier in the schema and extracts the type name.
  * Handles both string specifiers ("o|Avatar|?") and object specifiers ({ spec: "o|Avatar|?" }).
  */
-function resolveFieldTypeName(schema: MinimalSchema, typeName: string, fieldName: string): string {
+function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldName: string): string {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
     throw new Error(`Type "${typeName}" is not defined in schema objects`);
   }
-  // Runtime duck-typing: MinimalSchema sees string, but codegen may emit { spec, arguments }
-  const fieldDef = typeDef[fieldName] as string | { spec: string } | undefined;
+  // Runtime duck-typing: codegen may emit string or { spec, arguments }
+  const fieldDef = typeDef.fields[fieldName] as string | { spec: string } | undefined;
   if (!fieldDef) {
     throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
   }
@@ -417,7 +418,7 @@ function buildSyntheticFragmentSource(name: string, typeName: string, body: stri
  *
  * @param schema - The GraphQL schema definition
  */
-export function createFragmentTaggedTemplate<TSchema extends MinimalSchema>(schema: TSchema): CurriedFragmentFunction {
+export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(schema: TSchema): CurriedFragmentFunction {
   const schemaIndex = createSchemaIndexFromSchema(schema);
 
   return (fragmentName: string, onType: string): FragmentTaggedTemplateFunction => {
@@ -491,7 +492,7 @@ export function createFragmentTaggedTemplate<TSchema extends MinimalSchema>(sche
       }
 
       return (options?: FragmentTemplateMetadataOptions): AnyFragment => {
-        // biome-ignore lint/suspicious/noExplicitAny: Fragment.create requires AnyGraphqlSchema; MinimalSchema is runtime-compatible
+        // biome-ignore lint/suspicious/noExplicitAny: Fragment.create requires concrete schema type
         return Fragment.create<any, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
           typename: onType,
           key: fragmentName,

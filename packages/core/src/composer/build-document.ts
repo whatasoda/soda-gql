@@ -36,7 +36,7 @@ import {
   type ScalarShorthand,
   VarRef,
 } from "../types/fragment";
-import type { MinimalSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type {
   ConstValue,
   DeferredInputSpecifier,
@@ -53,7 +53,7 @@ import { type ParsedInputSpecifier, parseInputSpecifier, parseOutputField } from
  * Contains the schema for looking up nested input types and the current type specifier.
  */
 export type EnumLookup = {
-  schema: MinimalSchema;
+  schema: AnyGraphqlSchema;
   /** Parsed type specifier for the current value. null means enum detection is skipped. */
   typeSpecifier: ParsedInputSpecifier | null;
 };
@@ -111,11 +111,9 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: E
       fields: Object.entries(value)
         .map(([key, fieldValue]): ObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          // Runtime duck-typing: MinimalSchema doesn't expose input, but codegen output retains it
           let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
-            // biome-ignore lint/suspicious/noExplicitAny: Runtime duck-typing for input type access — codegen output retains full data
-            const inputDefs = (enumLookup.schema as any)?.input;
+            const inputDefs = enumLookup.schema.input;
             const inputDef = inputDefs?.[enumLookup.typeSpecifier.name];
             const fieldSpec = inputDef?.fields[key];
             fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
@@ -173,7 +171,7 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: E
 const buildArguments = (
   args: AnyAssignableInput,
   argumentSpecifiers: InputTypeSpecifiers,
-  schema: MinimalSchema,
+  schema: AnyGraphqlSchema,
 ): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
@@ -197,7 +195,7 @@ const buildArguments = (
 const buildDirectiveArguments = (
   args: AnyAssignableInput,
   argumentSpecifiers: Readonly<Record<string, DeferredInputSpecifier>> | undefined,
-  schema: MinimalSchema,
+  schema: AnyGraphqlSchema,
 ): ArgumentNode[] =>
   Object.entries(args ?? {})
     .map(([name, value]): ArgumentNode | null => {
@@ -247,7 +245,7 @@ const validateDirectiveLocation = (directive: AnyDirectiveRef, expectedLocation:
 const buildDirectives = (
   directives: AnyDirectiveAttachments,
   location: DirectiveLocation,
-  schema: MinimalSchema,
+  schema: AnyGraphqlSchema,
 ): DirectiveNode[] => {
   return directives
     .filter((d): d is AnyDirectiveRef => d instanceof DirectiveRef)
@@ -279,14 +277,14 @@ const isShorthand = (value: AnyFieldValue): value is ScalarShorthand => {
  * @param typeName - The parent object type name
  * @param fieldName - The field name to select
  */
-const expandShorthand = (schema: MinimalSchema, typeName: string, fieldName: string): AnyFieldSelection => {
+const expandShorthand = (schema: AnyGraphqlSchema, typeName: string, fieldName: string): AnyFieldSelection => {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
     throw new Error(`Type "${typeName}" not found in schema`);
   }
 
-  // Runtime duck-typing: MinimalSchema sees string, but codegen may emit { spec, arguments }
-  const fieldDef = typeDef[fieldName];
+  // Runtime duck-typing: codegen may emit string or { spec, arguments }
+  const fieldDef = typeDef.fields[fieldName];
   if (!fieldDef) {
     throw new Error(`Field "${fieldName}" not found on type "${typeName}"`);
   }
@@ -304,7 +302,7 @@ const expandShorthand = (schema: MinimalSchema, typeName: string, fieldName: str
   };
 };
 
-const buildUnionSelection = (union: AnyUnionSelection, schema: MinimalSchema): SelectionNode[] => {
+const buildUnionSelection = (union: AnyUnionSelection, schema: AnyGraphqlSchema): SelectionNode[] => {
   const { selections, __typename: hasTypenameFlag } = union;
 
   const inlineFragments: InlineFragmentNode[] = Object.entries(selections)
@@ -346,7 +344,7 @@ const buildUnionSelection = (union: AnyUnionSelection, schema: MinimalSchema): S
  * @param schema - The GraphQL schema
  * @param typeName - Parent type name (required for shorthand expansion)
  */
-const buildField = (fields: AnyFieldsExtended, schema: MinimalSchema, typeName?: string): FieldNode[] =>
+const buildField = (fields: AnyFieldsExtended, schema: AnyGraphqlSchema, typeName?: string): FieldNode[] =>
   Object.entries(fields).map(([alias, value]): FieldNode => {
     // __typename is an implicit introspection field on all object types
     if (alias === "__typename" && isShorthand(value)) {
@@ -418,11 +416,9 @@ export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): 
       fields: Object.entries(value)
         .map(([key, fieldValue]): ConstObjectFieldNode | null => {
           // Look up field type in nested InputObject for enum detection
-          // Runtime duck-typing: MinimalSchema doesn't expose input, but codegen output retains it
           let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
-            // biome-ignore lint/suspicious/noExplicitAny: Runtime duck-typing for input type access — codegen output retains full data
-            const inputDefs = (enumLookup.schema as any)?.input;
+            const inputDefs = enumLookup.schema.input;
             const inputDef = inputDefs?.[enumLookup.typeSpecifier.name];
             const fieldSpec = inputDef?.fields[key];
             fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
@@ -554,7 +550,7 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
  * Builds VariableDefinitionNode[] from VarSpecifier records.
  * Kept as private fallback for callers that don't provide pre-parsed nodes.
  */
-const buildVariables = (variables: Record<string, VarSpecifier>, schema: MinimalSchema): VariableDefinitionNode[] => {
+const buildVariables = (variables: Record<string, VarSpecifier>, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
   return Object.entries(variables).map(([name, varSpec]): VariableDefinitionNode => {
     // Build default value if present
     let defaultValue: ConstValueNode | undefined;
@@ -610,7 +606,7 @@ export const buildOperationTypeNode = (operation: OperationType): OperationTypeN
  * @returns TypedDocumentNode with inferred input/output types
  */
 export const buildDocument = <
-  TSchema extends MinimalSchema,
+  TSchema extends AnyGraphqlSchema,
   TTypeName extends keyof TSchema["object"] & string,
   TFields extends AnyFieldsExtended,
   TVarDefinitions extends VariableDefinitions,
@@ -622,7 +618,7 @@ export const buildDocument = <
   variables: TVarDefinitions;
   fields: TFields;
   schema: TSchema;
-  // biome-ignore lint/suspicious/noExplicitAny: TypedDocumentNode inference requires AnyGraphqlSchema — MinimalSchema is a runtime subset
+  // biome-ignore lint/suspicious/noExplicitAny: Type inference deferred to prebuilt types
 }): TypedDocumentNode<any, any> => {
   const { operationName, operationType, operationTypeName, variableDefinitionNodes, variables, fields, schema } = options;
 
@@ -644,9 +640,6 @@ export const buildDocument = <
         },
       },
     ],
-  } satisfies DocumentNode as TypedDocumentNode<
     // biome-ignore lint/suspicious/noExplicitAny: Type inference deferred to prebuilt types
-    any,
-    any
-  >;
+  } satisfies DocumentNode as TypedDocumentNode<any, any>;
 };

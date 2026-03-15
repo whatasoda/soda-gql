@@ -1,11 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadata } from "../../src/types/metadata";
-import { extendedTestMinimalSchema } from "../fixtures";
+import { extendedTestSchema } from "../fixtures";
 
-const schema = extendedTestMinimalSchema;
+const schema = extendedTestSchema;
 
 describe("compat-extend integration", () => {
   const gql = createGqlElementComposer(schema, {});

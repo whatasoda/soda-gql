@@ -6,7 +6,7 @@
 import type { AnyFragment, AnyGqlDefine, AnyOperation } from "../types/element";
 import { GqlDefine } from "../types/element";
 import type { Adapter, AnyAdapter, AnyMetadataAdapter, DefaultAdapter, DefaultMetadataAdapter } from "../types/metadata";
-import type { MinimalSchema } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createColocateHelper } from "./colocate";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 import { applyContextTransformer } from "./context-transformer";
@@ -34,7 +34,7 @@ export type GqlElementComposer<TContext> = <TResult extends AnyFragment | AnyOpe
  * - Runtime schema introspection
  * - Debugging and tooling
  */
-export type GqlElementComposerWithSchema<TContext, TSchema extends MinimalSchema> = GqlElementComposer<TContext> & {
+export type GqlElementComposerWithSchema<TContext, TSchema extends AnyGraphqlSchema> = GqlElementComposer<TContext> & {
   /**
    * The GraphQL schema definition used by this composer.
    * Provides runtime access to schema types, operations, and metadata.
@@ -64,7 +64,7 @@ export type ExtractMetadataAdapter<TAdapter extends AnyAdapter> = TAdapter exten
  * Configuration options for `createGqlElementComposer`.
  */
 export type GqlElementComposerOptions<
-  _TSchema extends MinimalSchema,
+  _TSchema extends AnyGraphqlSchema,
   TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
 > = {
@@ -100,7 +100,7 @@ export type GqlElementComposerOptions<
  * ```
  */
 export const createGqlElementComposer = <
-  TSchema extends MinimalSchema,
+  TSchema extends AnyGraphqlSchema,
   TDirectiveMethods extends StandardDirectives,
   TAdapter extends AnyAdapter = DefaultAdapter,
 >(

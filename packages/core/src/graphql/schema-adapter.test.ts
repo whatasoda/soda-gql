@@ -1,17 +1,20 @@
 import { describe, expect, it } from "bun:test";
-import type { MinimalSchema } from "../types/schema/schema";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
 import { createSchemaIndexFromSchema } from "./schema-adapter";
 
 describe("createSchemaIndexFromSchema", () => {
-  const schema: MinimalSchema = {
+  const schema: AnyGraphqlSchema = {
     label: "test",
     operations: { query: "Query", mutation: "Mutation", subscription: null },
-    object: { User: {}, Query: {} },
-    union: { SearchResult: ["User"] },
-    typeNames: {
-      scalar: ["DateTime"],
-      enum: ["Status"],
-      input: ["UserFilter"],
+    scalar: { DateTime: {} as any },
+    enum: { Status: {} as any },
+    input: { UserFilter: {} as any },
+    object: {
+      User: { name: "User", fields: {} },
+      Query: { name: "Query", fields: {} },
+    },
+    union: {
+      SearchResult: { name: "SearchResult", types: { User: true } },
     },
   };
 

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { basicTestMinimalSchema } from "../../test/fixtures";
+import { basicTestSchema } from "../../test/fixtures";
 import type { OperationMetadata } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
 import { buildOperationArtifact, type OperationArtifactResult } from "./operation-core";
 
-const schema = basicTestMinimalSchema;
+const schema = basicTestSchema;
 
 describe("buildOperationArtifact", () => {
   describe("basic operation building", () => {

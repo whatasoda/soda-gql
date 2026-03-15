@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import { GqlDefine } from "../types/element";
-import type { AnyGraphqlSchema, MinimalSchema } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 
 const fullSchema = {
@@ -41,7 +41,7 @@ const fullSchema = {
   },
   union: {},
 } satisfies AnyGraphqlSchema;
-const schema = asMinimalSchema(fullSchema);
+const schema = fullSchema;
 
 describe("createCompatTaggedTemplate", () => {
   describe("query compat tagged template", () => {
@@ -110,7 +110,7 @@ describe("createCompatTaggedTemplate", () => {
           mutation: "Mutation",
           subscription: null,
         }),
-      } as MinimalSchema;
+      } as unknown as AnyGraphqlSchema;
 
       expect(() => createCompatTaggedTemplate(noSubscriptionSchema, "subscription")).toThrow(
         "Operation type subscription is not defined in schema roots",

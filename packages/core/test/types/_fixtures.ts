@@ -8,7 +8,7 @@
  */
 
 import { defineOperationRoots, defineScalar } from "../../src/schema";
-import type { AnyGraphqlSchema, MinimalSchema } from "../../src/types/schema";
+import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 // =============================================================================
@@ -64,8 +64,7 @@ export const basicSchema = {
     }),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies AnyGraphqlSchema & MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
 export type BasicSchema = typeof basicSchema & { _?: never };
 
@@ -135,8 +134,7 @@ export const nestedSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies AnyGraphqlSchema & MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
 export type NestedSchema = typeof nestedSchema & { _?: never };
 
@@ -203,8 +201,7 @@ export const unionSchema = {
       Comment: true,
     }),
   },
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: [], input: [] },
-} satisfies AnyGraphqlSchema & MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
 export type UnionSchema = typeof unionSchema & { _?: never };
 
@@ -279,8 +276,7 @@ export const enumSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-  typeNames: { scalar: ["ID", "String", "Int", "Boolean"], enum: ["UserRole", "PostStatus", "SortOrder"], input: [] },
-} satisfies AnyGraphqlSchema & MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
 export type EnumSchema = typeof enumSchema & { _?: never };
 
@@ -354,11 +350,6 @@ export const inputObjectSchema = {
     Subscription: define("Subscription").object({}),
   },
   union: {},
-  typeNames: {
-    scalar: ["ID", "String", "Int", "Boolean"],
-    enum: ["SortOrder"],
-    input: ["UserFilter", "UserOrderBy", "CreateUserInput"],
-  },
-} satisfies AnyGraphqlSchema & MinimalSchema;
+} satisfies AnyGraphqlSchema;
 
 export type InputObjectSchema = typeof inputObjectSchema & { _?: never };

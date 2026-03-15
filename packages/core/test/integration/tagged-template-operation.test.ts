@@ -1,12 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
 import type { FieldAccessorFunction } from "../../src/composer/fields-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
-import { basicTestMinimalSchema } from "../fixtures";
+import { basicTestSchema } from "../fixtures";
 
-const gql = createGqlElementComposer(basicTestMinimalSchema, {});
+const gql = createGqlElementComposer(basicTestSchema, {});
 
 describe("tagged template operation integration", () => {
   describe("query", () => {

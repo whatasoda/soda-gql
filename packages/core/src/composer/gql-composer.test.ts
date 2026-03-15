@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
-import type { AnyGraphqlSchema, MinimalSchema } from "../types/schema";
+import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
 
-const schema = asMinimalSchema({
+const schema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -34,7 +34,7 @@ const schema = asMinimalSchema({
     }),
   },
   union: {},
-} satisfies AnyGraphqlSchema);
+} satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema & { _?: never };
 

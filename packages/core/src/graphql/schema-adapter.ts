@@ -1,15 +1,15 @@
 /**
- * Adapter to create a minimal SchemaIndex from MinimalSchema.
+ * Adapter to create a minimal SchemaIndex from AnyGraphqlSchema.
  * Only name-level Maps are populated (.has() lookups work).
  * Field-level data is NOT populated.
  * @module
  */
 
-import type { MinimalSchema } from "../types/schema/schema";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { SchemaIndex } from "./schema-index";
 
 /**
- * Create a minimal SchemaIndex from MinimalSchema.
+ * Create a minimal SchemaIndex from AnyGraphqlSchema.
  *
  * IMPORTANT: This adapter produces a "name-resolution only" SchemaIndex.
  * Only the name-level Maps are populated (.has() lookups work).
@@ -20,13 +20,13 @@ import type { SchemaIndex } from "./schema-index";
  * (e.g., buildVarSpecifier). For full SchemaIndex with field-level data,
  * use createSchemaIndex(DocumentNode) from schema-index.ts.
  */
-export const createSchemaIndexFromSchema = (schema: MinimalSchema): SchemaIndex => {
-  const scalars: SchemaIndex["scalars"] = new Map(schema.typeNames.scalar.map((n) => [n, { name: n, directives: [] }]));
+export const createSchemaIndexFromSchema = (schema: AnyGraphqlSchema): SchemaIndex => {
+  const scalars: SchemaIndex["scalars"] = new Map(Object.keys(schema.scalar).map((n) => [n, { name: n, directives: [] }]));
   const enums: SchemaIndex["enums"] = new Map(
-    schema.typeNames.enum.map((n) => [n, { name: n, values: new Map(), directives: [] }]),
+    Object.keys(schema.enum).map((n) => [n, { name: n, values: new Map(), directives: [] }]),
   );
   const inputs: SchemaIndex["inputs"] = new Map(
-    schema.typeNames.input.map((n) => [n, { name: n, fields: new Map(), directives: [] }]),
+    Object.keys(schema.input).map((n) => [n, { name: n, fields: new Map(), directives: [] }]),
   );
   const objects: SchemaIndex["objects"] = new Map(
     Object.keys(schema.object).map((n) => [n, { name: n, fields: new Map(), directives: [] }]),

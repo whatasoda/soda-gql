@@ -9,11 +9,10 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { asMinimalSchema } from "../utils/schema";
 import { type NestedSchema, nestedSchema } from "./_fixtures";
 import type { EqualPublic, Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<NestedSchema, StandardDirectives>(asMinimalSchema(nestedSchema), {});
+const gql = createGqlElementComposer<NestedSchema, StandardDirectives>(nestedSchema, {});
 
 describe("Nested object selection type inference", () => {
   describe("Single level nesting", () => {

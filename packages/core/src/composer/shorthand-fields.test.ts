@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
@@ -91,7 +91,7 @@ const fullSchema = {
   },
 } satisfies AnyGraphqlSchema;
 
-const schema = asMinimalSchema(fullSchema);
+const schema = fullSchema;
 
 type Schema = typeof schema & { _?: never };
 

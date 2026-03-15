@@ -17,18 +17,18 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// playgrounds/vite-react/src/graphql-system/index.ts
+// src/graphql-system/index.ts
 var index_exports = {};
 __export(index_exports, {
   __directiveMethods_default: () => customDirectives_default,
   __fullSchema_default: () => fullSchema_default,
   __gql_default: () => gql_default,
-  __schema_default: () => minimalSchema_default,
+  __schema_default: () => fullSchema_default,
   gql: () => gql
 });
 module.exports = __toCommonJS(index_exports);
 
-// playgrounds/vite-react/scalars.ts
+// scalars.ts
 var import_core = require("@soda-gql/core");
 var scalar = {
   // Built-in scalars
@@ -43,14 +43,14 @@ var scalar = {
   ...(0, import_core.defineScalar)("BigInt")
 };
 
-// playgrounds/vite-react/src/graphql-system/_defs/enums.ts
+// src/graphql-system/_defs/enums.ts
 var import_core2 = require("@soda-gql/core");
 var enum_default_EmployeeRole = (0, import_core2.defineEnum)("EmployeeRole", { DIRECTOR: true, ENGINEER: true, EXECUTIVE: true, INTERN: true, MANAGER: true });
 var enum_default_ProjectStatus = (0, import_core2.defineEnum)("ProjectStatus", { CANCELLED: true, COMPLETED: true, IN_PROGRESS: true, ON_HOLD: true, PLANNING: true });
 var enum_default_SortOrder = (0, import_core2.defineEnum)("SortOrder", { ASC: true, DESC: true });
 var enum_default_TaskPriority = (0, import_core2.defineEnum)("TaskPriority", { HIGH: true, LOW: true, MEDIUM: true, URGENT: true });
 
-// playgrounds/vite-react/src/graphql-system/_defs/inputs.ts
+// src/graphql-system/_defs/inputs.ts
 var input_default_BigIntFilter = { name: "BigIntFilter", fields: {
   _eq: "s|BigInt|?",
   _gt: "s|BigInt|?",
@@ -190,7 +190,7 @@ var input_default_UpdateTaskInput = { name: "UpdateTaskInput", fields: {
   title: "s|String|?"
 } };
 
-// playgrounds/vite-react/src/graphql-system/_defs/objects.ts
+// src/graphql-system/_defs/objects.ts
 var object_default_Comment = { name: "Comment", fields: {
   author: { spec: "o|Employee|!", arguments: {} },
   body: { spec: "s|String|!", arguments: {} },
@@ -309,18 +309,11 @@ var object_default_Team = { name: "Team", fields: {
   projects: { spec: "o|Project|![]!", arguments: { limit: "s|Int|?", status: "e|ProjectStatus|?" } }
 } };
 
-// playgrounds/vite-react/src/graphql-system/_defs/unions.ts
+// src/graphql-system/_defs/unions.ts
 var union_default_ActivityItem = { name: "ActivityItem", types: { Comment: true, Project: true, Task: true } };
 var union_default_SearchResult = { name: "SearchResult", types: { Comment: true, Employee: true, Project: true, Task: true } };
 
-// playgrounds/vite-react/src/graphql-system/_defs/type-names.ts
-var typeNames_default = {
-  scalar: ["ID", "String", "Int", "Float", "Boolean", "BigInt", "DateTime", "JSON"],
-  enum: ["EmployeeRole", "ProjectStatus", "SortOrder", "TaskPriority"],
-  input: ["BigIntFilter", "BooleanFilter", "CreateProjectInput", "CreateTaskInput", "DateTimeFilter", "DepartmentFilterInput", "EmployeeFilterInput", "EmployeeRoleFilter", "IntFilter", "PaginationInput", "ProjectFilterInput", "ProjectStatusFilter", "SortInput", "StringFilter", "TaskFilterInput", "TaskPriorityFilter", "TeamFilterInput", "TransferEmployeeInput", "UpdateProjectInput", "UpdateTaskInput"]
-};
-
-// playgrounds/vite-react/src/graphql-system/_internal.ts
+// src/graphql-system/_internal.ts
 var import_core3 = require("@soda-gql/core");
 var enum_default = { EmployeeRole: enum_default_EmployeeRole, ProjectStatus: enum_default_ProjectStatus, SortOrder: enum_default_SortOrder, TaskPriority: enum_default_TaskPriority };
 var input_default = { BigIntFilter: input_default_BigIntFilter, BooleanFilter: input_default_BooleanFilter, CreateProjectInput: input_default_CreateProjectInput, CreateTaskInput: input_default_CreateTaskInput, DateTimeFilter: input_default_DateTimeFilter, DepartmentFilterInput: input_default_DepartmentFilterInput, EmployeeFilterInput: input_default_EmployeeFilterInput, EmployeeRoleFilter: input_default_EmployeeRoleFilter, IntFilter: input_default_IntFilter, PaginationInput: input_default_PaginationInput, ProjectFilterInput: input_default_ProjectFilterInput, ProjectStatusFilter: input_default_ProjectStatusFilter, SortInput: input_default_SortInput, StringFilter: input_default_StringFilter, TaskFilterInput: input_default_TaskFilterInput, TaskPriorityFilter: input_default_TaskPriorityFilter, TeamFilterInput: input_default_TeamFilterInput, TransferEmployeeInput: input_default_TransferEmployeeInput, UpdateProjectInput: input_default_UpdateProjectInput, UpdateTaskInput: input_default_UpdateTaskInput };
@@ -335,20 +328,10 @@ var fullSchema_default = {
   object: object_default,
   union: union_default
 };
-var minimalSchema_default = {
-  label: "default",
-  operations: { query: "Query", mutation: "Mutation", subscription: "Subscription" },
-  object: { Comment: object_default_Comment.fields, Company: object_default_Company.fields, Department: object_default_Department.fields, Employee: object_default_Employee.fields, Mutation: object_default_Mutation.fields, Project: object_default_Project.fields, Query: object_default_Query.fields, Subscription: object_default_Subscription.fields, Task: object_default_Task.fields, Team: object_default_Team.fields },
-  union: {
-    ActivityItem: ["Comment", "Project", "Task"],
-    SearchResult: ["Comment", "Employee", "Project", "Task"]
-  },
-  typeNames: typeNames_default
-};
 var customDirectives_default = { ...(0, import_core3.createStandardDirectives)(), ...{} };
-var gql_default = (0, import_core3.createGqlElementComposer)(minimalSchema_default, { directiveMethods: customDirectives_default });
+var gql_default = (0, import_core3.createGqlElementComposer)(fullSchema_default, { directiveMethods: customDirectives_default });
 
-// playgrounds/vite-react/src/graphql-system/index.ts
+// src/graphql-system/index.ts
 var gql = {
   default: gql_default
 };

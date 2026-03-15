@@ -6,7 +6,7 @@
 import { Kind, parse as parseGraphql } from "graphql";
 import { GqlDefine } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
-import type { MinimalSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 
 /** Tagged template function type for compat operations. */
 export type CompatTaggedTemplate = (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<TemplateCompatSpec>;
@@ -21,7 +21,7 @@ export type CurriedCompatFunction = (operationName: string) => CompatTaggedTempl
  * @param schema - The GraphQL schema definition
  * @param operationType - The operation type (query, mutation, subscription)
  */
-export const createCompatTaggedTemplate = <TSchema extends MinimalSchema>(
+export const createCompatTaggedTemplate = <TSchema extends AnyGraphqlSchema>(
   schema: TSchema,
   operationType: OperationType,
 ): CurriedCompatFunction => {

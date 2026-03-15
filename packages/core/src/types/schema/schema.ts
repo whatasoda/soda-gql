@@ -55,27 +55,6 @@ export type OperationRoots = {
   readonly subscription: string | null;
 };
 
-/**
- * Slim schema type for composer — reduces TS type-checking cost.
- * At JS runtime, codegen output retains full field argument data ({ spec, arguments }).
- * MinimalSchema sees object fields as string, but runtime duck-typing accesses richer data.
- */
-export type MinimalSchema = {
-  readonly label: string;
-  readonly operations: OperationRoots;
-  // Accept both flat `{ field: string }` and full ObjectDefinition shape
-  readonly object: { readonly [typename: string]: { readonly [field: string]: any } };
-  // Accept both `string[]` and full UnionDefinition shape
-  readonly union: {
-    readonly [typename: string]: readonly string[] | { readonly types: Record<string, any>; readonly name: string };
-  };
-  readonly typeNames: {
-    readonly scalar: readonly string[];
-    readonly enum: readonly string[];
-    readonly input: readonly string[];
-  };
-};
-
 export interface ScalarDefinition<T extends { name: string; input: unknown; output: unknown }>
   extends WithTypeMeta<{
     input: T["input"];

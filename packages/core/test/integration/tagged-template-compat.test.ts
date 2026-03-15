@@ -1,11 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { GqlDefine } from "../../src/types/element";
-import { basicTestMinimalSchema } from "../fixtures";
+import { basicTestSchema } from "../fixtures";
 
-const gql = createGqlElementComposer(basicTestMinimalSchema, {});
+const gql = createGqlElementComposer(basicTestSchema, {});
 
 describe("tagged template compat integration", () => {
   describe("compat spec creation", () => {

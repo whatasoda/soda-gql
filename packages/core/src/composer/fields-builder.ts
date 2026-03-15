@@ -4,7 +4,7 @@
  */
 
 import type { AnyFieldSelection, AnyFieldsExtended, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
-import type { MinimalSchema } from "../types/schema/schema";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { DeferredOutputField } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import type { AnyVarRef } from "../types/type-foundation/var-ref";
@@ -68,8 +68,8 @@ export type FieldAccessorFunction = (
  */
 type CacheMap = Map<string, FieldAccessorFunction>;
 
-const cacheMapBySchema = new WeakMap<MinimalSchema, CacheMap>();
-const ensureCacheMapBySchema = (schema: MinimalSchema) => {
+const cacheMapBySchema = new WeakMap<AnyGraphqlSchema, CacheMap>();
+const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
   const cachedCacheMap = cacheMapBySchema.get(schema);
   if (cachedCacheMap) {
     return cachedCacheMap;
@@ -92,7 +92,10 @@ const ensureCacheMapBySchema = (schema: MinimalSchema) => {
  *
  * @internal Used by operation and fragment composers
  */
-export const createFieldFactories = <TSchema extends MinimalSchema>(schema: TSchema, typeName: string): FieldAccessorFunction => {
+export const createFieldFactories = <TSchema extends AnyGraphqlSchema>(
+  schema: TSchema,
+  typeName: string,
+): FieldAccessorFunction => {
   const cacheMap = ensureCacheMapBySchema(schema);
   const cached = cacheMap.get(typeName);
   if (cached) {
@@ -105,7 +108,7 @@ export const createFieldFactories = <TSchema extends MinimalSchema>(schema: TSch
   return factory;
 };
 
-const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): FieldAccessorFunction => {
+const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): FieldAccessorFunction => {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
     throw new Error(`Type ${typeName} is not defined in schema objects`);
@@ -127,8 +130,8 @@ const createFieldFactoriesInner = (schema: MinimalSchema, typeName: string): Fie
         })) as unknown as AnyFieldAccessorReturn;
     }
 
-    // Runtime duck-typing: MinimalSchema sees string, but codegen may emit { spec, arguments }
-    const fieldDef = typeDef[fieldName];
+    // Runtime duck-typing: codegen may emit string or { spec, arguments }
+    const fieldDef = typeDef.fields[fieldName];
     if (!fieldDef) {
       throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
     }

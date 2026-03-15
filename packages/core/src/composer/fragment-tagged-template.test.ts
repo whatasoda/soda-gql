@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import type { AnyGraphqlSchema } from "../types/schema";
@@ -61,7 +61,7 @@ const schema = {
     SearchResult: define("SearchResult").union({ Article: true, Video: true }),
   },
 } satisfies AnyGraphqlSchema;
-const minimalSchema = asMinimalSchema(schema);
+const minimalSchema = schema;
 
 describe("createFragmentTaggedTemplate", () => {
   const fragment = createFragmentTaggedTemplate(minimalSchema);

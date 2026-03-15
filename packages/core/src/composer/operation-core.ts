@@ -16,7 +16,7 @@ import type {
   MetadataBuilder,
   OperationDocumentTransformer,
 } from "../types/metadata";
-import type { MinimalSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
 import { isPromiseLike } from "../utils/promise";
 import { buildDocument } from "./build-document";
@@ -31,7 +31,7 @@ import { varRefTools } from "./var-ref-tools";
  * @internal
  */
 type OperationCoreParamsBase<
-  TSchema extends MinimalSchema,
+  TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends VariableDefinitions,
@@ -66,7 +66,7 @@ type OperationCoreParamsBase<
  * @internal Used by extend.ts and operation-tagged-template.ts
  */
 export type OperationCoreParams<
-  TSchema extends MinimalSchema,
+  TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends VariableDefinitions,
@@ -113,7 +113,7 @@ export type OperationArtifactResult<
  * @internal Used by extend.ts and operation-tagged-template.ts
  */
 export const buildOperationArtifact = <
-  TSchema extends MinimalSchema,
+  TSchema extends AnyGraphqlSchema,
   TOperationType extends OperationType,
   TOperationName extends string,
   TVarDefinitions extends VariableDefinitions,

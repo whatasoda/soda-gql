@@ -9,7 +9,7 @@ import { __gql_default } from "./_internal";
 import type { Schema_default } from "./_internal";
 import type { __directiveMethods_default } from "./_internal";
 import type { PrebuiltTypes_default } from "./types.prebuilt";
-import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, MinimalSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 
 type ResolveFragmentAtBuilder_default<TKey extends string> =
   TKey extends keyof PrebuiltTypes_default["fragments"]
@@ -79,7 +79,7 @@ export type PrebuiltContext_default = {
 
 type GqlComposer_default = {
   <TResult>(composeElement: (context: PrebuiltContext_default) => TResult): TResult;
-  readonly $schema: MinimalSchema;
+  readonly $schema: AnyGraphqlSchema;
 };
 
 export const gql = {

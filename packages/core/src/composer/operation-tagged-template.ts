@@ -12,7 +12,7 @@ import type { AnyOperationOf } from "../types/element/operation";
 import type { AnyFieldsExtended } from "../types/fragment";
 import type { AnyMetadataAdapter, DocumentTransformer, OperationDocumentTransformer } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
-import type { MinimalSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import type { FieldsBuilder } from "./fields-builder";
 import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
@@ -118,7 +118,7 @@ const resolveMetadataOption = (metadataOption: OperationTemplateMetadataOptions[
  * @param metadataAdapter - Optional metadata adapter for metadata aggregation
  * @param adapterTransformDocument - Optional document transformer from adapter
  */
-export const createOperationTaggedTemplate = <TSchema extends MinimalSchema, TOperationType extends OperationType>(
+export const createOperationTaggedTemplate = <TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
   operationType: TOperationType,
   metadataAdapter?: AnyMetadataAdapter,
@@ -166,7 +166,7 @@ export const createOperationTaggedTemplate = <TSchema extends MinimalSchema, TOp
 /**
  * Handles the tagged template path.
  */
-function handleTaggedTemplate<TSchema extends MinimalSchema, TOperationType extends OperationType>(
+function handleTaggedTemplate<TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
   schemaIndex: import("../graphql/schema-index").SchemaIndex,
   operationType: TOperationType,
@@ -280,7 +280,7 @@ function handleTaggedTemplate<TSchema extends MinimalSchema, TOperationType exte
 /**
  * Handles the options object path.
  */
-function handleOptionsObject<TSchema extends MinimalSchema, TOperationType extends OperationType>(
+function handleOptionsObject<TSchema extends AnyGraphqlSchema, TOperationType extends OperationType>(
   schema: TSchema,
   schemaIndex: import("../graphql/schema-index").SchemaIndex,
   operationType: TOperationType,

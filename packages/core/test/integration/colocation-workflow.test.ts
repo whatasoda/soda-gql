@@ -6,11 +6,10 @@
 import { describe, expect, it } from "bun:test";
 import { createExecutionResultParser, createProjection } from "@soda-gql/colocation-tools";
 import { print } from "graphql";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { basicTestMinimalSchema } from "../fixtures";
+import { basicTestSchema } from "../fixtures";
 
-const gql = createGqlElementComposer(basicTestMinimalSchema, {});
+const gql = createGqlElementComposer(basicTestSchema, {});
 
 describe("$colocate end-to-end workflow", () => {
   it("combines multiple query fragments with $colocate and parses results", () => {

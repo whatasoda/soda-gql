@@ -2,12 +2,12 @@ import { describe, expect, it } from "bun:test";
 import { createFieldFactories } from "../../src/composer";
 import { defineScalar } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
-import { asMinimalSchema, define, unsafeOutputType } from "../utils/schema";
+import { define, unsafeOutputType } from "../utils/schema";
 
 describe("Schema Edge Cases", () => {
   describe("Missing object types", () => {
     it("should handle missing object type in schema", () => {
-      const schema = asMinimalSchema({
+      const schema = {
         label: "test" as const,
         operations: {
           query: "Query" as const,
@@ -19,7 +19,7 @@ describe("Schema Edge Cases", () => {
         input: {},
         object: {},
         union: {},
-      } satisfies AnyGraphqlSchema);
+      } satisfies AnyGraphqlSchema;
 
       // Attempting to create field factories for non-existent object
       expect(() => {
@@ -30,7 +30,7 @@ describe("Schema Edge Cases", () => {
 
   describe("Unsupported field types", () => {
     it("should handle unsupported field kind", () => {
-      const schema = asMinimalSchema({
+      const schema = {
         label: "test" as const,
         operations: {
           query: "Query" as const,
@@ -47,7 +47,7 @@ describe("Schema Edge Cases", () => {
           }),
         },
         union: {},
-      } satisfies AnyGraphqlSchema);
+      } satisfies AnyGraphqlSchema;
 
       expect(() => {
         const factories = createFieldFactories(schema, "Query");
@@ -59,7 +59,7 @@ describe("Schema Edge Cases", () => {
 
   describe("Union with missing member types", () => {
     it("should handle union member types gracefully", () => {
-      const schema = asMinimalSchema({
+      const schema = {
         label: "test" as const,
         operations: {
           query: "Query" as const,
@@ -79,7 +79,7 @@ describe("Schema Edge Cases", () => {
             MissingType: true, // This type doesn't exist in objects
           }),
         },
-      } satisfies AnyGraphqlSchema);
+      } satisfies AnyGraphqlSchema;
 
       // The current implementation doesn't throw, it handles it gracefully
       // We should test that it doesn't crash instead
@@ -91,7 +91,7 @@ describe("Schema Edge Cases", () => {
 
   describe("Circular reference detection", () => {
     it("should handle circular references gracefully", () => {
-      const schema = asMinimalSchema({
+      const schema = {
         label: "test" as const,
         operations: {
           query: "Query" as const,
@@ -114,7 +114,7 @@ describe("Schema Edge Cases", () => {
           }),
         },
         union: {},
-      } satisfies AnyGraphqlSchema);
+      } satisfies AnyGraphqlSchema;
 
       // Should handle circular references without infinite loop
       const factories = createFieldFactories(schema, "Node");

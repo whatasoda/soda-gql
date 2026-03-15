@@ -10,11 +10,10 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { asMinimalSchema } from "../utils/schema";
 import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { Equal, Expect, HasKey } from "./_helpers";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(asMinimalSchema(basicSchema), {});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("attach type inference", () => {
   it("single attachment infers property name and value type", () => {

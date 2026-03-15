@@ -6,9 +6,9 @@ import { defineOperationRoots, defineScalar } from "../../src/schema/schema-buil
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
-const schema = asMinimalSchema({
+const schema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -46,7 +46,7 @@ const schema = asMinimalSchema({
     }),
   },
   union: {},
-} satisfies AnyGraphqlSchema);
+} satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema & { _?: never };
 

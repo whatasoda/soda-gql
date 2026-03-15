@@ -5,7 +5,7 @@
 
 import { Kind, type OperationDefinitionNode, parse as parseGraphql } from "graphql";
 import { buildVarSpecifiers, createSchemaIndexFromSchema } from "../graphql";
-import { type GqlDefine, Operation } from "../types/element";
+import type { GqlDefine } from "../types/element";
 import type { TemplateCompatSpec } from "../types/element/compat-spec";
 import type { AnyFields } from "../types/fragment";
 import type {
@@ -17,7 +17,7 @@ import type {
   OperationDocumentTransformer,
 } from "../types/metadata";
 import { defaultMetadataAdapter } from "../types/metadata";
-import type { MinimalSchema, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
@@ -26,8 +26,8 @@ import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-cor
  * Options for extending a compat spec into a full operation.
  */
 export type ExtendOptions<
-  TSchema extends MinimalSchema,
-  TVarDefinitions extends VariableDefinitions,
+  _TSchema extends AnyGraphqlSchema,
+  _TVarDefinitions extends VariableDefinitions,
   TOperationMetadata,
   TAggregatedFragmentMetadata,
   TSchemaLevel,
@@ -51,7 +51,10 @@ export type ExtendOptions<
  *
  * @internal Used by `createGqlElementComposer`
  */
-export const createExtendComposer = <TSchema extends MinimalSchema, TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter>(
+export const createExtendComposer = <
+  TSchema extends AnyGraphqlSchema,
+  TAdapter extends AnyMetadataAdapter = DefaultMetadataAdapter,
+>(
   schema: NoInfer<TSchema>,
   adapter?: TAdapter,
   transformDocument?: DocumentTransformer<
@@ -65,10 +68,10 @@ export const createExtendComposer = <TSchema extends MinimalSchema, TAdapter ext
   type TSchemaLevel = ExtractAdapterTypes<TAdapter>["schemaLevel"];
 
   return <
-    TOperationType extends OperationType,
-    TOperationName extends string,
+    _TOperationType extends OperationType,
+    _TOperationName extends string,
     TVarDefinitions extends VariableDefinitions,
-    TFields extends AnyFields,
+    _TFields extends AnyFields,
     TOperationMetadata = unknown,
   >(
     compat: GqlDefine<TemplateCompatSpec>,
@@ -91,7 +94,7 @@ export const createExtendComposer = <TSchema extends MinimalSchema, TAdapter ext
  * Builds an Operation from a TemplateCompatSpec by parsing the raw GraphQL source.
  * Evaluates fields via buildFieldsFromSelectionSet for correct typegen output.
  */
-const buildOperationFromTemplateSpec = <TSchema extends MinimalSchema, TAdapter extends AnyMetadataAdapter>(
+const buildOperationFromTemplateSpec = <TSchema extends AnyGraphqlSchema, TAdapter extends AnyMetadataAdapter>(
   schema: TSchema,
   spec: TemplateCompatSpec,
   adapter: TAdapter,

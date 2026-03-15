@@ -10,11 +10,10 @@ import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import type { FieldAccessorFunction } from "../../src/composer/fields-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { asMinimalSchema } from "../utils/schema";
 import { type UnionSchema, unionSchema } from "./_fixtures";
 import type { Expect, Extends } from "./_helpers";
 
-const gql = createGqlElementComposer<UnionSchema, StandardDirectives>(asMinimalSchema(unionSchema), {});
+const gql = createGqlElementComposer<UnionSchema, StandardDirectives>(unionSchema, {});
 
 describe("Union field selection type inference", () => {
   describe("Basic union selection with shorthand", () => {

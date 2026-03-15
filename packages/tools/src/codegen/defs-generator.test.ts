@@ -201,7 +201,6 @@ describe("generateDefsStructure", () => {
       inputs: [],
       objects: [{ name: "object_default_User", code: 'const object_default_User = { name: "User", fields: {} } as const;' }],
       unions: [],
-      "type-names": [],
     };
 
     const result = generateDefsStructure("default", categoryVars, 100);
@@ -221,7 +220,6 @@ describe("generateDefsStructure", () => {
       inputs: [],
       objects,
       unions: [],
-      "type-names": [],
     };
 
     const result = generateDefsStructure("default", categoryVars, 2);
@@ -238,7 +236,6 @@ describe("generateDefsStructure", () => {
       inputs: [],
       objects: [],
       unions: [],
-      "type-names": [],
     };
 
     const result = generateDefsStructure("default", categoryVars, 100);

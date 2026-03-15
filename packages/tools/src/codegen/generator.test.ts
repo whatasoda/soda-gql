@@ -518,7 +518,7 @@ describe("generateMultiSchemaModule", () => {
 
     // Should use simplified call in createGqlElementComposer (no FragmentBuilders)
     expect(result.code).toContain(
-      "createGqlElementComposer(minimalSchema_default, { directiveMethods: customDirectives_default });",
+      "createGqlElementComposer(fullSchema_default, { directiveMethods: customDirectives_default });",
     );
   });
 

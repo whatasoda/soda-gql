@@ -9,7 +9,7 @@ import { __gql_default, __gql_admin } from "./_internal";
 import type { Schema_default, Schema_admin } from "./_internal";
 import type { __directiveMethods_default, __directiveMethods_admin } from "./_internal";
 import type { PrebuiltTypes_default, PrebuiltTypes_admin } from "./types.prebuilt";
-import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, MinimalSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 
 type ResolveFragmentAtBuilder_default<TKey extends string> =
   TKey extends keyof PrebuiltTypes_default["fragments"]
@@ -79,7 +79,7 @@ export type PrebuiltContext_default = {
 
 type GqlComposer_default = {
   <TResult>(composeElement: (context: PrebuiltContext_default) => TResult): TResult;
-  readonly $schema: MinimalSchema;
+  readonly $schema: AnyGraphqlSchema;
 };
 
 type ResolveFragmentAtBuilder_admin<TKey extends string> =
@@ -150,7 +150,7 @@ export type PrebuiltContext_admin = {
 
 type GqlComposer_admin = {
   <TResult>(composeElement: (context: PrebuiltContext_admin) => TResult): TResult;
-  readonly $schema: MinimalSchema;
+  readonly $schema: AnyGraphqlSchema;
 };
 
 export const gql = {

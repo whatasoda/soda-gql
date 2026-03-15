@@ -9,10 +9,8 @@
 
 import type {
   AnyConstDirectiveAttachments,
-  AnyGraphqlSchema,
   EnumDefinition,
   InputDefinition,
-  MinimalSchema,
   ObjectDefinition,
   UnionDefinition,
 } from "../../src/types/schema";
@@ -279,41 +277,3 @@ export const define = <const TName extends string>(name: TName) => ({
       types,
     }) satisfies UnionDefinition,
 });
-
-// =============================================================================
-// MinimalSchema Cast Helper
-// =============================================================================
-
-/**
- * Converts an AnyGraphqlSchema to MinimalSchema for use in tests.
- *
- * Transforms object definitions from `{ name, fields }` to flat `{ field: spec }`
- * format and union definitions from `{ name, types: { Member: true } }` to `string[]`.
- * Also adds the required `typeNames` property.
- */
-export const asMinimalSchema = <T extends AnyGraphqlSchema>(schema: T): T & MinimalSchema => {
-  // Flatten object definitions: { name, fields: { field: specObj } } -> { field: specObj }
-  const flatObject: Record<string, Record<string, unknown>> = {};
-  for (const [typeName, objDef] of Object.entries(schema.object)) {
-    flatObject[typeName] = objDef.fields;
-  }
-
-  // Flatten union definitions: { name, types: { Member: true } } -> string[]
-  const flatUnion: Record<string, readonly string[]> = {};
-  for (const [typeName, unionDef] of Object.entries(schema.union)) {
-    flatUnion[typeName] = Object.keys(unionDef.types);
-  }
-
-  return {
-    label: schema.label,
-    operations: schema.operations,
-    object: flatObject,
-    union: flatUnion,
-    typeNames: {
-      scalar: Object.keys(schema.scalar),
-      enum: Object.keys(schema.enum),
-      input: Object.keys(schema.input),
-    },
-    // biome-ignore lint/suspicious/noExplicitAny: runtime transformation loses static type info
-  } as any;
-};

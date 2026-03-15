@@ -5,9 +5,9 @@ import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
-import { asMinimalSchema, define, unsafeInputType, unsafeOutputType } from "../utils/schema";
+import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
-const schema = asMinimalSchema({
+const schema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -45,7 +45,7 @@ const schema = asMinimalSchema({
     }),
   },
   union: {},
-} satisfies AnyGraphqlSchema);
+} satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema & { _?: never };
 
