@@ -7,7 +7,7 @@ This guide covers the two API syntaxes for defining GraphQL operations and fragm
 soda-gql provides two syntax styles for defining GraphQL elements:
 
 1. **Tagged templates** — Write GraphQL directly as template literals. Concise, readable, and familiar to developers who know GraphQL syntax.
-2. **Callback builders** — Programmatic field selection using TypeScript functions. Required for advanced features like field directives, `$colocate`, and `$var`.
+2. **Callback builders** — Programmatic field selection using TypeScript functions. Required for advanced features like `$colocate` and programmatic field control.
 
 Both syntaxes produce identical runtime artifacts and can be mixed freely within a project.
 
@@ -356,12 +356,12 @@ const GetUser = gql.default(({ extend }) =>
 | Metadata callbacks | Yes | Yes |
 | Fragment metadata aggregation | Yes | Yes |
 | Field aliases | Yes | Yes |
-| Field directives (`@skip`, `@include`) | No | Yes |
+| Field directives (`@skip`, `@include`) | Yes | Yes (`$dir`) |
 | `$colocate` query composition | No | Yes |
 | Programmatic field control | No | Yes |
 | `$infer` output type inference | Yes (via typegen) | Best-effort¹ |
 
-> **Note**: Field-level directives (`@skip`, `@include`) on regular fields are parsed by GraphQL but silently ignored during field selection construction — no error is raised. However, directives on inline fragments (`... on Type @skip(...)`) throw an explicit error. If you need field directive behavior, use the callback builder syntax.
+> **Note**: Field-level directives (`@skip`, `@include`) and inline fragment directives (`... on Type @defer`) are supported natively in tagged templates using standard GraphQL syntax. The callback builder syntax provides the same functionality via `$dir` for programmatic control.
 
 > **¹ Type inference note**: Callback builders provide full runtime correctness, but `$infer.output` type inference within `({ f }) => ...` callbacks is best-effort — field accessor functions are type-erased internally. Run `bun run soda-gql codegen schema` (typegen) to generate precise prebuilt types. Tagged templates do not have this limitation.
 
@@ -372,11 +372,9 @@ const GetUser = gql.default(({ extend }) =>
 - Writing standard queries, mutations, or subscriptions
 - Defining fragments with simple field selections
 - You want concise, readable GraphQL that looks like the query language
-- Your operations don't need field directives
 
 ### Use the Options-Object Path When
 
-- You need **field directives** (e.g., `$dir.skip({ if: true })`)
 - You need **`$colocate`** for composing multiple query fragments
 - You need **field aliases** programmatically (e.g., `f("id", null, { alias: "userId" })`)
 - You're building operations that require fine-grained programmatic control
@@ -391,9 +389,21 @@ const UserFields = gql.default(({ fragment }) =>
   fragment("UserFields", "User")`{ id name email }`()
 );
 
-// Operation: options-object path (needs aliases and directives)
-const GetUser = gql.default(({ query, $dir }) =>
-  query("GetUser")({
+// Operation: tagged template with directives (simple)
+const GetUser = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!, $hideEmail: Boolean!) {
+    user(id: $id) {
+      userId: id
+      name
+      email @skip(if: $hideEmail)
+      ...${UserFields}
+    }
+  }`()
+);
+
+// Operation: options-object path (needs $colocate or programmatic control)
+const GetUserAdvanced = gql.default(({ query, $dir }) =>
+  query("GetUserAdvanced")({
     variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
       ...f("user", { id: $.id })(({ f }) => ({

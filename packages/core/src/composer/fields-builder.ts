@@ -189,13 +189,19 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
             if (memberName === "__typename") {
               continue; // Skip the flag, stored separately
             }
-            // Skip non-function values (shouldn't happen but guard for safety)
-            if (typeof builder !== "function") {
+            if (typeof builder === "function") {
+              result[memberName] = {
+                fields: (builder as NestedObjectFieldsBuilder)({
+                  f: createFieldFactories(schema, memberName),
+                }),
+                directives: [],
+              };
+            } else if (builder && typeof builder === "object" && "fields" in builder) {
+              // Pre-wrapped UnionMemberSelection (tagged template path)
+              result[memberName] = builder;
+            } else {
               continue;
             }
-            result[memberName] = (builder as NestedObjectFieldsBuilder)({
-              f: createFieldFactories(schema, memberName),
-            });
           }
           return result;
         });

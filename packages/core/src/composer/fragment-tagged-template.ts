@@ -14,6 +14,8 @@ import type { AnyFieldSelection, AnyFieldsExtended } from "../types/fragment";
 import type { VarRefTools } from "../types/metadata/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
+import { DirectiveRef } from "../types/type-foundation/directive-ref";
+import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { createFieldFactories } from "./fields-builder";
@@ -132,9 +134,14 @@ export function buildFieldsFromSelectionSet(
         continue;
       }
 
-      // Build args from AST arguments
+      // Build args and directives from AST
       const args = buildArgsFromASTArguments(selection.arguments ?? [], varAssignments);
-      const extras = alias !== fieldName ? { alias } : undefined;
+      const directives = buildDirectivesFromAST(selection.directives, varAssignments);
+      const hasAlias = alias !== fieldName;
+      const extras =
+        hasAlias || directives.length > 0
+          ? { ...(hasAlias ? { alias } : {}), ...(directives.length > 0 ? { directives } : {}) }
+          : undefined;
 
       if (selection.selectionSet) {
         // Object/union field — f("fieldName", args, extras) returns a curried function
@@ -154,9 +161,6 @@ export function buildFieldsFromSelectionSet(
 
             for (const sel of selection.selectionSet.selections) {
               if (sel.kind === Kind.INLINE_FRAGMENT) {
-                if (sel.directives?.length) {
-                  throw new Error("Directives on inline fragments are not supported in tagged templates");
-                }
                 if (!sel.typeCondition) {
                   throw new Error("Inline fragments without type conditions are not supported in tagged templates");
                 }
@@ -185,7 +189,8 @@ export function buildFieldsFromSelectionSet(
                   varAssignments,
                   interpolationMap,
                 );
-                unionInput[memberName] = ({ f: _f }: { f: unknown }) => memberFields;
+                const memberDirectives = buildDirectivesFromAST(sel.directives, varAssignments, "INLINE_FRAGMENT");
+                unionInput[memberName] = { fields: memberFields, directives: memberDirectives };
               } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
                 if (sel.alias) {
                   throw new Error(
@@ -304,6 +309,26 @@ export function buildFieldsFromSelectionSet(
   }
 
   return result as AnyFieldsExtended;
+}
+
+/**
+ * Convert GraphQL AST DirectiveNodes to DirectiveRef instances.
+ * Reuses buildArgsFromASTArguments for directive argument conversion.
+ */
+function buildDirectivesFromAST(
+  directives: readonly import("graphql").DirectiveNode[] | undefined,
+  varAssignments?: Readonly<Record<string, AnyVarRef>>,
+  location: import("../types/type-foundation/directive-ref").ExecutableDirectiveLocation = "FIELD",
+): AnyDirectiveRef[] {
+  if (!directives || directives.length === 0) return [];
+  return directives.map(
+    (d) =>
+      new DirectiveRef({
+        name: d.name.value,
+        arguments: buildArgsFromASTArguments(d.arguments ?? [], varAssignments),
+        locations: [location],
+      }),
+  );
 }
 
 /**

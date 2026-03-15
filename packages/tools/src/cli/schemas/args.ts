@@ -25,7 +25,6 @@ export const FormatArgsSchema = z.object({
   _: z.array(z.string()).optional(),
   config: z.string().optional(),
   check: z.boolean().optional(),
-  "inject-fragment-keys": z.boolean().optional(),
 });
 
 export const InitArgsSchema = z.object({

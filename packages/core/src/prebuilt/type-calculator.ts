@@ -338,10 +338,10 @@ const calculateUnionType = (
       const allMemberNames = Object.keys(unionDef.types);
 
       for (const typeName of allMemberNames) {
-        const fields = selections[typeName];
-        if (fields && typeof fields === "object") {
+        const member = selections[typeName];
+        if (member && typeof member === "object") {
           // Selected member: include fields + __typename
-          const fieldsType = calculateFieldsType(schema, fields, formatters, typeName);
+          const fieldsType = calculateFieldsType(schema, member.fields, formatters, typeName);
           memberTypes.push(`${fieldsType} & { readonly __typename: "${typeName}" }`);
         } else {
           // Unselected member: only __typename
@@ -351,9 +351,9 @@ const calculateUnionType = (
     }
   } else {
     // Original behavior without __typename flag
-    for (const [typeName, fields] of Object.entries(selections)) {
-      if (fields && typeof fields === "object") {
-        const memberType = calculateFieldsType(schema, fields, formatters, typeName);
+    for (const [typeName, member] of Object.entries(selections)) {
+      if (member && typeof member === "object") {
+        const memberType = calculateFieldsType(schema, member.fields, formatters, typeName);
         memberTypes.push(memberType);
       }
     }

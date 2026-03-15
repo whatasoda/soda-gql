@@ -306,20 +306,23 @@ const buildUnionSelection = (union: AnyUnionSelection, schema: AnyGraphqlSchema)
   const { selections, __typename: hasTypenameFlag } = union;
 
   const inlineFragments: InlineFragmentNode[] = Object.entries(selections)
-    .map(([typeName, object]): InlineFragmentNode | null => {
+    .map(([typeName, member]): InlineFragmentNode | null => {
       // Skip undefined values and non-object values (shouldn't happen but guard against it)
-      if (!object || typeof object !== "object") {
+      if (!member || typeof member !== "object") {
         return null;
       }
+      const { fields, directives: memberDirectives } = member as import("../types/fragment").UnionMemberSelection;
+      const builtDirectives = buildDirectives(memberDirectives, "INLINE_FRAGMENT", schema);
       return {
         kind: Kind.INLINE_FRAGMENT,
         typeCondition: {
           kind: Kind.NAMED_TYPE,
           name: { kind: Kind.NAME, value: typeName },
         },
+        ...(builtDirectives.length > 0 ? { directives: builtDirectives } : {}),
         selectionSet: {
           kind: Kind.SELECTION_SET,
-          selections: buildField(object, schema, typeName),
+          selections: buildField(fields, schema, typeName),
         },
       };
     })

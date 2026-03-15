@@ -35,7 +35,7 @@ describe("Alias handling in type inference", () => {
         user: { userId: string; userName: string } | null | undefined;
       };
 
-      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
+      // @ts-expect-error FieldAccessorFunction is type-erased (fieldName: string → any). Prebuilt types cover user-facing type safety.
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -60,7 +60,7 @@ describe("Alias handling in type inference", () => {
         user: { id: string; userName: string } | null | undefined;
       };
 
-      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
+      // @ts-expect-error FieldAccessorFunction is type-erased (fieldName: string → any). Prebuilt types cover user-facing type safety.
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -85,7 +85,7 @@ describe("Alias handling in type inference", () => {
         user: { id: string; userEmail: string | null | undefined } | null | undefined;
       };
 
-      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
+      // @ts-expect-error FieldAccessorFunction is type-erased (fieldName: string → any). Prebuilt types cover user-facing type safety.
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });

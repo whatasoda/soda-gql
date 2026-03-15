@@ -1121,15 +1121,18 @@ describe("Union selection with __typename flag", () => {
         union: {
           selections: {
             User: {
-              id: {
-                parent: "User",
-                field: "id",
-                type: { spec: "s|ID|!", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
+              fields: {
+                id: {
+                  parent: "User",
+                  field: "id",
+                  type: { spec: "s|ID|!", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
               },
+              directives: [],
             },
           },
           __typename: true,
@@ -1167,15 +1170,18 @@ describe("Union selection with __typename flag", () => {
         union: {
           selections: {
             User: {
-              id: {
-                parent: "User",
-                field: "id",
-                type: { spec: "s|ID|!", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
+              fields: {
+                id: {
+                  parent: "User",
+                  field: "id",
+                  type: { spec: "s|ID|!", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
               },
+              directives: [],
             },
           },
           __typename: false,
@@ -1213,44 +1219,50 @@ describe("Union selection with __typename flag", () => {
         union: {
           selections: {
             User: {
-              id: {
-                parent: "User",
-                field: "id",
-                type: { spec: "s|ID|!", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
+              fields: {
+                id: {
+                  parent: "User",
+                  field: "id",
+                  type: { spec: "s|ID|!", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
+                name: {
+                  parent: "User",
+                  field: "name",
+                  type: { spec: "s|String|?", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
               },
-              name: {
-                parent: "User",
-                field: "name",
-                type: { spec: "s|String|?", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
-              },
+              directives: [],
             },
             Post: {
-              id: {
-                parent: "Post",
-                field: "id",
-                type: { spec: "s|ID|!", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
+              fields: {
+                id: {
+                  parent: "Post",
+                  field: "id",
+                  type: { spec: "s|ID|!", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
+                title: {
+                  parent: "Post",
+                  field: "title",
+                  type: { spec: "s|String|!", arguments: {} },
+                  args: {},
+                  directives: [],
+                  object: null,
+                  union: null,
+                },
               },
-              title: {
-                parent: "Post",
-                field: "title",
-                type: { spec: "s|String|!", arguments: {} },
-                args: {},
-                directives: [],
-                object: null,
-                union: null,
-              },
+              directives: [],
             },
           },
           __typename: true,

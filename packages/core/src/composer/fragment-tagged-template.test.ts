@@ -3,6 +3,7 @@ import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/sche
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyFieldSelection } from "../types/fragment/field-selection";
 import type { AnyGraphqlSchema } from "../types/schema";
+import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromVariable, VarRef } from "../types/type-foundation/var-ref";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
 
@@ -627,20 +628,57 @@ describe("createFragmentTaggedTemplate", () => {
       const fields = frag.spread({} as never);
       const searchField = fields.search as AnyFieldSelection;
       expect(searchField.union?.selections).toHaveProperty("Article");
-      const articleSelection = searchField.union?.selections.Article as Record<string, unknown>;
-      expect(articleSelection).toHaveProperty("id");
-      expect(articleSelection).toHaveProperty("title");
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember?.fields).toHaveProperty("id");
+      expect(articleMember?.fields).toHaveProperty("title");
     });
 
-    it("rejects directives on inline fragments", () => {
-      expect(() => {
-        const frag = fragment("SearchFields", "Query")`{
-          search {
-            ... on Article @skip(if: true) { id }
-          }
-        }`();
-        frag.spread({} as never);
-      }).toThrow("Directives on inline fragments are not supported in tagged templates");
+    it("supports directives on inline fragments", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article @skip(if: true) { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember).toBeDefined();
+      expect(articleMember!.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(articleMember!.directives[0]!);
+      expect(inner.name).toBe("skip");
+      expect(inner.arguments).toEqual({ if: true });
+      expect(inner.locations).toEqual(["INLINE_FRAGMENT"]);
+    });
+
+    it("supports directive with variable on inline fragment", () => {
+      const frag = fragment("SearchFields", "Query")`($show: Boolean!) {
+        search {
+          ... on Article @include(if: $show) { id title }
+          ... on Video { id }
+        }
+      }`();
+      const varRef = createVarRefFromVariable("show");
+      const fields = frag.spread({ show: varRef } as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember!.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(articleMember!.directives[0]!);
+      expect(inner.name).toBe("include");
+      expect(inner.arguments.if).toBeInstanceOf(VarRef);
+    });
+
+    it("inline fragment without directive has empty directives array", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article @skip(if: true) { id }
+          ... on Video { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const videoMember = searchField.union?.selections.Video;
+      expect(videoMember).toBeDefined();
+      expect(videoMember!.directives).toEqual([]);
     });
 
     it("rejects non-__typename fields alongside inline fragments", () => {
@@ -732,6 +770,81 @@ describe("createFragmentTaggedTemplate", () => {
         }`();
         frag.spread({} as never);
       }).toThrow('Duplicate inline fragment for union member "Article"');
+    });
+  });
+
+  describe("field-level directives", () => {
+    it("applies @skip directive with literal boolean to scalar field", () => {
+      const frag = fragment("UserFields", "User")`{ id name @skip(if: true) }`();
+      const fields = frag.spread({} as never);
+      const nameField = fields.name as AnyFieldSelection;
+      expect(nameField.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(nameField.directives[0]!);
+      expect(inner.name).toBe("skip");
+      expect(inner.arguments).toEqual({ if: true });
+      expect(inner.locations).toEqual(["FIELD"]);
+    });
+
+    it("applies @include directive with literal boolean", () => {
+      const frag = fragment("UserFields", "User")`{ id email @include(if: false) }`();
+      const fields = frag.spread({} as never);
+      const emailField = fields.email as AnyFieldSelection;
+      expect(emailField.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(emailField.directives[0]!);
+      expect(inner.name).toBe("include");
+      expect(inner.arguments).toEqual({ if: false });
+    });
+
+    it("applies directive with variable reference", () => {
+      const frag = fragment("UserFields", "User")`($show: Boolean!) { id name @include(if: $show) }`();
+      const varRef = createVarRefFromVariable("show");
+      const fields = frag.spread({ show: varRef } as never);
+      const nameField = fields.name as AnyFieldSelection;
+      expect(nameField.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(nameField.directives[0]!);
+      expect(inner.name).toBe("include");
+      expect(inner.arguments.if).toBeInstanceOf(VarRef);
+    });
+
+    it("applies multiple directives to a single field", () => {
+      const frag = fragment("UserFields", "User")`($a: Boolean!, $b: Boolean!) {
+        id
+        name @skip(if: $a) @include(if: $b)
+      }`();
+      const fields = frag.spread({} as never);
+      const nameField = fields.name as AnyFieldSelection;
+      expect(nameField.directives).toHaveLength(2);
+      expect(DirectiveRef.getInner(nameField.directives[0]!).name).toBe("skip");
+      expect(DirectiveRef.getInner(nameField.directives[1]!).name).toBe("include");
+    });
+
+    it("applies directive to object field", () => {
+      const frag = fragment("EmployeeFields", "Employee")`($show: Boolean!) {
+        id
+        tasks @include(if: $show) { id title }
+      }`();
+      const varRef = createVarRefFromVariable("show");
+      const fields = frag.spread({ show: varRef } as never);
+      const tasksField = fields.tasks as AnyFieldSelection;
+      expect(tasksField.directives).toHaveLength(1);
+      expect(DirectiveRef.getInner(tasksField.directives[0]!).name).toBe("include");
+    });
+
+    it("field with both alias and directive", () => {
+      const frag = fragment("UserFields", "User")`{ myName: name @skip(if: true) }`();
+      const fields = frag.spread({} as never);
+      expect(fields).not.toHaveProperty("name");
+      expect(fields).toHaveProperty("myName");
+      const myNameField = fields.myName as AnyFieldSelection;
+      expect(myNameField.directives).toHaveLength(1);
+      expect(DirectiveRef.getInner(myNameField.directives[0]!).name).toBe("skip");
+    });
+
+    it("fields without directives have empty directives array", () => {
+      const frag = fragment("UserFields", "User")`{ id name }`();
+      const fields = frag.spread({} as never);
+      const idField = fields.id as AnyFieldSelection;
+      expect(idField.directives).toEqual([]);
     });
   });
 });

@@ -14,7 +14,7 @@ bun add neverthrow
 ```
 
 :::tip
-soda-gql supports queries, mutations, and subscriptions. Field directives (`@skip`, `@include`) are supported in callback builder syntax. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for a feature comparison.
+soda-gql supports queries, mutations, and subscriptions. Field directives (`@skip`, `@include`) work in both tagged template and callback builder syntax. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for a feature comparison.
 :::
 
 ## Setup
