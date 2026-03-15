@@ -4,8 +4,8 @@ Post-merge follow-up items identified during implementation.
 
 ## 1. FieldAccessorFunction Type Inference
 
-**Status:** Documented in tagged-template-syntax.md. Type-level fix deferred — prebuilt types cover user-facing type safety.
-**Priority:** Medium
+**Status:** Resolved — accepted as structural limitation. `FieldAccessorFunction` is type-erased by design (`fieldName: string → any`). Prebuilt types cover user-facing type safety. 14 `@ts-expect-error` annotations retained with explanatory comments (not TODOs).
+**Priority:** Closed
 **Scope:** `packages/core/src/composer/fields-builder.ts`, `packages/core/test/types/`
 
 `FieldAccessorFunction` returns `any` because `fieldName: string` loses type information.
@@ -24,36 +24,13 @@ Post-merge follow-up items identified during implementation.
 
 ## 2. Replace `graphql-compat/transformer.ts` with Core Transformer
 
-**Priority:** Medium
-**Scope:** `packages/tools/src/codegen/graphql-compat/`
-
-`graphql-compat/transformer.ts` (~700 lines) reimplements 10 functions that already exist in `packages/core/src/graphql/transformer.ts`:
-
-| Duplicated function | Lines |
-|---|---|
-| `isModifierAssignable` | ~60 |
-| `mergeModifiers` | ~50 |
-| `getArgumentType` | ~20 |
-| `getInputFieldType` | ~20 |
-| `collectVariableUsages` | ~80 |
-| `getFieldReturnType` | ~20 |
-| `mergeVariableUsages` | ~60 |
-| `inferVariablesFromUsages` | ~40 |
-| `sortFragmentsByDependency` | ~50 |
-| `transformParsedGraphql` | ~100 |
-
-The only structural difference is neverthrow `Result` (`.isErr()`) vs core's bespoke `Result` (`.ok` discriminant).
-
-Additionally, the variable inference pipeline (`collectVariableUsages` -> `inferVariablesFromUsages`) produces `EnrichedOperation.variables` / `EnrichedFragment.variables` which the new `print()`-based emitter never reads — this is ~300 lines of dead computation on every codegen run.
-
-**Approach:** Import `transformParsedGraphql` from `@soda-gql/core` and adapt the `Result` wrapper. Delete the duplicated file entirely.
+**Status:** Resolved — `graphql-compat/transformer.ts` deleted in d34e63cb. The new `print()`-based emitter eliminated the duplication.
+**Priority:** Closed
 
 ## 3. Delete `parseGraphqlFile` from graphql-compat parser
 
-**Priority:** Low
-**Scope:** `packages/tools/src/codegen/graphql-compat/parser.ts:44-70`
-
-Exported but never called from anywhere. The CLI uses `parseGraphqlSource` only.
+**Status:** Resolved — `parseGraphqlFile` no longer exists in the codebase.
+**Priority:** Closed
 
 ## 4. ~~Evaluate~~ Document `var-ref-tools.ts` Public API
 
@@ -65,29 +42,18 @@ Available via `({ $, $var }) => ...` in metadata callbacks. See `docs/guides/tag
 
 ## 5. Update Stale `$var()` Comments
 
-**Priority:** Low
-**Scope:** 3 files
-
-Comments referencing deleted `$var()` as the source of `VarSpecifier` objects:
-- `packages/core/src/types/type-foundation/type-specifier.ts:33`
-- `packages/core/src/composer/build-document.ts:553`
-- `packages/core/src/prebuilt/type-calculator.ts:585`
-
-`VarSpecifier` objects now come from `buildVarSpecifiers()` (template string parsing).
+**Status:** Resolved — stale comments updated in 96b8271e.
+**Priority:** Closed
 
 ## 6. Simplify `graphql-compat` Emitter Result Type
 
-**Priority:** Low
-**Scope:** `packages/tools/src/codegen/graphql-compat/emitter.ts`
-
-`emitOperation` and `emitFragment` return `Result<string, GraphqlCompatError>` but only ever return `ok(...)`. The error path is unreachable. Consider simplifying to `string` return type.
+**Status:** Resolved — emitter already returns `string` (not `Result`). The `print()`-based rewrite in d34e63cb eliminated all error paths.
+**Priority:** Closed
 
 ## 7. Remove Duplicate `AnyVarSpecifier` Type
 
-**Priority:** Low
-**Scope:** `packages/core/src/composer/build-document.ts:556-562`
-
-`AnyVarSpecifier` is structurally identical to `VarSpecifier` from `type-foundation/type-specifier.ts`. Used only internally by `buildVariables`. Can be replaced with `VarSpecifier` directly.
+**Status:** Resolved — `AnyVarSpecifier` no longer exists in the codebase.
+**Priority:** Closed
 
 ## 8. `perf-measures` Syntax Update
 

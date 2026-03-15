@@ -100,7 +100,7 @@ describe("format", () => {
       const source = `import { gql } from "./graphql";
 // 日本語コメント: テスト用のミューテーション
 export const op = gql.default(({ query }) =>
-  query.operation({ name: "GetUser", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+  query("GetUser")({ fields: ({ f }) => ({ ...f("id")(), ...f("name")() }) })()
 );`;
       const result = format({ sourceCode: source });
 
@@ -109,8 +109,8 @@ export const op = gql.default(({ query }) =>
 
       expect(result.value.modified).toBe(true);
       // Verify no corruption — the method names should be intact
-      expect(result.value.sourceCode).toContain("...f.id()");
-      expect(result.value.sourceCode).toContain("...f.name()");
+      expect(result.value.sourceCode).toContain('...f("id")()');
+      expect(result.value.sourceCode).toContain('...f("name")()');
       // Verify newline was inserted after { in field selection
       expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
     });
@@ -119,7 +119,7 @@ export const op = gql.default(({ query }) =>
       const source = `import { gql } from "./graphql";
 // 🎉 テスト: 絵文字とCJK文字のテスト
 export const op = gql.default(({ query }) =>
-  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+  query("Test")({ fields: ({ f }) => ({ ...f("id")() }) })()
 );`;
       const result = format({ sourceCode: source });
 
@@ -127,7 +127,7 @@ export const op = gql.default(({ query }) =>
       if (!result.isOk()) return;
 
       expect(result.value.modified).toBe(true);
-      expect(result.value.sourceCode).toContain("...f.id()");
+      expect(result.value.sourceCode).toContain('...f("id")()');
       expect(result.value.sourceCode).toMatch(/\(\{ f \}\) => \(\{\n/);
     });
   });
@@ -150,7 +150,7 @@ export const op = gql.default(({ query }) =>
 describe("fragment key injection", () => {
   it("should inject key for anonymous fragments when enabled", () => {
     const source = `import { gql } from "./graphql";
-export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f("id")() }) }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -164,7 +164,7 @@ export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }
 
   it("should not inject key when option is disabled (default)", () => {
     const source = `import { gql } from "./graphql";
-export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f("id")() }) }));`;
 
     const result = format({ sourceCode: source });
 
@@ -177,7 +177,7 @@ export const frag = gql.default(({ fragment }) => fragment.User({ fields: ({ f }
 
   it("should not inject key for fragments that already have one", () => {
     const source = `import { gql } from "./graphql";
-export const frag = gql.default(({ fragment }) => fragment.User({ key: "existing", fields: ({ f }) => ({ ...f.id() }) }));`;
+export const frag = gql.default(({ fragment }) => fragment.User({ key: "existing", fields: ({ f }) => ({ ...f("id")() }) }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -192,7 +192,7 @@ export const frag = gql.default(({ fragment }) => fragment.User({ key: "existing
 
   it("should not inject key for query/mutation operations", () => {
     const source = `import { gql } from "./graphql";
-export const op = gql.default(({ query }) => query.operation({ name: "GetUsers", fields: ({ f }) => ({ ...f.id() }) }));`;
+export const op = gql.default(({ query }) => query("GetUsers")({ fields: ({ f }) => ({ ...f("id")() }) })());`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -205,8 +205,8 @@ export const op = gql.default(({ query }) => query.operation({ name: "GetUsers",
 
   it("should inject unique keys for multiple fragments", () => {
     const source = `import { gql } from "./graphql";
-export const frag1 = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id() }) }));
-export const frag2 = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.title() }) }));`;
+export const frag1 = gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f("id")() }) }));
+export const frag2 = gql.default(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f("title")() }) }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -223,7 +223,7 @@ export const frag2 = gql.default(({ fragment }) => fragment.Post({ fields: ({ f 
 
   it("should work with renamed fragment destructuring", () => {
     const source = `import { gql } from "./graphql";
-export const frag = gql.default(({ fragment: f }) => f.User({ fields: ({ f }) => ({ ...f.id() }) }));`;
+export const frag = gql.default(({ fragment: f }) => f.User({ fields: ({ f }) => ({ ...f("id")() }) }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -236,7 +236,7 @@ export const frag = gql.default(({ fragment: f }) => f.User({ fields: ({ f }) =>
 
   it("should work with multi-schema patterns", () => {
     const source = `import { gql } from "./graphql";
-export const frag = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f.id() }) }));`;
+export const frag = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) => ({ ...f("id")() }) }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
 
@@ -250,7 +250,7 @@ export const frag = gql.admin(({ fragment }) => fragment.Post({ fields: ({ f }) 
   it("should preserve indentation for multi-line fragment objects", () => {
     const source = `import { gql } from "./graphql";
 export const frag = gql.default(({ fragment }) => fragment.User({
-  fields: ({ f }) => ({ ...f.id() })
+  fields: ({ f }) => ({ ...f("id")() })
 }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
@@ -269,7 +269,7 @@ export const frag = gql.default(({ fragment }) => fragment.User({
   it("should handle tabs as indentation", () => {
     const source = `import { gql } from "./graphql";
 export const frag = gql.default(({ fragment }) => fragment.User({
-\tfields: ({ f }) => ({ ...f.id() })
+\tfields: ({ f }) => ({ ...f("id")() })
 }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
@@ -287,7 +287,7 @@ export const frag = gql.default(({ fragment }) => fragment.User({
 const x = {
   y: {
     frag: gql.default(({ fragment }) => fragment.User({
-      fields: ({ f }) => ({ ...f.id() })
+      fields: ({ f }) => ({ ...f("id")() })
     }))
   }
 };`;
@@ -304,7 +304,7 @@ const x = {
   it("should not add extra blank lines for multi-line fragments", () => {
     const source = `import { gql } from "./graphql";
 export const frag = gql.default(({ fragment }) => fragment.User({
-  fields: ({ f }) => ({ ...f.id() })
+  fields: ({ f }) => ({ ...f("id")() })
 }));`;
 
     const result = format({ sourceCode: source, injectFragmentKeys: true });
@@ -339,7 +339,7 @@ export const GetUser = gql.default(({ query }) =>
   query("GetUser")\`{ user { id name } }\`
 );
 export const GetPost = gql.default(({ query }) =>
-  query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
+  query("GetPost")({ fields: ({ f }) => ({ ...f("id")(), ...f("title")() }) })()
 );`;
     const result = format({ sourceCode: source });
 
@@ -475,7 +475,7 @@ describe("needsFormat", () => {
     const source = `import { gql } from "./graphql";
 // 日本語コメント
 export const op = gql.default(({ query }) =>
-  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+  query("Test")({ fields: ({ f }) => ({ ...f("id")() }) })()
 );`;
     const result = needsFormat({ sourceCode: source });
 
@@ -490,7 +490,7 @@ describe("idempotency", () => {
   it("should return modified: false when formatting an already-formatted result", () => {
     const source = `import { gql } from "./graphql";
 export const op = gql.default(({ query }) =>
-  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id(), ...f.name() }) })
+  query("Test")({ fields: ({ f }) => ({ ...f("id")(), ...f("name")() }) })()
 );`;
     const first = format({ sourceCode: source });
     expect(first.isOk()).toBe(true);
@@ -507,7 +507,7 @@ export const op = gql.default(({ query }) =>
     const source = `import { gql } from "./graphql";
 // 🎉 テスト
 export const op = gql.default(({ query }) =>
-  query.operation({ name: "Test", fields: ({ f }) => ({ ...f.id() }) })
+  query("Test")({ fields: ({ f }) => ({ ...f("id")() }) })()
 );`;
     const first = format({ sourceCode: source });
     expect(first.isOk()).toBe(true);
@@ -526,7 +526,7 @@ export const GetUser = gql.default(({ query }) =>
   query("GetUser")\`{ user { id name } }\`
 );
 export const GetPost = gql.default(({ query }) =>
-  query.operation({ name: "GetPost", fields: ({ f }) => ({ ...f.id(), ...f.title() }) })
+  query("GetPost")({ fields: ({ f }) => ({ ...f("id")(), ...f("title")() }) })()
 );`;
     const first = format({ sourceCode: source });
     expect(first.isOk()).toBe(true);

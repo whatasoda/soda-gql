@@ -39,7 +39,7 @@ bun run dev
 ```
 
 This starts the NestJS development server. The TypeScript compiler plugin will:
-- Detect `gql.default(({ operation }) => ...)` calls
+- Detect `gql.default(({ query }) => ...)` calls
 - Load the pre-generated artifact file
 - *(Planned for v0.1.0 final)* Transform calls to zero-runtime code
 
@@ -100,13 +100,12 @@ When `mode: "zero-runtime"` is set, the plugin is configured for build-time tran
 import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
-export const userQuery = gql.default(({ operation }) =>
-  operation.query({
-    name: 'UserQuery',
+export const userQuery = gql.default(({ query }) =>
+  query("UserQuery")({
     fields: () => ({
       user: userSlice.build(),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -114,12 +113,10 @@ export const userQuery = gql.default(({ operation }) =>
 ```typescript
 import { gqlRuntime } from '@/graphql-system';
 
-export const userQuery = gqlRuntime.operation({
-  type: 'query',
-  name: 'UserQuery',
-  document: 'query UserQuery { user { id name } }',
-  variables: []
-});
+export const userQuery = gqlRuntime.getOperation(
+  'UserQuery',
+  'query UserQuery { user { id name } }',
+);
 ```
 
 ## Project Structure
@@ -160,14 +157,13 @@ Create GraphQL operations in `src/graphql/operations.ts`:
 import { gql } from '@/graphql-system';
 import { userSlice } from './slices';
 
-export const getUserQuery = gql.default(({ operation, $var }) =>
-  operation.query({
-    name: 'GetUser',
-    variables: { ...$var('userId').ID('!') },
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!)`,
     fields: ({ $ }) => ({
       user: userSlice.build({ id: $.userId }),
     }),
-  }),
+  })({}),
 );
 ```
 

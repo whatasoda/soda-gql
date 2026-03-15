@@ -67,8 +67,8 @@ Generates type-safe GraphQL fragments and operations from your schema with intel
 - Retries up to 3 times on errors
 
 **Syntax selection (automatic):**
-- **Tagged template** (`fragment\`...\``, `query\`...\``) for simple fragments and operations
-- **Callback builder** (`.fragment({...})`, `.operation({...})`) when you need:
+- **Tagged template** (`fragment("Name", "Type")\`...\``, `query("Name")\`...\``) for simple fragments and operations
+- **Options object** (`query("Name")({ variables, fields })()`) when you need:
   - Fragment spreads in operations (`...fragment.spread()`)
   - Field aliases
   - `$colocate` metadata

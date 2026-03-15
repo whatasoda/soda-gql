@@ -167,21 +167,20 @@ export const updateUserMutation = gql.default(({ mutation }) =>
 ```
 
 ```typescript
-// src/operations/profile.query.ts — Callback builder (needed for fragment spreads)
+// src/operations/profile.query.ts — Options object path (needed for fragment spreads)
 import { gql } from "@/graphql-system";
 import { userWithPosts } from "../fragments/user.fragment";
 
-export const profileQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfilePageQuery",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
+export const profileQuery = gql.default(({ query }) =>
+  query("ProfilePageQuery")({
+    variables: `($userId: ID!, $categoryId: ID)`,
     fields: ({ f, $ }) => ({
-      ...f.users({
+      ...f("users", {
         id: [$.userId],
         categoryId: $.categoryId,
       })(({ f }) => ({ ...userWithPosts.spread({ categoryId: $.categoryId }) })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -267,14 +266,13 @@ import { err, ok } from "neverthrow";
 import { gql } from "@/graphql-system";
 import { userBasic } from "@/fragments/user.fragment";
 
-export const safeGetUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "SafeGetUser",
-    variables: { ...$var("id").ID("!") },
+export const safeGetUserQuery = gql.default(({ query }) =>
+  query("SafeGetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...userBasic.spread() })),
+      ...f("user", { id: $.id })(({ f }) => ({ ...userBasic.spread() })),
     }),
-  }),
+  })({}),
 );
 
 // Usage with neverthrow

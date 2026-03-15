@@ -45,7 +45,7 @@ describe("Nested object selection type inference", () => {
           | undefined;
       };
 
-      // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
+      // @ts-expect-error FieldAccessorFunction is type-erased (fieldName: string → any). Prebuilt types cover user-facing type safety.
       type _Test = Expect<EqualPublic<Output, Expected>>;
       expect(true).toBe(true);
     });
@@ -80,7 +80,7 @@ describe("Nested object selection type inference", () => {
       // User -> posts -> comments (3 levels)
       // Output extends the expected shape (has user with nested structure)
       type _TestHasUser = Expect<
-        // @ts-expect-error TODO(follow-up): restore when FieldAccessorFunction gains type inference (currently returns any)
+        // @ts-expect-error FieldAccessorFunction is type-erased (fieldName: string → any). Prebuilt types cover user-facing type safety.
         Extends<
           Output,
           {
