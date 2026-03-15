@@ -4,6 +4,7 @@ Post-merge follow-up items identified during implementation.
 
 ## 1. FieldAccessorFunction Type Inference
 
+**Status:** Documented in tagged-template-syntax.md. Type-level fix deferred — prebuilt types cover user-facing type safety.
 **Priority:** Medium
 **Scope:** `packages/core/src/composer/fields-builder.ts`, `packages/core/test/types/`
 

@@ -360,8 +360,11 @@ const GetUser = gql.default(({ extend }) =>
 | Field directives (`@skip`, `@include`) | No | Yes |
 | `$colocate` query composition | No | Yes |
 | `$var` helper for variable definitions | No | Yes |
+| `$infer` output type inference | Yes (via typegen) | Best-effort¹ |
 
 > **Note**: Field-level directives (`@skip`, `@include`) on regular fields are parsed by GraphQL but silently ignored during field selection construction — no error is raised. However, directives on inline fragments (`... on Type @skip(...)`) throw an explicit error. If you need field directive behavior, use the callback builder syntax.
+
+> **¹ Type inference note**: Callback builders provide full runtime correctness, but `$infer.output` type inference within `({ f }) => ...` callbacks is best-effort — field accessor functions are type-erased internally. Run `bun run soda-gql codegen schema` (typegen) to generate precise prebuilt types. Tagged templates do not have this limitation.
 
 ## When to Use Which
 
