@@ -33,13 +33,13 @@ export type ColocatedFields<TEntries extends ColocatedEntries> = UnionToIntersec
  * @example
  * ```typescript
  * // In operation definition
- * query.operation({
- *   name: "GetData",
- *   fields: ({ $ }) => $colocate({
- *     userCard: userCardFragment.spread({ userId: $.userId }),
- *     posts: postsFragment.spread({ userId: $.userId }),
+ * query("GetData")({
+ *   variables: `($userId: ID!)`,
+ *   fields: ({ f, $ }) => $colocate({
+ *     userCard: { ...f("user", { id: $.userId })(() => ({ ...userCardFragment.spread() })) },
+ *     posts: { ...f("posts", { userId: $.userId })(() => ({ ...postsFragment.spread() })) },
  *   }),
- * });
+ * })({});
  *
  * // In parser definition (same labels)
  * createExecutionResultParser({

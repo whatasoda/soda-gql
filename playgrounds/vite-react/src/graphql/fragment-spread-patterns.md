@@ -1,59 +1,45 @@
 # Fragment Spread Patterns in soda-gql
 
-## Important Finding: Tagged Templates Reject Interpolation
+## Fragment Spreading Syntax
 
-**Both `query("Name")\`...\`` and `fragment("Name", "Type")\`...\`` tagged templates throw an error if any `${...}` interpolated expressions are used.**
+Fragment spreading uses tagged template interpolation or the options-object path with `.spread()`.
 
-This means that fragment spreading **cannot** be done with tagged template syntax and **must** use callback builder syntax.
+## Pattern 1: Direct Fragment Spread (Tagged Template)
 
-## Pattern 1: Direct Fragment Spread (Callback Builder Required)
-
-**Intended syntax (from VISION.md):**
 ```typescript
-// ❌ This does NOT work - tagged templates reject ${...} interpolation
-query("GetData")`{
-  ...${someFragment}
-}`
-```
-
-**Actual working syntax:**
-```typescript
-// ✅ This works - using callback builder with .spread()
+// ✅ Tagged template interpolation works for fragment-to-fragment and operation spreads
 gql.default(({ query }) =>
-  query.operation({
-    name: "GetData",
-    fields: ({ $ }) => ({
-      ...someFragment.spread({ /* variables */ }),
-    }),
-  })
+  query("GetData")`{
+    ...${someFragment}
+  }`()
 )
 ```
 
-## Pattern 2: Callback Interpolation (Callback Builder Required)
-
-**Intended syntax (from VISION.md):**
+For operations needing the options-object path:
 ```typescript
-// ❌ This does NOT work - tagged templates reject ${...} interpolation
-query("GetData")`($var: Type!) {
-  ...${({ $ }) => fragment.spread({ var: $.var })}
-}`
+// ✅ Options-object path with .spread()
+gql.default(({ query }) =>
+  query("GetData")({
+    fields: ({ $ }) => ({
+      ...someFragment.spread({ /* variables */ }),
+    }),
+  })({})
+)
 ```
 
-**Actual working syntax:**
+## Pattern 2: Variable Passing with Fragment Spread (Options-Object Path)
+
 ```typescript
-// ✅ This works - using callback builder with explicit variable passing
-gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetData",
-    variables: {
-      ...$var("var").Type("!"),
-    },
+// ✅ Options-object path with explicit variable passing
+gql.default(({ query }) =>
+  query("GetData")({
+    variables: `($var: Type!)`,
     fields: ({ $ }) => ({
       ...fragment.spread({
         var: $.var, // Explicit variable passing
       }),
     }),
-  })
+  })({})
 )
 ```
 
@@ -72,16 +58,9 @@ const myFragment = gql.default(({ fragment }) =>
 );
 
 // Operation MUST explicitly declare ALL variables (including fragment's)
-const myQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "MyQuery",
-    variables: {
-      // Parent must explicitly declare fragment's variables
-      ...$var("limit").Int("?"),
-      ...$var("filter").String("?"),
-      // Plus any operation-specific variables
-      ...$var("sortBy").String("?"),
-    },
+const myQuery = gql.default(({ query }) =>
+  query("MyQuery")({
+    variables: `($limit: Int, $filter: String, $sortBy: String)`,
     fields: ({ $ }) => ({
       // Pass variables explicitly to fragment
       ...myFragment.spread({
@@ -89,7 +68,7 @@ const myQuery = gql.default(({ query, $var }) =>
         filter: $.filter,
       }),
     }),
-  })
+  })({})
 );
 ```
 
@@ -100,12 +79,12 @@ const myQuery = gql.default(({ query, $var }) =>
 3. **No Magic**: Prevents unexpected variable pollution
 4. **Flexibility**: Parent can choose how to map its variables to fragment requirements
 
-## Summary: When to Use Callback Builder
+## Summary: When to Use Options-Object Path
 
-For fragment spreading, you **MUST** use callback builder syntax because:
-- Tagged templates reject any `${...}` interpolated expressions
-- Operations with fragment spreads cannot use `query("Name")\`...\`` syntax
+For fragment spreading with variable passing or advanced features, use the options-object path because:
 - The `fields: ({ $ }) => (...)` callback provides the `$` context for variable passing
+- Operations needing `$colocate`, aliases, or directives require the options-object path
+- Tagged template interpolation works for simple fragment spreads without variable binding
 
 ## See Also
 

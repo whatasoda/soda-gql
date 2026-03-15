@@ -49,17 +49,14 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: { ...$var("userId").ID("!") },
-      fields: ({ f, $ }) => ({
-        ...f.user({ id: $.userId })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.avatarUrl(),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment("UserCard", "Query")`($userId: ID!) {
+      user(id: $userId) {
+        id
+        name
+        avatarUrl
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -99,15 +96,14 @@ import { gql } from "@/graphql-system";
 import { userCardFragment } from "./UserCard";
 import { postListFragment } from "./PostList";
 
-export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
-  query.operation({
-    name: "UserPage",
-    variables: { ...$var("userId").ID("!") },
+export const userPageQuery = gql.default(({ query, $colocate }) =>
+  query("UserPage")({
+    variables: `($userId: ID!)`,
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.spread({ userId: $.userId }),
       postList: postListFragment.spread({ userId: $.userId }),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -160,14 +156,12 @@ import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 const fragment = gql
   .default(({ fragment }) =>
-    fragment.Query({
-      fields: ({ f }) => ({
-        ...f.user({ id: "1" })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-      }),
-    }),
+    fragment("UserData", "Query")`{
+      user(id: "1") {
+        id
+        name
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -284,17 +278,14 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: { ...$var("id").ID("!") },
-      fields: ({ f, $ }) => ({
-        ...f.user({ id: $.id })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.email(),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment("UserCard", "Query")`($id: ID!) {
+      user(id: $id) {
+        id
+        name
+        email
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -305,21 +296,15 @@ export const userCardFragment = gql
 
 // fragments/PostList.ts
 export const postListFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: {
-        ...$var("userId").ID("!"),
-        ...$var("limit").Int("?"),
-      },
-      fields: ({ f, $ }) => ({
-        ...f.user({ id: $.userId })(({ f }) => ({
-          ...f.posts({ limit: $.limit })(({ f }) => ({
-            ...f.id(),
-            ...f.title(),
-          })),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment("PostList", "Query")`($userId: ID!, $limit: Int) {
+      user(id: $userId) {
+        posts(limit: $limit) {
+          id
+          title
+        }
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -333,15 +318,14 @@ import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { userCardFragment } from "./fragments/UserCard";
 import { postListFragment } from "./fragments/PostList";
 
-export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
-  query.operation({
-    name: "UserPage",
-    variables: { ...$var("userId").ID("!") },
+export const userPageQuery = gql.default(({ query, $colocate }) =>
+  query("UserPage")({
+    variables: `($userId: ID!)`,
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.spread({ id: $.userId }),
       postList: postListFragment.spread({ userId: $.userId, limit: 10 }),
     }),
-  }),
+  })({}),
 );
 
 export const parseUserPageResult = createExecutionResultParser({
@@ -360,16 +344,13 @@ import { createProjectionAttachment, createDirectParser } from "@soda-gql/coloca
 
 // Define mutation fragment with projection
 const createProductFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Mutation({
-      variables: { ...$var("input").ProductInput("!") },
-      fields: ({ f, $ }) => ({
-        ...f.insert_products_one({ object: $.input })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment("CreateProduct", "Mutation")`($input: ProductInput!) {
+      insert_products_one(object: $input) {
+        id
+        name
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -379,12 +360,11 @@ const createProductFragment = gql
   );
 
 // Create operation (no $colocate needed)
-const createProductMutation = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "CreateProduct",
-    variables: { ...$var("input").ProductInput("!") },
+const createProductMutation = gql.default(({ mutation }) =>
+  mutation("CreateProduct")({
+    variables: `($input: ProductInput!)`,
     fields: ({ $ }) => createProductFragment.spread({ input: $.input }),
-  }),
+  })({}),
 );
 
 // Use createDirectParser (returns projected value directly)

@@ -44,7 +44,7 @@ declare const __FRAGMENT_BRAND__: unique symbol;
 /**
  * Represents a reusable GraphQL field selection on a specific type.
  *
- * Fragments are created via `gql(({ fragment }) => fragment.TypeName({ ... }))`.
+ * Fragments are created via `gql(({ fragment }) => fragment("Name", "TypeName")\`{ ... }\`())`.
  * Use `spread()` to include the fragment's fields in an operation.
  *
  * @template TTypeName - The GraphQL type this fragment selects from

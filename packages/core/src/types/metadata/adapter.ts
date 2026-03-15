@@ -123,9 +123,8 @@ export type OperationDocumentTransformArgs<TOperationMetadata = unknown> = {
  * });
  *
  * // Use in operation
- * query.operation({
+ * query("GetUser")`{ ... }`({
  *   transformDocument: transform.addCache(300),
- *   ...
  * });
  * ```
  *

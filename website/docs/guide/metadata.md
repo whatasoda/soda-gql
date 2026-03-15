@@ -40,15 +40,14 @@ export const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
-### Callback Builder Syntax
+### Options-Object Path
 
 Add metadata using the `metadata` option in the operation config:
 
 ```typescript
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     metadata: ({ $, document }) => ({
       headers: {
         "X-Request-ID": "get-user-query",
@@ -59,12 +58,12 @@ export const getUserQuery = gql.default(({ query, $var }) =>
       },
     }),
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -111,25 +110,20 @@ metadata: ({ $, $var }) => ({
 When a variable is defined with an input type (like `String_comparison_exp`), you can extract specific fields from it using `getValueAt`:
 
 ```typescript
-gql.default(({ fragment, $var }) =>
-  fragment.Query({
-    variables: {
-      ...$var("userId").ID("!"),
-      ...$var("categoryId").String_comparison_exp("?"),
-    },
-    metadata: ({ $ }) => ({
+gql.default(({ fragment }) =>
+  fragment("PostsByUser", "Query")`($userId: ID!, $categoryId: String_comparison_exp) {
+    user(id: $userId) {
+      posts {
+        id
+        title
+      }
+    }
+  }`({
+    metadata: ({ $, $var }) => ({
       custom: {
         // Extract the _eq field from the comparison expression
         categoryId: $var.getValueAt($.categoryId, (p) => p._eq),
       },
-    }),
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...f.posts({})(({ f }) => ({
-          ...f.id(),
-          ...f.title(),
-        })),
-      })),
     }),
   }),
 );

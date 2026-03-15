@@ -158,19 +158,18 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 );
 ```
 
-You can also use the callback builder syntax when you need advanced features like field directives, `$colocate`, or `$var`:
+You can also use the options-object path when you need advanced features like field directives (`$dir`), `$colocate`, or field aliases:
 
 ```typescript
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
+      ...f("user", { id: $.userId })(({ f }) => ({
         ...userFragment.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 

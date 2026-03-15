@@ -50,10 +50,9 @@ import { gql } from "./graphql-system";
 import { userFragment } from "./UserCard";
 
 export const getUserQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "GetUser",
-    fields: ({ f }) => ({ ...f.user({ id: "1" })(({ f }) => ({ ...userFragment.spread() })) }),
-  }),
+  query("GetUser")`{
+    user(id: "1") { ...${userFragment} }
+  }`(),
 );
 ```
 
@@ -95,15 +94,14 @@ export const userCardProjection = createProjection(userCardFragment, {
 import { userCardFragment, userCardProjection } from "./UserCard";
 import { postListFragment, postListProjection } from "./PostList";
 
-export const userPageQuery = gql.default(({ query, $var, $colocate }) =>
-  query.operation({
-    name: "UserPage",
-    variables: { ...$var("userId").ID("!") },
+export const userPageQuery = gql.default(({ query, $colocate }) =>
+  query("UserPage")({
+    variables: `($userId: ID!)`,
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.spread({ userId: $.userId }),
       postList: postListFragment.spread({ userId: $.userId }),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -224,7 +222,7 @@ import { createDirectParser } from "@soda-gql/colocation-tools";
 
 // Fragment with attached projection
 const productFragment = gql
-  .default(({ fragment }) => fragment.Mutation({ ... }))
+  .default(({ fragment }) => fragment("ProductFields", "Product")`{ ... }`())
   .attach(createProjectionAttachment({ ... }));
 
 // Direct parser - no labels needed

@@ -75,17 +75,13 @@ Generates `src/generated/GetUser.compat.ts`:
 ```typescript
 import { gql } from "../graphql-system";
 
-export const GetUserCompat = gql.default(({ query, $var }) =>
-  query.compat({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const GetUserCompat = gql.default(({ query }) =>
+  query.compat("GetUser")`($id: ID!) {
+    user(id: $id) {
+      id
+      name
+    }
+  }`(),
 );
 ```
 
