@@ -1,6 +1,6 @@
 {
   "name": "@soda-gql/swc",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "description": "SWC-based native transformer for soda-gql",
   "type": "module",
   "private": false,
