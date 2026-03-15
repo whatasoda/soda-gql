@@ -159,7 +159,9 @@ type InferUnionWithoutTypename<
   TSelections extends AnyNestedUnion,
   TSelectionsClean = RemoveIndexSignature<TSelections>,
 > = {
-  [TTypename in keyof TSelectionsClean]: TSelectionsClean[TTypename] extends UnionMemberSelection<infer TFields extends AnyNestedObjectExtended>
+  [TTypename in keyof TSelectionsClean]: TSelectionsClean[TTypename] extends UnionMemberSelection<
+    infer TFields extends AnyNestedObjectExtended
+  >
     ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), TFields>
     : never;
 }[keyof TSelectionsClean];

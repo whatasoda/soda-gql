@@ -5,7 +5,7 @@
 
 import type { AnyFieldSelection, AnyFieldsExtended, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
-import type { DeferredOutputField } from "../types/type-foundation";
+import type { DeferredOutputField, DeferredOutputFieldWithArgs } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import type { AnyVarRef } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
@@ -136,8 +136,7 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
       throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
     }
 
-    const typeSpecifier = typeof fieldDef === "string" ? fieldDef : (fieldDef as { spec: string }).spec;
-    const parsedType = parseOutputField(typeSpecifier as DeferredOutputField);
+    const parsedType = parseOutputField(fieldDef as DeferredOutputField);
 
     const wrap = <T>(value: T) => wrapByKey(extras?.alias ?? fieldName, value);
     const directives = extras?.directives ?? [];
@@ -158,7 +157,7 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
         return wrap({
           parent: typeName,
           field: fieldName,
-          type: typeSpecifier,
+          type: fieldDef as DeferredOutputFieldWithArgs,
           args: fieldArgs ?? {},
           directives,
           object: nestedFields,
@@ -200,7 +199,6 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
               // Pre-wrapped UnionMemberSelection (tagged template path)
               result[memberName] = builder;
             } else {
-              continue;
             }
           }
           return result;
@@ -209,7 +207,7 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
         return wrap({
           parent: typeName,
           field: fieldName,
-          type: typeSpecifier,
+          type: fieldDef as DeferredOutputFieldWithArgs,
           args: fieldArgs ?? {},
           directives,
           object: null,
@@ -228,7 +226,7 @@ const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): 
         wrap({
           parent: typeName,
           field: fieldName,
-          type: typeSpecifier,
+          type: fieldDef as DeferredOutputFieldWithArgs,
           args: fieldArgs ?? {},
           directives,
           object: null,
