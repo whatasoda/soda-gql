@@ -152,7 +152,7 @@ export const listUsersQuery = gql.default(({ query }) =>
 
 #### Options-Object Path (Advanced Features)
 
-Use the options-object path when you need features like field directives (`@skip`, `@include`), `$colocate`, field aliases, or programmatic field control:
+Use the options-object path when you need features like `$colocate` or programmatic field control:
 
 ```typescript
 import { gql } from "@/graphql-system";
@@ -192,7 +192,7 @@ export const profileQuery = gql.default(({ query }) =>
 | Fragment spreads in operations | Yes (`...${frag}`) | Yes (`.spread()`) |
 | Field aliases | Yes | Yes |
 | Metadata callbacks | Yes | Yes |
-| Field directives (`@skip`, `@include`) | No | Yes (`$dir`) |
+| Field directives (`@skip`, `@include`) | Yes | Yes (`$dir`) |
 | `$colocate` | No | Yes |
 | Document transforms | Yes | Yes |
 

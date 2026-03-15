@@ -23,10 +23,10 @@ soda-gql operations are TypeScript functions with two syntax options:
 | **Variables** | `$name: Type!` | `($name: Type!)` in template | `variables: \`($name: Type!)\`` |
 | **Field Selections** | Implicit | GraphQL syntax in template | Object spread: `({ ...f("id")() })` |
 | **Type Checking** | Requires codegen | Build-time validation | Build-time validation |
-| **Best for** | — | Simple queries/mutations | Aliases, directives, `$colocate` |
+| **Best for** | — | Simple queries/mutations | `$colocate`, programmatic control |
 
 :::tip Recommended Syntax
-Use **tagged templates** for most operations. Switch to the **options-object path** when you need field aliases, directives (`@skip`, `@include`), or `$colocate` for fragment colocation. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
+Use **tagged templates** for most operations. Switch to the **options-object path** when you need `$colocate` for fragment colocation or programmatic field control. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
 :::
 
 ## Operation Types
