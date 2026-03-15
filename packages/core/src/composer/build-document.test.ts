@@ -6,6 +6,7 @@ import type { TypeModifier } from "../types/type-foundation";
 import { DirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromNestedValue, createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { buildArgumentValue, buildConstValueNode, buildDocument, buildWithTypeModifier, type EnumLookup } from "./build-document";
+import { createFieldFactories } from "./fields-builder";
 
 /**
  * Minimal schema for testing buildDocument.
@@ -1289,5 +1290,58 @@ describe("Union selection with __typename flag", () => {
     // Fields should be present
     expect(printed).toContain("name");
     expect(printed).toContain("title");
+  });
+});
+
+describe("E2E: enum arguments through createFieldFactories", () => {
+  const schema = {
+    label: "test",
+    operations: { query: "Query", mutation: null, subscription: null },
+    scalar: {},
+    enum: {
+      Status: { name: "Status", values: { ACTIVE: true, INACTIVE: true } },
+    },
+    input: {},
+    object: {
+      Query: {
+        name: "Query",
+        fields: {
+          users: { spec: "o|User|[?]", arguments: { status: "e|Status|!" } },
+        },
+      },
+      User: {
+        name: "User",
+        fields: {
+          id: { spec: "s|ID|!", arguments: {} },
+          name: { spec: "s|String|?", arguments: {} },
+        },
+      },
+    },
+    union: {},
+  } as unknown as AnyGraphqlSchema;
+
+  it("outputs bare enum values (not strings) when field arguments are enum types", () => {
+    const f = createFieldFactories(schema, "Query");
+    const fields = {
+      ...f("users", { status: "ACTIVE" })(({ f: uf }) => ({
+        ...uf("id")(),
+        ...uf("name")(),
+      })),
+    };
+
+    const doc = buildDocument({
+      operationName: "GetUsers",
+      operationType: "query",
+      operationTypeName: "Query",
+      variables: {},
+      fields: fields as unknown as AnyFields,
+      schema,
+    });
+
+    const printed = print(doc);
+    // Enum value should be bare (no quotes)
+    expect(printed).toContain("users(status: ACTIVE)");
+    // Must NOT be a quoted string
+    expect(printed).not.toContain('users(status: "ACTIVE")');
   });
 });
