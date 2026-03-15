@@ -54,7 +54,7 @@ type OperationArtifact<
 /**
  * Represents a GraphQL operation (query, mutation, or subscription).
  *
- * Operations are created via `gql(({ query }) => query.operation({ ... }))`.
+ * Operations are created via `gql(({ query }) => query("Name")\`{ ... }\`())`.
  * Produces a TypedDocumentNode for type-safe execution with GraphQL clients.
  *
  * @template TOperationType - 'query' | 'mutation' | 'subscription'

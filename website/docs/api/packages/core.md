@@ -85,17 +85,19 @@ For advanced features (field aliases, directives, `$colocate`):
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Fragment
-gql.default(({ fragment }) => fragment.User({ fields: ({ f }) => ({ ...f.id(), ...f.name() }) }));
-
-// Query
-gql.default(({ query, $var }) =>
-  query.operation({ name: "GetUser", variables: { ...$var("id").ID("!") }, fields: ({ f, $ }) => ({ ... }) })
+// Fragment (options-object path)
+gql.default(({ fragment }) =>
+  fragment("UserFields", "User")({ fields: ({ f }) => ({ ...f("id")(), ...f("name")() }) }),
 );
 
-// Mutation
-gql.default(({ mutation, $var }) =>
-  mutation.operation({ name: "CreateUser", variables: { ...$var("input").CreateUserInput("!") }, fields: ({ f, $ }) => ({ ... }) })
+// Query (options-object path — useful for $dir, aliases, programmatic field control)
+gql.default(({ query }) =>
+  query("GetUser")({ variables: `($id: ID!)`, fields: ({ f, $ }) => ({ ... }) })({}),
+);
+
+// Mutation (options-object path)
+gql.default(({ mutation }) =>
+  mutation("CreateUser")({ variables: `($input: CreateUserInput!)`, fields: ({ f, $ }) => ({ ... }) })({}),
 );
 ```
 
@@ -110,12 +112,7 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({
-      fields: ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
-    }),
+    fragment("UserFields", "User")`{ id name }`(),
   )
   .attach({
     name: "utils",
@@ -158,16 +155,11 @@ fragment.attachment2Name;
 Define runtime metadata on operations:
 
 ```typescript
-gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) { user(id: $id) { id name } }`({
     metadata: ({ $, document, $var }) => ({
       headers: { "X-Request-ID": "get-user" },
       custom: { requiresAuth: true, hash: hashDocument(document) },
-    }),
-    fields: ({ f, $ }) => ({
-      ...
     }),
   }),
 );
@@ -228,7 +220,7 @@ Get the variable name at a specific path within an input type variable.
 
 ```typescript
 // Given a variable defined with an input type containing nested VarRefs
-// e.g., $var("filter").UserFilter("!") where UserFilter has { userId: $.id }
+// e.g., a variable declared as ($filter: UserFilter!) where UserFilter has { userId: $.id }
 $var.getNameAt($.filter, p => p.userId)  // Returns "id"
 ```
 
@@ -243,7 +235,7 @@ $var.getNameAt($.filter, p => p.userId)  // Returns "id"
 Get the const value at a specific path within an input type variable.
 
 ```typescript
-// Given a variable like $var("categoryId").String_comparison_exp("?")
+// Given a variable declared as ($categoryId: String_comparison_exp)
 // When called with { _eq: "tech", _neq: "spam" }
 $var.getValueAt($.categoryId, p => p._eq)   // Returns "tech"
 $var.getValueAt($.categoryId, p => p._neq)  // Returns "spam"
@@ -257,44 +249,60 @@ $var.getValueAt($.categoryId, p => p._neq)  // Returns "spam"
 
 ## Variable Type Syntax Reference
 
-Complete reference for the `$var().Type()` type specifier:
+Variables are declared using inline GraphQL syntax in the `variables` template string or the `variables` option:
+
+### Inline Syntax (Tagged Template)
+
+Variables are written directly in the tagged template using standard GraphQL variable declaration syntax:
+
+```typescript
+query("GetUser")`($id: ID!) { user(id: $id) { id name } }`()
+```
+
+### Options-Object Syntax
+
+When using the options-object path, pass a template literal string to `variables`:
+
+```typescript
+query("GetUser")({ variables: `($id: ID!)`, fields: ({ f, $ }) => ({ ... }) })({})
+```
 
 ### Basic Types
 
-| Specifier | GraphQL | TypeScript |
-|-----------|---------|------------|
-| `"ID:!"` | `ID!` | `string` |
-| `"ID:?"` | `ID` | `string \| undefined` |
-| `"String:!"` | `String!` | `string` |
-| `"String:?"` | `String` | `string \| undefined` |
-| `"Int:!"` | `Int!` | `number` |
-| `"Int:?"` | `Int` | `number \| undefined` |
-| `"Float:!"` | `Float!` | `number` |
-| `"Float:?"` | `Float` | `number \| undefined` |
-| `"Boolean:!"` | `Boolean!` | `boolean` |
-| `"Boolean:?"` | `Boolean` | `boolean \| undefined` |
+| GraphQL | TypeScript |
+|---------|------------|
+| `$id: ID!` | `string` |
+| `$id: ID` | `string \| undefined` |
+| `$name: String!` | `string` |
+| `$name: String` | `string \| undefined` |
+| `$count: Int!` | `number` |
+| `$count: Int` | `number \| undefined` |
+| `$score: Float!` | `number` |
+| `$score: Float` | `number \| undefined` |
+| `$active: Boolean!` | `boolean` |
+| `$active: Boolean` | `boolean \| undefined` |
 
 ### List Types
 
-| Specifier | GraphQL | Description |
-|-----------|---------|-------------|
-| `"String:![]!"` | `[String!]!` | Required list of required strings |
-| `"String:![]?"` | `[String!]` | Optional list of required strings |
-| `"String:?[]!"` | `[String]!` | Required list of optional strings |
-| `"String:?[]?"` | `[String]` | Optional list of optional strings |
+| GraphQL | Description |
+|---------|-------------|
+| `$tags: [String!]!` | Required list of required strings |
+| `$tags: [String!]` | Optional list of required strings |
+| `$tags: [String]!` | Required list of optional strings |
+| `$tags: [String]` | Optional list of optional strings |
 
 ### Nested Lists
 
-| Specifier | GraphQL |
-|-----------|---------|
-| `"Int:![]![]!"` | `[[Int!]!]!` |
-| `"String:?[]?[]?"` | `[[String]]` |
+| GraphQL |
+|---------|
+| `$matrix: [[Int!]!]!` |
+| `$matrix: [[String]]` |
 
 ### Custom Types
 
 ```typescript
-$var("input").CreateUserInput("!")
-$var("filters").FilterInput("![]?")
+query("CreateUser")`($input: CreateUserInput!) { createUser(input: $input) { id } }`()
+query("Search")`($filters: [FilterInput!]) { search(filters: $filters) { id } }`()
 ```
 
 ## Field Selection Patterns Reference
@@ -303,10 +311,10 @@ Complete reference for field selection API:
 
 | Pattern | Example | Description |
 |---------|---------|-------------|
-| Basic field | `f.id()` | Select a scalar field |
-| With arguments | `f.posts({ limit: 10 })` | Field with arguments |
-| Nested (curried) | `f.posts()(({ f }) => ({ ... }))` | Nested selections |
-| With alias | `f.id(null, { alias: "userId" })` | Renamed field |
+| Basic field | `f("id")()` | Select a scalar field |
+| With arguments | `f("posts", { limit: 10 })()` | Field with arguments |
+| Nested (curried) | `f("posts")(({ f }) => ({ ... }))` | Nested selections |
+| With alias | `f("id", null, { alias: "userId" })()` | Renamed field |
 | Fragment spread | `userFragment.spread({})` | Spread fragment fields |
 | Fragment with vars | `userFragment.spread({ a: $.b })` | Pass variables |
 
@@ -406,16 +414,13 @@ Arguments passed to operation-level `transformDocument`:
 Operations can define their own document transform with typed metadata:
 
 ```typescript
-gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) { user(id: $id) { id name } }`({
     metadata: () => ({ cacheHint: 300 }),
     transformDocument: ({ document, metadata }) => {
       // metadata is typed as { cacheHint: number }
       return document;
     },
-    fields: ({ f, $ }) => ({ ... }),
   }),
 );
 ```

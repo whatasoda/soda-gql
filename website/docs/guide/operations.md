@@ -17,16 +17,16 @@ query GetUser($id: ID!) {
 
 soda-gql operations are TypeScript functions with two syntax options:
 
-| Aspect | GraphQL | soda-gql (Tagged Template) | soda-gql (Callback Builder) |
+| Aspect | GraphQL | soda-gql (Tagged Template) | soda-gql (Options-Object Path) |
 |--------|---------|----------|----------|
 | **Definition** | String-based | Template literals with GraphQL syntax | TypeScript builder functions |
-| **Variables** | `$name: Type!` | `($name: Type!)` in template | `$var("name").Type("!")` |
-| **Field Selections** | Implicit | GraphQL syntax in template | Object spread: `({ ...f.id() })` |
+| **Variables** | `$name: Type!` | `($name: Type!)` in template | `variables: \`($name: Type!)\`` |
+| **Field Selections** | Implicit | GraphQL syntax in template | Object spread: `({ ...f("id")() })` |
 | **Type Checking** | Requires codegen | Build-time validation | Build-time validation |
 | **Best for** | — | Simple queries/mutations | Aliases, directives, `$colocate` |
 
 :::tip Recommended Syntax
-Use **tagged templates** for most operations. Switch to **callback builders** when you need field aliases, directives (`@skip`, `@include`), or `$colocate` for fragment colocation. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
+Use **tagged templates** for most operations. Switch to the **options-object path** when you need field aliases, directives (`@skip`, `@include`), or `$colocate` for fragment colocation. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
 :::
 
 ## Operation Types
@@ -35,18 +35,24 @@ soda-gql supports three operation types:
 
 ```typescript
 // Query - fetch data
-gql.default(({ query, $var }) =>
-  query.operation({ name: "GetUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
+gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) { id name }
+  }`()
 );
 
 // Mutation - modify data
-gql.default(({ mutation, $var }) =>
-  mutation.operation({ name: "CreateUser", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
+gql.default(({ mutation }) =>
+  mutation("CreateUser")`($input: CreateUserInput!) {
+    createUser(input: $input) { id name }
+  }`()
 );
 
 // Subscription - real-time updates
-gql.default(({ subscription, $var }) =>
-  subscription.operation({ name: "UserUpdated", variables: { ... }, fields: ({ f, $ }) => ({ ... }) })
+gql.default(({ subscription }) =>
+  subscription("UserUpdated")`($userId: ID!) {
+    userUpdated(userId: $userId) { id name }
+  }`()
 );
 ```
 
@@ -72,26 +78,25 @@ export const getUserQuery = gql.default(({ query }) =>
 
 This is concise, readable, and familiar to developers who know GraphQL syntax. The trailing `()` finalizes the operation.
 
-### Callback Builder Syntax
+### Options-Object Path
 
-For advanced features like field aliases, directives, or `$colocate`, use the callback builder syntax:
+For advanced features like field aliases, directives, or `$colocate`, use the options-object path:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",                                  // Operation name
-    variables: { ...$var("userId").ID("!") },         // Variable declarations
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!)`,                      // Variable declarations
     fields: ({ f, $ }) => ({
       // Field selections
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.email(),
+      ...f("user", { id: $.userId })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
+        ...f("email")(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -99,8 +104,7 @@ export const getUserQuery = gql.default(({ query, $var }) =>
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `name` | `string` | Required. The GraphQL operation name |
-| `variables` | `{ ...$var(...) }` | Object spread of variable declarations |
+| `variables` | `` `($name: Type!)` `` | Template literal with GraphQL variable syntax |
 | `metadata` | `function` | Optional. Runtime metadata (see [Metadata](/guide/metadata)) |
 | `fields` | `function` | Required. Field selection builder function |
 
@@ -111,21 +115,21 @@ Field selections in operations work the same as in fragments:
 ```typescript
 ({ f, $ }) => ({
   // Scalar fields
-  ...f.id(),
-  ...f.createdAt(),
+  ...f("id")(),
+  ...f("createdAt")(),
 
   // Fields with arguments
-  ...f.posts({ limit: 10 })(({ f }) => ({
-    ...f.id(),
-    ...f.title(),
+  ...f("posts", { limit: 10 })(({ f }) => ({
+    ...f("id")(),
+    ...f("title")(),
   })),
 
   // Nested selections
-  ...f.user({ id: $.userId })(({ f }) => ({
-    ...f.id(),
-    ...f.profile()(({ f }) => ({
-      ...f.avatarUrl(),
-      ...f.bio(),
+  ...f("user", { id: $.userId })(({ f }) => ({
+    ...f("id")(),
+    ...f("profile")(({ f }) => ({
+      ...f("avatarUrl")(),
+      ...f("bio")(),
     })),
   })),
 })
@@ -161,27 +165,23 @@ export const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
-### Callback Builder (.spread())
+### Options-Object Path (.spread())
 
-In callback builder syntax, use `.spread()`:
+In the options-object path, use `.spread()`:
 
 ```typescript
 import { userFragment } from "./user.fragment";
 
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("userId").ID("!"),
-      ...$var("includeEmail").Boolean("?"),
-    },
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!, $includeEmail: Boolean)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
+      ...f("user", { id: $.userId })(({ f }) => ({
         // Spread fragment with variable passing
         ...userFragment.spread({ includeEmail: $.includeEmail }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -227,17 +227,13 @@ type GetUserResult = typeof getUserQuery.$infer.output.projected;
 Mutations follow the same pattern as queries:
 
 ```typescript
-export const createUserMutation = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "CreateUser",
-    variables: { ...$var("input").CreateUserInput("!") },
-    fields: ({ f, $ }) => ({
-      ...f.createUser({ input: $.input })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const createUserMutation = gql.default(({ mutation }) =>
+  mutation("CreateUser")`($input: CreateUserInput!) {
+    createUser(input: $input) {
+      id
+      name
+    }
+  }`(),
 );
 
 // Usage

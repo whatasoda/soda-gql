@@ -150,40 +150,35 @@ export const listUsersQuery = gql.default(({ query }) =>
 );
 ```
 
-#### Callback Builder Syntax (Advanced Features)
+#### Options-Object Path (Advanced Features)
 
-Use callback builders when you need features like field directives (`@skip`, `@include`), `$colocate`, or `$var`:
+Use the options-object path when you need features like field directives (`@skip`, `@include`), `$colocate`, field aliases, or programmatic field control:
 
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Fragment with field alias and $var (callback builder for $var)
-export const userFragment = gql.default(({ fragment, $var }) =>
-  fragment.User({
-    variables: { ...$var("categoryId").ID("?") },
-    fields: ({ f, $ }) => ({
-      ...f.id(null, { alias: "uuid" }),
-      ...f.name(),
-      ...f.posts({ categoryId: $.categoryId })(({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-      })),
-    }),
-  }),
+// Fragment (tagged template only — the only fragment syntax)
+export const userFragment = gql.default(({ fragment }) =>
+  fragment("UserFragment", "User")`($categoryId: ID) {
+    uuid: id
+    name
+    posts(categoryId: $categoryId) {
+      id
+      title
+    }
+  }`(),
 );
 
-// Operation with fragment spread and $var (callback builder for $var)
-export const profileQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "ProfileQuery",
-    variables: { ...$var("userId").ID("!"), ...$var("categoryId").ID("?") },
+// Operation with fragment spread (options-object path for programmatic field control)
+export const profileQuery = gql.default(({ query }) =>
+  query("ProfileQuery")({
+    variables: `($userId: ID!, $categoryId: ID)`,
     fields: ({ f, $ }) => ({
-      ...f.users({
-        id: [$.userId],
-        categoryId: $.categoryId,
-      })(({ f }) => ({ ...userFragment.spread({ categoryId: $.categoryId }) })),
+      ...f("users", { id: $.userId, categoryId: $.categoryId })(() => ({
+        ...userFragment.spread({ categoryId: $.categoryId }),
+      })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -197,24 +192,24 @@ export const profileQuery = gql.default(({ query, $var }) =>
 | Fragment spreads in operations | Yes (`...${frag}`) | Yes (`.spread()`) |
 | Field aliases | Yes | Yes |
 | Metadata callbacks | Yes | Yes |
-| `$colocate` | — | Yes |
-| Document transforms | — | Yes |
+| Field directives (`@skip`, `@include`) | No | Yes (`$dir`) |
+| `$colocate` | No | Yes |
+| Document transforms | Yes | Yes |
 
 ### Metadata
 
 Attach runtime information to operations for HTTP headers and application-specific values:
 
 ```typescript
-// Operation with metadata
-export const userQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
+// Operation with metadata (tagged template)
+export const userQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) { id name }
+  }`({
     metadata: ({ $ }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: { requiresAuth: true, cacheTtl: 300 },
     }),
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );
 ```
@@ -237,15 +232,14 @@ export const ApiConfig = gql.default(({ define }) =>
 // queries/user.ts
 import { ApiConfig } from "../shared/config";
 
-export const GetUser = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) { id name }
+  }`({
     metadata: () => ({
       custom: { timeout: ApiConfig.value.defaultTimeout },
     }),
-    fields: ({ f, $ }) => ({ ... }),
-  })
+  }),
 );
 ```
 
@@ -289,10 +283,10 @@ Fragments require a `key` property to be included in prebuilt types. Fragments w
 ```typescript
 // Fragment with key for prebuilt type lookup
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User("UserFields")`
+  fragment("UserFields", "User")`{
     id
     name
-  `(),
+  }`(),
 );
 ```
 

@@ -39,17 +39,14 @@ export const ApiConfig = gql.default(({ define }) =>
 import { gql } from "@/graphql-system";
 import { ApiConfig } from "../shared/config";
 
-export const GetUser = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) { id name }
+  }`({
     metadata: () => ({
       custom: { timeout: ApiConfig.value.defaultTimeout },
     }),
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  })
+  }),
 );
 ```
 
@@ -91,7 +88,7 @@ export const Limits = gql.default(({ define }) =>
 // OK: using .value inside a gql definition
 export const MyQuery = gql.default(({ query }) => {
   const config = SharedConfig.value;
-  return query.operation({ ... });
+  return query("MyQuery")`{ ... }`();
 });
 
 // Note: using .value outside gql definitions executes during builder evaluation

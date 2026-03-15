@@ -49,14 +49,10 @@ Helpers are available in the `gql()` callback:
 
 ```typescript
 const userFragment = gql(({ fragment, auth, cache }) =>
-  fragment.User({
+  fragment("UserFields", "User")`{ id name }`({
     metadata: () => ({
       ...auth.requiresLogin(),
       ...cache.hint(300),
-    }),
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
     }),
   }),
 );
@@ -138,10 +134,9 @@ const adapter = defineAdapter({
 Runs per-operation with access to typed operation metadata:
 
 ```typescript
-const operation = gql(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const operation = gql(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     metadata: () => ({ addTracing: true, operationId: "get-user" }),
     transformDocument: ({ document, metadata }) => {
       // metadata is typed as { addTracing: boolean; operationId: string }
@@ -169,12 +164,12 @@ const operation = gql(({ query, $var }) =>
       return document;
     },
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -214,18 +209,17 @@ const adapter = defineAdapter({
 });
 
 // Use helper in operation - clean and declarative
-const operation = gql(({ query, $var, transform }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const operation = gql(({ query, transform }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     transformDocument: transform.addTracing("get-user"),
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -255,15 +249,14 @@ Access in metadata builders:
 
 ```typescript
 const operation = gql(({ query }) =>
-  query.operation({
-    name: "GetUser",
+  query("GetUser")({
     metadata: ({ schemaLevel }) => ({
       headers: {
         "X-API-Version": schemaLevel?.apiVersion ?? "v1",
       },
     }),
     fields: ({ f }) => ({ ... }),
-  }),
+  })({}),
 );
 ```
 

@@ -78,7 +78,7 @@ If uncertain, use AskUserQuestion to clarify.
 
 ```
 Does it need field aliases?
-├─ YES → Callback builder required
+├─ YES → Options-object path required
 └─ NO → Tagged template ✓
 ```
 
@@ -89,15 +89,15 @@ const userFields = gql.default(({ fragment }) =>
 );
 ```
 
-**Callback builder fragment (with aliases):**
+**Options-object path fragment (with aliases):**
 ```typescript
 const userFields = gql.default(({ fragment }) =>
-  fragment.User({
+  fragment("UserFields", "User")({
     fields: ({ f }) => ({
-      ...f.id(null, { alias: "userId" }),
-      ...f.name(null, { alias: "displayName" }),
+      ...f("id", null, { alias: "userId" })(),
+      ...f("name", null, { alias: "displayName" })(),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -105,11 +105,11 @@ const userFields = gql.default(({ fragment }) =>
 
 ```
 Does it have fragment spreads?
-├─ YES → Callback builder required (.spread() method)
+├─ YES → Options-object path required (.spread() method)
 └─ NO → Continue below
 
 Does it need any of: aliases, $colocate, metadata callbacks?
-├─ YES → Callback builder required
+├─ YES → Options-object path required
 └─ NO → Tagged template ✓
 ```
 
@@ -126,18 +126,17 @@ const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
-**Callback builder operation (with fragment spreads):**
+**Options-object path operation (with fragment spreads):**
 ```typescript
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(() => ({
+      ...f("user", { id: $.id })(() => ({
         ...userFields.spread({}),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -157,14 +156,14 @@ const extendedFields = gql.default(({ fragment }) =>
 
 **Operation → Fragment spreading:**
 ```typescript
-// ❌ Tagged template interpolation does NOT work
-// ✅ Callback builder .spread() required
+// ❌ Tagged template interpolation does NOT work for operations
+// ✅ Options-object path .spread() required
 const query = gql.default(({ query }) =>
-  query.operation({
+  query("GetData")({
     fields: () => ({
       ...userFields.spread({}),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -187,23 +186,18 @@ const userConditional = gql.default(({ fragment }) =>
 );
 ```
 
-**Operation spreading fragment (callback builder):**
+**Operation spreading fragment (options-object path):**
 ```typescript
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("id").ID("!"),
-      // MUST explicitly declare fragment's variables
-      ...$var("includeEmail").Boolean("!"),
-    },
+const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!, $includeEmail: Boolean!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(() => ({
+      ...f("user", { id: $.id })(() => ({
         // Pass variables explicitly to fragment
         ...userConditional.spread({ includeEmail: $.includeEmail }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -279,60 +273,48 @@ export const <name>Query = gql.default(({ query }) =>
 );
 ```
 
-#### Template 5: Callback Builder Operation with Fragment Spreads
+#### Template 5: Options-Object Path Operation with Fragment Spreads
 
 ```typescript
 // Import path depends on project's outdir config (from detect-project output)
 import { gql } from '<outdir-path>';
 import { <fragment1>, <fragment2> } from './<fragmentFile>';
 
-export const <name>Query = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "<OperationName>",
-    variables: {
-      ...$var("<var1>").<Type1>("!"),
-      ...$var("<var2>").<Type2>("?"),
-      // Include ALL fragment variables
-      ...$var("<fragmentVar1>").<FragmentVarType1>("!"),
-    },
+export const <name>Query = gql.default(({ query }) =>
+  query("<OperationName>")({
+    variables: `($<var1>: <Type1>!, $<var2>: <Type2>, $<fragmentVar1>: <FragmentVarType1>!)`,
     fields: ({ f, $ }) => ({
-      ...f.<rootField>({ <arg1>: $.<var1> })(() => ({
+      ...f("<rootField>", { <arg1>: $.<var1> })(() => ({
         // Spread fragments with explicit variable passing
         ...<fragment1>.spread({ <fragmentVar1>: $.<fragmentVar1> }),
         // Additional fields
-        ...f.<field1>(),
-        ...f.<nestedField>()(() => ({
-          ...f.<subField1>(),
+        ...f("<field1>")(),
+        ...f("<nestedField>")()(() => ({
+          ...f("<subField1>")(),
         })),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
-#### Template 6: Callback Builder Operation with Multiple Fragment Spreads
+#### Template 6: Options-Object Path Operation with Multiple Fragment Spreads
 
 ```typescript
 // Import path depends on project's outdir config (from detect-project output)
 import { gql } from '<outdir-path>';
 import { <fragment1>, <fragment2> } from './<fragmentFile>';
 
-export const <name>Query = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "<OperationName>",
-    variables: {
-      ...$var("<var1>").<Type1>("!"),
-      // All variables from ALL fragments
-      ...$var("<frag1Var>").<Frag1VarType>("?"),
-      ...$var("<frag2Var>").<Frag2VarType>("?"),
-    },
+export const <name>Query = gql.default(({ query }) =>
+  query("<OperationName>")({
+    variables: `($<var1>: <Type1>!, $<frag1Var>: <Frag1VarType>, $<frag2Var>: <Frag2VarType>)`,
     fields: ({ f, $ }) => ({
-      ...f.<rootField>({ <arg>: $.<var1> })(() => ({
+      ...f("<rootField>", { <arg>: $.<var1> })(() => ({
         ...<fragment1>.spread({ <frag1Var>: $.<frag1Var> }),
         ...<fragment2>.spread({ <frag2Var>: $.<frag2Var> }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -352,26 +334,25 @@ export const <name>Mutation = gql.default(({ mutation }) =>
 );
 ```
 
-#### Template 8: Callback Builder Mutation with Fragment Spread
+#### Template 8: Options-Object Path Mutation with Fragment Spread
 
 ```typescript
 // Import path depends on project's outdir config (from detect-project output)
 import { gql } from '<outdir-path>';
 import { <resultFragment> } from './<fragmentFile>';
 
-export const <name>Mutation = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "<OperationName>",
-    variables: { ...$var("<inputVar>").<InputType>("!") },
+export const <name>Mutation = gql.default(({ mutation }) =>
+  mutation("<OperationName>")({
+    variables: `($<inputVar>: <InputType>!)`,
     fields: ({ f, $ }) => ({
-      ...f.<mutationField>({ input: $.<inputVar> })(() => ({
-        ...f.success(),
-        ...f.<resultObject>()(() => ({
+      ...f("<mutationField>", { input: $.<inputVar> })(() => ({
+        ...f("success")(),
+        ...f("<resultObject>")()(() => ({
           ...<resultFragment>.spread({}),
         })),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -557,12 +538,12 @@ Manual steps:
 | Feature Needed | Syntax Required |
 |----------------|----------------|
 | Simple field selection | Tagged template ✓ |
-| Field aliases | Callback builder |
+| Field aliases | Options-object path |
 | Fragment → Fragment spread | Tagged template (with `${...}`) |
-| Operation → Fragment spread | Callback builder (with `.spread()`) |
+| Operation → Fragment spread | Options-object path (with `.spread()`) |
 | Variables in directives | Both (fragment must declare vars) |
-| Metadata callbacks | Callback builder (advanced) |
-| $colocate pattern | Callback builder |
+| Metadata callbacks | Options-object path (advanced) |
+| $colocate pattern | Options-object path |
 | Union member selection (inline fragments) | Tagged template ✓ |
 
 **Key Principle:**
@@ -666,7 +647,7 @@ export const userBasicFragment = gql.default(({ fragment }) =>
 **Process:**
 1. Detect project → found
 2. Read schema → user(id: ID!) field on Query
-3. Apply decision tree → Has fragment spread → Callback builder required
+3. Apply decision tree → Has fragment spread → Options-object path required
 4. Generate code using Template 5
 5. Write to operations.ts
 6. Validate → Success
@@ -677,16 +658,15 @@ export const userBasicFragment = gql.default(({ fragment }) =>
 import { gql } from '<outdir-path>';
 import { userBasicFragment } from './fragments';
 
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(() => ({
+      ...f("user", { id: $.id })(() => ({
         ...userBasicFragment.spread({}),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 

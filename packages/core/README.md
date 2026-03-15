@@ -60,41 +60,42 @@ export const getUserQuery = gql.default(({ query }) =>
 );
 ```
 
-Use callback builders when you need field aliases, `$dir`, or union member selection. Fragment spreads work in both tagged templates (`...${fragment}`) and callback builders:
+Fragment spreads work in both tagged templates (`...${fragment}`) and the options-object path (`.spread()`):
 
 ```typescript
-// Operation with spread fragment (callback builder required)
-export const getUserWithFragment = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUserWithFragment",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(() => ({ ...userFragment.spread() })),
-    }),
-  }),
+// Operation with spread fragment (tagged template interpolation)
+export const getUserWithFragment = gql.default(({ query }) =>
+  query("GetUserWithFragment")`($id: ID!) {
+    user(id: $id) {
+      ...${userFragment}
+    }
+  }`(),
 );
 ```
 
-## Variable Type Syntax
+## Variable Declaration
 
-Variables are declared using a string-based type syntax:
+Variables are declared using standard GraphQL syntax, either inline in tagged templates or as a `variables` string in the options-object path:
 
-| Syntax | Meaning | GraphQL Equivalent |
-|--------|---------|-------------------|
-| `"ID:!"` | Required ID | `ID!` |
-| `"String:?"` | Optional String | `String` |
-| `"Int:![]!"` | Required list of required Int | `[Int!]!` |
-| `"String:![]?"` | Optional list of required Strings | `[String!]` |
-| `"MyInput:!"` | Required custom input type | `MyInput!` |
+```typescript
+// Tagged template — variables inline
+query("GetUser")`($id: ID!, $limit: Int) { ... }`()
+
+// Options-object path — variables as template string
+query("GetUser")({
+  variables: `($id: ID!, $limit: Int)`,
+  fields: ({ f, $ }) => ({ ... }),
+})({})
+```
 
 ## Field Selection Patterns
 
 | Pattern | Description |
 |---------|-------------|
-| `...f.id()` | Basic field selection |
-| `...f.posts({ limit: 10 })` | Field with arguments |
-| `...f.posts()(({ f }) => ({ ... }))` | Nested selection (curried) |
-| `...f.id(null, { alias: "uuid" })` | Field with alias |
+| `...f("id")()` | Basic field selection |
+| `...f("posts", { limit: 10 })()` | Field with arguments |
+| `...f("posts")(({ f }) => ({ ... }))` | Nested selection |
+| `...f("id", null, { alias: "uuid" })()` | Field with alias |
 | `...userFragment.spread()` | Use fragment fields |
 
 ## Understanding the Inject Module
@@ -193,12 +194,12 @@ All metadata types share two base properties:
 Metadata is defined on operations:
 
 ```typescript
-// Operation with metadata
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    metadata: ({ $, document }) => ({
+// Operation with metadata (tagged template)
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) { id name }
+  }`({
+    metadata: ({ $, $var }) => ({
       headers: { "X-Request-ID": "user-query" },
       custom: {
         requiresAuth: true,
@@ -206,7 +207,6 @@ export const getUserQuery = gql.default(({ query, $var }) =>
         trackedVariables: [$var.getName($.id)],
       },
     }),
-    fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id(), ...f.name() })) }),
   }),
 );
 ```
@@ -264,15 +264,15 @@ const adapter = defineAdapter({
 Operations can also define their own transform with typed metadata:
 
 ```typescript
-gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
+gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) { id name }
+  }`({
     metadata: () => ({ cacheHint: 300 }),
     transformDocument: ({ document, metadata }) => {
       // metadata is typed as { cacheHint: number }
       return document;
     },
-    fields: ({ f, $ }) => ({ ... }),
   }),
 );
 ```
@@ -292,9 +292,8 @@ const adapter = defineAdapter({
 });
 
 // Use helper in operation
-query.operation({
+query("GetUser")`{ ... }`({
   transformDocument: transform.addCache(300),
-  ...
 });
 ```
 

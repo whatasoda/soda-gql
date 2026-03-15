@@ -20,8 +20,8 @@ soda-gql takes a different approach:
 |--------|---------|----------|
 | **Definition** | String-based, inside `.graphql` files | TypeScript functions with full IDE support |
 | **Type Safety** | Requires external codegen | Built-in type inference |
-| **Variables** | Not supported in standard GraphQL fragments | First-class support with `$var` |
-| **Composition** | `...FragmentName` spread syntax | `.spread()` method with typed variable passing |
+| **Variables** | Not supported in standard GraphQL fragments | First-class support via `($name: Type!)` syntax |
+| **Composition** | `...FragmentName` spread syntax | `${fragment}` interpolation or `.spread()` method |
 | **IDE Support** | Limited (depends on tooling) | Full autocomplete, go-to-definition, refactoring |
 
 :::tip
@@ -46,17 +46,17 @@ export const userFragment = gql.default(({ fragment }) =>
 
 The tagged template specifies the GraphQL type and field selections directly. soda-gql validates the fragment against your schema at build time.
 
-For advanced features like field aliases, you can use the callback builder syntax:
+For advanced features like field aliases, you can use the options-object path:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
+  fragment("UserFragment", "User")({
     fields: ({ f }) => ({
-      ...f.id(null, { alias: "userId" }),
-      ...f.name(),
-      ...f.email(),
+      ...f("id", null, { alias: "userId" }),
+      ...f("name")(),
+      ...f("email")(),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -67,8 +67,8 @@ export const userFragment = gql.default(({ fragment }) =>
 Select scalar fields directly:
 
 ```typescript
-...f.id()      // Select the id field
-...f.name()    // Select the name field
+...f("id")()      // Select the id field
+...f("name")()    // Select the name field
 ```
 
 ### Fields with Arguments
@@ -76,8 +76,8 @@ Select scalar fields directly:
 Pass arguments as an object:
 
 ```typescript
-f.posts({ limit: 10, offset: 0 })
-f.avatar({ size: "LARGE" })
+f("posts", { limit: 10, offset: 0 })
+f("avatar", { size: "LARGE" })
 ```
 
 ### Nested Selections
@@ -85,12 +85,12 @@ f.avatar({ size: "LARGE" })
 For fields that return object types, use curried syntax to select nested fields:
 
 ```typescript
-...f.posts({ limit: 10 })(({ f }) => ({
-  ...f.id(),
-  ...f.title(),
-  ...f.author()(({ f }) => ({
-    ...f.id(),
-    ...f.name(),
+...f("posts", { limit: 10 })(({ f }) => ({
+  ...f("id")(),
+  ...f("title")(),
+  ...f("author")(({ f }) => ({
+    ...f("id")(),
+    ...f("name")(),
   })),
 }))
 ```
@@ -100,71 +100,92 @@ For fields that return object types, use curried syntax to select nested fields:
 Rename fields in the response using the alias option:
 
 ```typescript
-...f.id(null, { alias: "userId" })
-...f.name(null, { alias: "displayName" })
+...f("id", null, { alias: "userId" })
+...f("name", null, { alias: "displayName" })
 ```
 
 ## Fragment Variables
 
-Unlike standard GraphQL fragments, soda-gql fragments can declare their own variables:
+Unlike standard GraphQL fragments, soda-gql fragments can declare their own variables. In tagged template syntax, declare variables in the template:
 
 ```typescript
-export const userFragment = gql.default(({ fragment, $var }) =>
-  fragment.User({
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.email(),
-      })),
-    }),
-  }),
+export const userFragment = gql.default(({ fragment }) =>
+  fragment("UserFragment", "Query")`($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+      email
+    }
+  }`(),
 );
 ```
 
-Variables are declared using object spread syntax with `$var()`. The variable reference (`$`) provides typed access to these variables within field arguments.
+In the options-object path, use a `variables` template literal and the `$` reference for field arguments:
+
+```typescript
+export const userFragment = gql.default(({ fragment }) =>
+  fragment("UserFragment", "Query")({
+    variables: `($userId: ID!)`,
+    fields: ({ f, $ }) => ({
+      ...f("user", { id: $.userId })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
+        ...f("email")(),
+      })),
+    }),
+  })({}),
+);
+```
 
 ## Spreading Fragments
 
-Spread fragments in other fragments or operations using `.spread()`:
+In tagged templates, use `${...}` interpolation to spread fragments:
 
 ```typescript
 export const postFragment = gql.default(({ fragment }) =>
-  fragment.Post({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.title(),
-      ...f.author()(({ f }) => ({
-        ...userFragment.spread({ includeEmail: false }),
-      })),
-    }),
-  }),
+  fragment("PostFragment", "Post")`{
+    id
+    title
+    author {
+      ...${userFragment}
+    }
+  }`(),
 );
 ```
 
-When spreading a fragment with variables, pass the values through the first argument:
+For fragments with variables, use a callback function to pass variable bindings:
 
 ```typescript
-// Parent operation with its own variable
-export const getPostQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetPost",
-    variables: {
-      ...$var("postId").ID("!"),
-      ...$var("showEmail").Boolean("?"),
-    },
+export const getPostQuery = gql.default(({ query }) =>
+  query("GetPost")`($postId: ID!, $showEmail: Boolean) {
+    post(id: $postId) {
+      id
+      title
+      author {
+        ...${({ $ }) => userFragment.spread({ includeEmail: $.showEmail })}
+      }
+    }
+  }`(),
+);
+```
+
+In the options-object path, use `.spread()` directly:
+
+```typescript
+export const getPostQuery = gql.default(({ query }) =>
+  query("GetPost")({
+    variables: `($postId: ID!, $showEmail: Boolean)`,
     fields: ({ f, $ }) => ({
-      ...f.post({ id: $.postId })(({ f }) => ({
-        ...f.id(),
-        ...f.title(),
-        ...f.author()(({ f }) => ({
+      ...f("post", { id: $.postId })(({ f }) => ({
+        ...f("id")(),
+        ...f("title")(),
+        ...f("author")(({ f }) => ({
           // Pass parent variable to spread fragment
           ...userFragment.spread({ includeEmail: $.showEmail }),
         })),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -199,12 +220,10 @@ import type { GqlElementAttachment } from "@soda-gql/core";
 
 export const userFragment = gql
   .default(({ fragment }) =>
-    fragment.User({
-      fields: ({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      }),
-    }),
+    fragment("UserFragment", "User")`{
+      id
+      name
+    }`(),
   )
   .attach({
     name: "displayName",
@@ -231,17 +250,16 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 ```
 
-With callback builder syntax:
+With the options-object path, the first argument to `fragment()` also serves as the key:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    key: "UserFields",
+  fragment("UserFields", "User")({
     fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
+      ...f("id")(),
+      ...f("name")(),
     }),
-  }),
+  })({}),
 );
 ```
 

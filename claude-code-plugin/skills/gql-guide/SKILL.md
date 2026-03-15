@@ -149,18 +149,15 @@ const simpleQuery = gql.default(({ query }) =>
 **Callback builder operation (with spreads):**
 ```typescript
 // playgrounds/vite-react/src/graphql/callback-builder-features.ts
-const userQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("id").ID("!"),
-    },
+const userQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userFields.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -202,16 +199,15 @@ const badQuery = gql.default(({ query }) =>
 
 ✅ **Operation with fragment spread (CORRECT - callback builder):**
 ```typescript
-const userQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const userQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userFields.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -285,19 +281,15 @@ const userExtended = gql.default(({ fragment }) =>
 
 **Operation spreading fragment (callback builder):**
 ```typescript
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("id").ID("!"),
-      ...$var("includeEmail").Boolean("!"),
-    },
+const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!, $includeEmail: Boolean!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userConditional.spread({ includeEmail: $.includeEmail }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -318,19 +310,15 @@ const extendedFields = gql.default(({ fragment }) =>
 
 ✅ **Operation declares all variables:**
 ```typescript
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("id").ID("!"),
-      ...$var("includeEmail").Boolean("!"), // ALL variables, including fragment requirements
-    },
+const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!, $includeEmail: Boolean!)`, // ALL variables, including fragment requirements
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userConditional.spread({ includeEmail: $.includeEmail }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -344,16 +332,15 @@ const frag = gql.default(({ fragment }) =>
 );
 
 // Operation does NOT auto-inherit variables — must declare includeEmail explicitly
-const badQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") }, // Missing includeEmail!
+const badQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`, // Missing includeEmail!
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...frag.spread(), // Will fail — $includeEmail not in scope
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -381,7 +368,7 @@ Operations define the GraphQL query/mutation/subscription structure with variabl
 **Operations declare the contract:**
 - All variables must be declared at operation level
 - Fragment variables are NOT auto-merged
-- In callback builder, use `$var("name").Type("!")` to declare variables
+- In callback builder, use `variables: \`($name: Type!)\`` to declare variables
 
 ### Documentation References
 
@@ -417,18 +404,15 @@ const getUser = gql.default(({ query }) =>
 
 **Query with fragment spread (callback builder):**
 ```typescript
-const getUserWithFragment = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUserWithFragment",
-    variables: {
-      ...$var("id").ID("!"),
-    },
+const getUserWithFragment = gql.default(({ query }) =>
+  query("GetUserWithFragment")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userFields.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -464,23 +448,18 @@ const getUserQuery = gql.default(({ query }) =>
 
 ✅ **Operation with multiple variables (callback builder):**
 ```typescript
-const getUserPosts = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUserPosts",
-    variables: {
-      ...$var("id").ID("!"),
-      ...$var("limit").Int(),
-      ...$var("offset").Int(),
-    },
+const getUserPosts = gql.default(({ query }) =>
+  query("GetUserPosts")({
+    variables: `($id: ID!, $limit: Int, $offset: Int)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.posts({ limit: $.limit, offset: $.offset })(({ f }) => ({
-          id: f.id,
-          title: f.title,
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("posts", { limit: $.limit, offset: $.offset })(({ f }) => ({
+          ...f("id")(),
+          ...f("title")(),
         })),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -558,18 +537,17 @@ const postFields = gql.default(({ fragment }) =>
   fragment("PostFields", "Post")`{ id title content }`(),
 );
 
-const searchQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Search",
-    variables: { ...$var("term").String("!") },
+const searchQuery = gql.default(({ query }) =>
+  query("Search")({
+    variables: `($term: String!)`,
     fields: ({ f, $ }) => ({
-      ...f.search({ term: $.term })(({ f }) => ({
-        __typename: f.__typename,
+      ...f("search", { term: $.term })(({ f }) => ({
+        ...f("__typename")(),
         ...userFields.spread(),
         ...postFields.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -695,21 +673,17 @@ const detailsFragment = gql.default(({ fragment }) =>
   }`(),
 );
 
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: {
-      ...$var("id").ID("!"),
-      ...$var("includeDetails").Boolean("!"),
-    },
+const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!, $includeDetails: Boolean!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        id: f.id,
-        name: f.name,
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id")(),
+        ...f("name")(),
         ...detailsFragment.spread({ includeDetails: $.includeDetails }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -793,20 +767,19 @@ const userFragment = gql.default(({ fragment }) =>
 
 **Callback builder operation with metadata:**
 ```typescript
-const q = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const q = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     metadata: ({ $, fragmentMetadata }) => ({
       entityId: $.id,
       fragmentCount: fragmentMetadata?.length ?? 0,
     }),
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...userFragment.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -1043,17 +1016,16 @@ Fragment colocation places fragment definitions near the components that use the
 
 **$colocate in callback builder spread:**
 ```typescript
-const userQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+const userQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        id: f.id,
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id")(),
         ...userFragment.spread({ $colocate: true }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -1106,17 +1078,16 @@ function UserProfile({ data }) {
 
 ✅ **Fragment composition with colocation:**
 ```typescript
-const parentQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUserPage",
-    variables: { ...$var("id").ID("!") },
+const parentQuery = gql.default(({ query }) =>
+  query("GetUserPage")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
+      ...f("user", { id: $.id })(({ f }) => ({
         ...profileFragment.spread({ $colocate: true }),
         ...settingsFragment.spread({ $colocate: true }),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 

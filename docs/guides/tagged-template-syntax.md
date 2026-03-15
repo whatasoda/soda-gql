@@ -189,20 +189,19 @@ const Search = gql.default(({ query }) =>
 );
 ```
 
-### In Callback Builders (`.spread()`)
+### In Options-Object Path (`.spread()`)
 
-For operations that need callback builder syntax, use `.spread()`:
+For operations that use the options-object path, use `.spread()`:
 
 ```typescript
 const GetUser = gql.default(({ query }) =>
-  query.operation({
-    name: "GetUser",
+  query("GetUser")({
     fields: ({ f }) => ({
-      ...f.user({ id: "1" })(() => ({
+      ...f("user", { id: "1" })(() => ({
         ...userFields.spread(),
       })),
     }),
-  })
+  })({}),
 );
 ```
 
@@ -359,7 +358,7 @@ const GetUser = gql.default(({ extend }) =>
 | Field aliases | Yes | Yes |
 | Field directives (`@skip`, `@include`) | No | Yes |
 | `$colocate` query composition | No | Yes |
-| `$var` helper for variable definitions | No | Yes |
+| Programmatic field control | No | Yes |
 | `$infer` output type inference | Yes (via typegen) | Best-effort¹ |
 
 > **Note**: Field-level directives (`@skip`, `@include`) on regular fields are parsed by GraphQL but silently ignored during field selection construction — no error is raised. However, directives on inline fragments (`... on Type @skip(...)`) throw an explicit error. If you need field directive behavior, use the callback builder syntax.
@@ -375,16 +374,16 @@ const GetUser = gql.default(({ extend }) =>
 - You want concise, readable GraphQL that looks like the query language
 - Your operations don't need field directives
 
-### Use Callback Builders When
+### Use the Options-Object Path When
 
 - You need **field directives** (e.g., `$dir.skip({ if: true })`)
 - You need **`$colocate`** for composing multiple query fragments
-- You need **`$var`** for typed variable definitions
+- You need **field aliases** programmatically (e.g., `f("id", null, { alias: "userId" })`)
 - You're building operations that require fine-grained programmatic control
 
 ### Mixing Both
 
-Tagged templates and callback builders can be mixed freely. A common pattern is to define fragments with tagged templates and use callback builders for complex operations:
+Tagged templates and the options-object path can be mixed freely. A common pattern is to define fragments with tagged templates and use the options-object path for complex operations:
 
 ```typescript
 // Fragment: tagged template (simple)
@@ -392,19 +391,18 @@ const UserFields = gql.default(({ fragment }) =>
   fragment("UserFields", "User")`{ id name email }`()
 );
 
-// Operation: callback builder (needs aliases and directives)
-const GetUser = gql.default(({ query, $var, $dir }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
+// Operation: options-object path (needs aliases and directives)
+const GetUser = gql.default(({ query, $dir }) =>
+  query("GetUser")({
+    variables: `($id: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(null, { alias: "userId" }),
-        ...f.name(),
-        ...f.email(null, { directives: [$dir.skip({ if: true })] }),
+      ...f("user", { id: $.id })(({ f }) => ({
+        ...f("id", null, { alias: "userId" })(),
+        ...f("name")(),
+        ...f("email", null, { directives: [$dir.skip({ if: true })] })(),
         ...UserFields.spread(),
       })),
     }),
-  })
+  })({}),
 );
 ```

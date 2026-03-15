@@ -65,10 +65,8 @@ import type { Adapter } from "../types/metadata";
  *
  * // Use helper in operation - clean and declarative
  * gql(({ query, transform }) =>
- *   query.operation({
- *     name: "GetUser",
+ *   query("GetUser")`{ user(id: "1") { id name } }`({
  *     transformDocument: transform.addCacheDirective(300),
- *     fields: ({ f }) => ({ ... }),
  *   }),
  * );
  * ```

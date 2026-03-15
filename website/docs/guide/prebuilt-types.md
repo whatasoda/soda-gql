@@ -42,17 +42,16 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 ```
 
-Callback builder syntax — use the `key` property:
+Options-object path — the first argument to `fragment()` also serves as the key:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment.User({
-    key: "UserFields",
+  fragment("UserFields", "User")({
     fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
+      ...f("id")(),
+      ...f("name")(),
     }),
-  }),
+  })({}),
 );
 ```
 
@@ -65,17 +64,13 @@ Fragments without a `key` property are **silently skipped** during prebuilt type
 Operations use their `name` property as the key automatically — no additional configuration needed:
 
 ```typescript
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",  // Used as key automatically
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+    }
+  }`(),
 );
 ```
 

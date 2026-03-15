@@ -99,18 +99,14 @@ my-vite-app/
 // src/queries/user.query.ts
 import { gql } from "@/graphql-system";
 
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.email(),
-      })),
-    }),
-  }),
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) {
+      id
+      name
+      email
+    }
+  }`(),
 );
 ```
 
@@ -174,17 +170,14 @@ import { gql } from "@/graphql-system";
 import { createProjectionAttachment } from "@soda-gql/colocation-tools";
 
 export const userCardFragment = gql
-  .default(({ fragment, $var }) =>
-    fragment.Query({
-      variables: { ...$var("userId").ID("!") },
-      fields: ({ f, $ }) => ({
-        ...f.user({ id: $.userId })(({ f }) => ({
-          ...f.id(),
-          ...f.name(),
-          ...f.avatarUrl(),
-        })),
-      }),
-    }),
+  .default(({ fragment }) =>
+    fragment("UserCard", "Query")`($userId: ID!) {
+      user(id: $userId) {
+        id
+        name
+        avatarUrl
+      }
+    }`(),
   )
   .attach(
     createProjectionAttachment({
@@ -218,15 +211,14 @@ import { createExecutionResultParser } from "@soda-gql/colocation-tools";
 import { userCardFragment, UserCard } from "@/components/UserCard";
 import { postListFragment, PostList } from "@/components/PostList";
 
-const userPageQuery = gql.default(({ query, $var, $colocate }) =>
-  query.operation({
-    name: "UserPage",
-    variables: { ...$var("userId").ID("!") },
+const userPageQuery = gql.default(({ query, $colocate }) =>
+  query("UserPage")({
+    variables: `($userId: ID!)`,
     fields: ({ $ }) => $colocate({
       userCard: userCardFragment.spread({ userId: $.userId }),
       postList: postListFragment.spread({ userId: $.userId }),
     }),
-  }),
+  })({}),
 );
 
 const parseResult = createExecutionResultParser({

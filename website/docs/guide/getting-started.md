@@ -117,17 +117,16 @@ export const getUserQuery = gql.default(({ query }) =>
 For advanced features like field aliases, directives, or `$colocate`, use the callback builder syntax:
 
 ```typescript
-// Callback builder (for advanced features)
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
+// Options-object path (for advanced features)
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!)`,
     fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
+      ...f("user", { id: $.userId })(({ f }) => ({
         ...userFragment.spread(),
       })),
     }),
-  }),
+  })({}),
 );
 ```
 

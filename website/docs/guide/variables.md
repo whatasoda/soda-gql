@@ -1,6 +1,6 @@
 # Variables
 
-Variables allow you to parameterize fragments and operations. soda-gql uses a unique type syntax that provides full type safety while remaining concise.
+Variables allow you to parameterize fragments and operations. soda-gql uses standard GraphQL variable syntax in tagged templates and a template literal approach in the options-object path.
 
 ## How soda-gql Variables Differ from GraphQL
 
@@ -16,127 +16,158 @@ query GetUser($id: ID!, $limit: Int) {
 
 soda-gql provides two approaches depending on the syntax you use:
 
-| Aspect | GraphQL | Tagged Template | Callback Builder |
+| Aspect | GraphQL | Tagged Template | Options-Object Path |
 |--------|---------|----------|----------|
-| **Syntax** | `$name: Type!` | `($name: Type!)` (standard GraphQL) | `$var("name").Type("!")` |
-| **Required** | `Type!` | `Type!` | `"!"` suffix |
-| **Optional** | `Type` (no suffix) | `Type` (no suffix) | `"?"` suffix |
-| **Lists** | `[Type!]!` | `[Type!]!` | `"![]!"` |
-| **Declaration** | In operation header | In template: `` `($id: ID!) { ... }` `` | Object spread: `{ ...$var(...) }` |
-| **Type Safety** | External codegen | Build-time validation | Compile-time inference |
+| **Syntax** | `$name: Type!` | `($name: Type!)` (standard GraphQL) | `` variables: `($name: Type!)` `` |
+| **Required** | `Type!` | `Type!` | `Type!` |
+| **Optional** | `Type` (no suffix) | `Type` (no suffix) | `Type` (no suffix) |
+| **Lists** | `[Type!]!` | `[Type!]!` | `[Type!]!` |
+| **Declaration** | In operation header | In template: `` `($id: ID!) { ... }` `` | `` variables: `($id: ID!)` `` |
+| **Type Safety** | External codegen | Build-time validation | Build-time validation |
 
 :::tip Tagged Templates Use Standard GraphQL Variable Syntax
-When using tagged template syntax, variables are declared using standard GraphQL syntax directly in the template. The `$var` helper is only needed for callback builder syntax. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
+When using tagged template syntax, variables are declared using standard GraphQL syntax directly in the template. The options-object path uses the same syntax in a `variables` template literal. See the [Tagged Template Syntax Guide](/guide/tagged-template-syntax) for details.
 :::
 
-## Declaring Variables
+## Declaring Variables in Tagged Templates
 
-Variables are declared using `$var()` with object spread syntax:
+In tagged templates, declare variables using standard GraphQL syntax at the start of the template:
 
 ```typescript
-gql.default(({ query, $var }) =>
-  query.operation({
-    name: "SearchPosts",
-    variables: {
-      ...$var("query").String("!"),      // Required string
-      ...$var("limit").Int("?"),         // Optional int
-      ...$var("tags").String("![]?"),    // Optional list of required strings
-    },
-    fields: ({ f, $ }) => ({ ... }),
-  }),
+export const searchPostsQuery = gql.default(({ query }) =>
+  query("SearchPosts")`($query: String!, $limit: Int, $tags: [String!]) {
+    searchPosts(query: $query, limit: $limit, tags: $tags) {
+      id
+      title
+    }
+  }`(),
 );
 ```
 
-## Type Specifier Syntax
+This is the recommended approach for most operations. The variable syntax is identical to standard GraphQL.
 
-The type specifier follows this pattern: `"TypeName:nullability[listNullability]..."`
+## Declaring Variables in the Options-Object Path
+
+When using the options-object path (for aliases, directives, `$dir`, `$colocate`, or programmatic field control), declare variables with a template literal:
+
+```typescript
+export const searchPostsQuery = gql.default(({ query }) =>
+  query("SearchPosts")({
+    variables: `($query: String!, $limit: Int, $tags: [String!])`,
+    fields: ({ f, $ }) => ({
+      ...f("searchPosts", { query: $.query, limit: $.limit, tags: $.tags })(({ f }) => ({
+        ...f("id")(),
+        ...f("title")(),
+      })),
+    }),
+  })({}),
+);
+```
+
+## Variable Type Syntax
+
+Variables use standard GraphQL type notation:
 
 ### Basic Types
 
-| Specifier | Meaning | GraphQL Equivalent |
-|-----------|---------|-------------------|
-| `"ID:!"` | Required ID | `ID!` |
-| `"ID:?"` | Optional ID | `ID` |
-| `"String:!"` | Required String | `String!` |
-| `"String:?"` | Optional String | `String` |
-| `"Int:!"` | Required Int | `Int!` |
-| `"Float:?"` | Optional Float | `Float` |
-| `"Boolean:!"` | Required Boolean | `Boolean!` |
+| Declaration | Meaning | GraphQL Equivalent |
+|-------------|---------|-------------------|
+| `$id: ID!` | Required ID | `ID!` |
+| `$id: ID` | Optional ID | `ID` |
+| `$name: String!` | Required String | `String!` |
+| `$name: String` | Optional String | `String` |
+| `$count: Int!` | Required Int | `Int!` |
+| `$score: Float` | Optional Float | `Float` |
+| `$active: Boolean!` | Required Boolean | `Boolean!` |
 
 ### List Types
 
-Lists add `[]` with their own nullability:
-
-| Specifier | Meaning | GraphQL Equivalent |
-|-----------|---------|-------------------|
-| `"String:![]!"` | Required list of required strings | `[String!]!` |
-| `"String:![]?"` | Optional list of required strings | `[String!]` |
-| `"String:?[]!"` | Required list of optional strings | `[String]!` |
-| `"String:?[]?"` | Optional list of optional strings | `[String]` |
-
-### Nested Lists
-
-For lists of lists, chain the brackets:
-
-| Specifier | GraphQL Equivalent |
-|-----------|-------------------|
-| `"Int:![]![]!"` | `[[Int!]!]!` |
-| `"String:?[]?[]?"` | `[[String]]` |
+| Declaration | Meaning | GraphQL Equivalent |
+|-------------|---------|-------------------|
+| `$tags: [String!]!` | Required list of required strings | `[String!]!` |
+| `$tags: [String!]` | Optional list of required strings | `[String!]` |
+| `$tags: [String]!` | Required list of optional strings | `[String]!` |
+| `$tags: [String]` | Optional list of optional strings | `[String]` |
 
 ### Custom Types
 
 Use your schema's input types and custom scalars:
 
 ```typescript
-$var("input").CreateUserInput("!")    // Custom input type
-$var("cursor").Cursor("?")            // Custom scalar
-$var("filters").FilterInput("![]?")   // List of custom input
+// In tagged template
+query("CreateUser")`($input: CreateUserInput!, $cursor: Cursor, $filters: [FilterInput!]) {
+  ...
+}`()
+
+// In options-object path
+query("CreateUser")({
+  variables: `($input: CreateUserInput!, $cursor: Cursor, $filters: [FilterInput!])`,
+  fields: ({ f, $ }) => ({ ... }),
+})({}),
 ```
 
-## Using Variables
+## Using Variables in Field Arguments
 
-### In Field Arguments
-
-Reference declared variables using `$`:
+Reference declared variables using `$` in the options-object path:
 
 ```typescript
 ({ f, $ }) => ({
-  ...f.user({ id: $.userId })(({ f }) => ({ ... })),
-  ...f.posts({ limit: $.limit, tags: $.tags })(({ f }) => ({ ... })),
+  ...f("user", { id: $.userId })(({ f }) => ({ ... })),
+  ...f("posts", { limit: $.limit, tags: $.tags })(({ f }) => ({ ... })),
 })
 ```
 
-### Passing to Spread Fragments
-
-Pass variables to spread fragments:
+In tagged templates, use standard GraphQL `$varName` syntax directly:
 
 ```typescript
-// Fragment with its own variable
-const userFragment = gql.default(({ fragment, $var }) =>
-  fragment.Query({
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.user({ id: $.userId })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.email(),
-      })),
-    }),
-  }),
-);
+query("GetUser")`($userId: ID!) {
+  user(id: $userId) {
+    id
+    name
+  }
+}`()
+```
 
-// Operation passing its variable to the fragment
-const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ $ }) => ({
-      // Pass operation variable to fragment variable
-      ...userFragment.spread({ userId: $.userId }),
-    }),
-  }),
+## Variable References in Fragment Spreading
+
+### Tagged Template (Interpolation)
+
+Pass variables to fragments using callback interpolation:
+
+```typescript
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")`($userId: ID!, $includeEmail: Boolean) {
+    user(id: $userId) {
+      ...${({ $ }) => userFragment.spread({ includeEmail: $.includeEmail })}
+    }
+  }`(),
 );
 ```
+
+### Options-Object Path (.spread())
+
+Pass variables directly through the `.spread()` method:
+
+```typescript
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!, $includeEmail: Boolean)`,
+    fields: ({ f, $ }) => ({
+      ...f("user", { id: $.userId })(({ f }) => ({
+        ...userFragment.spread({ includeEmail: $.includeEmail }),
+      })),
+    }),
+  })({}),
+);
+```
+
+When a fragment has variables, you must pass values for them. These can be:
+- Literal values: `{ includeEmail: true }`
+- Operation variables: `{ includeEmail: $.includeEmail }`
+
+## $var in Metadata Callbacks
+
+The `$var` utility is available in metadata callbacks for inspecting variable references. Methods like `$var.getName()`, `$var.getValue()`, and `$var.getInner()` allow you to extract information from VarRef values. See the [Metadata](/guide/metadata) guide for details.
 
 ## Built-in Scalar Types
 
@@ -170,15 +201,13 @@ export const scalar = {
 Variable types are fully inferred:
 
 ```typescript
-const query = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Search",
-    variables: {
-      ...$var("query").String("!"),
-      ...$var("limit").Int("?"),
-    },
-    fields: ({ f, $ }) => ({ ... }),
-  }),
+const query = gql.default(({ query }) =>
+  query("Search")`($query: String!, $limit: Int) {
+    search(query: $query, limit: $limit) {
+      id
+      title
+    }
+  }`(),
 );
 
 // Inferred type
