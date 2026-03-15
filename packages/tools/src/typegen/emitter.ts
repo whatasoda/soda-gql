@@ -26,12 +26,21 @@
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type BuilderError, builderErrors, type FieldSelectionsMap } from "@soda-gql/builder";
-import type { AnyGraphqlSchema, InputTypeSpecifiers, TypeFormatters } from "@soda-gql/core";
+import type {
+  AnyFieldSelection,
+  AnyFieldsExtended,
+  AnyFieldValue,
+  AnyGraphqlSchema,
+  InputTypeSpecifiers,
+  TypeFormatters,
+} from "@soda-gql/core";
 import {
   calculateFieldsType,
+  calculateFieldType,
   generateInputObjectType,
   generateInputType,
   generateInputTypeFromVarDefs,
+  graphqlTypeToTypeScript,
   parseInputSpecifier,
 } from "@soda-gql/core";
 import { Kind, type TypeNode, type VariableDefinitionNode } from "graphql";
@@ -74,6 +83,8 @@ type PrebuiltOperationEntry = {
   readonly key: string;
   readonly inputType: string;
   readonly outputType: string;
+  readonly varTypes: string;
+  readonly fields: string;
 };
 
 type SchemaGroup = {
@@ -185,10 +196,19 @@ const groupBySchema = (
         // Generate input type with schema-specific scalar and input object names
         const inputType = generateInputType(schema, selection.variableDefinitions, inputFormatters);
 
+        // Generate per-variable type map
+        const varTypes = generateVarTypes(schema, selection.variableDefinitions, inputFormatters);
+
+        // Generate field type map
+        const rootTypeName2 = schema.operations[selection.operationType as keyof typeof schema.operations];
+        const fields = generateFieldsMap(schema, selection.fields, outputFormatters, rootTypeName2 ?? undefined);
+
         group.operations.push({
           key: selection.operationName,
           inputType,
           outputType,
+          varTypes,
+          fields,
         });
       } catch (error) {
         warnings.push(
@@ -305,6 +325,113 @@ const collectUsedInputObjectsFromVarDefs = (
 };
 
 /**
+ * Generate a TypeScript type string mapping each variable definition to its TS input type.
+ *
+ * Unlike `generateInputType` which produces a single object type for all variables,
+ * this produces a record type where each variable name maps to its individual type.
+ * This is used in prebuilt types to provide per-variable type information.
+ *
+ * @param schema - The GraphQL schema
+ * @param variableDefinitions - Variable definition nodes from the operation
+ * @param formatters - Optional formatters for customizing type names
+ * @returns TypeScript type string like `{ readonly varName: Type; ... }`
+ */
+const generateVarTypes = (
+  schema: AnyGraphqlSchema,
+  variableDefinitions: readonly VariableDefinitionNode[],
+  formatters?: TypeFormatters,
+): string => {
+  if (variableDefinitions.length === 0) {
+    return "{}";
+  }
+
+  const fields = variableDefinitions.map((varDef) => {
+    const name = varDef.variable.name.value;
+    const tsType = graphqlTypeToTypeScript(schema, varDef.type, formatters);
+    return `readonly ${name}: ${tsType}`;
+  });
+
+  return `{ ${fields.join("; ")} }`;
+};
+
+/**
+ * Check if a field value is shorthand (true) vs full field selection.
+ */
+const isShorthandValue = (value: AnyFieldValue): value is true => value === true;
+
+/**
+ * Generate a TypeScript type string representing the field type map for an operation.
+ *
+ * Traverses field selections to build a type map where each alias maps to its
+ * individual resolved type. Recurses into nested object fields and union member
+ * selections. Skips `__typename` entries.
+ *
+ * @param schema - The GraphQL schema
+ * @param fields - The field selections to traverse
+ * @param formatters - Optional formatters for customizing type names
+ * @param typeName - Parent type name for shorthand expansion
+ * @returns TypeScript type string like `{ readonly fieldName: Type; ... }`
+ */
+const generateFieldsMap = (
+  schema: AnyGraphqlSchema,
+  fields: AnyFieldsExtended,
+  formatters?: TypeFormatters,
+  typeName?: string,
+): string => {
+  const entries = Object.entries(fields);
+
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  const fieldTypes: string[] = [];
+
+  for (const [alias, value] of entries) {
+    // Skip __typename entries
+    if (alias === "__typename") {
+      continue;
+    }
+
+    let selection: AnyFieldSelection;
+    if (isShorthandValue(value)) {
+      if (!typeName) {
+        // Cannot expand shorthand without type context; skip
+        continue;
+      }
+      // Look up the field in the schema to create a synthetic selection
+      const typeDef = schema.object[typeName];
+      if (!typeDef) {
+        continue;
+      }
+      const fieldSpec = typeDef.fields[alias];
+      if (!fieldSpec) {
+        continue;
+      }
+      selection = {
+        parent: typeName,
+        field: alias,
+        type: fieldSpec,
+        args: {},
+        directives: [],
+        object: null,
+        union: null,
+      };
+    } else {
+      selection = value;
+    }
+
+    const fieldType = calculateFieldType(schema, selection, formatters);
+    fieldTypes.push(`readonly ${alias}: ${fieldType}`);
+  }
+
+  if (fieldTypes.length === 0) {
+    return "{}";
+  }
+
+  return `{ ${fieldTypes.join("; ")} }`;
+};
+
+/**
  * Generate type definitions for input objects.
  */
 const generateInputObjectTypeDefinitions = (schema: AnyGraphqlSchema, schemaName: string, inputNames: Set<string>): string[] => {
@@ -410,7 +537,10 @@ const generateTypesCode = (
     }
     const operationEntries = Array.from(deduplicatedOperations.values())
       .sort((a, b) => a.key.localeCompare(b.key))
-      .map((o) => `    readonly "${o.key}": { readonly input: ${o.inputType}; readonly output: ${o.outputType} };`);
+      .map(
+        (o) =>
+          `    readonly "${o.key}": { readonly input: ${o.inputType}; readonly output: ${o.outputType}; readonly varTypes: ${o.varTypes}; readonly fields: ${o.fields} };`,
+      );
 
     lines.push(`export type PrebuiltTypes_${schemaName} = {`);
     lines.push("  readonly fragments: {");

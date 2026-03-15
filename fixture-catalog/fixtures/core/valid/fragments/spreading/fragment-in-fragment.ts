@@ -22,12 +22,11 @@ export const employeeWithTasksFragment = gql.default(({ fragment }) =>
 /**
  * Operation that spreads the composed fragment
  */
-export const getEmployeeWithTasksQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployeeWithTasks",
-    variables: { ...$var("employeeId").ID("!"), ...$var("completed").Boolean("?") },
+export const getEmployeeWithTasksQuery = gql.default(({ query }) =>
+  query("GetEmployeeWithTasks")({
+    variables: `($employeeId: ID!, $completed: Boolean)`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(() => ({ ...employeeWithTasksFragment.spread({ completed: $.completed }) })),
+      ...f("employee", { id: $.employeeId })(() => ({ ...employeeWithTasksFragment.spread({ completed: $.completed }) })),
     }),
-  }),
+  })(),
 );

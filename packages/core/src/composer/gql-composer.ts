@@ -13,9 +13,7 @@ import { applyContextTransformer } from "./context-transformer";
 import { createStandardDirectives, type StandardDirectives } from "./directive-builder";
 import { createExtendComposer } from "./extend";
 import { createFragmentTaggedTemplate } from "./fragment-tagged-template";
-import { createOperationComposerFactory } from "./operation";
 import { createOperationTaggedTemplate } from "./operation-tagged-template";
-import { type AnyInputTypeMethods, createVarBuilder } from "./var-builder";
 
 /**
  * Function signature for composing GraphQL elements (fragments or operations).
@@ -72,8 +70,6 @@ export type GqlElementComposerOptions<
 > = {
   /** Optional adapter for custom helpers and metadata handling. */
   adapter?: TAdapter;
-  /** Methods for building variable type specifiers. */
-  inputTypeMethods: AnyInputTypeMethods;
   /** Optional custom directive methods (including schema-defined directives). */
   directiveMethods?: TDirectiveMethods;
 };
@@ -84,30 +80,22 @@ export type GqlElementComposerOptions<
  * This is the main entry point for defining GraphQL operations and fragments.
  * The returned function provides a context with:
  * - `fragment`: Tagged template function for fragment definitions
- * - `query/mutation/subscription`: Operation builders
- * - `$var`: Variable definition helpers
+ * - `query/mutation/subscription`: Operation builders (tagged template + options object + .compat)
  * - `$dir`: Field directive helpers (@skip, @include)
  * - `$colocate`: Fragment colocation utilities
  *
  * @param schema - The GraphQL schema definition
- * @param options - Configuration including input type methods and optional adapter
+ * @param options - Configuration including optional adapter
  * @returns Element composer function
  *
  * @example
  * ```typescript
- * const gql = createGqlElementComposer(schema, { inputTypeMethods });
+ * const gql = createGqlElementComposer(schema, {});
  *
- * const GetUser = gql(({ query, $var, $dir }) =>
- *   query.operation({
- *     name: "GetUser",
- *     variables: { showEmail: $var("showEmail").Boolean("!") },
- *     fields: ({ f, $ }) => ({
- *       ...f.user({ id: "1" })(({ f }) => ({
- *         ...f.name(),
- *         ...f.email({}, { directives: [$dir.skip({ if: $.showEmail })] }),
- *       })),
- *     }),
- *   })
+ * const GetUser = gql(({ query, $dir }) =>
+ *   query("GetUser")`($id: ID!) {
+ *     user(id: $id) { name email }
+ *   }`()
  * );
  * ```
  */
@@ -121,36 +109,27 @@ export const createGqlElementComposer = <
 ) => {
   type THelpers = ExtractHelpers<TAdapter>;
   type TMetadataAdapter = ExtractMetadataAdapter<TAdapter>;
-  const { adapter, inputTypeMethods, directiveMethods } = options;
+  const { adapter, directiveMethods } = options;
   const helpers = adapter?.helpers as THelpers | undefined;
   const metadataAdapter = adapter?.metadata as TMetadataAdapter | undefined;
   const transformDocument = adapter?.transformDocument;
   // Fragment: curried tagged template function — fragment("name", "type")`{ fields }`
   const fragment = createFragmentTaggedTemplate(schema);
-  const createOperationComposer = createOperationComposerFactory<TSchema, TMetadataAdapter>(
-    schema,
-    metadataAdapter,
-    transformDocument,
-  );
 
-  // Hybrid context: curried tagged template functions with .operation and .compat properties
+  // Hybrid context: curried tagged template / options object functions with .compat property
   const context = {
     fragment,
     query: Object.assign(createOperationTaggedTemplate(schema, "query", metadataAdapter, transformDocument), {
-      operation: createOperationComposer("query"),
       compat: createCompatTaggedTemplate(schema, "query"),
     }),
     mutation: Object.assign(createOperationTaggedTemplate(schema, "mutation", metadataAdapter, transformDocument), {
-      operation: createOperationComposer("mutation"),
       compat: createCompatTaggedTemplate(schema, "mutation"),
     }),
     subscription: Object.assign(createOperationTaggedTemplate(schema, "subscription", metadataAdapter, transformDocument), {
-      operation: createOperationComposer("subscription"),
       compat: createCompatTaggedTemplate(schema, "subscription"),
     }),
     define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine.create(factory),
     extend: createExtendComposer<TSchema, TMetadataAdapter>(schema, metadataAdapter, transformDocument),
-    $var: createVarBuilder<TSchema>(inputTypeMethods),
     $dir: directiveMethods ?? (createStandardDirectives() as TDirectiveMethods),
     $colocate: createColocateHelper(),
     ...(helpers ?? ({} as THelpers)),
@@ -185,20 +164,16 @@ export const createGqlElementComposer = <
 export type AnyGqlContext = {
   readonly fragment: (...args: unknown[]) => unknown;
   readonly query: ((...args: unknown[]) => unknown) & {
-    operation: (...args: unknown[]) => AnyOperation;
     compat: (...args: unknown[]) => AnyGqlDefine;
   };
   readonly mutation: ((...args: unknown[]) => unknown) & {
-    operation: (...args: unknown[]) => AnyOperation;
     compat: (...args: unknown[]) => AnyGqlDefine;
   };
   readonly subscription: ((...args: unknown[]) => unknown) & {
-    operation: (...args: unknown[]) => AnyOperation;
     compat: (...args: unknown[]) => AnyGqlDefine;
   };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly extend: (...args: unknown[]) => AnyOperation;
-  readonly $var: unknown;
   readonly $dir: StandardDirectives;
   readonly $colocate: unknown;
   readonly [key: string]: unknown;

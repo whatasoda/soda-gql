@@ -4,9 +4,10 @@
  * @internal
  */
 
-import { type FieldsBuilder, Operation } from "../types/element";
+import type { VariableDefinitionNode } from "graphql";
+import { Operation } from "../types/element";
 import type { AnyOperationOf } from "../types/element/operation";
-import type { AnyFieldsExtended, DeclaredVariables } from "../types/fragment";
+import type { AnyFieldsExtended } from "../types/fragment";
 import type {
   AnyMetadataAdapter,
   DocumentTransformer,
@@ -17,12 +18,13 @@ import type {
 } from "../types/metadata";
 import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type { VariableDefinitions } from "../types/type-foundation";
-
 import { isPromiseLike } from "../utils/promise";
 import { buildDocument } from "./build-document";
+import type { FieldsBuilder } from "./fields-builder";
 import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs } from "./input";
+import { varRefTools } from "./var-ref-tools";
 
 /**
  * Shared base parameters for building an operation artifact.
@@ -41,9 +43,11 @@ type OperationCoreParamsBase<
   readonly operationTypeName: TSchema["operations"][TOperationType] & keyof TSchema["object"] & string;
   readonly operationName: TOperationName;
   readonly variables: TVarDefinitions;
+  /** Pre-parsed VariableDefinitionNode[] from tagged template or options object parser */
+  readonly variableDefinitionNodes?: readonly VariableDefinitionNode[];
   readonly adapter: TAdapter;
   readonly metadata?: MetadataBuilder<
-    DeclaredVariables<TSchema, TVarDefinitions>,
+    Readonly<Record<string, import("../types/type-foundation").AnyVarRef>>,
     TOperationMetadata,
     ExtractAdapterTypes<TAdapter>["aggregatedFragmentMetadata"],
     ExtractAdapterTypes<TAdapter>["schemaLevel"]
@@ -59,7 +63,7 @@ type OperationCoreParamsBase<
  * Parameters for building an operation artifact.
  * Uses `fieldsFactory` to evaluate fields and build document.
  *
- * @internal Used by operation.ts, extend.ts, and operation-tagged-template.ts
+ * @internal Used by extend.ts and operation-tagged-template.ts
  */
 export type OperationCoreParams<
   TSchema extends AnyGraphqlSchema,
@@ -70,12 +74,7 @@ export type OperationCoreParams<
   TOperationMetadata,
   TAdapter extends AnyMetadataAdapter,
 > = OperationCoreParamsBase<TSchema, TOperationType, TOperationName, TVarDefinitions, TOperationMetadata, TAdapter> & {
-  readonly fieldsFactory: FieldsBuilder<
-    TSchema,
-    TSchema["operations"][TOperationType] & keyof TSchema["object"] & string,
-    TVarDefinitions,
-    TFields
-  >;
+  readonly fieldsFactory: FieldsBuilder<TFields>;
 };
 
 /**
@@ -111,7 +110,7 @@ export type OperationArtifactResult<
  * @param params - Operation building parameters
  * @returns Operation artifact or Promise of artifact (if async metadata)
  *
- * @internal Used by operation.ts, extend.ts, and operation-tagged-template.ts
+ * @internal Used by extend.ts and operation-tagged-template.ts
  */
 export const buildOperationArtifact = <
   TSchema extends AnyGraphqlSchema,
@@ -136,6 +135,7 @@ export const buildOperationArtifact = <
     operationTypeName,
     operationName,
     variables,
+    variableDefinitionNodes,
     adapter,
     metadata: metadataBuilder,
     transformDocument: operationTransformDocument,
@@ -143,7 +143,7 @@ export const buildOperationArtifact = <
   } = params;
 
   // Create variable refs (needed for both field factory and metadata builder)
-  const $ = createVarRefs<TSchema, TVarDefinitions>(variables);
+  const $ = createVarRefs<TVarDefinitions>(variables);
 
   const { fieldsFactory } = params;
   const f = createFieldFactories(schema, operationTypeName);
@@ -164,6 +164,7 @@ export const buildOperationArtifact = <
     operationName,
     operationType,
     operationTypeName,
+    variableDefinitionNodes,
     variables,
     fields,
     schema,
@@ -211,7 +212,7 @@ export const buildOperationArtifact = <
     aggregatedFragmentMetadata: TAggregatedFragmentMetadata,
   ): TOperationMetadata | undefined | Promise<TOperationMetadata | undefined> => {
     const schemaLevel = adapter.schemaLevel as TSchemaLevel | undefined;
-    return metadataBuilder?.({ $, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
+    return metadataBuilder?.({ $, $var: varRefTools, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
   };
 
   // 8. Factory that creates the final artifact

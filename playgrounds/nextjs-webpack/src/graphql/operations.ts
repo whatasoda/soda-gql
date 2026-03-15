@@ -4,16 +4,15 @@ import { employeeFragment } from "./fragments";
 /**
  * Query operation to fetch a single employee
  */
-export const getEmployeeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployee",
-    variables: { ...$var("employeeId").ID("!"), ...$var("taskLimit").Int("?") },
+export const getEmployeeQuery = gql.default(({ query }) =>
+  query("GetEmployee")({
+    variables: `($employeeId: ID!, $taskLimit: Int)`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.employeeId })(() => ({
+      ...f("employee", { id: $.employeeId })(() => ({
         ...employeeFragment.spread({ taskLimit: $.taskLimit }),
       })),
     }),
-  }),
+  })(),
 );
 
 /**

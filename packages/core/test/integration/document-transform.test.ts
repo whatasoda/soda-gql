@@ -3,7 +3,6 @@ import { Kind, print, visit } from "graphql";
 import { defineAdapter } from "../../src/adapter/define-adapter";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { createVarMethodFactory } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
@@ -49,14 +48,6 @@ const schema = {
 } satisfies AnyGraphqlSchema;
 
 type Schema = typeof schema & { _?: never };
-
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  Boolean: createMethod("scalar", "Boolean"),
-  ID: createMethod("scalar", "ID"),
-  Int: createMethod("scalar", "Int"),
-  String: createMethod("scalar", "String"),
-};
 
 describe("document transformation integration", () => {
   describe("defineAdapter with transformDocument", () => {
@@ -105,22 +96,21 @@ describe("document transformation integration", () => {
         },
       });
 
-      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, { adapter, inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, { adapter });
 
       // Create fragment (metadata not supported in tagged templates yet)
       const userFragment = gql(({ fragment }) => fragment("UserCacheFields", "User")`{ id name }`());
 
       // Create operation that spreads the fragment
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               ...userFragment.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(operation.document);
@@ -162,19 +152,17 @@ describe("document transformation integration", () => {
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
-        inputTypeMethods,
       });
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(operation.document);
@@ -199,19 +187,17 @@ describe("document transformation integration", () => {
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
-        inputTypeMethods,
       });
 
-      const queryOp = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const queryOp = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       expect(print(queryOp.document)).toContain("@queryOnly");
@@ -235,31 +221,28 @@ describe("document transformation integration", () => {
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
-        inputTypeMethods,
       });
 
-      const adminOp = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetAdminUser",
-          variables: { ...$var("id").ID("!") },
+      const adminOp = gql(({ query }) =>
+        query("GetAdminUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
-      const regularOp = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const regularOp = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       expect(print(adminOp.document)).toContain("@sensitive");
@@ -283,19 +266,17 @@ describe("document transformation integration", () => {
 
       const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
         adapter,
-        inputTypeMethods,
       });
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Access document multiple times

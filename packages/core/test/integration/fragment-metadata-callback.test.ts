@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { createVarMethodFactory } from "../../src/composer/var-builder";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
@@ -44,19 +44,10 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  Boolean: createMethod("scalar", "Boolean"),
-  ID: createMethod("scalar", "ID"),
-  Int: createMethod("scalar", "Int"),
-  String: createMethod("scalar", "String"),
-};
-
 describe("fragment metadata callbacks in tagged templates", () => {
   it("metadata callback is invoked when fragment is spread", () => {
-    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-    // Create tagged template fragment with metadata callback
     const userFragment = gql(({ fragment }) =>
       fragment("UserFields", "User")`($userId: ID!) { id name }`({
         metadata: ({ $ }: { $: Record<string, unknown> }) => ({
@@ -67,21 +58,20 @@ describe("fragment metadata callbacks in tagged templates", () => {
       }),
     );
 
-    // Create operation that spreads the fragment
-    const operation = gql(({ query, $var }) =>
-      query.operation({
-        name: "GetUser",
-        variables: { ...$var("userId").ID("!") },
-        metadata: ({ fragmentMetadata }) => ({
+    const operation = gql(({ query }) =>
+      query("GetUser")({
+        variables: `($userId: ID!)`,
+        fields: ({ f, $ }) => ({
+          ...f("user", { id: $.userId })(() => ({
+            ...userFragment.spread({ userId: $.userId }),
+          })),
+        }),
+      })({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
           custom: {
             fragmentCount: fragmentMetadata?.length ?? 0,
             firstFragmentHasHeaders: fragmentMetadata?.[0]?.headers !== undefined,
           },
-        }),
-        fields: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(() => ({
-            ...userFragment.spread({ userId: $.userId }),
-          })),
         }),
       }),
     );
@@ -93,16 +83,14 @@ describe("fragment metadata callbacks in tagged templates", () => {
   });
 
   it("static metadata works alongside callback metadata", () => {
-    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-    // Fragment with static metadata
     const userIdFragment = gql(({ fragment }) =>
       fragment("UserIdFields", "User")`{ id }`({
         metadata: { headers: { "X-Static": "value" } },
       }),
     );
 
-    // Fragment with callback metadata
     const userNameFragment = gql(({ fragment }) =>
       fragment("UserNameFields", "User")`($userId: ID!) { name }`({
         metadata: ({ $ }: { $: Record<string, unknown> }) => ({
@@ -113,21 +101,20 @@ describe("fragment metadata callbacks in tagged templates", () => {
       }),
     );
 
-    // Operation spreading both fragments
-    const operation = gql(({ query, $var }) =>
-      query.operation({
-        name: "GetUser",
-        variables: { ...$var("userId").ID("!") },
-        metadata: ({ fragmentMetadata }) => ({
-          custom: {
-            fragmentCount: fragmentMetadata?.length ?? 0,
-          },
-        }),
+    const operation = gql(({ query }) =>
+      query("GetUser")({
+        variables: `($userId: ID!)`,
         fields: ({ f, $ }) => ({
-          ...f.user({ id: $.userId })(() => ({
+          ...f("user", { id: $.userId })(() => ({
             ...userIdFragment.spread(),
             ...userNameFragment.spread({ userId: $.userId }),
           })),
+        }),
+      })({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
+          custom: {
+            fragmentCount: fragmentMetadata?.length ?? 0,
+          },
         }),
       }),
     );
@@ -137,7 +124,7 @@ describe("fragment metadata callbacks in tagged templates", () => {
   });
 
   it("metadata callback with no variables receives empty $", () => {
-    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
     const userFragment = gql(({ fragment }) =>
       fragment("UserFields", "User")`{ id name }`({
@@ -150,17 +137,17 @@ describe("fragment metadata callbacks in tagged templates", () => {
     );
 
     const operation = gql(({ query }) =>
-      query.operation({
-        name: "GetUsers",
-        metadata: ({ fragmentMetadata }) => ({
+      query("GetUsers")({
+        fields: ({ f }) => ({
+          ...f("users")(() => ({
+            ...userFragment.spread(),
+          })),
+        }),
+      })({
+        metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
           custom: {
             firstFragmentMetadata: fragmentMetadata?.[0],
           },
-        }),
-        fields: ({ f }) => ({
-          ...f.users()(() => ({
-            ...userFragment.spread(),
-          })),
         }),
       }),
     );

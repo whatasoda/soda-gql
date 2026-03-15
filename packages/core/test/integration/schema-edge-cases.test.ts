@@ -23,7 +23,6 @@ describe("Schema Edge Cases", () => {
 
       // Attempting to create field factories for non-existent object
       expect(() => {
-        // @ts-expect-error - Testing runtime error handling for non-existent type
         createFieldFactories(schema, "NonExistentObject");
       }).toThrow();
     });
@@ -53,7 +52,7 @@ describe("Schema Edge Cases", () => {
       expect(() => {
         const factories = createFieldFactories(schema, "Query");
         // Trigger the factory to execute by accessing the invalid field
-        (factories as any).weirdField();
+        (factories as any)("weirdField")();
       }).toThrow("Unsupported field type kind: excluded");
     });
   });
@@ -86,7 +85,7 @@ describe("Schema Edge Cases", () => {
       // We should test that it doesn't crash instead
       const factories = createFieldFactories(schema, "Query");
       expect(factories).toBeDefined();
-      expect(factories.result).toBeDefined();
+      expect(factories("result")).toBeDefined();
     });
   });
 
@@ -120,8 +119,8 @@ describe("Schema Edge Cases", () => {
       // Should handle circular references without infinite loop
       const factories = createFieldFactories(schema, "Node");
       expect(factories).toBeDefined();
-      expect(factories.parent).toBeDefined();
-      expect(factories.children).toBeDefined();
+      expect(factories("parent")).toBeDefined();
+      expect(factories("children")).toBeDefined();
     });
   });
 });

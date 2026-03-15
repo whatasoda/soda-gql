@@ -13,8 +13,8 @@ interface RunOptions {
   json: boolean;
   trace: boolean;
   objectTypes: number;
-  models: number;
-  slices: number;
+  fragments: number;
+  queries: number;
   operations: number;
 }
 
@@ -25,8 +25,8 @@ function parseArgs(): RunOptions {
     json: false,
     trace: false,
     objectTypes: 10,
-    models: 10,
-    slices: 8,
+    fragments: 10,
+    queries: 8,
     operations: 5,
   };
 
@@ -43,8 +43,8 @@ function parseArgs(): RunOptions {
         options.trace = true;
         break;
       case "--objectTypes":
-      case "--models":
-      case "--slices":
+      case "--fragments":
+      case "--queries":
       case "--operations": {
         const key = arg.replace("--", "") as keyof RunOptions;
         const value = parseInt(args[++i] ?? "", 10);
@@ -107,21 +107,21 @@ async function runTsc(trace: boolean): Promise<{ stdout: string; stderr: string;
   });
 }
 
-async function countFixtures(): Promise<{ types: number; models: number; slices: number; operations: number }> {
-  const result = { types: 0, models: 0, slices: 0, operations: 0 };
+async function countFixtures(): Promise<{ types: number; fragments: number; queries: number; operations: number }> {
+  const result = { types: 0, fragments: 0, queries: 0, operations: 0 };
 
   try {
     const schemaContent = await fs.readFile(path.join(GENERATED_DIR, "schema.ts"), "utf-8");
-    const modelsContent = await fs.readFile(path.join(GENERATED_DIR, "models.ts"), "utf-8");
-    const slicesContent = await fs.readFile(path.join(GENERATED_DIR, "slices.ts"), "utf-8");
+    const fragmentsContent = await fs.readFile(path.join(GENERATED_DIR, "fragments.ts"), "utf-8");
+    const queriesContent = await fs.readFile(path.join(GENERATED_DIR, "queries.ts"), "utf-8");
     const operationsContent = await fs.readFile(path.join(GENERATED_DIR, "operations.ts"), "utf-8");
 
     // Count Entity types in schema
     result.types = (schemaContent.match(/Entity\d+:/g) || []).length / 2; // Divided by 2 because each type appears in Query and as definition
 
     // Count exports
-    result.models = (modelsContent.match(/export const model\d+/g) || []).length;
-    result.slices = (slicesContent.match(/export const slice\d+/g) || []).length;
+    result.fragments = (fragmentsContent.match(/export const fragment\d+/g) || []).length;
+    result.queries = (queriesContent.match(/export const query\d+/g) || []).length;
     result.operations = (operationsContent.match(/export const operation\d+/g) || []).length;
   } catch {
     // Ignore errors if files do not exist
@@ -142,8 +142,8 @@ async function main() {
     }
     await generateFixtures({
       objectTypes: options.objectTypes,
-      models: options.models,
-      slices: options.slices,
+      fragments: options.fragments,
+      queries: options.queries,
       operations: options.operations,
     });
     if (!options.json) {
@@ -178,7 +178,7 @@ async function main() {
   } else {
     console.log("@soda-gql/core Type Check Benchmark");
     console.log("===================================");
-    console.log(`Fixtures: ${fixtures.types} types, ${fixtures.models} models, ${fixtures.slices} slices, ${fixtures.operations} operations\n`);
+    console.log(`Fixtures: ${fixtures.types} types, ${fixtures.fragments} fragments, ${fixtures.queries} queries, ${fixtures.operations} operations\n`);
     console.log(formatMetrics(metrics));
 
     if (traceDir) {

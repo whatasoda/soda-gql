@@ -2,11 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/schema";
 import { defineOperationRoots, defineScalar } from "../schema";
 import { GqlDefine } from "../types/element";
-import { isTemplateCompatSpec } from "../types/element/compat-spec";
 import type { AnyGraphqlSchema } from "../types/schema";
 import { createCompatTaggedTemplate } from "./compat-tagged-template";
 
-const schema = {
+const fullSchema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -42,6 +41,7 @@ const schema = {
   },
   union: {},
 } satisfies AnyGraphqlSchema;
+const schema = fullSchema;
 
 describe("createCompatTaggedTemplate", () => {
   describe("query compat tagged template", () => {
@@ -67,9 +67,9 @@ describe("createCompatTaggedTemplate", () => {
       expect(spec.graphqlSource).toBe("query GetUser ($id: ID!) { user(id: $id) { id name } }");
     });
 
-    it("spec passes isTemplateCompatSpec type guard", () => {
+    it("spec has graphqlSource property (template compat)", () => {
       const result = queryCompat("GetUser")`{ user(id: "1") { id } }`;
-      expect(isTemplateCompatSpec(result.value)).toBe(true);
+      expect(result.value.graphqlSource).toBeDefined();
     });
   });
 
@@ -110,7 +110,7 @@ describe("createCompatTaggedTemplate", () => {
           mutation: "Mutation",
           subscription: null,
         }),
-      };
+      } as unknown as AnyGraphqlSchema;
 
       expect(() => createCompatTaggedTemplate(noSubscriptionSchema, "subscription")).toThrow(
         "Operation type subscription is not defined in schema roots",

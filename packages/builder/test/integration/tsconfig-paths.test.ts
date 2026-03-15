@@ -112,17 +112,8 @@ describe("tsconfig paths resolution", () => {
     const employeeQueryContent = `
 import { gql } from "../../graphql-system";
 
-export const employeeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployeeById",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const employeeQuery = gql.default(({ query }) =>
+  query("GetEmployeeById")\`($id: ID!) { employee(id: $id) { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/utils/employee-query.ts"), employeeQueryContent);
@@ -138,12 +129,7 @@ export { employeeQuery };
 
 // Also define a local query
 export const listEmployeesQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "ListEmployees",
-    fields: ({ f }) => ({
-      ...f.employees()(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  }),
+  query("ListEmployees")\`{ employees { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/main.ts"), mainContent);
@@ -190,12 +176,7 @@ export const listEmployeesQuery = gql.default(({ query }) =>
 import { gql } from "@graphql-system";
 
 export const simpleQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "SimpleQuery",
-    fields: ({ f }) => ({
-      ...f.employees()(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  }),
+  query("SimpleQuery")\`{ employees { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/main.ts"), mainContent);
@@ -243,12 +224,7 @@ import { gql } from "../graphql-system";
 
 // This just tests that unmatched aliases are treated as external
 export const simpleQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "ExternalTest",
-    fields: ({ f }) => ({
-      ...f.employees()(({ f }) => ({ ...f.id() })),
-    }),
-  }),
+  query("ExternalTest")\`{ employees { id } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/main.ts"), mainContent);
@@ -288,17 +264,8 @@ export const simpleQuery = gql.default(({ query }) =>
     const sharedContent = `
 import { gql } from "../../graphql-system";
 
-export const companyQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetCompany",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.company({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const companyQuery = gql.default(({ query }) =>
+  query("GetCompany")\`($id: ID!) { company(id: $id) { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/shared/company.ts"), sharedContent);
@@ -309,17 +276,8 @@ import { gql } from "../../graphql-system";
 // Re-export from shared via alias
 export { companyQuery } from "@shared/company";
 
-export const departmentQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetDepartment",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.department({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const departmentQuery = gql.default(({ query }) =>
+  query("GetDepartment")\`($id: ID!) { department(id: $id) { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/features/department.ts"), featureContent);
@@ -330,17 +288,8 @@ import { gql } from "../graphql-system";
 // Re-export from features via alias
 export { departmentQuery, companyQuery } from "@features/department";
 
-export const teamQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetTeam",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.team({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+export const teamQuery = gql.default(({ query }) =>
+  query("GetTeam")\`($id: ID!) { team(id: $id) { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/main.ts"), mainContent);
@@ -397,17 +346,16 @@ export const employeeFragment = gql.default(({ fragment }) =>
 import { gql } from "../../graphql-system";
 import { employeeFragment } from "@shared/employee-fragment";
 
-export const getEmployeeQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetEmployee",
-    variables: { ...$var("id").ID("!") },
+export const getEmployeeQuery = gql.default(({ query }) =>
+  query("GetEmployee")({
+    variables: \`($id: ID!)\`,
     fields: ({ f, $ }) => ({
-      ...f.employee({ id: $.id })(({ f }) => ({
+      ...f("employee", { id: $.id })(({ f }) => ({
         ...employeeFragment.spread(),
-        ...f.role(),
+        ...f("role")(),
       })),
     }),
-  }),
+  })(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/features/employee-query.ts"), queryContent);
@@ -451,12 +399,7 @@ export const getEmployeeQuery = gql.default(({ query, $var }) =>
 import { gql } from "../graphql-system";
 
 export const simpleQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "BackwardCompatTest",
-    fields: ({ f }) => ({
-      ...f.employees()(({ f }) => ({ ...f.id(), ...f.name() })),
-    }),
-  }),
+  query("BackwardCompatTest")\`{ employees { id name } }\`(),
 );
 `;
     await fs.writeFile(path.join(workspaceRoot, "src/main.ts"), mainContent);

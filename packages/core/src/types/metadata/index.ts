@@ -21,4 +21,5 @@ export type {
   MetadataBuilder,
   MetadataBuilderTools,
   OperationMetadata,
+  VarRefTools,
 } from "./metadata";

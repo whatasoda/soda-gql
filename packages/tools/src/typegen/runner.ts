@@ -16,7 +16,7 @@ import {
   createBuilderService,
   extractFieldSelections,
   type IntermediateArtifactElement,
-  loadSchemasFromBundle,
+  loadFullSchemasFromBundle,
 } from "@soda-gql/builder";
 import type { CanonicalId } from "@soda-gql/common";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
@@ -110,7 +110,7 @@ export const runTypegen = async (options: RunTypegenOptions): Promise<TypegenRes
 
   // Step 2: Load schemas from CJS bundle
   const schemaNames = Object.keys(config.schemas);
-  const schemasResult = loadSchemasFromBundle(cjsPath, schemaNames);
+  const schemasResult = loadFullSchemasFromBundle(cjsPath, schemaNames);
   if (schemasResult.isErr()) {
     return err(typegenErrors.schemaLoadFailed(schemaNames, schemasResult.error));
   }

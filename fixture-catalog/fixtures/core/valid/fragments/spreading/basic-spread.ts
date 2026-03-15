@@ -10,10 +10,9 @@ export const userFragment = gql.default(({ fragment }) =>
 /**
  * Operation that spreads the fragment
  */
-export const getUserQuery = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUser",
-    variables: { ...$var("userId").ID("!") },
-    fields: ({ f, $ }) => ({ ...f.employee({ id: $.userId })(() => ({ ...userFragment.spread() })) }),
-  }),
+export const getUserQuery = gql.default(({ query }) =>
+  query("GetUser")({
+    variables: `($userId: ID!)`,
+    fields: ({ f, $ }) => ({ ...f("employee", { id: $.userId })(() => ({ ...userFragment.spread() })) }),
+  })(),
 );

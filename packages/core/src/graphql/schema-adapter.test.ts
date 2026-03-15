@@ -3,15 +3,20 @@ import type { AnyGraphqlSchema } from "../types/schema/schema";
 import { createSchemaIndexFromSchema } from "./schema-adapter";
 
 describe("createSchemaIndexFromSchema", () => {
-  const schema = {
+  const schema: AnyGraphqlSchema = {
     label: "test",
     operations: { query: "Query", mutation: "Mutation", subscription: null },
-    scalar: { DateTime: { name: "DateTime", $type: {} } },
-    enum: { Status: { name: "Status", values: { ACTIVE: true, INACTIVE: true } } },
-    input: { UserFilter: { name: "UserFilter", fields: {} } },
-    object: { User: { name: "User", fields: {} }, Query: { name: "Query", fields: {} } },
-    union: { SearchResult: { name: "SearchResult", types: { User: true } } },
-  } as unknown as AnyGraphqlSchema;
+    scalar: { DateTime: {} as any },
+    enum: { Status: {} as any },
+    input: { UserFilter: {} as any },
+    object: {
+      User: { name: "User", fields: {} },
+      Query: { name: "Query", fields: {} },
+    },
+    union: {
+      SearchResult: { name: "SearchResult", types: { User: true } },
+    },
+  };
 
   it("scalars.has() returns true for schema scalars", () => {
     const index = createSchemaIndexFromSchema(schema);

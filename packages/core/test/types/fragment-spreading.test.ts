@@ -9,11 +9,9 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import { type BasicSchema, basicSchema } from "./_fixtures";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
-  inputTypeMethods: basicInputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("Fragment spreading type inference", () => {
   describe("Fragment spread without variables", () => {
@@ -21,16 +19,15 @@ describe("Fragment spreading type inference", () => {
     it("propagates fragment output type", () => {
       const userFragment = gql(({ fragment }) => fragment("UserSpreadFields", "User")`{ id name }`());
 
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               ...userFragment.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Runtime behavior tests
@@ -46,16 +43,15 @@ describe("Fragment spreading type inference", () => {
       // Fragment that defines a required variable (for use in spread)
       const userFragment = gql(({ fragment }) => fragment("UserPrefixFields", "User")`($namePrefix: String!) { id name }`());
 
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!"), ...$var("prefix").String("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $prefix: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               ...userFragment.spread({ namePrefix: $.prefix }),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Runtime behavior tests
@@ -69,17 +65,16 @@ describe("Fragment spreading type inference", () => {
     it("allows omitting optional variable", () => {
       const userFragment = gql(({ fragment }) => fragment("UserOptionalFields", "User")`($includeAge: Boolean) { id name }`());
 
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               // Optional fragment variable - can be omitted or passed
               ...userFragment.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Runtime behavior tests
@@ -93,17 +88,16 @@ describe("Fragment spreading type inference", () => {
     it("rejects wrong variable type in spread", () => {
       const userFragment = gql(({ fragment }) => fragment("UserNamePrefixFields", "User")`($namePrefix: String!) { id name }`());
 
-      gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!"), ...$var("count").Int("!") },
+      gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!, $count: Int!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               // TODO: Type safety for variable types will be restored via prebuilt types
               ...userFragment.spread({ namePrefix: $.count }),
             })),
           }),
-        }),
+        })({}),
       );
       // Runtime behavior tests
       expect(userFragment.typename).toBe("User");
@@ -115,17 +109,16 @@ describe("Fragment spreading type inference", () => {
     it("spreads fragment in nested selection", () => {
       const idFragment = gql(({ fragment }) => fragment("UserIdOnlyFields", "User")`{ id }`());
 
-      const GetUsers = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUsers",
-          variables: { ...$var("limit").Int("?") },
+      const GetUsers = gql(({ query }) =>
+        query("GetUsers")({
+          variables: `($limit: Int)`,
           fields: ({ f, $ }) => ({
-            ...f.users({ limit: $.limit })(({ f }) => ({
+            ...f("users", { limit: $.limit })(({ f }) => ({
               ...idFragment.spread(),
-              ...f.name(),
+              ...f("name")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Runtime behavior tests
@@ -141,18 +134,17 @@ describe("Fragment spreading type inference", () => {
 
       const nameFragment = gql(({ fragment }) => fragment("UserNameFragment", "User")`{ name }`());
 
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
+            ...f("user", { id: $.id })(({ f }) => ({
               ...idFragment.spread(),
               ...nameFragment.spread(),
-              ...f.email(),
+              ...f("email")(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Runtime behavior tests

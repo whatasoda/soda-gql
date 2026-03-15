@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parse } from "graphql";
+import { transformParsedGraphql } from "../../../src/codegen/graphql-compat";
 import { emitFragment, emitOperation } from "../../../src/codegen/graphql-compat/emitter";
 import { parseGraphqlSource } from "../../../src/codegen/graphql-compat/parser";
-import { transformParsedGraphql } from "../../../src/codegen/graphql-compat/transformer";
 import { loadSchema } from "../../../src/codegen/schema";
 
 describe("graphql-compat integration", () => {
@@ -86,7 +87,7 @@ describe("graphql-compat integration", () => {
     graphqlSystemPath: "@/graphql-system",
   };
 
-  test("end-to-end: generates compat code from operation file", async () => {
+  test("end-to-end: generates tagged template compat code from operation file", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -107,23 +108,29 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(1);
 
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const operationDocument = parse(operationSource);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
-    // Verify structure (imports are handled by caller, not emitter)
+    // Verify tagged template compat structure
     expect(output).not.toContain("import");
     expect(output).toContain("export const GetUserCompat = gql.mySchema");
-    expect(output).toContain('name: "GetUser"');
-    expect(output).toContain('...$var("userId").ID("!")');
-    expect(output).toContain("...f.user({ id: $.userId })");
-    expect(output).toContain("id: true");
-    expect(output).toContain("name: true");
-    expect(output).toContain("email: true");
-    expect(output).toContain("role: true");
+    expect(output).toContain("({ query })");
+    expect(output).toContain('query.compat("GetUser")');
+    // Body should contain the GraphQL query
+    expect(output).toContain("$userId: ID!");
+    expect(output).toContain("user(id: $userId)");
+    expect(output).toContain("id");
+    expect(output).toContain("name");
+    // Should NOT contain old callback builder patterns
+    expect(output).not.toContain("$var");
+    expect(output).not.toContain("f.user");
+    expect(output).not.toContain("fields:");
   });
 
   test("end-to-end: generates compat code with multiple operations", async () => {
@@ -159,26 +166,33 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(3);
 
-    // Check each operation type
-    const queryOutput = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
-    expect(queryOutput).toContain("({ query, $var })");
+    const operationDocument = parse(operationSource);
+
+    // Check each operation type uses tagged template compat
+    const queryOutput = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
+    expect(queryOutput).toContain("({ query })");
     expect(queryOutput).toContain("query.compat(");
 
-    const mutationOutput = emitOperation(operations[1]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
-    expect(mutationOutput).toContain("({ mutation, $var })");
+    const mutationOutput = emitOperation(operations[1]!, { ...emitOptions, schemaDocument, operationDocument });
+    expect(mutationOutput).toContain("({ mutation })");
     expect(mutationOutput).toContain("mutation.compat(");
 
-    const subscriptionOutput = emitOperation(operations[2]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
-    expect(subscriptionOutput).toContain("({ subscription, $var })");
+    const subscriptionOutput = emitOperation(operations[2]!, {
+      ...emitOptions,
+      schemaDocument,
+      operationDocument,
+    });
+    expect(subscriptionOutput).toContain("({ subscription })");
     expect(subscriptionOutput).toContain("subscription.compat(");
   });
 
-  test("end-to-end: generates compat code for fragments", async () => {
+  test("end-to-end: generates tagged template compat code for fragments", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -197,25 +211,28 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { fragments } = transformResult._unsafeUnwrap();
+    const { fragments } = transformResult.value;
     expect(fragments).toHaveLength(1);
 
-    const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const operationDocument = parse(fragmentSource);
+    const output = emitFragment(fragments[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
-    // Verify structure (imports are handled by caller, not emitter)
+    // Verify tagged template compat structure
     expect(output).not.toContain("import");
     expect(output).toContain("export const UserFieldsFragment = gql.mySchema");
-    expect(output).toContain("fragment.User(");
-    expect(output).toContain("fields: ({ f }) => ({");
-    expect(output).toContain("id: true");
-    expect(output).toContain("name: true");
-    expect(output).toContain("email: true");
-    expect(output).toContain("role: true");
+    expect(output).toContain('fragment("UserFields", "User")');
+    expect(output).toContain("id");
+    expect(output).toContain("name");
+    // Should NOT contain old callback builder patterns
+    expect(output).not.toContain("fragment.User(");
+    expect(output).not.toContain("fields:");
+    expect(output).not.toContain("$var");
   });
 
-  test("end-to-end: handles fragment spreads with imports", async () => {
+  test("end-to-end: handles fragment spreads in tagged template body", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -236,25 +253,28 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
+    const { operations } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserBasicFields");
     expect(operations[0]!.fragmentDependencies).toContain("PostFields");
 
+    const operationDocument = parse(operationSource);
     const output = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
-    // Verify spreads (imports are handled by caller, not emitter)
+    // Fragment spreads should be emitted as interpolated .spread() calls
     expect(output).not.toContain("import");
-    expect(output).toContain("...UserBasicFieldsFragment.spread()");
-    expect(output).toContain("...PostFieldsFragment.spread()");
+    expect(output).toContain("UserBasicFieldsFragment.spread()");
+    expect(output).toContain("PostFieldsFragment.spread()");
   });
 
-  test("end-to-end: handles complex variable types", async () => {
+  test("end-to-end: handles complex variable types in tagged template body", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -281,20 +301,22 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const { operations } = transformResult.value;
+    const operationDocument = parse(operationSource);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
-    // Check variable definitions
-    expect(output).toContain('...$var("id").ID("!")');
-    expect(output).toContain('...$var("optionalId").ID("?")');
-    expect(output).toContain('...$var("filter").UserFilter("?")');
-    expect(output).toContain('...$var("requiredFilter").UserFilter("!")');
-    expect(output).toContain('...$var("role").Role("!")');
+    // Variable definitions should be in the GraphQL body
+    expect(output).toContain("$id: ID!");
+    expect(output).toContain("$optionalId: ID");
+    expect(output).toContain("$filter: UserFilter");
+    expect(output).toContain("$requiredFilter: UserFilter!");
+    expect(output).toContain("$role: Role!");
   });
 
-  test("end-to-end: handles nested selections", async () => {
+  test("end-to-end: handles nested selections in tagged template body", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -321,17 +343,19 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const { operations } = transformResult.value;
+    const operationDocument = parse(operationSource);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
-    // Check nested structure
-    expect(output).toContain("...f.posts()(({ f }) => ({");
-    expect(output).toContain("...f.author()(({ f }) => ({");
+    // Nested selections should be in the GraphQL body
+    expect(output).toContain("posts");
+    expect(output).toContain("author");
   });
 
-  test("end-to-end: handles literal arguments", async () => {
+  test("end-to-end: handles literal arguments in tagged template body", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -350,13 +374,16 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const { operations } = transformResult.value;
+    const operationDocument = parse(operationSource);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
-    // Check literal arguments - enums are emitted as strings
-    expect(output).toContain('filter: { name: "John", role: "ADMIN" }');
+    // Literal arguments should be in the GraphQL body
+    expect(output).toContain("John");
+    expect(output).toContain("ADMIN");
   });
 
   test("writes generated files to disk", async () => {
@@ -378,10 +405,12 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations } = transformResult._unsafeUnwrap();
-    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument })._unsafeUnwrap();
+    const { operations } = transformResult.value;
+    const operationDocument = parse(operationSource);
+    const output = emitOperation(operations[0]!, { ...emitOptions, schemaDocument, operationDocument });
 
     // Write to file
     const outputPath = join(outDir, "GetUser.compat.ts");
@@ -393,7 +422,7 @@ describe("graphql-compat integration", () => {
     expect(written).toContain("export const GetUserCompat");
   });
 
-  test("end-to-end: same-file operation and fragment (no imports)", async () => {
+  test("end-to-end: same-file operation and fragment", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -418,32 +447,37 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(fragments).toHaveLength(1);
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit operation (imports are handled by caller)
+    const operationDocument = parse(source);
+
+    // Emit operation
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
     // Should NOT have import (same file)
     expect(operationOutput).not.toContain("import { UserFieldsFragment }");
-    // Should still have spread
-    expect(operationOutput).toContain("...UserFieldsFragment.spread()");
+    // Should contain fragment spread as interpolated .spread() call
+    expect(operationOutput).toContain("UserFieldsFragment.spread()");
 
     // Emit fragment
     const fragmentOutput = emitFragment(fragments[0]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
     expect(fragmentOutput).toContain("export const UserFieldsFragment = gql.mySchema");
-    expect(fragmentOutput).toContain("fragment.User(");
+    expect(fragmentOutput).toContain('fragment("UserFields", "User")');
   });
 
   test("end-to-end: multiple operations using same fragment in one file", async () => {
@@ -475,9 +509,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(2);
     expect(fragments).toHaveLength(1);
 
@@ -485,26 +520,30 @@ describe("graphql-compat integration", () => {
     expect(operations[0]!.fragmentDependencies).toContain("UserFields");
     expect(operations[1]!.fragmentDependencies).toContain("UserFields");
 
-    // Emit both operations (imports are handled by caller)
+    const operationDocument = parse(source);
+
+    // Emit both operations
     const queryOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
     const mutationOutput = emitOperation(operations[1]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
     // Neither should have import
     expect(queryOutput).not.toContain("import { UserFieldsFragment }");
     expect(mutationOutput).not.toContain("import { UserFieldsFragment }");
-    // Both should have spread
-    expect(queryOutput).toContain("...UserFieldsFragment.spread()");
-    expect(mutationOutput).toContain("...UserFieldsFragment.spread()");
+    // Both should have fragment spread as interpolated .spread() call
+    expect(queryOutput).toContain("UserFieldsFragment.spread()");
+    expect(mutationOutput).toContain("UserFieldsFragment.spread()");
   });
 
-  test("end-to-end: nested fragments in same file (fragment using another fragment)", async () => {
+  test("end-to-end: nested fragments in same file", async () => {
     const schemaPath = createTestSchema();
     const schemaResult = loadSchema([schemaPath]);
     expect(schemaResult.isOk()).toBe(true);
@@ -533,9 +572,10 @@ describe("graphql-compat integration", () => {
     expect(parseResult.isOk()).toBe(true);
 
     const transformResult = transformParsedGraphql(parseResult._unsafeUnwrap(), { schemaDocument });
-    expect(transformResult.isOk()).toBe(true);
+    expect(transformResult.ok).toBe(true);
+    if (!transformResult.ok) throw new Error();
 
-    const { operations, fragments } = transformResult._unsafeUnwrap();
+    const { operations, fragments } = transformResult.value;
     expect(operations).toHaveLength(1);
     expect(fragments).toHaveLength(2);
 
@@ -547,24 +587,29 @@ describe("graphql-compat integration", () => {
     expect(userFullFields).toBeDefined();
     expect(userFullFields!.fragmentDependencies).toContain("UserBasicFields");
 
-    // Emit operation (imports are handled by caller)
+    const operationDocument = parse(source);
+
+    // Emit operation
     const operationOutput = emitOperation(operations[0]!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
-    // Emit fragment (imports are handled by caller)
+    // Emit fragment
     const fragmentOutput = emitFragment(userFullFields!, {
       ...emitOptions,
       schemaDocument,
-    })._unsafeUnwrap();
+      operationDocument,
+    });
 
     // No imports (all same-file)
     expect(operationOutput).not.toContain("import { UserFullFieldsFragment }");
     expect(fragmentOutput).not.toContain("import { UserBasicFieldsFragment }");
 
-    // Spreads should be present
-    expect(operationOutput).toContain("...UserFullFieldsFragment.spread()");
-    expect(fragmentOutput).toContain("...UserBasicFieldsFragment.spread()");
+    // Operation fragment spreads should be emitted as interpolated .spread() calls
+    expect(operationOutput).toContain("UserFullFieldsFragment.spread()");
+    // Fragment-in-fragment spreads remain as raw text
+    expect(fragmentOutput).toContain("...UserBasicFields");
   });
 });

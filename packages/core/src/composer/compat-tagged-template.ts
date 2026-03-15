@@ -1,6 +1,5 @@
 /**
  * Compat tagged template function for creating deferred GraphQL operation specs.
- * Callback builder compat path is in compat.ts.
  * @module
  */
 

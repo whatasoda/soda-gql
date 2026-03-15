@@ -151,11 +151,9 @@ import { gql } from "./graphql-system";
 
 const { useQueryOperation, $infer } = gql
   .default(({ query }) =>
-    query.operation({
-      name: "ListUsers",
-      variables: {},
+    query("ListUsers")({
       fields: () => ({}),
-    }),
+    })(),
   )
   .attach({});
 

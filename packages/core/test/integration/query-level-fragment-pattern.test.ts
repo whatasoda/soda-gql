@@ -12,14 +12,10 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema, createBasicInputTypeMethods } from "../fixtures";
+import { basicTestSchema } from "../fixtures";
 
-const inputTypeMethods = createBasicInputTypeMethods<BasicTestSchema>();
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
-  inputTypeMethods,
-});
+const gql = createGqlElementComposer(basicTestSchema, {});
 
 describe("query-level fragment pattern", () => {
   describe("single entity fragment spread in operation", () => {
@@ -29,16 +25,15 @@ describe("query-level fragment pattern", () => {
 
       // Query-level composition: Operation that spreads the entity fragment
       // This represents a "resolver unit" - the `user` query field
-      const GetUserCard = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserCard",
-          variables: { ...$var("userId").ID("!") },
+      const GetUserCard = gql(({ query }) =>
+        query("GetUserCard")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               ...UserCardFields.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Verify operation structure
@@ -57,19 +52,15 @@ describe("query-level fragment pattern", () => {
       );
 
       // Query-level composition forwarding variables to the entity fragment
-      const GetUserConditional = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserConditional",
-          variables: {
-            ...$var("userId").ID("!"),
-            ...$var("showName").String("!"),
-          },
+      const GetUserConditional = gql(({ query }) =>
+        query("GetUserConditional")({
+          variables: `($userId: ID!, $showName: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               ...UserConditionalFields.spread({ includeName: $.showName }),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Verify variable definitions are merged
@@ -86,17 +77,16 @@ describe("query-level fragment pattern", () => {
       const UserNameFields = gql(({ fragment }) => fragment("UserNameFields", "User")`{ name }`());
 
       // Query-level composition: Spreading multiple fragments in the same selection set
-      const GetUserDetails = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserDetails",
-          variables: { ...$var("userId").ID("!") },
+      const GetUserDetails = gql(({ query }) =>
+        query("GetUserDetails")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               ...UserIdFields.spread(),
               ...UserNameFields.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Verify all fragments are spread
@@ -114,18 +104,17 @@ describe("query-level fragment pattern", () => {
       // Query-level operation: Represents the `user(id: ID!)` resolver call
       // The operation is the "query-level fragment" - it composes entity fragments
       // into a complete query that maps to one top-level resolver
-      const GetUserProfile = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserProfile",
-          variables: { ...$var("id").ID("!") },
+      const GetUserProfile = gql(({ query }) =>
+        query("GetUserProfile")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
             // This field selection represents one resolver unit (the `user` query)
-            ...f.user({ id: $.id })(() => ({
+            ...f("user", { id: $.id })(() => ({
               // Entity fragment is spread within the resolver unit's selection
               ...UserProfileFragment.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Verify the pattern
@@ -139,32 +128,27 @@ describe("query-level fragment pattern", () => {
       const UserBasicFields = gql(({ fragment }) => fragment("UserBasicFields", "User")`{ id name }`());
 
       // First operation using the entity fragment
-      const GetUserForCard = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserForCard",
-          variables: { ...$var("userId").ID("!") },
+      const GetUserForCard = gql(({ query }) =>
+        query("GetUserForCard")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               ...UserBasicFields.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // Second operation reusing the same entity fragment
-      const UpdateAndGetUser = gql(({ mutation, $var }) =>
-        mutation.operation({
-          name: "UpdateAndGetUser",
-          variables: {
-            ...$var("id").ID("!"),
-            ...$var("name").String("!"),
-          },
+      const UpdateAndGetUser = gql(({ mutation }) =>
+        mutation("UpdateAndGetUser")({
+          variables: `($id: ID!, $name: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.updateUser({ id: $.id, name: $.name })(() => ({
+            ...f("updateUser", { id: $.id, name: $.name })(() => ({
               ...UserBasicFields.spread(),
             })),
           }),
-        }),
+        })({}),
       );
 
       // The entity fragment is shared and reused

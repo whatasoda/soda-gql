@@ -149,7 +149,7 @@ async function graphqlSystemExists(fixtureName: string): Promise<boolean> {
 
 async function runCodegen(fixtureDir: string): Promise<void> {
   const configPath = path.join(fixtureDir, "soda-gql.config.ts");
-  const cliPath = path.join(PROJECT_ROOT, "packages/cli/src/index.ts");
+  const cliPath = path.join(PROJECT_ROOT, "packages/tools/src/cli/index.ts");
 
   return new Promise((resolve, reject) => {
     const proc = spawn("bun", ["--conditions=@soda-gql", cliPath, "codegen", "--config", configPath], {

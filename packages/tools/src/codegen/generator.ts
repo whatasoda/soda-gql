@@ -324,32 +324,6 @@ const collectScalarNames = (schema: SchemaIndex): string[] =>
 const collectDirectiveNames = (schema: SchemaIndex): string[] =>
   Array.from(schema.directives.keys()).sort((left, right) => left.localeCompare(right));
 
-const renderInputTypeMethod = (factoryVar: string, kind: "scalar" | "enum" | "input", typeName: string): string =>
-  `${typeName}: ${factoryVar}("${kind}", "${typeName}")`;
-
-const renderInputTypeMethods = (schema: SchemaIndex, factoryVar: string, excluded: Set<string>): string => {
-  const scalarMethods = Array.from(builtinScalarTypes.keys())
-    .concat(collectScalarNames(schema).filter((name) => !builtinScalarTypes.has(name)))
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "scalar", name));
-
-  const enumMethods = collectEnumTypeNames(schema)
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "enum", name));
-
-  const inputMethods = collectInputTypeNames(schema)
-    .filter((name) => !excluded.has(name))
-    .map((name) => renderInputTypeMethod(factoryVar, "input", name));
-
-  const allMethods = [...scalarMethods, ...enumMethods, ...inputMethods].sort((left, right) => {
-    const leftName = left.split(":")[0] ?? "";
-    const rightName = right.split(":")[0] ?? "";
-    return leftName.localeCompare(rightName);
-  });
-
-  return renderPropertyLines({ entries: allMethods, indentSize: 2 });
-};
-
 /**
  * Renders an input reference as a deferred string for directive arguments.
  * Format: "{kindChar}|{name}|{modifier}"
@@ -500,7 +474,6 @@ type MultiRuntimeTemplateOptions = {
       readonly inputNames: string[];
       readonly objectNames: string[];
       readonly unionNames: string[];
-      readonly inputTypeMethodsBlock: string;
       readonly directiveMethodsBlock: string;
 
       readonly defaultInputDepth?: number;
@@ -636,19 +609,17 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   const gqlExports: string[] = [];
 
   for (const [name, config] of Object.entries($$.schemas)) {
-    const schemaVar = `${name}Schema`;
+    const fullSchemaVar = `fullSchema_${name}`;
 
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
 
     // Build type exports
-    const typeExports = [`export type Schema_${name} = typeof ${schemaVar} & { _?: never };`];
+    const typeExports = [`export type Schema_${name} = typeof ${fullSchemaVar} & { _?: never };`];
     if (adapterVar) {
       typeExports.push(`export type Adapter_${name} = typeof ${adapterVar} & { _?: never };`);
     }
 
-    const inputTypeMethodsVar = `inputTypeMethods_${name}`;
-    const factoryVar = `createMethod_${name}`;
     const customDirectivesVar = `customDirectives_${name}`;
 
     // Generate __defaultInputDepth block if non-default value
@@ -741,8 +712,8 @@ const input_${name} = ${inputAssembly} as const;
 const object_${name} = ${objectAssembly} as const;
 const union_${name} = ${unionAssembly} as const;
 
-// Schema assembly
-const ${schemaVar} = {
+// --- FULL SCHEMA (for typegen) ---
+const ${fullSchemaVar} = {
   label: "${name}" as const,
   operations: { query: "${config.queryType}", mutation: "${config.mutationType}", subscription: "${config.subscriptionType}" } as const,
   scalar: ${scalarRef},
@@ -752,8 +723,6 @@ const ${schemaVar} = {
   union: union_${name},${defaultDepthBlock}${depthOverridesBlock}
 } as const satisfies AnyGraphqlSchema;
 
-const ${factoryVar} = createVarMethodFactory<typeof ${schemaVar}>();
-const ${inputTypeMethodsVar} = ${config.inputTypeMethodsBlock};
 const ${customDirectivesVar} = { ...createStandardDirectives(), ...${config.directiveMethodsBlock} };
 
 ${typeExports.join("\n")}`);
@@ -761,14 +730,12 @@ ${typeExports.join("\n")}`);
     // Build gql composer as a named variable for Context type extraction
     const gqlVarName = `gql_${name}`;
     if (adapterVar) {
-      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}, Adapter_${name}>`;
       schemaBlocks.push(
-        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { adapter: ${adapterVar}, inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+        `const ${gqlVarName} = createGqlElementComposer(${fullSchemaVar}, { adapter: ${adapterVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     } else {
-      const typeParams = `<Schema_${name}, typeof ${customDirectivesVar}>`;
       schemaBlocks.push(
-        `const ${gqlVarName} = createGqlElementComposer${typeParams}(${schemaVar}, { inputTypeMethods: ${inputTypeMethodsVar}, directiveMethods: ${customDirectivesVar} });`,
+        `const ${gqlVarName} = createGqlElementComposer(${fullSchemaVar}, { directiveMethods: ${customDirectivesVar} });`,
       );
     }
 
@@ -779,8 +746,8 @@ ${typeExports.join("\n")}`);
 
     // Prebuilt module exports (for typegen)
     const prebuiltExports: string[] = [
-      `export { ${schemaVar} as __schema_${name} }`,
-      `export { ${inputTypeMethodsVar} as __inputTypeMethods_${name} }`,
+      `export { ${fullSchemaVar} as __schema_${name} }`,
+      `export { ${fullSchemaVar} as __fullSchema_${name} }`,
       `export { ${customDirectivesVar} as __directiveMethods_${name} }`,
     ];
     if (adapterVar) {
@@ -801,7 +768,6 @@ import {${needsDefineEnum ? "\n  defineEnum," : ""}
   createTypedDirectiveMethod,
   createGqlElementComposer,
   createStandardDirectives,
-  createVarMethodFactory,
 } from "@soda-gql/core";
 ${extraImports}
 ${schemaBlocks.join("\n")}
@@ -905,8 +871,6 @@ export const generateMultiSchemaModule = (
     // Type name lists for assembly
     const allScalarNames = [...builtinScalarTypes.keys(), ...customScalarNames];
 
-    const factoryVar = `createMethod_${name}`;
-    const inputTypeMethodsBlock = renderInputTypeMethods(schema, factoryVar, excluded);
     const directiveMethodsBlock = renderDirectiveMethods(schema, excluded);
     // Fragment callback builders removed in Phase 3 — adapter type for fragments no longer needed
 
@@ -930,7 +894,6 @@ export const generateMultiSchemaModule = (
       inputNames: inputTypeNames,
       objectNames: objectTypeNames,
       unionNames: unionTypeNames,
-      inputTypeMethodsBlock,
       directiveMethodsBlock,
       defaultInputDepth: options?.defaultInputDepth?.get(name),
       inputDepthOverrides: options?.inputDepthOverrides?.get(name),
@@ -1036,7 +999,7 @@ ${typeDeclarations}
  * PrebuiltContext types will be integrated once the type resolution strategy
  * is redesigned to match the tagged template runtime API.
  */
-export const generateIndexModule = (schemaNames: string[], allFieldNames?: ReadonlyMap<string, readonly string[]>): string => {
+export const generateIndexModule = (schemaNames: string[], _allFieldNames?: ReadonlyMap<string, readonly string[]>): string => {
   const gqlImports = schemaNames.map((name) => `__gql_${name}`).join(", ");
   const prebuiltImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
   const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
@@ -1079,45 +1042,34 @@ type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TNa
 type PrebuiltCurriedFragment_${name} = <TKey extends string>(
   name: TKey,
   typeName: string,
-) => (...args: unknown[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>;
+) => ((options: { fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>);
 
 type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
   operationName: TName,
-) => (...args: unknown[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
 
-type FieldFactoryFn_${name} = (...args: unknown[]) => Record<string, unknown> & ((callback: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>) => Record<string, unknown>);
-${(() => {
-  const fieldNames = allFieldNames?.get(name);
-  if (fieldNames && fieldNames.length > 0) {
-    const union = fieldNames.map((n) => JSON.stringify(n)).join(" | ");
-    return `type AllObjectFieldNames_${name} = ${union};
-type GenericFieldFactory_${name} = { readonly [K in AllObjectFieldNames_${name}]: FieldFactoryFn_${name} } & Record<string, FieldFactoryFn_${name}>;`;
-  }
-  return `type GenericFieldFactory_${name} = Record<string, FieldFactoryFn_${name}>;`;
-})()}
-type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldFactory_${name}; readonly $: Readonly<Record<string, never>> };
-
-type PrebuiltCallbackOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
-  options: { name: TName; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown>; variables?: Record<string, unknown>; metadata?: (tools: { readonly $: Readonly<Record<string, never>>; readonly fragmentMetadata: unknown[] | undefined }) => Record<string, unknown> },
-) => ResolveOperationAtBuilder_${name}<TOperationType, TName>;
+// biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor — returns callable result for nested builders
+type GenericFieldAccessor_${name} = (fieldName: string, ...args: any[]) => {
+  (callback: (tools: { f: GenericFieldAccessor_${name} }) => Record<string, unknown>): Record<string, unknown>;
+  (...args: any[]): Record<string, unknown>;
+};
+type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldAccessor_${name}; readonly $: Readonly<Record<string, never>> };
 
 export type PrebuiltContext_${name} = {
   readonly fragment: PrebuiltCurriedFragment_${name};
   readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"query">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly mutation: PrebuiltCurriedOperation_${name}<"mutation"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"mutation">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly subscription: PrebuiltCurriedOperation_${name}<"subscription"> & {
-    readonly operation: PrebuiltCallbackOperation_${name}<"subscription">;
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
   };
   readonly define: <TValue>(factory: () => TValue | Promise<TValue>) => GqlDefine<TValue>;
   readonly extend: (...args: unknown[]) => AnyOperation;
-  readonly $var: VarBuilder<Schema_${name}>;
   readonly $dir: typeof __directiveMethods_${name};
   readonly $colocate: <T extends Record<string, unknown>>(projections: T) => T;
 };
@@ -1143,7 +1095,7 @@ import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
-import type { Fragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, VarBuilder, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 ${perSchemaTypes}
 
 export const gql = {

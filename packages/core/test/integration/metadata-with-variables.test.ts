@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import { print } from "graphql";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { createVarMethodFactory } from "../../src/composer/var-builder";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { VarRef } from "../../src/types/type-foundation";
+import { createVarRefFromNestedValue, createVarRefFromVariable } from "../../src/types/type-foundation/var-ref";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
 
 const schema = {
@@ -57,29 +58,21 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  Boolean: createMethod("scalar", "Boolean"),
-  ID: createMethod("scalar", "ID"),
-  Int: createMethod("scalar", "Int"),
-  String: createMethod("scalar", "String"),
-};
-
 describe("metadata with variable access", () => {
   describe("operation", () => {
     it("metadata callback receives $ with variable refs", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          metadata: ({ $ }) => ({
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $ }: OperationMetadataContext) => ({
             custom: {
               trackedVariables: [VarRef.getInner($.userId)],
             },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -89,18 +82,18 @@ describe("metadata with variable access", () => {
     });
 
     it("$var.getName extracts variable name", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          metadata: ({ $ }) => ({
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $, $var }: OperationMetadataContext) => ({
             custom: {
               variableNames: [$var.getName($.userId)],
             },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -110,13 +103,14 @@ describe("metadata with variable access", () => {
     });
 
     it("works with multiple variables", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ mutation, $var }) =>
-        mutation.operation({
-          name: "UpdateUser",
-          variables: { ...$var("userId").ID("!"), ...$var("userName").String("!") },
-          metadata: ({ $ }) => ({
+      const operation = gql(({ mutation }) =>
+        mutation("UpdateUser")({
+          variables: `($userId: ID!, $userName: String!)`,
+          fields: ({ f, $ }) => ({ ...f("updateUser", { id: $.userId, name: $.userName })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $, $var }: OperationMetadataContext) => ({
             custom: {
               trackedVars: {
                 userId: $var.getName($.userId),
@@ -124,7 +118,6 @@ describe("metadata with variable access", () => {
               },
             },
           }),
-          fields: ({ f, $ }) => ({ ...f.updateUser({ id: $.userId, name: $.userName })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -136,32 +129,31 @@ describe("metadata with variable access", () => {
     });
 
     it("metadata is undefined when not provided", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
-        }),
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({}),
       );
 
       expect(operation.metadata).toBeUndefined();
     });
 
     it("metadata callback receives document as DocumentNode", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          metadata: ({ document }) => ({
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ document }: OperationMetadataContext) => ({
             custom: {
               documentHash: createHash("sha256").update(print(document)).digest("hex"),
             },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
@@ -171,13 +163,14 @@ describe("metadata with variable access", () => {
     });
 
     it("metadata callback can access both $ and document", () => {
-      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-      const operation = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
-          metadata: ({ $, document }) => ({
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $, $var, document }: OperationMetadataContext) => ({
             headers: {
               "X-Variable-Name": $var.getName($.userId),
             },
@@ -185,13 +178,112 @@ describe("metadata with variable access", () => {
               hasDocument: document.kind === "Document",
             },
           }),
-          fields: ({ f, $ }) => ({ ...f.user({ id: $.userId })(({ f }) => ({ ...f.id() })) }),
         }),
       );
 
       const meta = operation.metadata as OperationMetadata;
       expect(meta.headers?.["X-Variable-Name"]).toBe("userId");
       expect(meta.custom?.hasDocument).toBe(true);
+    });
+  });
+
+  describe("$var tools use cases", () => {
+    it("cache key generation from variable names", () => {
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
+
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")(), ...f("name")() })) }),
+        })({
+          metadata: ({ $, $var }: OperationMetadataContext) => ({
+            custom: {
+              cacheKey: `GetUser:${$var.getName($.userId)}`,
+            },
+          }),
+        }),
+      );
+
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.custom?.cacheKey).toBe("GetUser:userId");
+    });
+
+    it("conditional request headers based on variable presence", () => {
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
+
+      const operation = gql(({ query }) =>
+        query("GetUsers")({
+          variables: `($categoryId: ID)`,
+          fields: ({ f, $ }) => ({ ...f("users", { categoryId: $.categoryId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $, $var }: OperationMetadataContext) => ({
+            headers: {
+              "X-Has-Category-Filter": String($var.getName($.categoryId) !== undefined),
+            },
+          }),
+        }),
+      );
+
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.headers?.["X-Has-Category-Filter"]).toBe("true");
+    });
+
+    it("decomposing nested input structures", () => {
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
+
+      const pageOffsetRef = createVarRefFromVariable("pageOffset");
+      const nestedInput = createVarRefFromNestedValue({
+        pagination: { limit: 20, offset: pageOffsetRef },
+        filter: { status: "active" },
+      });
+
+      const operation = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
+          fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $var }: OperationMetadataContext) => ({
+            custom: {
+              staticLimit: $var.getValueAt(nestedInput, (p: any) => p.pagination.limit),
+              filterStatus: $var.getValueAt(nestedInput, (p: any) => p.filter.status),
+              offsetVarName: $var.getNameAt(nestedInput, (p: any) => p.pagination.offset),
+              offsetPath: $var.getPath(nestedInput, (p: any) => p.pagination.offset),
+            },
+          }),
+        }),
+      );
+
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.custom?.staticLimit).toBe(20);
+      expect(meta.custom?.filterStatus).toBe("active");
+      expect(meta.custom?.offsetVarName).toBe("pageOffset");
+      expect(meta.custom?.offsetPath).toEqual(["$pageOffset"]);
+    });
+
+    it("variable labeling for backend communication", () => {
+      const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
+
+      const operation = gql(({ mutation }) =>
+        mutation("UpdateUser")({
+          variables: `($userId: ID!, $userName: String!)`,
+          fields: ({ f, $ }) => ({ ...f("updateUser", { id: $.userId, name: $.userName })(({ f }) => ({ ...f("id")() })) }),
+        })({
+          metadata: ({ $, $var }: OperationMetadataContext) => ({
+            custom: {
+              variableLabels: {
+                [$var.getName($.userId)]: { role: "identifier", sensitivity: "pii" },
+                [$var.getName($.userName)]: { role: "payload", sensitivity: "pii" },
+              },
+            },
+          }),
+        }),
+      );
+
+      const meta = operation.metadata as OperationMetadata;
+      expect(meta.custom?.variableLabels).toEqual({
+        userId: { role: "identifier", sensitivity: "pii" },
+        userName: { role: "payload", sensitivity: "pii" },
+      });
     });
   });
 });

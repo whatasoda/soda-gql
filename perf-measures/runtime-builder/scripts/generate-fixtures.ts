@@ -188,25 +188,16 @@ function generateModelFile(index: number, entityIndex: number): string {
 import { gql } from "../../graphql-system";
 
 export const model${index} = gql.default(({ fragment }) =>
-  fragment.Entity${entityIndex}({
-    fields: ({ f }) => ({
-      ...f.id(),
-      ...f.name(),
-      ...f.description(),
-      ...f.value(),
-      ...f.isActive(),
-      ...f.createdAt(),
-      ...f.related()(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.value(),
-      })),
-      ...f.relatedList({ limit: 5 })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-      })),
-    }),
-  }),
+  fragment("Model${index}Fields", "Entity${entityIndex}")\\\`{
+    id
+    name
+    description
+    value
+    isActive
+    createdAt
+    related { id name value }
+    relatedList(limit: 5) { id name }
+  }\\\`(),
 );
 `;
 }
@@ -222,20 +213,16 @@ function generateQueryOperationFile(index: number, entityIndex: number): string 
     return `// Auto-generated query operation for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const query${index} = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Query${index}",
-    variables: { ...$var("limit").Int("?"), ...$var("offset").Int("?") },
-    fields: ({ f, $ }) => ({
-      ...f.${entityName}List({ limit: $.limit, offset: $.offset })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.description(),
-        ...f.value(),
-        ...f.isActive(),
-      })),
-    }),
-  }),
+export const query${index} = gql.default(({ query }) =>
+  query("Query${index}")\\\`($limit: Int, $offset: Int) {
+    ${entityName}List(limit: $limit, offset: $offset) {
+      id
+      name
+      description
+      value
+      isActive
+    }
+  }\\\`(),
 );
 `;
   }
@@ -243,20 +230,16 @@ export const query${index} = gql.default(({ query, $var }) =>
   return `// Auto-generated query operation for builder runtime benchmarking
 import { gql } from "../../graphql-system";
 
-export const query${index} = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Query${index}",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.${entityName}({ id: $.id })(({ f }) => ({
-        ...f.id(),
-        ...f.name(),
-        ...f.description(),
-        ...f.value(),
-        ...f.isActive(),
-      })),
-    }),
-  }),
+export const query${index} = gql.default(({ query }) =>
+  query("Query${index}")\\\`($id: ID!) {
+    ${entityName}(id: $id) {
+      id
+      name
+      description
+      value
+      isActive
+    }
+  }\\\`(),
 );
 `;
 }
@@ -267,12 +250,12 @@ export const query${index} = gql.default(({ query, $var }) =>
 function generateOperationWithModelsFile(index: number, modelCount: number): string {
   const modelsPerOp = Math.min(3, modelCount);
   const modelImports: string[] = [];
-  const modelSpreads: string[] = [];
+  const modelInterpolations: string[] = [];
 
   for (let j = 0; j < modelsPerOp; j++) {
     const modelIndex = (index * modelsPerOp + j) % modelCount;
     modelImports.push(`model${modelIndex}`);
-    modelSpreads.push(`        ...model${modelIndex}.spread(),`);
+    modelInterpolations.push(`            ...\${model${modelIndex}}`);
   }
 
   // Generate individual imports for each model (from ../entities/ since operations are in src/pages/)
@@ -283,16 +266,12 @@ function generateOperationWithModelsFile(index: number, modelCount: number): str
 import { gql } from "../../graphql-system";
 ${individualImports}
 
-export const operation${index} = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "Operation${index}",
-    variables: { ...$var("id").ID("!") },
-    fields: ({ f, $ }) => ({
-      ...f.entity${entityIndex}({ id: $.id })(({ f }) => ({
-${modelSpreads.join("\n")}
-      })),
-    }),
-  }),
+export const operation${index} = gql.default(({ query }) =>
+  query("Operation${index}")\\\`($id: ID!) {
+    entity${entityIndex}(id: $id) {
+${modelInterpolations.join("\n")}
+    }
+  }\\\`(),
 );
 `;
 }

@@ -30,7 +30,7 @@ export type InputTypeSpecifiers = { [key: string]: DeferredInputSpecifier };
 
 /**
  * VarSpecifier is the structured format for operation variable definitions.
- * Created by $var() at runtime, NOT from codegen.
+ * Created by buildVarSpecifiers() from template string variable declarations.
  */
 export type VarSpecifier = {
   readonly kind: CreatableInputTypeKind;

@@ -3,14 +3,7 @@
  * @module
  */
 
-import {
-  type AnyAssignableInput,
-  createVarRefFromNestedValue,
-  createVarRefFromVariable,
-  type DeclaredVariables,
-  VarRef,
-} from "../types/fragment";
-import type { AnyGraphqlSchema } from "../types/schema";
+import { type AnyAssignableInput, createVarRefFromNestedValue, createVarRefFromVariable, VarRef } from "../types/fragment";
 import type { AnyVarRef, NestedValue, VariableDefinitions } from "../types/type-foundation";
 import { mapValues } from "../utils/map-values";
 
@@ -25,10 +18,10 @@ import { mapValues } from "../utils/map-values";
  *
  * @internal
  */
-export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariableDefinitions extends VariableDefinitions>(
+export const createVarAssignments = <TVariableDefinitions extends VariableDefinitions>(
   definitions: TVariableDefinitions,
   providedValues: AnyAssignableInput | void,
-): DeclaredVariables<TSchema, TVariableDefinitions> => {
+): Readonly<Record<string, AnyVarRef>> => {
   return mapValues(definitions, (_, key): AnyVarRef => {
     const varName = key as string;
     if (!providedValues || providedValues[varName] === undefined) {
@@ -41,7 +34,7 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
     }
 
     return createVarRefFromNestedValue(provided as NestedValue);
-  }) as DeclaredVariables<TSchema, TVariableDefinitions>;
+  }) as Readonly<Record<string, AnyVarRef>>;
 };
 
 /**
@@ -52,10 +45,9 @@ export const createVarAssignments = <TSchema extends AnyGraphqlSchema, TVariable
  *
  * @internal
  */
-export const createVarRefs = <TSchema extends AnyGraphqlSchema, TVarDefinitions extends VariableDefinitions>(
+export const createVarRefs = <TVarDefinitions extends VariableDefinitions>(
   definitions: TVarDefinitions,
-) =>
-  mapValues(definitions as VariableDefinitions, (_, name): AnyVarRef => createVarRefFromVariable(name)) as DeclaredVariables<
-    TSchema,
-    TVarDefinitions
+): Readonly<Record<string, AnyVarRef>> =>
+  mapValues(definitions as VariableDefinitions, (_, name): AnyVarRef => createVarRefFromVariable(name)) as Readonly<
+    Record<string, AnyVarRef>
   >;

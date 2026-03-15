@@ -2,11 +2,8 @@ import { gql } from "../../../../graphql-system";
 
 const buildOperation = () => {
   const invalid = gql.default(({ query }) =>
-    query.operation(
-      { name: "InvalidOp" },
-      // @ts-expect-error - Test fixture with invalid arguments
-      () => ({}),
-    ),
+    // @ts-expect-error - Test fixture: options object missing required 'fields' property
+    query("InvalidOp")({ variables: `($id: ID!)` })(),
   );
   return invalid;
 };

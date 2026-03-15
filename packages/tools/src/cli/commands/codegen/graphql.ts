@@ -188,9 +188,8 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
 
     const transformResult = transformParsedGraphql(parsed, { schemaDocument });
-    if (transformResult.isErr()) {
-      const error = transformResult.error;
-      return err(cliErrors.parseError(error.message, file));
+    if (!transformResult.ok) {
+      return err(cliErrors.parseError(transformResult.error.message, file));
     }
 
     const { operations, fragments } = transformResult.value;
@@ -252,6 +251,7 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
       graphqlSystemPath,
       fragmentImports,
       schemaDocument,
+      operationDocument: parsed.document,
     };
 
     const imports: string[] = [];
@@ -266,20 +266,12 @@ export const generateCompatFiles = async (args: ParsedGraphqlArgs): Promise<CliR
     }
 
     for (const op of operations) {
-      const emitResult = emitOperation(op as EnrichedOperation, emitOptions);
-      if (emitResult.isErr()) {
-        return err(cliErrors.parseError(emitResult.error.message, file));
-      }
-      bodies.push(emitResult.value);
+      bodies.push(emitOperation(op as EnrichedOperation, emitOptions));
       operationCount++;
     }
 
     for (const frag of fragments) {
-      const emitResult = emitFragment(frag as EnrichedFragment, emitOptions);
-      if (emitResult.isErr()) {
-        return err(cliErrors.parseError(emitResult.error.message, file));
-      }
-      bodies.push(emitResult.value);
+      bodies.push(emitFragment(frag as EnrichedFragment, emitOptions));
       fragmentCount++;
     }
 

@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { print } from "graphql";
-import type { StandardDirectives } from "../../src/composer/directive-builder";
+import type { FieldAccessorFunction } from "../../src/composer/fields-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicTestSchema, basicTestSchema, createBasicInputTypeMethods } from "../fixtures";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
+import { basicTestSchema } from "../fixtures";
 
-const inputTypeMethods = createBasicInputTypeMethods<BasicTestSchema>();
-const gql = createGqlElementComposer<BasicTestSchema, StandardDirectives>(basicTestSchema, {
-  inputTypeMethods,
-});
+const gql = createGqlElementComposer(basicTestSchema, {});
 
 describe("tagged template operation integration", () => {
   describe("query", () => {
@@ -52,7 +50,6 @@ describe("tagged template operation integration", () => {
 
   describe("$ callback context runtime behavior validation", () => {
     it("$ callback receives variable context object", () => {
-      // Fragment for spreading
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`{
           id
@@ -60,12 +57,10 @@ describe("tagged template operation integration", () => {
         }`(),
       );
 
-      // Operation with variable and callback interpolation
       const GetUser = gql(({ query }) =>
         query("GetUser")`($userId: ID!) {
           user(id: $userId) {
             ...${({ $ }) => {
-              // $ is provided as a context object (Record<string, AnyVarRef>)
               expect($).toBeDefined();
               expect(typeof $).toBe("object");
               return userFields.spread({});
@@ -79,7 +74,6 @@ describe("tagged template operation integration", () => {
     });
 
     it("$ callback allows accessing variable refs for fragment spread", () => {
-      // Fragment without its own variables - will receive variable assignments via spread
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`{
           id
@@ -87,13 +81,10 @@ describe("tagged template operation integration", () => {
         }`(),
       );
 
-      // Operation that provides $ context to callback
       const GetUser = gql(({ query }) =>
         query("GetUser")`($userId: ID!) {
           user(id: "1") {
             ...${({ $ }) => {
-              // Access $ to verify it contains the operation's variables
-              // $ is Record<string, AnyVarRef> providing runtime flexibility
               expect($).toBeDefined();
               expect($.userId).toBeDefined();
               return userFields.spread({});
@@ -102,7 +93,6 @@ describe("tagged template operation integration", () => {
         }`(),
       );
 
-      // Operation variable should be present
       expect(GetUser.variableNames).toContain("userId");
 
       const printed = print(GetUser.document);
@@ -112,25 +102,18 @@ describe("tagged template operation integration", () => {
     });
 
     it("callback builder provides compile-time typed $ context", () => {
-      // This test documents that callback builder provides full compile-time type safety
-      // The $ parameter is typed as DeclaredVariables<TSchema, TVarDefinitions>
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => {
-            // In callback builder, TypeScript knows:
-            // - $.id exists (compile-time check)
-            // - $.id is a VarRef<ID> (compile-time type)
-            // - accessing $.nonexistent would be a TypeScript error
             return {
-              ...f.user({ id: $.id })(({ f }) => ({
-                ...f.id(),
-                ...f.name(),
+              ...f("user", { id: $.id })(({ f }) => ({
+                ...f("id")(),
+                ...f("name")(),
               })),
             };
           },
-        }),
+        })({}),
       );
 
       expect(GetUser.operationType).toBe("query");
@@ -138,12 +121,6 @@ describe("tagged template operation integration", () => {
     });
 
     it("tagged template $ is Record<string, AnyVarRef> for runtime flexibility", () => {
-      // Tagged templates use generic $ type for flexibility
-      // This is acceptable because:
-      // 1. Runtime behavior is correct
-      // 2. Users needing compile-time safety can use callback builder
-      // 3. Template literal type parsing would be extremely complex
-
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`{
           id
@@ -154,10 +131,8 @@ describe("tagged template operation integration", () => {
         query("GetUser")`($userId: ID!) {
           user(id: $userId) {
             ...${({ $ }) => {
-              // $ is Record<string, AnyVarRef> - no compile-time variable name checking
-              // but runtime behavior works correctly
-              const varRef = $.userId; // TypeScript allows any property access
-              expect(varRef).toBeDefined(); // At runtime, userId exists
+              const varRef = $.userId;
+              expect(varRef).toBeDefined();
               return userFields.spread({});
             }}
           }
@@ -208,14 +183,12 @@ describe("tagged template operation integration", () => {
     });
 
     it("metadata callback with interpolated fragment spread aggregates fragment metadata", () => {
-      // Fragment with metadata callback
       const userFields = gql(({ fragment }) =>
         fragment("UserMetaFields", "User")`{ id name }`({
           metadata: { source: "user-fragment" },
         }),
       );
 
-      // Operation with metadata callback that accesses fragmentMetadata
       const GetUser = gql(({ query }) =>
         query("GetUser")`{
           user(id: "1") {
@@ -228,7 +201,6 @@ describe("tagged template operation integration", () => {
         }),
       );
 
-      // Fragment metadata is aggregated via the metadata pipeline
       expect(GetUser.metadata).toEqual({ fragmentCount: 1 });
     });
   });
@@ -247,14 +219,14 @@ describe("tagged template operation integration", () => {
   describe("metadata pipeline parity: callback-builder vs tagged-template", () => {
     it("static metadata is identical between callback-builder and tagged-template", () => {
       const cbOp = gql(({ query }) =>
-        query.operation({
-          name: "GetUser",
+        query("GetUser")({
           fields: ({ f }) => ({
-            ...f.user({ id: "1" })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("user", { id: "1" })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
+        })({
           metadata: () => ({ headers: { "X-Source": "test" } }),
         }),
       );
@@ -274,14 +246,14 @@ describe("tagged template operation integration", () => {
       let ttDocKind: string | undefined;
 
       const cbOp = gql(({ query }) =>
-        query.operation({
-          name: "GetUser",
+        query("GetUser")({
           fields: ({ f }) => ({
-            ...f.user({ id: "1" })(({ f }) => ({
-              ...f.id(),
+            ...f("user", { id: "1" })(({ f }) => ({
+              ...f("id")(),
             })),
           }),
-          metadata: ({ document }) => {
+        })({
+          metadata: ({ document }: OperationMetadataContext) => {
             cbDocKind = document.kind;
             return {};
           },
@@ -297,7 +269,6 @@ describe("tagged template operation integration", () => {
         }),
       );
 
-      // Access metadata to trigger lazy evaluation
       void cbOp.metadata;
       void ttOp.metadata;
 
@@ -307,17 +278,17 @@ describe("tagged template operation integration", () => {
     });
 
     it("variable-parameterized operations produce matching metadata", () => {
-      const cbOp = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
+      const cbOp = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("user", { id: $.userId })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
-          metadata: ({ $ }) => ({ hasUserId: $.userId !== undefined }),
+        })({
+          metadata: ({ $ }: OperationMetadataContext) => ({ hasUserId: $.userId !== undefined }),
         }),
       );
 
@@ -345,16 +316,16 @@ describe("tagged template operation integration", () => {
       );
 
       const cbOp = gql(({ query }) =>
-        query.operation({
-          name: "GetUser",
+        query("GetUser")({
           fields: ({ f }) => ({
-            ...f.user({ id: "1" })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("user", { id: "1" })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
               ...cbFragFields.spread(),
             })),
           }),
-          metadata: ({ fragmentMetadata }) => ({
+        })({
+          metadata: ({ fragmentMetadata }: OperationMetadataContext) => ({
             fragmentCount: Array.isArray(fragmentMetadata) ? fragmentMetadata.length : 0,
           }),
         }),
@@ -377,15 +348,14 @@ describe("tagged template operation integration", () => {
 
     it("union selection produces identical documents between callback-builder and tagged-template", () => {
       const cbOp = gql(({ query }) =>
-        query.operation({
-          name: "Search",
+        query("Search")({
           fields: ({ f }) => ({
-            ...f.search()({
-              Article: ({ f }) => ({ ...f.id(), ...f.title() }),
-              Video: ({ f }) => ({ ...f.id(), ...f.duration() }),
+            ...f("search")({
+              Article: ({ f }: { f: FieldAccessorFunction }) => ({ ...f("id")(), ...f("title")() }),
+              Video: ({ f }: { f: FieldAccessorFunction }) => ({ ...f("id")(), ...f("duration")() }),
             }),
           }),
-        }),
+        })({}),
       );
 
       const ttOp = gql(({ query }) =>
@@ -403,17 +373,16 @@ describe("tagged template operation integration", () => {
 
   describe("callback builder coexistence", () => {
     it("callback builder still works alongside tagged template", () => {
-      const GetUser = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("id").ID("!") },
+      const GetUser = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($id: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.id })(({ f }) => ({
-              ...f.id(),
-              ...f.name(),
+            ...f("user", { id: $.id })(({ f }) => ({
+              ...f("id")(),
+              ...f("name")(),
             })),
           }),
-        }),
+        })({}),
       );
       expect(GetUser.operationType).toBe("query");
       expect(GetUser.operationName).toBe("GetUser");
@@ -448,7 +417,6 @@ describe("tagged template operation integration", () => {
     });
 
     it("callback interpolation works in operation context", () => {
-      // Simple fragment without variables that we'll spread via callback
       const userIdField = gql(({ fragment }) =>
         fragment("UserIdField", "User")`{
           id
@@ -474,7 +442,6 @@ describe("tagged template operation integration", () => {
     });
 
     it("variable definitions are merged from interpolated fragments", () => {
-      // Fragment with a variable
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`($userId: ID!) {
           id
@@ -490,7 +457,6 @@ describe("tagged template operation integration", () => {
         }`(),
       );
 
-      // Variable from fragment should be merged into operation
       expect(GetUser.variableNames).toContain("userId");
 
       const printed = print(GetUser.document);
@@ -540,18 +506,15 @@ describe("tagged template operation integration", () => {
         }`(),
       );
 
-      // Should be able to print the document without errors
       expect(() => print(GetUser.document)).not.toThrow();
 
       const printed = print(GetUser.document);
-      // Basic GraphQL structure validation
       expect(printed).toContain("query GetUser");
       expect(printed).toContain("{");
       expect(printed).toContain("}");
     });
 
     it("supports static metadata with interpolated fragments", () => {
-      // Fragment with metadata
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`{
           id
@@ -561,7 +524,6 @@ describe("tagged template operation integration", () => {
         }),
       );
 
-      // Operation with both interpolated fragment and static metadata
       const GetUser = gql(({ query }) =>
         query("GetUser")`{
           user(id: "1") {
@@ -578,7 +540,6 @@ describe("tagged template operation integration", () => {
     });
 
     it("fragment metadata callback receives $ context from parent variables", () => {
-      // Fragment with variables and metadata callback
       const userFields = gql(({ fragment }) =>
         fragment("UserFields", "User")`($userId: ID!) {
           id
@@ -590,7 +551,6 @@ describe("tagged template operation integration", () => {
         }),
       );
 
-      // Spread the fragment - this triggers the metadata callback
       const fields = userFields.spread({ userId: "test" as never });
       expect(fields).toBeDefined();
       expect(fields).toHaveProperty("id");
@@ -754,7 +714,6 @@ describe("tagged template operation integration", () => {
       const GetUser = gql(({ query }) => query("GetUser")`($id: ID!) { user(id: $id) { id name } }`());
 
       const fields = GetUser.documentSource();
-      // Must NOT be empty — prebuilt mode previously returned {}
       expect(Object.keys(fields).length).toBeGreaterThan(0);
       expect(fields).toHaveProperty("user");
     });

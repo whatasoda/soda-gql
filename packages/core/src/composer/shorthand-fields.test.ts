@@ -4,13 +4,13 @@ import { define, unsafeInputType, unsafeOutputType } from "../../test/utils/sche
 import { defineOperationRoots, defineScalar } from "../schema";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { StandardDirectives } from "./directive-builder";
+import type { FieldAccessorFunction } from "./fields-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethodFactory } from "./var-builder";
 
 /**
  * Schema for testing shorthand field selection.
  */
-const schema = {
+const fullSchema = {
   label: "test" as const,
   operations: defineOperationRoots({
     query: "Query",
@@ -91,20 +91,12 @@ const schema = {
   },
 } satisfies AnyGraphqlSchema;
 
+const schema = fullSchema;
+
 type Schema = typeof schema & { _?: never };
 
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  ID: createMethod("scalar", "ID"),
-  String: createMethod("scalar", "String"),
-  Int: createMethod("scalar", "Int"),
-  Boolean: createMethod("scalar", "Boolean"),
-  Status: createMethod("enum", "Status"),
-  Role: createMethod("enum", "Role"),
-};
-
 describe("Shorthand Field Selection", () => {
-  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+  const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
   describe("basic shorthand syntax", () => {
     it("accepts shorthand for scalar fields", () => {
@@ -124,18 +116,17 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("generates correct GraphQL for shorthand scalars", () => {
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUser",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUser")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               id: true,
               name: true,
               email: true,
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -145,18 +136,17 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("generates correct GraphQL for shorthand enums", () => {
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserStatus",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUserStatus")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(() => ({
+            ...f("user", { id: $.userId })(() => ({
               id: true,
               status: true,
               role: true,
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -174,18 +164,17 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("generates correct GraphQL for mixed syntax", () => {
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserMixed",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUserMixed")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
+            ...f("user", { id: $.userId })(({ f }) => ({
               id: true,
-              ...f.name(),
+              ...f("name")(),
               status: true,
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -197,21 +186,20 @@ describe("Shorthand Field Selection", () => {
 
   describe("nested object selections with shorthand", () => {
     it("accepts shorthand in nested object selections", () => {
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserWithProfile",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUserWithProfile")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
+            ...f("user", { id: $.userId })(({ f }) => ({
               id: true,
               name: true,
-              ...f.profile()(() => ({
+              ...f("profile")(() => ({
                 bio: true,
                 website: true,
               })),
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -221,16 +209,15 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("accepts shorthand in deeply nested selections", () => {
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserWithAvatar",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUserWithAvatar")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
+            ...f("user", { id: $.userId })(({ f }) => ({
               id: true,
-              ...f.profile()(({ f }) => ({
+              ...f("profile")(({ f }) => ({
                 bio: true,
-                ...f.avatar()(() => ({
+                ...f("avatar")(() => ({
                   url: true,
                   width: true,
                   height: true,
@@ -238,7 +225,7 @@ describe("Shorthand Field Selection", () => {
               })),
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -253,17 +240,16 @@ describe("Shorthand Field Selection", () => {
     it("allows fragments with shorthand to be spread into operations", () => {
       const profileFragment = gql(({ fragment }) => fragment("ProfileFields", "Profile")`{ bio avatar { url width height } }`());
 
-      const profileQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "GetUserComplete",
-          variables: { ...$var("userId").ID("!") },
+      const profileQuery = gql(({ query }) =>
+        query("GetUserComplete")({
+          variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({
-            ...f.user({ id: $.userId })(({ f }) => ({
+            ...f("user", { id: $.userId })(({ f }) => ({
               id: true,
-              ...f.profile()(() => profileFragment.spread()),
+              ...f("profile")(() => profileFragment.spread()),
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(profileQuery.document);
@@ -276,16 +262,15 @@ describe("Shorthand Field Selection", () => {
   describe("list queries with shorthand", () => {
     it("handles list fields with shorthand selections", () => {
       const usersQuery = gql(({ query }) =>
-        query.operation({
-          name: "GetUsers",
+        query("GetUsers")({
           fields: ({ f }) => ({
-            ...f.users()(() => ({
+            ...f("users")(() => ({
               id: true,
               name: true,
               status: true,
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(usersQuery.document);
@@ -298,18 +283,17 @@ describe("Shorthand Field Selection", () => {
 
   describe("mutation with shorthand", () => {
     it("handles mutation operations with shorthand response selections", () => {
-      const createUserMutation = gql(({ mutation, $var }) =>
-        mutation.operation({
-          name: "CreateUser",
-          variables: { ...$var("name").String("!") },
+      const createUserMutation = gql(({ mutation }) =>
+        mutation("CreateUser")({
+          variables: `($name: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.createUser({ name: $.name })(() => ({
+            ...f("createUser", { name: $.name })(() => ({
               id: true,
               name: true,
               isActive: true,
             })),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(createUserMutation.document);
@@ -322,12 +306,11 @@ describe("Shorthand Field Selection", () => {
 
   describe("shorthand in union inline fragments", () => {
     it("accepts shorthand for scalar fields in union members", () => {
-      const searchQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "SearchContent",
-          variables: { ...$var("query").String("!") },
+      const searchQuery = gql(({ query }) =>
+        query("SearchContent")({
+          variables: `($query: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.search({ query: $.query })({
+            ...f("search", { query: $.query })({
               Article: () => ({
                 id: true,
                 title: true,
@@ -340,7 +323,7 @@ describe("Shorthand Field Selection", () => {
               }),
             }),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(searchQuery.document);
@@ -353,25 +336,24 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("accepts mixed shorthand and factory syntax in union members", () => {
-      const searchQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "SearchMixed",
-          variables: { ...$var("query").String("!") },
+      const searchQuery = gql(({ query }) =>
+        query("SearchMixed")({
+          variables: `($query: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.search({ query: $.query })({
-              Article: ({ f }) => ({
+            ...f("search", { query: $.query })({
+              Article: ({ f }: { f: FieldAccessorFunction }) => ({
                 id: true,
-                ...f.title(),
+                ...f("title")(),
                 author: true,
               }),
-              Video: ({ f }) => ({
-                ...f.id(),
+              Video: ({ f }: { f: FieldAccessorFunction }) => ({
+                ...f("id")(),
                 title: true,
-                ...f.duration(),
+                ...f("duration")(),
               }),
             }),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(searchQuery.document);
@@ -382,19 +364,18 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("generates correct GraphQL for union with shorthand", () => {
-      const searchQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "SearchVerify",
-          variables: { ...$var("q").String("!") },
+      const searchQuery = gql(({ query }) =>
+        query("SearchVerify")({
+          variables: `($q: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.search({ query: $.q })({
+            ...f("search", { query: $.q })({
               Article: () => ({
                 id: true,
                 title: true,
               }),
             }),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(searchQuery.document);
@@ -406,20 +387,18 @@ describe("Shorthand Field Selection", () => {
     });
 
     it("handles partial union member selection with shorthand", () => {
-      const searchQuery = gql(({ query, $var }) =>
-        query.operation({
-          name: "SearchPartial",
-          variables: { ...$var("query").String("!") },
+      const searchQuery = gql(({ query }) =>
+        query("SearchPartial")({
+          variables: `($query: String!)`,
           fields: ({ f, $ }) => ({
-            ...f.search({ query: $.query })({
+            ...f("search", { query: $.query })({
               Article: () => ({
                 id: true,
                 title: true,
               }),
-              // Video member is not selected
             }),
           }),
-        }),
+        })({}),
       );
 
       const printed = print(searchQuery.document);

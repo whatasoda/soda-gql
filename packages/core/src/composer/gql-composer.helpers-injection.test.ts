@@ -5,7 +5,6 @@ import { defineOperationRoots, defineScalar } from "../schema/schema-builder";
 import type { AnyGraphqlSchema } from "../types/schema/schema";
 import type { StandardDirectives } from "./directive-builder";
 import { createGqlElementComposer } from "./gql-composer";
-import { createVarMethodFactory } from "./var-builder";
 
 const schema = {
   label: "test" as const,
@@ -42,14 +41,6 @@ const schema = {
 
 type Schema = typeof schema & { _?: never };
 
-const createMethod = createVarMethodFactory<Schema>();
-const inputTypeMethods = {
-  Boolean: createMethod("scalar", "Boolean"),
-  ID: createMethod("scalar", "ID"),
-  Int: createMethod("scalar", "Int"),
-  String: createMethod("scalar", "String"),
-};
-
 describe("helpers injection via adapter", () => {
   it("allows custom helpers to be injected via adapter.helpers", () => {
     const authHelper = {
@@ -66,7 +57,6 @@ describe("helpers injection via adapter", () => {
 
     const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
-      inputTypeMethods,
     });
 
     let capturedAuth: typeof authHelper | undefined;
@@ -96,7 +86,6 @@ describe("helpers injection via adapter", () => {
 
     const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
-      inputTypeMethods,
     });
 
     let capturedCacheTTL: number | undefined;
@@ -109,45 +98,40 @@ describe("helpers injection via adapter", () => {
     expect(capturedCacheTTL).toBe(300);
   });
 
-  it("preserves $var (var builder) alongside custom helpers", () => {
+  it("preserves core context alongside custom helpers", () => {
     const adapter = defineAdapter({
       helpers: { custom: () => "test" },
     });
 
     const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
-      inputTypeMethods,
     });
 
-    let varBuilderAvailable = false;
     let customAvailable = false;
 
-    gql(({ query, $var, custom }) => {
-      varBuilderAvailable = typeof $var === "function";
+    gql(({ query, custom }) => {
       customAvailable = custom() === "test";
 
-      return query.operation({
-        name: "Test",
-        variables: { ...$var("id").ID("!") },
-        fields: ({ f, $ }) => ({ ...f.user({ id: $.id })(({ f }) => ({ ...f.id() })) }),
-      });
+      return query("Test")({
+        variables: `($id: ID!)`,
+        fields: ({ f, $ }) => ({ ...f("user", { id: $.id })(({ f: innerF }) => ({ ...innerF("id")() })) }),
+      })({});
     });
 
-    expect(varBuilderAvailable).toBe(true);
     expect(customAvailable).toBe(true);
   });
 
-  it("works with inputTypeMethods option", () => {
-    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, { inputTypeMethods });
+  it("works without adapter option", () => {
+    const gql = createGqlElementComposer<Schema, StandardDirectives>(schema, {});
 
-    let varBuilderAvailable = false;
+    let fragmentCreated = false;
 
-    gql(({ fragment, $var }) => {
-      varBuilderAvailable = typeof $var === "function";
-      return fragment("UserVarBuilderFields", "User")`{ id name }`();
+    gql(({ fragment }) => {
+      fragmentCreated = true;
+      return fragment("UserFields", "User")`{ id name }`();
     });
 
-    expect(varBuilderAvailable).toBe(true);
+    expect(fragmentCreated).toBe(true);
   });
 
   it("supports nested helper structures", () => {
@@ -171,7 +155,6 @@ describe("helpers injection via adapter", () => {
 
     const gql = createGqlElementComposer<Schema, StandardDirectives, typeof adapter>(schema, {
       adapter,
-      inputTypeMethods,
     });
 
     let capturedRole: string | undefined;

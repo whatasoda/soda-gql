@@ -7,7 +7,6 @@
  * @module
  */
 
-import { createVarMethodFactory, type InputTypeMethods } from "../../src/composer/var-builder";
 import { defineOperationRoots, defineScalar } from "../../src/schema";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
 import { define, unsafeInputType, unsafeOutputType } from "../utils/schema";
@@ -354,74 +353,3 @@ export const inputObjectSchema = {
 } satisfies AnyGraphqlSchema;
 
 export type InputObjectSchema = typeof inputObjectSchema & { _?: never };
-
-// =============================================================================
-// Input Type Methods (for variable builders)
-// =============================================================================
-
-const createBasicMethod = createVarMethodFactory<BasicSchema>();
-
-/**
- * Input type methods for basicSchema.
- */
-export const basicInputTypeMethods = {
-  Boolean: createBasicMethod("scalar", "Boolean"),
-  ID: createBasicMethod("scalar", "ID"),
-  Int: createBasicMethod("scalar", "Int"),
-  String: createBasicMethod("scalar", "String"),
-} satisfies InputTypeMethods<BasicSchema>;
-
-const createNestedMethod = createVarMethodFactory<NestedSchema>();
-
-/**
- * Input type methods for nestedSchema.
- */
-export const nestedInputTypeMethods = {
-  Boolean: createNestedMethod("scalar", "Boolean"),
-  ID: createNestedMethod("scalar", "ID"),
-  Int: createNestedMethod("scalar", "Int"),
-  String: createNestedMethod("scalar", "String"),
-} satisfies InputTypeMethods<NestedSchema>;
-
-const createUnionMethod = createVarMethodFactory<UnionSchema>();
-
-/**
- * Input type methods for unionSchema.
- */
-export const unionInputTypeMethods = {
-  Boolean: createUnionMethod("scalar", "Boolean"),
-  ID: createUnionMethod("scalar", "ID"),
-  Int: createUnionMethod("scalar", "Int"),
-  String: createUnionMethod("scalar", "String"),
-} satisfies InputTypeMethods<UnionSchema>;
-
-const createEnumMethod = createVarMethodFactory<EnumSchema>();
-
-/**
- * Input type methods for enumSchema.
- */
-export const enumInputTypeMethods = {
-  Boolean: createEnumMethod("scalar", "Boolean"),
-  ID: createEnumMethod("scalar", "ID"),
-  Int: createEnumMethod("scalar", "Int"),
-  String: createEnumMethod("scalar", "String"),
-  UserRole: createEnumMethod("enum", "UserRole"),
-  PostStatus: createEnumMethod("enum", "PostStatus"),
-  SortOrder: createEnumMethod("enum", "SortOrder"),
-} satisfies InputTypeMethods<EnumSchema>;
-
-const createInputObjectMethod = createVarMethodFactory<InputObjectSchema>();
-
-/**
- * Input type methods for inputObjectSchema.
- */
-export const inputObjectInputTypeMethods = {
-  Boolean: createInputObjectMethod("scalar", "Boolean"),
-  ID: createInputObjectMethod("scalar", "ID"),
-  Int: createInputObjectMethod("scalar", "Int"),
-  String: createInputObjectMethod("scalar", "String"),
-  SortOrder: createInputObjectMethod("enum", "SortOrder"),
-  UserFilter: createInputObjectMethod("input", "UserFilter"),
-  UserOrderBy: createInputObjectMethod("input", "UserOrderBy"),
-  CreateUserInput: createInputObjectMethod("input", "CreateUserInput"),
-} satisfies InputTypeMethods<InputObjectSchema>;

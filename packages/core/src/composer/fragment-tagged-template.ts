@@ -10,7 +10,8 @@ import { findMatchingParen } from "../graphql/fragment-args-preprocessor";
 import type { SchemaIndex } from "../graphql/schema-index";
 import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
-import type { AnyFieldsExtended } from "../types/fragment";
+import type { AnyFieldSelection, AnyFieldsExtended } from "../types/fragment";
+import type { VarRefTools } from "../types/metadata/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
@@ -20,6 +21,7 @@ import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import type { FragmentTemplateMetadataOptions, TemplateResult } from "./operation-tagged-template";
+import { varRefTools } from "./var-ref-tools";
 
 /** Tagged template function type for fragments. */
 export type FragmentTaggedTemplateFunction = (
@@ -130,24 +132,19 @@ export function buildFieldsFromSelectionSet(
         continue;
       }
 
-      const factory = (f as Record<string, ((...args: unknown[]) => unknown) | undefined>)[fieldName];
-
-      if (!factory) {
-        throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
-      }
-
       // Build args from AST arguments
       const args = buildArgsFromASTArguments(selection.arguments ?? [], varAssignments);
       const extras = alias !== fieldName ? { alias } : undefined;
 
       if (selection.selectionSet) {
-        // Object/union field — factory returns a curried function
-        const curried = factory(args, extras);
+        // Object/union field — f("fieldName", args, extras) returns a curried function
+        const curried = f(fieldName, args as AnyFieldSelection["args"], extras);
         if (typeof curried === "function") {
-          // Detect union type via field specifier
+          // Detect union type via field specifier (runtime duck-typing)
           const typeDef = schema.object[typeName];
-          const fieldSpec = typeDef?.fields[fieldName] as import("../types/type-foundation").DeferredOutputField;
-          const parsedType = parseOutputField(fieldSpec);
+          const fieldDefRaw = typeDef?.fields[fieldName];
+          const fieldSpec = typeof fieldDefRaw === "string" ? fieldDefRaw : (fieldDefRaw as unknown as { spec: string })?.spec;
+          const parsedType = parseOutputField(fieldSpec as import("../types/type-foundation").DeferredOutputField);
 
           if (parsedType.kind === "union") {
             // Union field: collect InlineFragmentNodes, build NestedUnionFieldsBuilder input
@@ -166,7 +163,11 @@ export function buildFieldsFromSelectionSet(
                 const memberName = sel.typeCondition.name.value;
                 // Validate member is part of the union
                 const unionDef = schema.union[parsedType.name];
-                if (!unionDef?.types[memberName]) {
+                if (!unionDef) {
+                  throw new Error(`Union "${parsedType.name}" is not defined in schema`);
+                }
+                const isMember = memberName in unionDef.types;
+                if (!isMember) {
                   throw new Error(
                     `Type "${memberName}" is not a member of union "${parsedType.name}" in tagged template inline fragment`,
                   );
@@ -254,8 +255,8 @@ export function buildFieldsFromSelectionSet(
           Object.assign(result, curried);
         }
       } else {
-        // Scalar/enum field — factory returns the field selection directly
-        const fieldResult = factory(args, extras);
+        // Scalar/enum field — f("fieldName", args, extras) returns the field selection directly
+        const fieldResult = f(fieldName, args as AnyFieldSelection["args"], extras);
         if (typeof fieldResult === "function") {
           // Object field used without selection set — just call with empty builder
           const emptyResult = (fieldResult as (nest: unknown) => Record<string, unknown>)(() => ({}));
@@ -379,6 +380,7 @@ function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldN
   if (!typeDef) {
     throw new Error(`Type "${typeName}" is not defined in schema objects`);
   }
+  // Runtime duck-typing: codegen may emit string or { spec, arguments }
   const fieldDef = typeDef.fields[fieldName] as string | { spec: string } | undefined;
   if (!fieldDef) {
     throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
@@ -490,7 +492,8 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
       }
 
       return (options?: FragmentTemplateMetadataOptions): AnyFragment => {
-        return Fragment.create<TSchema, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
+        // biome-ignore lint/suspicious/noExplicitAny: Fragment.create requires concrete schema type
+        return Fragment.create<any, typeof onType, typeof varSpecifiers, AnyFieldsExtended>(() => ({
           typename: onType,
           key: fragmentName,
           schemaLabel: schema.label,
@@ -504,7 +507,11 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
             if (options?.metadata !== undefined) {
               const metadata = options.metadata;
               if (typeof metadata === "function") {
-                metadataBuilder = () => (metadata as (ctx: { $: unknown }) => unknown | Promise<unknown>)({ $ });
+                metadataBuilder = () =>
+                  (metadata as (ctx: { $: unknown; $var: VarRefTools }) => unknown | Promise<unknown>)({
+                    $,
+                    $var: varRefTools,
+                  });
               } else {
                 metadataBuilder = () => metadata;
               }

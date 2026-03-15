@@ -12,144 +12,127 @@ import {
 /**
  * Example operations for testing type-check performance.
  *
- * All operations use callback builder syntax to ensure the builder's intermediate
- * module evaluation extracts them for prebuilt type generation.
+ * Operations using fragment spreads use the options object path.
+ * Operations without fragment spreads use tagged template syntax.
  * Tagged template operations are in aggregate-operations.ts.
  */
 
 // Product queries
 export const getProducts = gql.default(({ query }) =>
-  query.operation({
-    name: "GetProducts",
+  query("GetProducts")({
     fields: ({ f }) => ({
-      ...f.products({ limit: 10 })(() => ({
+      ...f("products", { limit: 10 })(() => ({
         ...ProductFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
-export const getProductByPk = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetProductByPk",
-    variables: { ...$var("id").uuid("!") },
+export const getProductByPk = gql.default(({ query }) =>
+  query("GetProductByPk")({
+    variables: `($id: uuid!)`,
     fields: ({ f, $ }) => ({
-      ...f.products_by_pk({ id: $.id })(() => ({
+      ...f("products_by_pk", { id: $.id })(() => ({
         ...ProductFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
-export const getProductVariants = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetProductVariants",
-    variables: { ...$var("productId").uuid("!") },
+export const getProductVariants = gql.default(({ query }) =>
+  query("GetProductVariants")({
+    variables: `($productId: uuid!)`,
     fields: ({ f, $ }) => ({
-      ...f.product_variants({ where: { product_id: { _eq: $.productId } } })(() => ({
+      ...f("product_variants", { where: { product_id: { _eq: $.productId } } })(() => ({
         ...ProductVariantFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 // User queries
 export const getUsers = gql.default(({ query }) =>
-  query.operation({
-    name: "GetUsers",
+  query("GetUsers")({
     fields: ({ f }) => ({
-      ...f.users({ limit: 10 })(() => ({
+      ...f("users", { limit: 10 })(() => ({
         ...UserFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
-export const getUserByPk = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetUserByPk",
-    variables: { ...$var("id").uuid("!") },
+export const getUserByPk = gql.default(({ query }) =>
+  query("GetUserByPk")({
+    variables: `($id: uuid!)`,
     fields: ({ f, $ }) => ({
-      ...f.users_by_pk({ id: $.id })(() => ({
+      ...f("users_by_pk", { id: $.id })(() => ({
         ...UserFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 // Article queries
 export const getArticles = gql.default(({ query }) =>
-  query.operation({
-    name: "GetArticles",
+  query("GetArticles")({
     fields: ({ f }) => ({
-      ...f.articles({ limit: 10, where: { is_published: { _eq: true } } })(() => ({
+      ...f("articles", { limit: 10, where: { is_published: { _eq: true } } })(() => ({
         ...ArticleFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 // Street queries (deep nesting chain)
 export const getStreets = gql.default(({ query }) =>
-  query.operation({
-    name: "GetStreets",
+  query("GetStreets")({
     fields: ({ f }) => ({
-      ...f.streets({ limit: 10 })(() => ({
+      ...f("streets", { limit: 10 })(() => ({
         ...StreetFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 // Order queries
 export const getOrders = gql.default(({ query }) =>
-  query.operation({
-    name: "GetOrders",
+  query("GetOrders")({
     fields: ({ f }) => ({
-      ...f.orders({ limit: 10 })(() => ({
+      ...f("orders", { limit: 10 })(() => ({
         ...OrderFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
-export const getOrderByPk = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetOrderByPk",
-    variables: { ...$var("id").uuid("!") },
+export const getOrderByPk = gql.default(({ query }) =>
+  query("GetOrderByPk")({
+    variables: `($id: uuid!)`,
     fields: ({ f, $ }) => ({
-      ...f.orders_by_pk({ id: $.id })(() => ({
+      ...f("orders_by_pk", { id: $.id })(() => ({
         ...OrderFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
-export const getOrderItems = gql.default(({ query, $var }) =>
-  query.operation({
-    name: "GetOrderItems",
-    variables: { ...$var("orderId").uuid("!") },
+export const getOrderItems = gql.default(({ query }) =>
+  query("GetOrderItems")({
+    variables: `($orderId: uuid!)`,
     fields: ({ f, $ }) => ({
-      ...f.order_items({ where: { order_id: { _eq: $.orderId } } })(() => ({
+      ...f("order_items", { where: { order_id: { _eq: $.orderId } } })(() => ({
         ...OrderItemFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );
 
 // Mutation examples
-export const createProduct = gql.default(({ mutation, $var }) =>
-  mutation.operation({
-    name: "CreateProduct",
-    variables: {
-      ...$var("name").String("!"),
-      ...$var("slug").String("!"),
-      ...$var("basePrice").numeric("!"),
-      ...$var("storeId").uuid("?"),
-      ...$var("brandId").uuid("?"),
-    },
+export const createProduct = gql.default(({ mutation }) =>
+  mutation("CreateProduct")({
+    variables: `($name: String!, $slug: String!, $basePrice: numeric!, $storeId: uuid, $brandId: uuid)`,
     fields: ({ f, $ }) => ({
-      ...f.insert_products_one({
+      ...f("insert_products_one", {
         object: {
           name: $.name,
           slug: $.slug,
@@ -161,5 +144,5 @@ export const createProduct = gql.default(({ mutation, $var }) =>
         ...ProductFragment.spread(),
       })),
     }),
-  }),
+  })(),
 );

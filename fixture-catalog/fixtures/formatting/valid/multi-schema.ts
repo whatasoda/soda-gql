@@ -5,10 +5,9 @@ export const adminFragment = gql.admin(({ fragment }) => fragment("AdminFragment
 
 // Multi-schema: default schema (should still work)
 export const defaultQuery = gql.default(({ query }) =>
-  query.operation({
-    name: "GetData",
-    fields: ({ f }) => ({ ...f.employees({})(({ f }) => ({ ...f.id() })) }),
-  }),
+  query("GetData")({
+    fields: ({ f }) => ({ ...f("employees", {})(({ f }) => ({ ...f("id")() })) }),
+  })(),
 );
 
 // Multi-schema: nested selections (Task has id, title, completed - no description)

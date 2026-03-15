@@ -256,6 +256,66 @@ const GetUser = gql.default(({ query }) =>
 );
 ```
 
+### Variable Inspection with `$var`
+
+The metadata callback provides `$var`, a tools object for inspecting variable references. This is useful when metadata needs to interact with the operation's input variables for caching, request headers, logging, or backend communication.
+
+| Method | Description |
+|--------|-------------|
+| `$var.getName(ref)` | Get variable name string |
+| `$var.getValue(ref)` | Get const value from a nested-value ref |
+| `$var.getNameAt(ref, selector)` | Get variable name at a nested path |
+| `$var.getValueAt(ref, selector)` | Get const value at a nested path |
+| `$var.getPath(ref, selector)` | Get path segments to a variable |
+| `$var.hasVarRefInside(value)` | Check if a value contains any VarRef |
+
+#### Cache Key Generation
+
+```typescript
+const GetUser = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) { user(id: $id) { id name } }`({
+    metadata: ({ $, $var }) => ({
+      cacheKey: `GetUser:${$var.getName($.id)}`,
+    }),
+  })
+);
+```
+
+#### Variable Labeling for Backend Communication
+
+Attach semantic labels to variables so that downstream systems (logging, analytics, access control) can identify the role of each variable without parsing the GraphQL query:
+
+```typescript
+const UpdateUser = gql.default(({ mutation }) =>
+  mutation("UpdateUser")`($userId: ID!, $name: String!) {
+    updateUser(id: $userId, name: $name) { id }
+  }`({
+    metadata: ({ $, $var }) => ({
+      variableLabels: {
+        [$var.getName($.userId)]: { role: "identifier", sensitivity: "pii" },
+        [$var.getName($.name)]: { role: "payload", sensitivity: "pii" },
+      },
+    }),
+  })
+);
+```
+
+#### Decomposing Nested Input Structures
+
+Use `$var.getNameAt` and `$var.getValueAt` to extract individual parts from complex nested argument structures:
+
+```typescript
+const nestedInput = createVarRefFromNestedValue({
+  pagination: { limit: 20, offset: createVarRefFromVariable("pageOffset") },
+  filter: { status: "active" },
+});
+
+// Inside metadata callback:
+$var.getValueAt(nestedInput, (p) => p.filter.status);       // "active"
+$var.getNameAt(nestedInput, (p) => p.pagination.offset);    // "pageOffset"
+$var.getPath(nestedInput, (p) => p.pagination.offset);      // ["$pageOffset"]
+```
+
 ## Compat Mode
 
 Compat mode creates a lightweight spec from a tagged template that can be extended into a full operation later. This is useful for gradual adoption or when metadata needs to be added separately.
@@ -300,8 +360,11 @@ const GetUser = gql.default(({ extend }) =>
 | Field directives (`@skip`, `@include`) | No | Yes |
 | `$colocate` query composition | No | Yes |
 | `$var` helper for variable definitions | No | Yes |
+| `$infer` output type inference | Yes (via typegen) | Best-effort¹ |
 
 > **Note**: Field-level directives (`@skip`, `@include`) on regular fields are parsed by GraphQL but silently ignored during field selection construction — no error is raised. However, directives on inline fragments (`... on Type @skip(...)`) throw an explicit error. If you need field directive behavior, use the callback builder syntax.
+
+> **¹ Type inference note**: Callback builders provide full runtime correctness, but `$infer.output` type inference within `({ f }) => ...` callbacks is best-effort — field accessor functions are type-erased internally. Run `bun run soda-gql codegen schema` (typegen) to generate precise prebuilt types. Tagged templates do not have this limitation.
 
 ## When to Use Which
 

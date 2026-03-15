@@ -33,17 +33,17 @@ import {
   type AnyFieldsExtended,
   type AnyFieldValue,
   type AnyUnionSelection,
-  type InferFieldsExtended,
   type ScalarShorthand,
   VarRef,
 } from "../types/fragment";
-import type { AnyGraphqlSchema, ConstAssignableInputFromVarDefs, OperationType } from "../types/schema";
+import type { AnyGraphqlSchema, OperationType } from "../types/schema";
 import type {
   ConstValue,
   DeferredInputSpecifier,
   InputTypeSpecifiers,
   TypeModifier,
   VariableDefinitions,
+  VarSpecifier,
 } from "../types/type-foundation";
 import { type AnyDirectiveRef, type DirectiveLocation, DirectiveRef } from "../types/type-foundation/directive-ref";
 import { type ParsedInputSpecifier, parseInputSpecifier, parseOutputField } from "../utils/deferred-specifier-parser";
@@ -113,7 +113,8 @@ export const buildArgumentValue = (value: AnyAssignableInputValue, enumLookup: E
           // Look up field type in nested InputObject for enum detection
           let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
-            const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
+            const inputDefs = enumLookup.schema.input;
+            const inputDef = inputDefs?.[enumLookup.typeSpecifier.name];
             const fieldSpec = inputDef?.fields[key];
             fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
           }
@@ -282,15 +283,18 @@ const expandShorthand = (schema: AnyGraphqlSchema, typeName: string, fieldName: 
     throw new Error(`Type "${typeName}" not found in schema`);
   }
 
-  const fieldSpec = typeDef.fields[fieldName];
-  if (!fieldSpec) {
+  // Runtime duck-typing: codegen may emit string or { spec, arguments }
+  const fieldDef = typeDef.fields[fieldName];
+  if (!fieldDef) {
     throw new Error(`Field "${fieldName}" not found on type "${typeName}"`);
   }
+
+  const fieldSpec = typeof fieldDef === "string" ? fieldDef : (fieldDef as { spec: string }).spec;
 
   return {
     parent: typeName,
     field: fieldName,
-    type: fieldSpec,
+    type: fieldSpec as unknown as import("../types/type-foundation").DeferredOutputFieldWithArgs,
     args: {},
     directives: [],
     object: null,
@@ -414,7 +418,8 @@ export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): 
           // Look up field type in nested InputObject for enum detection
           let fieldTypeSpecifier: ParsedInputSpecifier | null = null;
           if (enumLookup.typeSpecifier?.kind === "input") {
-            const inputDef = enumLookup.schema.input[enumLookup.typeSpecifier.name];
+            const inputDefs = enumLookup.schema.input;
+            const inputDef = inputDefs?.[enumLookup.typeSpecifier.name];
             const fieldSpec = inputDef?.fields[key];
             fieldTypeSpecifier = fieldSpec ? parseInputSpecifier(fieldSpec) : null;
           }
@@ -463,10 +468,10 @@ export const buildConstValueNode = (value: ConstValue, enumLookup: EnumLookup): 
  * followed by `[]?` or `[]!` pairs for lists.
  *
  * @example
- * - `"!"` → `String!`
- * - `"?"` → `String`
- * - `"![]!"` → `[String!]!`
- * - `"?[]?"` → `[String]`
+ * - `"!"` -> `String!`
+ * - `"?"` -> `String`
+ * - `"![]!"` -> `[String!]!`
+ * - `"?[]?"` -> `[String]`
  */
 export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => NamedTypeNode): TypeNode => {
   const baseType = buildType();
@@ -542,20 +547,10 @@ export const buildWithTypeModifier = (modifier: TypeModifier, buildType: () => N
 };
 
 /**
- * VarSpecifier shape from $var() at runtime.
- * Operation variables use structured objects, not deferred strings.
+ * Builds VariableDefinitionNode[] from VarSpecifier records.
+ * Kept as private fallback for callers that don't provide pre-parsed nodes.
  */
-export type AnyVarSpecifier = {
-  kind: "scalar" | "enum" | "input";
-  name: string;
-  modifier: TypeModifier;
-  defaultValue: null | { default: ConstValue };
-  directives: Record<string, unknown>;
-};
-
-// VariableDefinitions is imported from type-foundation
-
-const buildVariables = (variables: Record<string, AnyVarSpecifier>, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
+const buildVariables = (variables: Record<string, VarSpecifier>, schema: AnyGraphqlSchema): VariableDefinitionNode[] => {
   return Object.entries(variables).map(([name, varSpec]): VariableDefinitionNode => {
     // Build default value if present
     let defaultValue: ConstValueNode | undefined;
@@ -619,14 +614,17 @@ export const buildDocument = <
   operationName: string;
   operationType: OperationType;
   operationTypeName: TTypeName;
+  variableDefinitionNodes?: readonly VariableDefinitionNode[];
   variables: TVarDefinitions;
   fields: TFields;
   schema: TSchema;
-}): TypedDocumentNode<
-  InferFieldsExtended<TSchema, TTypeName, TFields>,
-  ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>
-> => {
-  const { operationName, operationType, operationTypeName, variables, fields, schema } = options;
+  // biome-ignore lint/suspicious/noExplicitAny: Type inference deferred to prebuilt types
+}): TypedDocumentNode<any, any> => {
+  const { operationName, operationType, operationTypeName, variableDefinitionNodes, variables, fields, schema } = options;
+
+  // Use pre-parsed variable definition nodes if provided, otherwise fall back to building from VarSpecifier records
+  const varDefs = variableDefinitionNodes ?? buildVariables(variables, schema);
+
   return {
     kind: Kind.DOCUMENT,
     definitions: [
@@ -634,7 +632,7 @@ export const buildDocument = <
         kind: Kind.OPERATION_DEFINITION,
         operation: buildOperationTypeNode(operationType),
         name: { kind: Kind.NAME, value: operationName },
-        variableDefinitions: buildVariables(variables, schema),
+        variableDefinitions: varDefs as VariableDefinitionNode[],
         // directives: directives || [],
         selectionSet: {
           kind: Kind.SELECTION_SET,
@@ -642,8 +640,6 @@ export const buildDocument = <
         },
       },
     ],
-  } satisfies DocumentNode as TypedDocumentNode<
-    InferFieldsExtended<TSchema, TTypeName, TFields>,
-    ConstAssignableInputFromVarDefs<TSchema, TVarDefinitions>
-  >;
+    // biome-ignore lint/suspicious/noExplicitAny: Type inference deferred to prebuilt types
+  } satisfies DocumentNode as TypedDocumentNode<any, any>;
 };

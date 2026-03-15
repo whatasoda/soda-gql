@@ -4,8 +4,6 @@
  * @module
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import {
   type ArgumentNode,
   type DocumentNode,
@@ -37,34 +35,6 @@ import type {
   ParseResult,
   TypeInfo,
 } from "./types";
-
-/**
- * Parse a single .graphql file and extract operations and fragments.
- */
-export const parseGraphqlFile = (filePath: string): Result<ParseResult, GraphqlCompatError> => {
-  const resolvedPath = resolve(filePath);
-
-  if (!existsSync(resolvedPath)) {
-    return err({
-      code: "GRAPHQL_FILE_NOT_FOUND",
-      message: `GraphQL file not found at ${resolvedPath}`,
-      filePath: resolvedPath,
-    });
-  }
-
-  try {
-    const source = readFileSync(resolvedPath, "utf8");
-    const document = parse(source);
-    return ok(extractFromDocument(document, resolvedPath));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return err({
-      code: "GRAPHQL_PARSE_ERROR",
-      message: `GraphQL parse error: ${message}`,
-      filePath: resolvedPath,
-    });
-  }
-};
 
 /**
  * Parse GraphQL source string directly.
@@ -101,7 +71,7 @@ const extractFromDocument = (document: DocumentNode, sourceFile: string): ParseR
     }
   }
 
-  return { operations, fragments };
+  return { operations, fragments, document };
 };
 
 /**

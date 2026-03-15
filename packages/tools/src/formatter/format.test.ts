@@ -90,9 +90,8 @@ describe("format", () => {
       // The field selection object should have newline
       // But the variables object should NOT (it's not a field selection)
       const code = result.value.sourceCode;
-      // variables: { should not have a newline inserted right after the {
-      // because it's not a field selection (no ({ f }) pattern)
-      expect(code).toContain("variables: { ...$var");
+      // variables template literal should not be modified by the formatter
+      expect(code).toContain("variables: `($id: ID!)`");
     });
   });
 

@@ -24,6 +24,8 @@ export type PrebuiltTypeRegistry = {
     readonly [key: string]: {
       readonly input: object;
       readonly output: object;
+      readonly varTypes?: unknown;
+      readonly fields?: unknown;
     };
   };
 };

@@ -3,27 +3,70 @@
  * @module
  */
 
-import type {
-  AnyFieldSelectionFactory,
-  AnyFieldSelectionFactoryReturn,
-  FieldSelectionFactories,
-  NestedObjectFieldsBuilder,
-  NestedUnionFieldsBuilder,
-} from "../types/element";
-import type { AnyFieldSelection, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
-import type { AnyGraphqlSchema, UnionMemberName } from "../types/schema";
-import type { DeferredOutputField, DeferredOutputSpecifier } from "../types/type-foundation";
+import type { AnyFieldSelection, AnyFieldsExtended, AnyNestedObject, AnyNestedUnion } from "../types/fragment";
+import type { AnyGraphqlSchema } from "../types/schema/schema";
+import type { DeferredOutputField } from "../types/type-foundation";
 import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
+import type { AnyVarRef } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
+
+// ============================================================================
+// Relocated builder contract types (type-erased from types/element/fields-builder.ts)
+// ============================================================================
+
+/** Builder callback for top-level field selections (has $ variable access) */
+export type FieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> = (tools: {
+  f: FieldAccessorFunction;
+  $: Readonly<Record<string, AnyVarRef>>;
+}) => TFields;
+
+/** Builder callback for nested object field selections (no $ access) */
+export type NestedObjectFieldsBuilder<TFields extends AnyFieldsExtended = AnyFieldsExtended> = (tools: {
+  f: FieldAccessorFunction;
+}) => TFields;
+
+/** Builder for union type selections with per-member field definitions */
+export type NestedUnionFieldsBuilder = {
+  [typeName: string]: NestedObjectFieldsBuilder | undefined;
+} & { __typename?: true };
+
+// ============================================================================
+// FieldAccessorFunction
+// ============================================================================
+
+/**
+ * Type-erased return from field accessor.
+ * The actual runtime shape is a function: for scalar/enum fields it takes no args,
+ * for object fields it takes a NestedObjectFieldsBuilder, for union fields a NestedUnionFieldsBuilder.
+ * This type preserves enough structure so that nested `({ f })` callbacks infer `f` properly.
+ */
+/**
+ * Type-erased return from field accessor.
+ * For object fields: accepts NestedObjectFieldsBuilder (typed `{ f }` callback).
+ * For union fields and scalar thunks: uses catch-all signature.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor return — actual shapes vary by field kind
+type AnyFieldAccessorReturn = ((nest: NestedObjectFieldsBuilder) => any) & ((...args: any[]) => any);
+
+/** Function-call field accessor: f("fieldName", args, extras) */
+export type FieldAccessorFunction = (
+  fieldName: string,
+  fieldArgs?: AnyFieldSelection["args"] | null | void,
+  extras?: { alias?: string; directives?: AnyDirectiveRef[] },
+) => AnyFieldAccessorReturn;
+
+// ============================================================================
+// Cache and factory
+// ============================================================================
 
 /**
  * Cache map type for field factories.
  * Schema-scoped to avoid cross-schema contamination.
  * @internal
  */
-type CacheMap = Map<string, Record<string, AnyFieldSelectionFactory>>;
+type CacheMap = Map<string, FieldAccessorFunction>;
 
 const cacheMapBySchema = new WeakMap<AnyGraphqlSchema, CacheMap>();
 const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
@@ -38,132 +81,145 @@ const ensureCacheMapBySchema = (schema: AnyGraphqlSchema) => {
 };
 
 /**
- * Creates field selection factories for a given object type.
+ * Creates a field accessor function for a given object type.
  *
- * Returns an object with a factory for each field defined on the type.
+ * Returns a function f("fieldName", args, extras) for building field selections.
  * Factories are cached per schema+type to avoid recreation.
  *
  * @param schema - The GraphQL schema definition
  * @param typeName - The object type name to create factories for
- * @returns Object mapping field names to their selection factories
+ * @returns FieldAccessorFunction for building field selections
  *
  * @internal Used by operation and fragment composers
  */
-export const createFieldFactories = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
+export const createFieldFactories = <TSchema extends AnyGraphqlSchema>(
   schema: TSchema,
-  typeName: TTypeName,
-): FieldSelectionFactories<TSchema, TTypeName> => {
+  typeName: string,
+): FieldAccessorFunction => {
   const cacheMap = ensureCacheMapBySchema(schema);
   const cached = cacheMap.get(typeName);
   if (cached) {
-    return cached as unknown as FieldSelectionFactories<TSchema, TTypeName>;
+    return cached;
   }
 
-  const factories = createFieldFactoriesInner(schema, typeName);
-  cacheMap.set(typeName, factories as unknown as Record<string, AnyFieldSelectionFactory>);
+  const factory = createFieldFactoriesInner(schema, typeName);
+  cacheMap.set(typeName, factory);
 
-  return factories;
+  return factory;
 };
 
-const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName extends keyof TSchema["object"] & string>(
-  schema: TSchema,
-  typeName: TTypeName,
-): FieldSelectionFactories<TSchema, TTypeName> => {
+const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): FieldAccessorFunction => {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
     throw new Error(`Type ${typeName} is not defined in schema objects`);
   }
 
-  const entries = Object.entries(typeDef.fields).map(([fieldName, typeSpecifier]): [string, AnyFieldSelectionFactory] => {
-    // Parse the deferred output specifier string
+  return (fieldName, fieldArgs, extras) => {
+    // __typename is an implicit introspection field
+    if (fieldName === "__typename") {
+      const wrap = <T>(value: T) => wrapByKey(extras?.alias ?? fieldName, value);
+      return (() =>
+        wrap({
+          parent: typeName,
+          field: fieldName,
+          type: "s|String|!",
+          args: {},
+          directives: extras?.directives ?? [],
+          object: null,
+          union: null,
+        })) as unknown as AnyFieldAccessorReturn;
+    }
+
+    // Runtime duck-typing: codegen may emit string or { spec, arguments }
+    const fieldDef = typeDef.fields[fieldName];
+    if (!fieldDef) {
+      throw new Error(`Field "${fieldName}" is not defined on type "${typeName}"`);
+    }
+
+    const typeSpecifier = typeof fieldDef === "string" ? fieldDef : (fieldDef as { spec: string }).spec;
     const parsedType = parseOutputField(typeSpecifier as DeferredOutputField);
 
-    const factory: AnyFieldSelectionFactory = <TAlias extends string | null = null>(
-      fieldArgs: AnyFieldSelection["args"] | null | void,
-      extras?: { alias?: TAlias; directives?: AnyDirectiveRef[] },
-    ) => {
-      const wrap = <T>(value: T) => wrapByKey((extras?.alias ?? fieldName) as TAlias extends null ? string : TAlias, value);
-      const directives = extras?.directives ?? [];
+    const wrap = <T>(value: T) => wrapByKey(extras?.alias ?? fieldName, value);
+    const directives = extras?.directives ?? [];
 
-      if (parsedType.kind === "object") {
-        const factoryReturn = (<TNested extends AnyNestedObject>(nest: NestedObjectFieldsBuilder<TSchema, string, TNested>) => {
-          // Build new path for this field
-          const currentPath = getCurrentFieldPath();
-          const newPath = appendToPath(currentPath, {
-            field: fieldName,
-            parentType: typeName,
-            isList: isListType(parsedType.modifier),
-          });
+    if (parsedType.kind === "object") {
+      const factoryReturn = (<TNested extends AnyNestedObject>(nest: NestedObjectFieldsBuilder<TNested & AnyFieldsExtended>) => {
+        // Build new path for this field
+        const currentPath = getCurrentFieldPath();
+        const newPath = appendToPath(currentPath, {
+          field: fieldName,
+          parentType: typeName,
+          isList: isListType(parsedType.modifier),
+        });
 
-          // Run nested builder with updated path context
-          const nestedFields = withFieldPath(newPath, () => nest({ f: createFieldFactories(schema, parsedType.name) }));
+        // Run nested builder with updated path context
+        const nestedFields = withFieldPath(newPath, () => nest({ f: createFieldFactories(schema, parsedType.name) }));
 
-          return wrap({
-            parent: typeName,
-            field: fieldName,
-            type: typeSpecifier,
-            args: fieldArgs ?? {},
-            directives,
-            object: nestedFields,
-            union: null,
-          });
-        }) as unknown as AnyFieldSelectionFactoryReturn<TAlias>;
+        return wrap({
+          parent: typeName,
+          field: fieldName,
+          type: typeSpecifier,
+          args: fieldArgs ?? {},
+          directives,
+          object: nestedFields,
+          union: null,
+        });
+      }) as unknown as AnyFieldAccessorReturn;
 
-        return factoryReturn;
-      }
+      return factoryReturn;
+    }
 
-      if (parsedType.kind === "union") {
-        const factoryReturn = (<TNested extends AnyNestedUnion>(
-          nest: NestedUnionFieldsBuilder<TSchema, UnionMemberName<TSchema, DeferredOutputSpecifier>, TNested>,
-        ) => {
-          // Build new path for this field
-          const currentPath = getCurrentFieldPath();
-          const newPath = appendToPath(currentPath, {
-            field: fieldName,
-            parentType: typeName,
-            isList: isListType(parsedType.modifier),
-          });
+    if (parsedType.kind === "union") {
+      const factoryReturn = (<TNested extends AnyNestedUnion>(nest: NestedUnionFieldsBuilder & TNested) => {
+        // Build new path for this field
+        const currentPath = getCurrentFieldPath();
+        const newPath = appendToPath(currentPath, {
+          field: fieldName,
+          parentType: typeName,
+          isList: isListType(parsedType.modifier),
+        });
 
-          // Extract __typename flag before processing
-          const typenameFlag = (nest as { __typename?: true }).__typename;
+        // Extract __typename flag before processing
+        const typenameFlag = (nest as { __typename?: true }).__typename;
 
-          // Run nested builders with updated path context, filtering out __typename
-          const selections = withFieldPath(newPath, () => {
-            const result: Record<string, unknown> = {};
-            for (const [memberName, builder] of Object.entries(nest)) {
-              if (memberName === "__typename") {
-                continue; // Skip the flag, stored separately
-              }
-              // Skip non-function values (shouldn't happen but guard for safety)
-              if (typeof builder !== "function") {
-                continue;
-              }
-              result[memberName] = (builder as NestedObjectFieldsBuilder<TSchema, string, AnyNestedObject>)({
-                f: createFieldFactories(schema, memberName),
-              });
+        // Run nested builders with updated path context, filtering out __typename
+        const selections = withFieldPath(newPath, () => {
+          const result: Record<string, unknown> = {};
+          for (const [memberName, builder] of Object.entries(nest)) {
+            if (memberName === "__typename") {
+              continue; // Skip the flag, stored separately
             }
-            return result;
-          });
+            // Skip non-function values (shouldn't happen but guard for safety)
+            if (typeof builder !== "function") {
+              continue;
+            }
+            result[memberName] = (builder as NestedObjectFieldsBuilder)({
+              f: createFieldFactories(schema, memberName),
+            });
+          }
+          return result;
+        });
 
-          return wrap({
-            parent: typeName,
-            field: fieldName,
-            type: typeSpecifier,
-            args: fieldArgs ?? {},
-            directives,
-            object: null,
-            union: {
-              selections,
-              __typename: typenameFlag === true,
-            },
-          });
-        }) as unknown as AnyFieldSelectionFactoryReturn<TAlias>;
+        return wrap({
+          parent: typeName,
+          field: fieldName,
+          type: typeSpecifier,
+          args: fieldArgs ?? {},
+          directives,
+          object: null,
+          union: {
+            selections,
+            __typename: typenameFlag === true,
+          },
+        });
+      }) as unknown as AnyFieldAccessorReturn;
 
-        return factoryReturn;
-      }
+      return factoryReturn;
+    }
 
-      if (parsedType.kind === "scalar" || parsedType.kind === "enum") {
-        const factoryReturn = wrap({
+    if (parsedType.kind === "scalar" || parsedType.kind === "enum") {
+      const factoryReturn = (() =>
+        wrap({
           parent: typeName,
           field: fieldName,
           type: typeSpecifier,
@@ -171,17 +227,10 @@ const createFieldFactoriesInner = <TSchema extends AnyGraphqlSchema, TTypeName e
           directives,
           object: null,
           union: null,
-        }) as unknown as AnyFieldSelectionFactoryReturn<TAlias>;
-        return factoryReturn;
-      }
+        })) as unknown as AnyFieldAccessorReturn;
+      return factoryReturn;
+    }
 
-      throw new Error(`Unsupported field type kind: ${parsedType.kind}`);
-    };
-
-    return [fieldName, factory] as const;
-  });
-
-  const factories: Record<string, AnyFieldSelectionFactory> = Object.fromEntries(entries);
-
-  return factories as unknown as FieldSelectionFactories<TSchema, TTypeName>;
+    throw new Error(`Unsupported field type kind: ${parsedType.kind}`);
+  };
 };

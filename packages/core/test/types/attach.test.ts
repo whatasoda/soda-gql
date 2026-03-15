@@ -10,24 +10,24 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { type BasicSchema, basicInputTypeMethods, basicSchema } from "./_fixtures";
+import { type BasicSchema, basicSchema } from "./_fixtures";
 import type { Equal, Expect, HasKey } from "./_helpers";
 
-const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {
-  inputTypeMethods: basicInputTypeMethods,
-});
+const gql = createGqlElementComposer<BasicSchema, StandardDirectives>(basicSchema, {});
 
 describe("attach type inference", () => {
   it("single attachment infers property name and value type", () => {
     const GetUser = gql(({ query }) =>
-      query.operation({
-        name: "GetUser",
+      query("GetUser")({
         fields: ({ f }) => ({
-          ...f.users({})(({ f }) => ({
-            ...f.id(),
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
+            ...f("id")(),
           })),
         }),
-      }),
+      })({}),
     ).attach({ name: "utils" as const, createValue: () => ({ helper: 42 }) });
 
     type Result = typeof GetUser;
@@ -44,14 +44,16 @@ describe("attach type inference", () => {
 
   it("array attachment with as const infers intersection of all properties", () => {
     const GetUsers = gql(({ query }) =>
-      query.operation({
-        name: "GetUsers",
+      query("GetUsers")({
         fields: ({ f }) => ({
-          ...f.users({})(({ f }) => ({
-            ...f.id(),
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
+            ...f("id")(),
           })),
         }),
-      }),
+      })({}),
     ).attach([
       { name: "alpha" as const, createValue: () => ({ x: 1 }) },
       { name: "beta" as const, createValue: () => ({ y: "hello" }) },
@@ -70,14 +72,16 @@ describe("attach type inference", () => {
 
   it("chained attachments accumulate properties", () => {
     const GetUser = gql(({ query }) =>
-      query.operation({
-        name: "GetUser",
+      query("GetUser")({
         fields: ({ f }) => ({
-          ...f.users({})(({ f }) => ({
-            ...f.id(),
+          ...f(
+            "users",
+            {},
+          )(({ f }) => ({
+            ...f("id")(),
           })),
         }),
-      }),
+      })({}),
     )
       .attach({ name: "first" as const, createValue: () => ({ a: 1 }) })
       .attach({ name: "second" as const, createValue: () => ({ b: "two" }) });
