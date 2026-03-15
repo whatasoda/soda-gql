@@ -14,6 +14,8 @@ import type { AnyFieldSelection, AnyFieldsExtended } from "../types/fragment";
 import type { VarRefTools } from "../types/metadata/metadata";
 import type { AnyGraphqlSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
+import { DirectiveRef } from "../types/type-foundation/directive-ref";
+import type { AnyDirectiveRef } from "../types/type-foundation/directive-ref";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { createFieldFactories } from "./fields-builder";
@@ -132,9 +134,14 @@ export function buildFieldsFromSelectionSet(
         continue;
       }
 
-      // Build args from AST arguments
+      // Build args and directives from AST
       const args = buildArgsFromASTArguments(selection.arguments ?? [], varAssignments);
-      const extras = alias !== fieldName ? { alias } : undefined;
+      const directives = buildDirectivesFromAST(selection.directives, varAssignments);
+      const hasAlias = alias !== fieldName;
+      const extras =
+        hasAlias || directives.length > 0
+          ? { ...(hasAlias ? { alias } : {}), ...(directives.length > 0 ? { directives } : {}) }
+          : undefined;
 
       if (selection.selectionSet) {
         // Object/union field — f("fieldName", args, extras) returns a curried function
@@ -304,6 +311,25 @@ export function buildFieldsFromSelectionSet(
   }
 
   return result as AnyFieldsExtended;
+}
+
+/**
+ * Convert GraphQL AST DirectiveNodes to DirectiveRef instances.
+ * Reuses buildArgsFromASTArguments for directive argument conversion.
+ */
+function buildDirectivesFromAST(
+  directives: readonly import("graphql").DirectiveNode[] | undefined,
+  varAssignments?: Readonly<Record<string, AnyVarRef>>,
+): AnyDirectiveRef[] {
+  if (!directives || directives.length === 0) return [];
+  return directives.map(
+    (d) =>
+      new DirectiveRef({
+        name: d.name.value,
+        arguments: buildArgsFromASTArguments(d.arguments ?? [], varAssignments),
+        locations: ["FIELD"],
+      }),
+  );
 }
 
 /**
