@@ -42,16 +42,14 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 ```
 
-Options-object path — the first argument to `fragment()` also serves as the key:
+The first argument to `fragment()` serves as the key in either syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment("UserFields", "User")({
-    fields: ({ f }) => ({
-      ...f("id")(),
-      ...f("name")(),
-    }),
-  })({}),
+  fragment("UserFields", "User")`{
+    id
+    name
+  }`(),
 );
 ```
 

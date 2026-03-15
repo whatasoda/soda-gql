@@ -111,23 +111,21 @@ When a variable is defined with an input type (like `String_comparison_exp`), yo
 
 ```typescript
 gql.default(({ fragment }) =>
-  fragment("PostsByUser", "Query")({
-    variables: `($userId: ID!, $categoryId: String_comparison_exp)`,
+  fragment("PostsByUser", "Query")`($userId: ID!, $categoryId: String_comparison_exp) {
+    user(id: $userId) {
+      posts {
+        id
+        title
+      }
+    }
+  }`({
     metadata: ({ $, $var }) => ({
       custom: {
         // Extract the _eq field from the comparison expression
         categoryId: $var.getValueAt($.categoryId, (p) => p._eq),
       },
     }),
-    fields: ({ f, $ }) => ({
-      ...f("user", { id: $.userId })(({ f }) => ({
-        ...f("posts", {})(({ f }) => ({
-          ...f("id")(),
-          ...f("title")(),
-        })),
-      })),
-    }),
-  })({}),
+  }),
 );
 ```
 

@@ -96,22 +96,20 @@ const getUserQuery = gql.default(({ query }) =>
    - ✅ Use tagged template interpolation: `...${otherFragment}`
 
 3. **Operation definition:**
-   - ✅ Use tagged template: No fragment spreads via `.spread()`, no aliases, no $colocate
-   - ❌ Use callback builder: Has fragment spreads via `.spread()`, aliases, or $colocate
+   - ✅ Use tagged template: Simple operations, fragment spreads via `...${fragment}`
+   - ✅ Use options-object path: When you need `$dir`, `$colocate`, field aliases, or programmatic field control
 
 4. **Special features:**
-   - Metadata callbacks with variable access → callback builder only
-   - Operations with `.spread()` → callback builder only
+   - Metadata callbacks with variable access → both tagged template and options-object path
+   - `$dir` directives, `$colocate` → options-object path only
 
 ### Key Constraint
 
-**Both tagged templates reject interpolation with values:**
-- `fragment("Name", "Type")\`${value}\`` → ❌ Throws error
-- `query("Name")\`{ field(id: ${id}) }\`` → ❌ Throws error
-
-The only valid interpolation is fragment-to-fragment spreading: `fragment("Name", "Type")\`...${otherFragment} ...\``.
-
-Operations with fragment spreads MUST use callback builder syntax with `.spread()` instead of tagged template interpolation.
+**Tagged templates only accept Fragment instances and callback functions as interpolations:**
+- `...${fragment}` → ✅ Fragment spreading (in both fragments and operations)
+- `...${({ $ }) => fragment.spread({ key: $.var })}` → ✅ Callback-form spreading with variable binding
+- `${stringValue}` → ❌ Throws error (raw values not allowed)
+- `query.compat("Name")\`${anything}\`` → ❌ Compat rejects all interpolation
 
 ### Documentation References
 
@@ -146,7 +144,19 @@ const simpleQuery = gql.default(({ query }) =>
 );
 ```
 
-**Callback builder operation (with spreads):**
+**Tagged template operation (with fragment spread):**
+```typescript
+// playgrounds/vite-react/src/graphql/operations.ts
+const userQuery = gql.default(({ query }) =>
+  query("GetUser")`($id: ID!) {
+    user(id: $id) {
+      ...${userFields}
+    }
+  }`(),
+);
+```
+
+**Options-object path operation (for $dir, $colocate, aliases):**
 ```typescript
 // playgrounds/vite-react/src/graphql/callback-builder-features.ts
 const userQuery = gql.default(({ query }) =>
@@ -185,9 +195,9 @@ const extendedFields = gql.default(({ fragment }) =>
 );
 ```
 
-❌ **Operation with fragment spread (WRONG - tagged template):**
+❌ **Fragment spread without `...` prefix (WRONG):**
 ```typescript
-// This will FAIL - cannot use tagged template interpolation for fragment spreads in operations
+// Missing `...` prefix — will throw at runtime
 const badQuery = gql.default(({ query }) =>
   query("BadQuery")`{
     user {
@@ -197,7 +207,18 @@ const badQuery = gql.default(({ query }) =>
 );
 ```
 
-✅ **Operation with fragment spread (CORRECT - callback builder):**
+✅ **Operation with fragment spread (tagged template):**
+```typescript
+const goodQuery = gql.default(({ query }) =>
+  query("GetUser")`{
+    user(id: "1") {
+      ...${userFields}
+    }
+  }`(),
+);
+```
+
+✅ **Operation with fragment spread (options-object path):**
 ```typescript
 const userQuery = gql.default(({ query }) =>
   query("GetUser")({

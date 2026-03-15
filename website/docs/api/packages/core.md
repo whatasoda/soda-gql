@@ -85,9 +85,9 @@ For advanced features (field aliases, directives, `$colocate`):
 ```typescript
 import { gql } from "@/graphql-system";
 
-// Fragment (options-object path)
+// Fragment (tagged template)
 gql.default(({ fragment }) =>
-  fragment("UserFields", "User")({ fields: ({ f }) => ({ ...f("id")(), ...f("name")() }) }),
+  fragment("UserFields", "User")`{ id name }`(),
 );
 
 // Query (options-object path — useful for $dir, aliases, programmatic field control)

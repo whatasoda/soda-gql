@@ -46,17 +46,15 @@ export const userFragment = gql.default(({ fragment }) =>
 
 The tagged template specifies the GraphQL type and field selections directly. soda-gql validates the fragment against your schema at build time.
 
-For advanced features like field aliases, you can use the options-object path:
+For advanced features like field aliases, you can use the tagged template with alias syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment("UserFragment", "User")({
-    fields: ({ f }) => ({
-      ...f("id", null, { alias: "userId" }),
-      ...f("name")(),
-      ...f("email")(),
-    }),
-  })({}),
+  fragment("UserFragment", "User")`{
+    userId: id
+    name
+    email
+  }`(),
 );
 ```
 
@@ -120,20 +118,17 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 ```
 
-In the options-object path, use a `variables` template literal and the `$` reference for field arguments:
+Alternatively, the same fragment with variables in tagged template syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment("UserFragment", "Query")({
-    variables: `($userId: ID!)`,
-    fields: ({ f, $ }) => ({
-      ...f("user", { id: $.userId })(({ f }) => ({
-        ...f("id")(),
-        ...f("name")(),
-        ...f("email")(),
-      })),
-    }),
-  })({}),
+  fragment("UserFragment", "Query")`($userId: ID!) {
+    user(id: $userId) {
+      id
+      name
+      email
+    }
+  }`(),
 );
 ```
 
@@ -250,16 +245,14 @@ export const userFragment = gql.default(({ fragment }) =>
 );
 ```
 
-With the options-object path, the first argument to `fragment()` also serves as the key:
+The first argument to `fragment()` serves as the key in tagged template syntax:
 
 ```typescript
 export const userFragment = gql.default(({ fragment }) =>
-  fragment("UserFields", "User")({
-    fields: ({ f }) => ({
-      ...f("id")(),
-      ...f("name")(),
-    }),
-  })({}),
+  fragment("UserFields", "User")`{
+    id
+    name
+  }`(),
 );
 ```
 

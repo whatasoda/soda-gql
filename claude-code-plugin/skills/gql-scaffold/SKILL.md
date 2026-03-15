@@ -89,15 +89,13 @@ const userFields = gql.default(({ fragment }) =>
 );
 ```
 
-**Options-object path fragment (with aliases):**
+**Tagged template fragment (with aliases):**
 ```typescript
 const userFields = gql.default(({ fragment }) =>
-  fragment("UserFields", "User")({
-    fields: ({ f }) => ({
-      ...f("id", null, { alias: "userId" })(),
-      ...f("name", null, { alias: "displayName" })(),
-    }),
-  })({}),
+  fragment("UserFields", "User")`{
+    userId: id
+    displayName: name
+  }`(),
 );
 ```
 
