@@ -45,11 +45,7 @@ const getGraphqlModule = (): Result<GraphqlModule, FormatError> => {
   return ok(_graphqlModule);
 };
 
-import {
-  collectGqlIdentifiers,
-  isFieldSelectionObject,
-  isGqlDefinitionCall,
-} from "./detection";
+import { collectGqlIdentifiers, isFieldSelectionObject, isGqlDefinitionCall } from "./detection";
 import type { FormatError, FormatOptions, FormatResult } from "./types";
 
 const NEWLINE_INSERTION = "\n";
@@ -65,10 +61,7 @@ type TraversalContext = {
   currentArrowFunction: ArrowFunctionExpression | null;
 };
 
-type TraversalCallback = (
-  object: ObjectExpression,
-  parent: ArrowFunctionExpression,
-) => void;
+type TraversalCallback = (object: ObjectExpression, parent: ArrowFunctionExpression) => void;
 
 /**
  * Simple recursive AST traversal

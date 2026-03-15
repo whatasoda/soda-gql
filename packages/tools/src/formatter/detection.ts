@@ -111,4 +111,3 @@ export const collectGqlIdentifiers = (module: Module): Set<string> => {
 
   return gqlIdentifiers;
 };
-
