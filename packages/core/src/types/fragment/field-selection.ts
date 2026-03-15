@@ -36,12 +36,26 @@ export type AnyNestedObject = { readonly [alias: string]: AnyFieldSelection };
 
 /** Nested selection supporting shorthand syntax. */
 export type AnyNestedObjectExtended = { readonly [alias: string]: AnyFieldValue };
+
 /**
- * Nested selection produced when resolving a union field. Supports shorthand syntax.
- * Maps union member type names to their field selections.
+ * Wrapper for a single union member's selection within a union field.
+ * Carries both the member's field selections and any directives applied
+ * to the inline fragment (e.g., `... on Article @defer { id }`).
+ */
+export type UnionMemberSelection<
+  TFields extends AnyNestedObjectExtended = AnyNestedObjectExtended,
+  TDirectives extends AnyDirectiveAttachments = AnyDirectiveAttachments,
+> = {
+  readonly fields: TFields;
+  readonly directives: TDirectives;
+};
+
+/**
+ * Nested selection produced when resolving a union field.
+ * Maps union member type names to their wrapped field selections with directives.
  */
 export type AnyNestedUnion = {
-  readonly [typeName: string]: AnyNestedObjectExtended | undefined;
+  readonly [typeName: string]: UnionMemberSelection | undefined;
 };
 
 /**
@@ -128,7 +142,7 @@ type InferUnionWithTypename<
   TSelectionsClean = RemoveIndexSignature<TSelections>,
 > = {
   [TTypename in keyof TSchema["union"][TUnionName]["types"] & string]: TTypename extends keyof TSelectionsClean
-    ? TSelectionsClean[TTypename] extends infer TFields extends AnyNestedObjectExtended
+    ? TSelectionsClean[TTypename] extends UnionMemberSelection<infer TFields extends AnyNestedObjectExtended>
       ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), TFields> & {
           readonly __typename: TTypename;
         }
@@ -145,7 +159,7 @@ type InferUnionWithoutTypename<
   TSelections extends AnyNestedUnion,
   TSelectionsClean = RemoveIndexSignature<TSelections>,
 > = {
-  [TTypename in keyof TSelectionsClean]: TSelectionsClean[TTypename] extends infer TFields extends AnyNestedObjectExtended
+  [TTypename in keyof TSelectionsClean]: TSelectionsClean[TTypename] extends UnionMemberSelection<infer TFields extends AnyNestedObjectExtended>
     ? InferFieldsExtended<TSchema, TTypename & (keyof TSchema["object"] & string), TFields>
     : never;
 }[keyof TSelectionsClean];

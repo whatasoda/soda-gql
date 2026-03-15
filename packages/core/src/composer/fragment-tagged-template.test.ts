@@ -628,20 +628,57 @@ describe("createFragmentTaggedTemplate", () => {
       const fields = frag.spread({} as never);
       const searchField = fields.search as AnyFieldSelection;
       expect(searchField.union?.selections).toHaveProperty("Article");
-      const articleSelection = searchField.union?.selections.Article as Record<string, unknown>;
-      expect(articleSelection).toHaveProperty("id");
-      expect(articleSelection).toHaveProperty("title");
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember?.fields).toHaveProperty("id");
+      expect(articleMember?.fields).toHaveProperty("title");
     });
 
-    it("rejects directives on inline fragments", () => {
-      expect(() => {
-        const frag = fragment("SearchFields", "Query")`{
-          search {
-            ... on Article @skip(if: true) { id }
-          }
-        }`();
-        frag.spread({} as never);
-      }).toThrow("Directives on inline fragments are not supported in tagged templates");
+    it("supports directives on inline fragments", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article @skip(if: true) { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember).toBeDefined();
+      expect(articleMember!.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(articleMember!.directives[0]!);
+      expect(inner.name).toBe("skip");
+      expect(inner.arguments).toEqual({ if: true });
+      expect(inner.locations).toEqual(["INLINE_FRAGMENT"]);
+    });
+
+    it("supports directive with variable on inline fragment", () => {
+      const frag = fragment("SearchFields", "Query")`($show: Boolean!) {
+        search {
+          ... on Article @include(if: $show) { id title }
+          ... on Video { id }
+        }
+      }`();
+      const varRef = createVarRefFromVariable("show");
+      const fields = frag.spread({ show: varRef } as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const articleMember = searchField.union?.selections.Article;
+      expect(articleMember!.directives).toHaveLength(1);
+      const inner = DirectiveRef.getInner(articleMember!.directives[0]!);
+      expect(inner.name).toBe("include");
+      expect(inner.arguments.if).toBeInstanceOf(VarRef);
+    });
+
+    it("inline fragment without directive has empty directives array", () => {
+      const frag = fragment("SearchFields", "Query")`{
+        search {
+          ... on Article @skip(if: true) { id }
+          ... on Video { id }
+        }
+      }`();
+      const fields = frag.spread({} as never);
+      const searchField = fields.search as AnyFieldSelection;
+      const videoMember = searchField.union?.selections.Video;
+      expect(videoMember).toBeDefined();
+      expect(videoMember!.directives).toEqual([]);
     });
 
     it("rejects non-__typename fields alongside inline fragments", () => {

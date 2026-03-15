@@ -161,9 +161,6 @@ export function buildFieldsFromSelectionSet(
 
             for (const sel of selection.selectionSet.selections) {
               if (sel.kind === Kind.INLINE_FRAGMENT) {
-                if (sel.directives?.length) {
-                  throw new Error("Directives on inline fragments are not supported in tagged templates");
-                }
                 if (!sel.typeCondition) {
                   throw new Error("Inline fragments without type conditions are not supported in tagged templates");
                 }
@@ -192,7 +189,8 @@ export function buildFieldsFromSelectionSet(
                   varAssignments,
                   interpolationMap,
                 );
-                unionInput[memberName] = ({ f: _f }: { f: unknown }) => memberFields;
+                const memberDirectives = buildDirectivesFromAST(sel.directives, varAssignments, "INLINE_FRAGMENT");
+                unionInput[memberName] = { fields: memberFields, directives: memberDirectives };
               } else if (sel.kind === Kind.FIELD && sel.name.value === "__typename") {
                 if (sel.alias) {
                   throw new Error(
@@ -320,6 +318,7 @@ export function buildFieldsFromSelectionSet(
 function buildDirectivesFromAST(
   directives: readonly import("graphql").DirectiveNode[] | undefined,
   varAssignments?: Readonly<Record<string, AnyVarRef>>,
+  location: import("../types/type-foundation/directive-ref").ExecutableDirectiveLocation = "FIELD",
 ): AnyDirectiveRef[] {
   if (!directives || directives.length === 0) return [];
   return directives.map(
@@ -327,7 +326,7 @@ function buildDirectivesFromAST(
       new DirectiveRef({
         name: d.name.value,
         arguments: buildArgsFromASTArguments(d.arguments ?? [], varAssignments),
-        locations: ["FIELD"],
+        locations: [location],
       }),
   );
 }

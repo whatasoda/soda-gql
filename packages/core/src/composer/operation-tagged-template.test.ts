@@ -308,18 +308,17 @@ describe("createOperationTaggedTemplate", () => {
       }).toThrow('Type "User" is not a member of union "SearchResult"');
     });
 
-    it("rejects directives on inline fragments (interpolation path)", () => {
+    it("supports directives on inline fragments (interpolation path)", () => {
       const videoFrag = fragment("VideoFields", "Video")`{ id duration }`();
 
-      expect(() => {
-        const op = query("Search")`{
-          search {
-            ... on Article @skip(if: true) { id }
-            ... on Video { ...${videoFrag} }
-          }
-        }`();
-        void op.document;
-      }).toThrow("Directives on inline fragments are not supported in tagged templates");
+      const op = query("Search")`{
+        search {
+          ... on Article @skip(if: true) { id }
+          ... on Video { ...${videoFrag} }
+        }
+      }`();
+      const printed = print(op.document);
+      expect(printed).toContain("... on Article @skip(if: true)");
     });
   });
 });
