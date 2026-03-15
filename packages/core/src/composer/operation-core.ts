@@ -24,6 +24,7 @@ import type { FieldsBuilder } from "./fields-builder";
 import { createFieldFactories } from "./fields-builder";
 import { withFragmentUsageCollection } from "./fragment-usage-context";
 import { createVarRefs } from "./input";
+import { varRefTools } from "./var-ref-tools";
 
 /**
  * Shared base parameters for building an operation artifact.
@@ -211,7 +212,7 @@ export const buildOperationArtifact = <
     aggregatedFragmentMetadata: TAggregatedFragmentMetadata,
   ): TOperationMetadata | undefined | Promise<TOperationMetadata | undefined> => {
     const schemaLevel = adapter.schemaLevel as TSchemaLevel | undefined;
-    return metadataBuilder?.({ $, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
+    return metadataBuilder?.({ $, $var: varRefTools, document, fragmentMetadata: aggregatedFragmentMetadata, schemaLevel });
   };
 
   // 8. Factory that creates the final artifact

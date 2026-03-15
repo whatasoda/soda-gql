@@ -14,20 +14,26 @@ import type { AnyMetadataAdapter, DocumentTransformer, OperationDocumentTransfor
 import { defaultMetadataAdapter } from "../types/metadata";
 import type { MinimalSchema, OperationType } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
-import type { FieldAccessorFunction, FieldsBuilder } from "./fields-builder";
+import type { FieldsBuilder } from "./fields-builder";
 import { buildFieldsFromSelectionSet, filterUnresolvedFragmentSpreads } from "./fragment-tagged-template";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import { buildOperationArtifact, wrapArtifactAsOperation } from "./operation-core";
 
 /** Options for fragment TemplateResult resolution. */
 export type FragmentTemplateMetadataOptions = {
-  metadata?: unknown | ((context: { $: Readonly<Record<string, unknown>> }) => unknown | Promise<unknown>);
+  metadata?:
+    | unknown
+    | ((context: {
+        $: Readonly<Record<string, unknown>>;
+        $var: import("../types/metadata/metadata").VarRefTools;
+      }) => unknown | Promise<unknown>);
 };
 
 /** Context provided to operation metadata callbacks. */
 export type OperationMetadataContext = {
   // biome-ignore lint/suspicious/noExplicitAny: Metadata context types are adapter-dependent; any allows test flexibility
   readonly $: Readonly<Record<string, any>>;
+  readonly $var: import("../types/metadata/metadata").VarRefTools;
   readonly document: import("graphql").DocumentNode;
   // biome-ignore lint/suspicious/noExplicitAny: Aggregated fragment metadata shape depends on adapter
   readonly fragmentMetadata: any;

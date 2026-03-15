@@ -221,12 +221,13 @@ The `$var` object provides utility functions for inspecting variable references:
 | `$var.getValue(ref)` | Get const value from a nested-value VarRef |
 | `$var.getNameAt(ref, selector)` | Get variable name at a specific path |
 | `$var.getValueAt(ref, selector)` | Get const value at a specific path |
-| `$var.getVariablePath(ref, selector)` | Get path segments to a variable |
+| `$var.getPath(ref, selector)` | Get path segments to a variable |
+| `$var.hasVarRefInside(value)` | Check if a value contains any VarRef |
 
 ```typescript
-// Example: getVariablePath with nested structure
+// Example: getPath with nested structure
 const varRef = createVarRefFromVariable("user");
-$var.getVariablePath(varRef, (p) => p.profile.name);
+$var.getPath(varRef, (p) => p.profile.name);
 // Returns: ["$user", "name"] (variable name + path after variable reference point)
 ```
 

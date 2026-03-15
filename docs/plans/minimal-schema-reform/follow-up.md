@@ -54,21 +54,13 @@ Additionally, the variable inference pipeline (`collectVariableUsages` -> `infer
 
 Exported but never called from anywhere. The CLI uses `parseGraphqlSource` only.
 
-## 4. Evaluate `var-ref-tools.ts` Public API
+## 4. ~~Evaluate~~ Document `var-ref-tools.ts` Public API
 
-**Priority:** Low
-**Scope:** `packages/core/src/composer/var-ref-tools.ts`
+**Status:** Resolved — exposed as `$var` tools object on metadata builder context.
 
-Exported functions with zero non-test callers:
-- `getVarRefName`
-- `getVarRefValue`
-- `getNameAt`
-- `getValueAt`
-- `getVariablePath`
+These functions are intentionally maintained as public API for metadata builders that need to inspect operation variables. Use cases: cache key generation, conditional request headers, nested input decomposition, variable labeling for backend communication.
 
-These were utilities for the old `$` proxy pattern (`$.filter.id`). With template-string variables, production code no longer uses them. `hasVarRefInside` is still used internally.
-
-**Approach:** Move to internal-only or evaluate if metadata builders still need these.
+Available via `({ $, $var }) => ...` in metadata callbacks. See `docs/guides/tagged-template-syntax.md` for usage examples.
 
 ## 5. Update Stale `$var()` Comments
 

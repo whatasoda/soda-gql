@@ -22,7 +22,7 @@ import {
  * Used by getVarRefValue to determine if it's safe to return as ConstValue.
  * @internal
  */
-export const hasVarRefInside = (value: NestedValueElement): boolean => {
+export const hasVarRefInside = (value: NestedValueElement | unknown): boolean => {
   if (value instanceof VarRef) {
     return true;
   }
@@ -224,3 +224,19 @@ export const getVariablePath = <T, U>(varRef: VarRef<AnyVarRefBrand>, selector: 
 
   throw new Error(`Value at path [${inner.segments.join(".")}] is not a variable or inside a variable`);
 };
+
+// ============================================================================
+// Singleton for metadata builder context
+// ============================================================================
+
+import type { VarRefTools } from "../types/metadata/metadata";
+
+/** Pre-built tools object passed as `$var` in metadata builder callbacks. */
+export const varRefTools: VarRefTools = Object.freeze({
+  getName: getVarRefName,
+  getValue: getVarRefValue,
+  getNameAt,
+  getValueAt,
+  getPath: getVariablePath,
+  hasVarRefInside,
+});

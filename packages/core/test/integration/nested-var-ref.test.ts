@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { StandardDirectives } from "../../src/composer/directive-builder";
 import { createGqlElementComposer } from "../../src/composer/gql-composer";
-import { getNameAt, getValueAt } from "../../src/composer/var-ref-tools";
+import type { OperationMetadataContext } from "../../src/composer/operation-tagged-template";
 import { defineOperationRoots, defineScalar } from "../../src/schema/schema-builder";
 import type { OperationMetadata } from "../../src/types/metadata";
 import type { AnyGraphqlSchema } from "../../src/types/schema";
@@ -50,18 +50,15 @@ const schema = asMinimalSchema({
 
 type Schema = typeof schema & { _?: never };
 
-// NOTE: The `(p: any)` annotations in getNameAt/getValueAt/getVariablePath selectors below
-// are intentional and cannot be removed. These tests use VarRefs created via
-// `createVarRefFromNestedValue` (which returns `AnyVarRef`) rather than the schema-aware
-// `$.varName` references. The runtime functions `getNameAt`/`getValueAt`/`getVariablePath` in
-// var-ref-tools.ts use the signature `<T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: T) => U)`,
-// where `T` has no constraint tying it to the VarRef's brand. As a result, TypeScript infers
-// `T` as `unknown`, making property access impossible without the `any` annotation.
+// NOTE: The `(p: any)` annotations in $var.getNameAt/$var.getValueAt/$var.getPath selectors
+// below are intentional. These tests use VarRefs created via `createVarRefFromNestedValue`
+// (which returns `AnyVarRef`) rather than schema-aware `$.varName` references. The underlying
+// functions use `<T, U>(varRef: VarRef<AnyVarRefBrand>, selector: (proxy: T) => U)` where `T`
+// has no constraint tying it to the VarRef's brand, so TypeScript infers `T` as `unknown`.
 //
-// The schema-aware proxy typing (via `SchemaAwareGetValueAt`) only works when using the
-// `getValueAt($.varName, ...)` pattern inside a gql composer callback, where the VarRef
-// is a `DeclaredVariables` reference with a concrete brand. See the type-level tests in
-// `packages/core/test/types/var-ref-tools.test.ts` for verification of schema-aware inference.
+// Schema-aware proxy typing (via `SchemaAwareGetValueAt`) only works when using `$.varName`
+// references inside a gql composer callback with a concrete brand. See the type-level tests
+// in `packages/core/test/types/var-ref-tools.test.ts` for verification.
 describe("nested VarRef with var-ref-tools helpers", () => {
   describe("getNameAt", () => {
     it("extracts variable name from nested structure in metadata", () => {
@@ -81,10 +78,9 @@ describe("nested VarRef with var-ref-tools helpers", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
-          metadata: () => ({
+          metadata: ({ $var }: OperationMetadataContext) => ({
             custom: {
-              // Use getNameAt to extract variable name from nested structure
-              extractedVarName: getNameAt(nestedRef, (p: any) => p.filter.id),
+              extractedVarName: $var.getNameAt(nestedRef, (p: any) => p.filter.id),
             },
           }),
         }),
@@ -115,11 +111,10 @@ describe("nested VarRef with var-ref-tools helpers", () => {
           variables: `($userId: ID!)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
-          metadata: () => ({
+          metadata: ({ $var }: OperationMetadataContext) => ({
             custom: {
-              // Use getValueAt to extract const value from nested structure
-              extractedName: getValueAt(nestedRef, (p: any) => p.filter.name),
-              extractedAge: getValueAt(nestedRef, (p: any) => p.filter.age),
+              extractedName: $var.getValueAt(nestedRef, (p: any) => p.filter.name),
+              extractedAge: $var.getValueAt(nestedRef, (p: any) => p.filter.age),
             },
           }),
         }),
@@ -149,10 +144,10 @@ describe("nested VarRef with var-ref-tools helpers", () => {
           variables: `($userId: ID!, $userAge: Int)`,
           fields: ({ f, $ }) => ({ ...f("user", { id: $.userId })(({ f }) => ({ ...f("id")() })) }),
         })({
-          metadata: () => ({
+          metadata: ({ $var }: OperationMetadataContext) => ({
             custom: {
-              constName: getValueAt(nestedRef, (p: any) => p.user.name),
-              varAgeName: getNameAt(nestedRef, (p: any) => p.user.age),
+              constName: $var.getValueAt(nestedRef, (p: any) => p.user.name),
+              varAgeName: $var.getNameAt(nestedRef, (p: any) => p.user.age),
             },
           }),
         }),

@@ -11,6 +11,7 @@ import type { SchemaIndex } from "../graphql/schema-index";
 import { Fragment } from "../types/element";
 import type { AnyFragment } from "../types/element/fragment";
 import type { AnyFieldSelection, AnyFieldsExtended } from "../types/fragment";
+import type { VarRefTools } from "../types/metadata/metadata";
 import type { MinimalSchema } from "../types/schema";
 import type { AnyVarRef, VariableDefinitions } from "../types/type-foundation";
 import { createVarRefFromVariable } from "../types/type-foundation/var-ref";
@@ -20,6 +21,7 @@ import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import type { FragmentTemplateMetadataOptions, TemplateResult } from "./operation-tagged-template";
+import { varRefTools } from "./var-ref-tools";
 
 /** Tagged template function type for fragments. */
 export type FragmentTaggedTemplateFunction = (
@@ -504,7 +506,11 @@ export function createFragmentTaggedTemplate<TSchema extends MinimalSchema>(sche
             if (options?.metadata !== undefined) {
               const metadata = options.metadata;
               if (typeof metadata === "function") {
-                metadataBuilder = () => (metadata as (ctx: { $: unknown }) => unknown | Promise<unknown>)({ $ });
+                metadataBuilder = () =>
+                  (metadata as (ctx: { $: unknown; $var: VarRefTools }) => unknown | Promise<unknown>)({
+                    $,
+                    $var: varRefTools,
+                  });
               } else {
                 metadataBuilder = () => metadata;
               }
