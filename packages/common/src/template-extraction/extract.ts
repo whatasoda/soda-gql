@@ -428,6 +428,63 @@ export function walkAndExtract(
 }
 
 /**
+ * Walk AST to find gql callback builder calls and extract field call trees.
+ * Companion to walkAndExtract — collects ExtractedFieldTree instead of ExtractedTemplate.
+ */
+export const walkAndExtractFieldTrees = (
+  node: Node,
+  identifiers: ReadonlySet<string>,
+  positionCtx?: PositionTrackingContext,
+): ExtractedFieldTree[] => {
+  const trees: ExtractedFieldTree[] = [];
+
+  const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): void => {
+    if (!n || typeof n !== "object") return;
+
+    if ("type" in n && n.type === "CallExpression") {
+      const gqlCall = findGqlCall(identifiers, n as Node);
+      if (gqlCall) {
+        const schemaName = getGqlCallSchemaName(identifiers, gqlCall);
+        if (schemaName) {
+          const arrow = gqlCall.arguments[0]?.expression as ArrowFunctionExpression;
+          // Process each expression in the arrow body for field trees
+          const processExpr = (expr: Node): void => {
+            if (expr.type === "CallExpression") {
+              const tree = extractFieldCallTree(expr, schemaName, positionCtx);
+              if (tree) trees.push(tree);
+            }
+          };
+          if (arrow.body.type !== "BlockStatement") {
+            processExpr(arrow.body as Node);
+          } else {
+            for (const stmt of arrow.body.stmts) {
+              if (stmt.type === "ReturnStatement" && stmt.argument) {
+                processExpr(stmt.argument as Node);
+              }
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    if (Array.isArray(n)) {
+      for (const item of n) visit(item as Node);
+      return;
+    }
+
+    for (const key of Object.keys(n)) {
+      if (key === "span" || key === "type") continue;
+      const value = (n as Record<string, unknown>)[key];
+      if (value && typeof value === "object") visit(value as Node);
+    }
+  };
+
+  visit(node);
+  return trees;
+};
+
+/**
  * Convert a byte-space span to a character-index span using a position context.
  * Used for tracking field name and call positions within a callback builder.
  */
@@ -500,7 +557,6 @@ const extractFieldCallChildren = (
 
     // Compute spans
     const outerCallSpan = (outer as unknown as { span: { start: number; end: number } }).span;
-    const innerCallSpan = (innerCall as unknown as { span: { start: number; end: number } }).span;
     const strLitSpan = strLit.span;
 
     // callSpan covers the full outer expression; fieldNameSpan is inside quotes (adjust by +1/-1 for ASCII quote)
@@ -510,7 +566,7 @@ const extractFieldCallChildren = (
       : { start: strLitSpan.start + 1, end: strLitSpan.end - 1 };
 
     // Discriminate nested kind based on outer call arguments
-    const nested = extractFieldCallNested(outer, innerCallSpan, positionCtx);
+    const nested = extractFieldCallNested(outer, positionCtx);
 
     children.push({ fieldName, fieldNameSpan, callSpan, nested });
   }
@@ -524,7 +580,6 @@ const extractFieldCallChildren = (
  */
 const extractFieldCallNested = (
   outer: CallExpression,
-  innerCallSpan: { start: number; end: number },
   positionCtx?: PositionTrackingContext,
 ): FieldCallNested | null => {
   const outerArg = outer.arguments[0]?.expression;

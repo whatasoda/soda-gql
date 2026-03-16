@@ -7,17 +7,19 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter } from "@soda-gql/common";
-import { type PositionTrackingContext, walkAndExtract } from "@soda-gql/common/template-extraction";
+import { type PositionTrackingContext, walkAndExtract, walkAndExtractFieldTrees } from "@soda-gql/common/template-extraction";
 import type { ImportDeclaration, Module } from "@swc/types";
 import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
-import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";
+import type { DocumentState, ExtractedFieldTree, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";
 
 export type DocumentManager = {
   readonly update: (uri: string, version: number, source: string) => DocumentState;
   readonly get: (uri: string) => DocumentState | undefined;
   readonly remove: (uri: string) => void;
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
+  /** Find the field call tree containing the given offset. */
+  readonly findFieldTreeAtOffset: (uri: string, offset: number) => ExtractedFieldTree | undefined;
   /** Get fragments from other documents for a given schema, excluding the specified URI. */
   readonly getExternalFragments: (uri: string, schemaName: string) => readonly IndexedFragment[];
   /** Get ALL indexed fragments (including self) for a given schema. */
@@ -235,12 +237,12 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
   const cache = new Map<string, DocumentState>();
   const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
-  const extractTemplates = (uri: string, source: string): readonly ExtractedTemplate[] => {
+  const extractAll = (uri: string, source: string): { templates: readonly ExtractedTemplate[]; fieldTrees: readonly ExtractedFieldTree[] } => {
     const isTsx = uri.endsWith(".tsx");
 
     const program = safeParseSync(source, isTsx);
     if (!program) {
-      return [];
+      return { templates: [], fieldTrees: [] };
     }
 
     // SWC's BytePos counter accumulates across parseSync calls within the same process.
@@ -253,21 +255,24 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
 
     const gqlIdentifiers = collectGqlIdentifiers(program, filePath, helper);
     if (gqlIdentifiers.size === 0) {
-      return [];
+      return { templates: [], fieldTrees: [] };
     }
 
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
-    return walkAndExtract(program, gqlIdentifiers, positionCtx);
+    const templates = walkAndExtract(program, gqlIdentifiers, positionCtx);
+    const fieldTrees = walkAndExtractFieldTrees(program, gqlIdentifiers, positionCtx);
+    return { templates, fieldTrees };
   };
 
   return {
     update: (uri, version, source) => {
-      const templates = extractTemplates(uri, source);
+      const { templates, fieldTrees } = extractAll(uri, source);
       const state: DocumentState = {
         uri,
         version,
         source,
         templates,
+        fieldTrees,
         ...(swcUnavailable ? { swcUnavailable: true as const } : {}),
       };
       cache.set(uri, state);
@@ -292,6 +297,14 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
         return undefined;
       }
       return state.templates.find((t) => offset >= t.contentRange.start && offset <= t.contentRange.end);
+    },
+
+    findFieldTreeAtOffset: (uri, offset) => {
+      const state = cache.get(uri);
+      if (!state) {
+        return undefined;
+      }
+      return state.fieldTrees.find((t) => offset >= t.rootSpan.start && offset <= t.rootSpan.end);
     },
 
     getExternalFragments: (uri, schemaName) => {

@@ -3,7 +3,9 @@
  * @module
  */
 
-import type { ExtractedTemplateWithPosition, OperationKind } from "@soda-gql/common/template-extraction";
+import type { ExtractedFieldTree, ExtractedTemplateWithPosition, OperationKind } from "@soda-gql/common/template-extraction";
+
+export type { ExtractedFieldTree };
 import type { FragmentDefinitionNode } from "graphql";
 
 export type { OperationKind };
@@ -17,6 +19,8 @@ export type DocumentState = {
   readonly version: number;
   readonly source: string;
   readonly templates: readonly ExtractedTemplate[];
+  /** Callback builder field call trees (schema-independent, resolved lazily). */
+  readonly fieldTrees: readonly ExtractedFieldTree[];
   /** Set when @swc/core could not be loaded; template extraction is skipped. */
   readonly swcUnavailable?: true;
 };
