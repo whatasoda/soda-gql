@@ -209,6 +209,81 @@ export const Bad = gql.default(({ query }) => query("Bad")\`{ products { ...Prod
     });
   });
 
+  describe("cross-context isolation under interleaved operations", () => {
+    test("document update in one config does not affect another config's templates", () => {
+      const ctxA = createConfigContext(appADir);
+      const ctxB = createConfigContext(appBDir);
+
+      const sourceA = `import { gql } from "@/graphql-system";
+
+export const GetUsers = gql.default(({ query }) => query("GetUsers")\`{ users { id name } }\`);`;
+      const uriA = resolve(appADir, "get-users.ts");
+      const stateA = ctxA.documentManager.update(uriA, 1, sourceA);
+      expect(stateA.templates).toHaveLength(1);
+
+      // Update config B — should not affect config A
+      const sourceB = `import { gql } from "@/graphql-system";
+
+export const GetProducts = gql.default(({ query }) => query("GetProducts")\`{ products { id title } }\`);`;
+      const uriB = resolve(appBDir, "get-products.ts");
+      const stateB = ctxB.documentManager.update(uriB, 1, sourceB);
+      expect(stateB.templates).toHaveLength(1);
+
+      // Re-check config A — templates must be unchanged
+      const stateAAfter = ctxA.documentManager.get(uriA);
+      expect(stateAAfter).toBeDefined();
+      expect(stateAAfter!.templates).toHaveLength(1);
+      expect(stateAAfter!.templates[0]!.elementName).toBe("GetUsers");
+    });
+
+    test("schema reload on one config does not affect another config's schema", () => {
+      const ctxA = createConfigContext(appADir);
+      const ctxB = createConfigContext(appBDir);
+
+      const entryBBefore = ctxB.schemaResolver.getSchema("default");
+      expect(entryBBefore).toBeDefined();
+      const hashBBefore = entryBBefore!.hash;
+
+      // Reload config A schemas
+      const reloadResult = ctxA.schemaResolver.reloadAll();
+      expect(reloadResult.isOk()).toBe(true);
+
+      // Config B schema must be unaffected (same hash)
+      const entryBAfter = ctxB.schemaResolver.getSchema("default");
+      expect(entryBAfter).toBeDefined();
+      expect(entryBAfter!.hash).toBe(hashBBefore);
+    });
+
+    test("fragment registration isolated after interleaved updates", () => {
+      const ctxA = createConfigContext(appADir);
+      const ctxB = createConfigContext(appBDir);
+
+      // Register fragment in config A
+      const fragSource1 = `import { gql } from "@/graphql-system";
+
+export const UserName = gql.default(({ fragment }) => fragment("UserName", "User")\`{ name }\`);`;
+      ctxA.documentManager.update(resolve(appADir, "user-name.ts"), 1, fragSource1);
+
+      // Update document in config B (not a fragment)
+      const sourceB = `import { gql } from "@/graphql-system";
+
+export const GetProducts = gql.default(({ query }) => query("GetProducts")\`{ products { id } }\`);`;
+      ctxB.documentManager.update(resolve(appBDir, "get-products.ts"), 1, sourceB);
+
+      // Register another fragment in config A
+      const fragSource2 = `import { gql } from "@/graphql-system";
+
+export const UserEmail = gql.default(({ fragment }) => fragment("UserEmail", "User")\`{ email }\`);`;
+      ctxA.documentManager.update(resolve(appADir, "user-email.ts"), 1, fragSource2);
+
+      // Config A should have 2 fragments, config B should have 0
+      const fragsA = ctxA.documentManager.getAllFragments("default");
+      const fragsB = ctxB.documentManager.getAllFragments("default");
+      expect(fragsA).toHaveLength(2);
+      expect(fragsB).toHaveLength(0);
+    });
+  });
+
   describe("same schema name 'default' in different configs", () => {
     test("each config resolves 'default' to its own schema independently", () => {
       const ctxA = createConfigContext(appADir);
