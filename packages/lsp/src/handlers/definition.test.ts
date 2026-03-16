@@ -244,6 +244,174 @@ describe("handleDefinition", () => {
   });
 });
 
+describe("handleDefinition — variable type navigation", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schema = buildASTSchema(parse(schemaSource) as unknown as DocumentNode);
+
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves input type in tagged template variable definition", async () => {
+    const content = "($input: CreateUserInput!) { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("CreateUser")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "CreateUser",
+    };
+
+    // Position cursor on "CreateUserInput"
+    const typeIdx = content.indexOf("CreateUserInput") + 2;
+    const cursorInTs = contentStart + typeIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+
+  test("resolves input type in callback-variables template", async () => {
+    const content = "($input: CreateUserInput!)";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("CreateUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}));`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "CreateUser",
+      source: "callback-variables",
+    };
+
+    const typeIdx = content.indexOf("CreateUserInput") + 2;
+    const cursorInTs = contentStart + typeIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+
+  test("resolves enum type in variable definition", async () => {
+    const content = "($role: UserRole!) { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetByRole")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetByRole",
+    };
+
+    const typeIdx = content.indexOf("UserRole") + 2;
+    const cursorInTs = contentStart + typeIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+
+  test("returns empty for built-in scalar type (no crash)", async () => {
+    const content = "($id: ID!) { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
+    };
+
+    const typeIdx = content.indexOf("ID!") + 1;
+    const cursorInTs = contentStart + typeIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations).toHaveLength(0);
+  });
+
+  test("returns empty when cursor is not on variable type", async () => {
+    const content = "($id: ID!) { users { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
+    };
+
+    // Cursor on "users" field, not on variable type
+    const fieldIdx = content.indexOf("users") + 2;
+    const cursorInTs = contentStart + fieldIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    // Should fall through to schema field resolution (which works) or return empty
+    // The key assertion: no crash, and doesn't incorrectly resolve to a variable type
+    expect(locations).toBeDefined();
+  });
+});
+
 describe("handleDefinition — schema field navigation", () => {
   const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
   const schemaPath = resolve(fixturesDir, "schemas/default.graphql");

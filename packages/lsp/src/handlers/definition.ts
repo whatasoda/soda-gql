@@ -4,12 +4,13 @@
  */
 
 import { pathToFileURL } from "node:url";
-import type { GraphQLSchema, TypeDefinitionNode } from "graphql";
-import { getNamedType, isTypeDefinitionNode, parse } from "graphql";
+import type { GraphQLSchema, NamedTypeNode, TypeDefinitionNode, TypeNode } from "graphql";
+import { getNamedType, isTypeDefinitionNode, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,
   getDefinitionQueryResultForFragmentSpread,
+  getDefinitionQueryResultForNamedType,
   type ObjectTypeInfo,
 } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
@@ -87,7 +88,15 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
     return resolveFragmentSpreadDefinition(preprocessed, fragmentSpread, externalFragments);
   }
 
-  // 2. Try field/type navigation in schema files
+  // 2. Try variable type navigation (works for all template types)
+  if (input.schemaFiles && input.schemaFiles.length > 0) {
+    const varTypeResult = await resolveVariableTypeDefinition(preprocessed, reconstructedOffset, input.schemaFiles);
+    if (varTypeResult.length > 0) {
+      return varTypeResult;
+    }
+  }
+
+  // 3. Try field/type navigation in schema files
   if (input.schema && input.schemaFiles && input.schemaFiles.length > 0) {
     const reconstructedLineOffsets = computeLineOffsets(preprocessed);
     const reconstructedPosition = offsetToPosition(reconstructedLineOffsets, reconstructedOffset);
@@ -151,6 +160,69 @@ const resolveFragmentSpreadDefinition = async (
       };
     });
   } catch {
+    return [];
+  }
+};
+
+/** Unwrap NonNullType/ListType wrappers to get the inner NamedType node. */
+const unwrapToNamedType = (typeNode: TypeNode): NamedTypeNode | null => {
+  if (typeNode.kind === "NamedType") return typeNode;
+  if (typeNode.kind === "NonNullType" || typeNode.kind === "ListType") {
+    return unwrapToNamedType(typeNode.type);
+  }
+  return null;
+};
+
+/**
+ * Resolve variable type reference to its definition in a schema file.
+ * Parses the GraphQL source to find VariableDefinition nodes, checks if the
+ * cursor offset falls within a type name, and resolves via getDefinitionQueryResultForNamedType.
+ */
+const resolveVariableTypeDefinition = async (
+  preprocessed: string,
+  reconstructedOffset: number,
+  schemaFiles: readonly SchemaFileInfo[],
+): Promise<Location[]> => {
+  let ast;
+  try {
+    ast = parse(preprocessed, { noLocation: false });
+  } catch {
+    return [];
+  }
+
+  // Collect all NamedType nodes from variable definitions
+  let matchedNode: NamedTypeNode | null = null;
+  visit(ast, {
+    VariableDefinition(node) {
+      if (matchedNode) return;
+      const namedType = unwrapToNamedType(node.type);
+      if (!namedType?.name.loc) return;
+      const { start, end } = namedType.name.loc;
+      if (reconstructedOffset >= start && reconstructedOffset <= end) {
+        matchedNode = namedType;
+      }
+    },
+  });
+
+  if (!matchedNode) return [];
+
+  const objectTypeInfos = buildObjectTypeInfos(schemaFiles);
+  try {
+    const result = await getDefinitionQueryResultForNamedType(preprocessed, matchedNode, objectTypeInfos);
+    return result.definitions.map(
+      (def): Location => ({
+        uri: def.path ?? "",
+        range: {
+          start: { line: def.position.line, character: def.position.character },
+          end: {
+            line: def.range?.end?.line ?? def.position.line,
+            character: def.range?.end?.character ?? def.position.character,
+          },
+        },
+      }),
+    );
+  } catch {
+    // Built-in scalars (ID, String, etc.) have no definition in schema files
     return [];
   }
 };

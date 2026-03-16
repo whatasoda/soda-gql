@@ -16,3 +16,14 @@ type Post {
   body: String!
   author: User!
 }
+
+input CreateUserInput {
+  name: String!
+  email: String
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  GUEST
+}
