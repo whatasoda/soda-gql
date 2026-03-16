@@ -277,3 +277,178 @@ export const GetUser = gql.default(({ query }) =>
     expect(range.end).toBeGreaterThan(range.start);
   });
 });
+
+describe("callback builder variables extraction", () => {
+  it("extracts variables from callback builder with trailing ({})", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")({ variables: \`($id: ID!)\`, fields: ({ f, $ }) => ({ ...f("user", { id: $.id })(({ f }) => ({ ...f("id")() })) }) })({})
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.source).toBe("callback-variables");
+    expect(templates[0]!.kind).toBe("query");
+    expect(templates[0]!.elementName).toBe("GetUser");
+    expect(templates[0]!.content).toBe("($id: ID!)");
+  });
+
+  it("extracts variables from callback builder with metadata", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")({ variables: \`($id: ID!)\`, fields: ({ f }) => ({}) })({ metadata: { tag: "test" } })
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.source).toBe("callback-variables");
+    expect(templates[0]!.elementName).toBe("GetUser");
+    expect(templates[0]!.content).toBe("($id: ID!)");
+  });
+
+  it("extracts variables from callback builder without trailing call", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")({ variables: \`($id: ID!)\`, fields: ({ f }) => ({}) })
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.source).toBe("callback-variables");
+    expect(templates[0]!.content).toBe("($id: ID!)");
+  });
+
+  it("extracts variables from mutation callback builder", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const CreateUser = gql.default(({ mutation }) =>
+        mutation("CreateUser")({ variables: \`($input: CreateUserInput!)\`, fields: ({ f }) => ({}) })({})
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.source).toBe("callback-variables");
+    expect(templates[0]!.kind).toBe("mutation");
+    expect(templates[0]!.elementName).toBe("CreateUser");
+    expect(templates[0]!.content).toBe("($input: CreateUserInput!)");
+  });
+
+  it("extracts variables from StringLiteral", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")({ variables: "($id: ID!)", fields: ({ f }) => ({}) })({})
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.source).toBe("callback-variables");
+    expect(templates[0]!.content).toBe("($id: ID!)");
+  });
+
+  it("does not extract callback-variables when no variables property", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")({ fields: ({ f }) => ({}) })({})
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    // No callback-variables template extracted (fields-only callback builder has no GraphQL to extract)
+    const callbackVarTemplates = templates.filter((t) => t.source === "callback-variables");
+    expect(callbackVarTemplates).toHaveLength(0);
+  });
+
+  it("extracts both tagged template and callback-variables from same file", () => {
+    const source = `
+      import { gql } from "./graphql-system";
+      export const GetUser = gql.default(({ query }) =>
+        query("GetUser")\`{ user { id } }\`
+      );
+      export const CreateUser = gql.default(({ mutation }) =>
+        mutation("CreateUser")({ variables: \`($input: CreateUserInput!)\`, fields: ({ f }) => ({}) })({})
+      );
+    `;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const templates = walkAndExtract(module as unknown as Node, identifiers);
+
+    expect(templates).toHaveLength(2);
+    expect(templates[0]!.source).toBeUndefined(); // tagged template
+    expect(templates[1]!.source).toBe("callback-variables");
+  });
+});
+
+describe("callback builder variables with position tracking", () => {
+  it("tracks contentRange for TemplateLiteral variables", () => {
+    const source = `import { gql } from "./graphql-system";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")({ variables: \`($id: ID!)\`, fields: ({ f }) => ({}) })({})
+);`;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const converter = createSwcSpanConverter(source);
+    const spanOffset = module.span.start;
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+
+    const templates = walkAndExtract(module as unknown as Node, identifiers, positionCtx);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.contentRange).toBeDefined();
+
+    const range = templates[0]!.contentRange!;
+    const extracted = source.slice(range.start, range.end);
+    expect(extracted).toBe("($id: ID!)");
+  });
+
+  it("tracks contentRange for StringLiteral variables", () => {
+    const source = `import { gql } from "./graphql-system";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")({ variables: "($id: ID!)", fields: ({ f }) => ({}) })({})
+);`;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const converter = createSwcSpanConverter(source);
+    const spanOffset = module.span.start;
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+
+    const templates = walkAndExtract(module as unknown as Node, identifiers, positionCtx);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.contentRange).toBeDefined();
+
+    const range = templates[0]!.contentRange!;
+    const extracted = source.slice(range.start, range.end);
+    expect(extracted).toBe("($id: ID!)");
+  });
+});

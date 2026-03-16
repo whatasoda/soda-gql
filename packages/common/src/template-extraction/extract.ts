@@ -11,7 +11,14 @@
  */
 
 // Re-export for convenience — SWC types are type-only imports
-import type { ArrowFunctionExpression, CallExpression, MemberExpression, Node, TaggedTemplateExpression } from "@swc/types";
+import type {
+  ArrowFunctionExpression,
+  CallExpression,
+  MemberExpression,
+  Node,
+  ObjectExpression,
+  TaggedTemplateExpression,
+} from "@swc/types";
 import type { SwcSpanConverter } from "../utils/swc-span";
 import type { ExtractedTemplate, ExtractedTemplateWithPosition, OperationKind } from "./types";
 
@@ -53,8 +60,136 @@ export const getGqlCallSchemaName = (identifiers: ReadonlySet<string>, call: Cal
 };
 
 /**
+ * Find the curried name call (e.g., `query("Name")`) from a callback builder expression.
+ * Unwraps trailing call expressions like `({})` or `({ metadata: ... })`.
+ *
+ * Returns `{ curriedCall, configCall }` where:
+ * - curriedCall: the `query("Name")` CallExpression
+ * - configCall: the `({ variables, fields })` CallExpression
+ *
+ * Returns null if the expression doesn't match the callback builder pattern.
+ */
+const findCallbackBuilderCalls = (
+  expr: Node,
+): { curriedCall: CallExpression; configCall: CallExpression } | null => {
+  if (expr.type !== "CallExpression") return null;
+  let call = expr as unknown as CallExpression;
+
+  // Unwrap trailing call: query("Name")({ ... })({}) → get to query("Name")({ ... })
+  // The trailing call's callee is the config call, whose callee is the curried name call.
+  // We need to find the config call that has an ObjectExpression argument
+  // and whose callee is a curried name call (CallExpression with Identifier callee).
+
+  // Try current level as config call first (no trailing call case)
+  if (call.callee.type === "CallExpression") {
+    const maybeConfigCall = call;
+    const maybeCurriedCall = call.callee as CallExpression;
+
+    // Check if maybeCurriedCall is a curried name call: query("Name")
+    if (maybeCurriedCall.callee.type === "Identifier" && isOperationKind(maybeCurriedCall.callee.value)) {
+      // This is: curriedCall({ ... }) — no trailing call, expr IS the config call
+      const configArg = maybeConfigCall.arguments[0]?.expression;
+      if (configArg?.type === "ObjectExpression") {
+        return { curriedCall: maybeCurriedCall, configCall: maybeConfigCall };
+      }
+    }
+
+    // Check if maybeCurriedCall is the config call (trailing call case)
+    // expr is: trailing({}) where trailing.callee = configCall
+    if (maybeCurriedCall.callee.type === "CallExpression") {
+      const innerCurriedCall = maybeCurriedCall.callee as CallExpression;
+      if (innerCurriedCall.callee.type === "Identifier" && isOperationKind(innerCurriedCall.callee.value)) {
+        const configArg = maybeCurriedCall.arguments[0]?.expression;
+        if (configArg?.type === "ObjectExpression") {
+          return { curriedCall: innerCurriedCall, configCall: maybeCurriedCall };
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Extract variables template from a callback builder options object.
+ * Handles patterns like:
+ * - `query("Name")({ variables: \`($id: ID!)\`, fields: ... })({})`
+ * - `query("Name")({ variables: "($id: ID!)", fields: ... })`
+ *
+ * Returns true if a callback builder pattern was detected (even if no variables property found).
+ */
+export const extractVariablesFromCallbackBuilder = (
+  expr: Node,
+  schemaName: string,
+  templates: ExtractedTemplate[],
+  positionCtx?: PositionTrackingContext,
+): boolean => {
+  const result = findCallbackBuilderCalls(expr);
+  if (!result) return false;
+
+  const { curriedCall, configCall } = result;
+
+  // Extract elementName from curried call
+  const nameArg = curriedCall.arguments[0]?.expression;
+  const elementName = nameArg?.type === "StringLiteral" ? (nameArg as { value: string }).value : undefined;
+
+  // Extract kind from curried call
+  const kind = (curriedCall.callee as { value: string }).value;
+
+  // Find variables property in config object
+  const configObj = configCall.arguments[0]?.expression as ObjectExpression;
+  for (const prop of configObj.properties) {
+    if (prop.type !== "KeyValueProperty") continue;
+    if (prop.key.type !== "Identifier" || (prop.key as { value: string }).value !== "variables") continue;
+
+    const value = prop.value;
+    let content: string | undefined;
+    let contentStart = -1;
+    let contentEnd = -1;
+
+    if (value.type === "TemplateLiteral") {
+      // Template literal: `($id: ID!)`
+      const tpl = value as unknown as { quasis: { raw: string; cooked?: string; span: { start: number; end: number } }[] };
+      if (tpl.quasis.length > 0) {
+        content = tpl.quasis[0]!.cooked ?? tpl.quasis[0]!.raw;
+        if (positionCtx) {
+          contentStart = positionCtx.converter.byteOffsetToCharIndex(tpl.quasis[0]!.span.start - positionCtx.spanOffset);
+          contentEnd = positionCtx.converter.byteOffsetToCharIndex(tpl.quasis[0]!.span.end - positionCtx.spanOffset);
+        }
+      }
+    } else if (value.type === "StringLiteral") {
+      // String literal: "($id: ID!)" — span includes quotes, adjust by +1/-1
+      const strLit = value as unknown as { value: string; span: { start: number; end: number } };
+      content = strLit.value;
+      if (positionCtx) {
+        // +1 to skip opening quote, -1 to skip closing quote
+        contentStart = positionCtx.converter.byteOffsetToCharIndex(strLit.span.start + 1 - positionCtx.spanOffset);
+        contentEnd = positionCtx.converter.byteOffsetToCharIndex(strLit.span.end - 1 - positionCtx.spanOffset);
+      }
+    }
+
+    if (content !== undefined) {
+      templates.push({
+        schemaName,
+        kind: kind as OperationKind,
+        content,
+        source: "callback-variables",
+        ...(elementName !== undefined ? { elementName } : {}),
+        ...(positionCtx && contentStart !== -1 && contentEnd !== -1
+          ? { contentRange: { start: contentStart, end: contentEnd } }
+          : {}),
+      });
+    }
+
+    break;
+  }
+
+  return true;
+};
+
+/**
  * Extract templates from a gql callback's arrow function body.
- * Handles both expression bodies and block bodies with return statements.
+ * Handles tagged templates, metadata chaining, and callback builder variables.
  */
 export const extractTemplatesFromCallback = (
   arrow: ArrowFunctionExpression,
@@ -71,12 +206,18 @@ export const extractTemplatesFromCallback = (
       return;
     }
 
-    // Metadata chaining: query("Name")`...`({ metadata: {} })
+    // CallExpression paths: metadata chaining or callback builder
     if (expr.type === "CallExpression") {
       const call = expr as unknown as CallExpression;
+
+      // Metadata chaining: query("Name")`...`({ metadata: {} })
       if (call.callee.type === "TaggedTemplateExpression") {
         extractFromTaggedTemplate(call.callee as TaggedTemplateExpression, schemaName, templates, positionCtx);
+        return;
       }
+
+      // Callback builder: query("Name")({ variables: `...`, fields: ... })({})
+      extractVariablesFromCallbackBuilder(expr, schemaName, templates, positionCtx);
     }
   };
 
