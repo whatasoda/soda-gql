@@ -85,14 +85,15 @@ const collectGqlIdentifiers = (module: Module, filePath: string, helper: Graphql
  *
  * For callback-variables templates (source === "callback-variables"), wraps the
  * partial variables string in a dummy operation to produce valid GraphQL that
- * graphql-language-service can parse. The headerLen calculation
- * (reconstructed.length - content.length) automatically accounts for the wrapper.
+ * graphql-language-service can parse.
  */
 export const reconstructGraphql = (template: ExtractedTemplate): string => {
   const content = template.content;
 
   // Callback builder variables: wrap in dummy operation for graphql-language-service.
   // Content is e.g. "($id: ID!)" — not standalone valid GraphQL.
+  // The content appears in the MIDDLE of the reconstructed string (prefix + content + suffix),
+  // so use computeHeaderLen() instead of (reconstructed.length - content.length) for offset.
   if (template.source === "callback-variables") {
     const name = template.elementName ?? "__variables__";
     // kind is always query|mutation|subscription (fragment has no callback builder path)
@@ -111,6 +112,25 @@ export const reconstructGraphql = (template: ExtractedTemplate): string => {
   return content;
 };
 
+/**
+ * Compute the length of the synthesized prefix before the template content
+ * in the reconstructed GraphQL string.
+ *
+ * For tagged templates, headerLen = reconstructed.length - content.length (content is at the end).
+ * For callback-variables, content is in the MIDDLE (prefix + content + suffix), so we must
+ * compute the prefix length explicitly.
+ */
+export const computeHeaderLen = (template: ExtractedTemplate, reconstructed: string): number => {
+  if (template.source === "callback-variables") {
+    // Reconstructed: "query GetUser ($id: ID!) { __typename }"
+    // Prefix:        "query GetUser "
+    const name = template.elementName ?? "__variables__";
+    return `${template.kind} ${name} `.length;
+  }
+  // For tagged templates, content is always at the end
+  return reconstructed.length - template.content.length;
+};
+
 const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], source: string): readonly IndexedFragment[] => {
   const fragments: IndexedFragment[] = [];
 
@@ -122,7 +142,7 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
     }
 
     const reconstructed = reconstructGraphql(template);
-    const headerLen = reconstructed.length - template.content.length;
+    const headerLen = computeHeaderLen(template, reconstructed);
     const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
     try {
@@ -311,7 +331,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
           }
 
           const reconstructed = reconstructGraphql(template);
-          const headerLen = reconstructed.length - template.content.length;
+          const headerLen = computeHeaderLen(template, reconstructed);
           const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
           try {

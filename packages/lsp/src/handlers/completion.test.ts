@@ -173,6 +173,41 @@ describe("handleCompletion", () => {
     expect(labels).toContain("include");
   });
 
+  test("handles callback-variables template without crashing", () => {
+    // Callback-variables template gets wrapped: query GetUser ($id: ID!) { __typename }
+    // Cursor inside the variable type position
+    const content = "($id: )";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}));`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
+      source: "callback-variables",
+    };
+
+    // Position cursor after "$id: " (inside type position)
+    const cursorInContent = content.indexOf(": )") + 2;
+    const cursorInTs = contentStart + cursorInContent;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const items = handleCompletion({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      tsPosition,
+    });
+
+    // graphql-language-service may or may not provide completions at variable type positions.
+    // The key assertion is that it doesn't crash and returns a valid array.
+    expect(items).toBeDefined();
+    expect(Array.isArray(items)).toBe(true);
+  });
+
   test("provides field completions adjacent to interpolation placeholder", () => {
     // Template with placeholder from interpolation — completion should work for other fields
     const content = 'query GetUser { user(id: "1") { ...__FRAG_SPREAD_0__ name  } }';

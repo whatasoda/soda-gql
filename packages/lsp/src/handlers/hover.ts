@@ -6,7 +6,7 @@
 import type { GraphQLSchema } from "graphql";
 import { getHoverInformation } from "graphql-language-service";
 import type { Hover, MarkupContent } from "vscode-languageserver-types";
-import { reconstructGraphql } from "../document-manager";
+import { computeHeaderLen, reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import {
   computeLineOffsets,
@@ -30,7 +30,7 @@ export type HandleHoverInput = {
 export const handleHover = (input: HandleHoverInput): Hover | null => {
   const { template, schema, tsSource, tsPosition } = input;
   const reconstructed = reconstructGraphql(template);
-  const headerLen = reconstructed.length - template.content.length;
+  const headerLen = computeHeaderLen(template, reconstructed);
   const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({

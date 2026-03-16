@@ -13,7 +13,7 @@ import {
   type ObjectTypeInfo,
 } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
-import { reconstructGraphql } from "../document-manager";
+import { computeHeaderLen, reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import {
   computeLineOffsets,
@@ -62,7 +62,7 @@ const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[
 export const handleDefinition = async (input: HandleDefinitionInput): Promise<Location[]> => {
   const { template, tsSource, tsPosition, externalFragments } = input;
   const reconstructed = reconstructGraphql(template);
-  const headerLen = reconstructed.length - template.content.length;
+  const headerLen = computeHeaderLen(template, reconstructed);
   const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({

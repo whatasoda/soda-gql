@@ -5,7 +5,7 @@
 
 import { getOutline } from "graphql-language-service";
 import { type DocumentSymbol, SymbolKind } from "vscode-languageserver-types";
-import { reconstructGraphql } from "../document-manager";
+import { computeHeaderLen, reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
@@ -91,7 +91,7 @@ export const handleDocumentSymbol = (input: HandleDocumentSymbolInput): Document
 
   for (const template of templates) {
     const reconstructed = reconstructGraphql(template);
-    const headerLen = reconstructed.length - template.content.length;
+    const headerLen = computeHeaderLen(template, reconstructed);
     const { preprocessed } = preprocessFragmentArgs(reconstructed);
     const outline = getOutline(preprocessed);
     if (!outline) {

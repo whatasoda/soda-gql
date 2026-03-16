@@ -141,6 +141,40 @@ describe("handleHover", () => {
     expect(value).toContain("User");
   });
 
+  test("handles callback-variables template without crashing", () => {
+    // Callback-variables: wrapped as "query GetUser ($id: ID!) { __typename }"
+    // Hover on the variable name "$id"
+    const content = "($id: ID!)";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}));`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
+      source: "callback-variables",
+    };
+
+    // Position cursor on "ID" type
+    const cursorInContent = content.indexOf("ID");
+    const cursorInTs = contentStart + cursorInContent;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const hover = handleHover({
+      template,
+      schema: defaultSchema,
+      tsSource,
+      tsPosition,
+    });
+
+    // Hover may or may not return info for variable type position.
+    // Key assertion: no crash and valid return type.
+    expect(hover === null || typeof hover === "object").toBe(true);
+  });
+
   test("returns null outside template", () => {
     const content = "query { users { id } }";
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query\`${content}\`);`;
