@@ -534,12 +534,17 @@ export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...U
       const uri = resolve(fixturesDir, "callback-builder-variables.ts");
       const state = dm.update(uri, 1, source);
 
-      expect(state.templates).toHaveLength(1);
+      expect(state.templates).toHaveLength(2);
       const t = state.templates[0]!;
       expect(t.source).toBe("callback-variables");
       expect(t.kind).toBe("query");
       expect(t.elementName).toBe("GetUser");
       expect(t.content).toBe("($id: ID!)");
+      const t2 = state.templates[1]!;
+      expect(t2.source).toBe("callback-variables");
+      expect(t2.kind).toBe("query");
+      expect(t2.elementName).toBe("SearchItems");
+      expect(t2.content).toBe("($query: String!)");
     });
 
     test("findTemplateAtOffset returns callback-variables template", () => {
