@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createGraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import type { ResolvedSodaGqlConfig } from "@soda-gql/config";
-import { createDocumentManager } from "./document-manager";
+import { createDocumentManager, reconstructGraphql } from "./document-manager";
 
 const fixturesDir = resolve(import.meta.dir, "../test/fixtures");
 
@@ -525,5 +525,104 @@ export const Q1 = gql.default(({ query }) => query("Q1")\`{ user(id: "1") { ...U
       expect(stateB.swcUnavailable).toBeUndefined();
       expect(stateB.templates.length).toBeGreaterThan(0);
     });
+  });
+
+  describe("callback builder variables", () => {
+    test("extracts callback-variables template from callback builder source", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFixture("callback-builder-variables.ts");
+      const uri = resolve(fixturesDir, "callback-builder-variables.ts");
+      const state = dm.update(uri, 1, source);
+
+      expect(state.templates).toHaveLength(1);
+      const t = state.templates[0]!;
+      expect(t.source).toBe("callback-variables");
+      expect(t.kind).toBe("query");
+      expect(t.elementName).toBe("GetUser");
+      expect(t.content).toBe("($id: ID!)");
+    });
+
+    test("findTemplateAtOffset returns callback-variables template", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFixture("callback-builder-variables.ts");
+      const uri = resolve(fixturesDir, "callback-builder-variables.ts");
+      dm.update(uri, 1, source);
+
+      const state = dm.get(uri)!;
+      const t = state.templates[0]!;
+      const midOffset = Math.floor((t.contentRange.start + t.contentRange.end) / 2);
+      const found = dm.findTemplateAtOffset(uri, midOffset);
+      expect(found).toBeDefined();
+      expect(found!.source).toBe("callback-variables");
+    });
+
+    test("contentRange maps back to source for callback-variables", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFixture("callback-builder-variables.ts");
+      const uri = resolve(fixturesDir, "callback-builder-variables.ts");
+      const state = dm.update(uri, 1, source);
+
+      const t = state.templates[0]!;
+      const extracted = source.slice(t.contentRange.start, t.contentRange.end);
+      expect(extracted).toBe("($id: ID!)");
+    });
+
+    test("fragment indexing skips callback-variables templates", () => {
+      const dm = createDocumentManager(helper);
+      const source = readFixture("callback-builder-variables.ts");
+      const uri = resolve(fixturesDir, "callback-builder-variables.ts");
+      dm.update(uri, 1, source);
+
+      const fragments = dm.getAllFragments("default");
+      expect(fragments).toHaveLength(0);
+    });
+  });
+});
+
+describe("reconstructGraphql", () => {
+  test("wraps callback-variables in dummy operation", () => {
+    const result = reconstructGraphql({
+      schemaName: "default",
+      kind: "query",
+      content: "($id: ID!)",
+      elementName: "GetUser",
+      source: "callback-variables",
+      contentRange: { start: 0, end: 0 },
+    });
+    expect(result).toBe("query GetUser ($id: ID!) { __typename }");
+  });
+
+  test("uses __variables__ when elementName is missing", () => {
+    const result = reconstructGraphql({
+      schemaName: "default",
+      kind: "query",
+      content: "($id: ID!)",
+      source: "callback-variables",
+      contentRange: { start: 0, end: 0 },
+    });
+    expect(result).toBe("query __variables__ ($id: ID!) { __typename }");
+  });
+
+  test("preserves mutation kind in dummy operation", () => {
+    const result = reconstructGraphql({
+      schemaName: "default",
+      kind: "mutation",
+      content: "($input: CreateUserInput!)",
+      elementName: "CreateUser",
+      source: "callback-variables",
+      contentRange: { start: 0, end: 0 },
+    });
+    expect(result).toBe("mutation CreateUser ($input: CreateUserInput!) { __typename }");
+  });
+
+  test("tagged template reconstruction unchanged", () => {
+    const result = reconstructGraphql({
+      schemaName: "default",
+      kind: "query",
+      content: "{ user { id } }",
+      elementName: "GetUser",
+      contentRange: { start: 0, end: 0 },
+    });
+    expect(result).toBe("query GetUser { user { id } }");
   });
 });

@@ -82,9 +82,22 @@ const collectGqlIdentifiers = (module: Module, filePath: string, helper: Graphql
 /**
  * Reconstruct full GraphQL source from an extracted template.
  * Prepends the definition header from curried tag call arguments.
+ *
+ * For callback-variables templates (source === "callback-variables"), wraps the
+ * partial variables string in a dummy operation to produce valid GraphQL that
+ * graphql-language-service can parse. The headerLen calculation
+ * (reconstructed.length - content.length) automatically accounts for the wrapper.
  */
 export const reconstructGraphql = (template: ExtractedTemplate): string => {
   const content = template.content;
+
+  // Callback builder variables: wrap in dummy operation for graphql-language-service.
+  // Content is e.g. "($id: ID!)" — not standalone valid GraphQL.
+  if (template.source === "callback-variables") {
+    const name = template.elementName ?? "__variables__";
+    // kind is always query|mutation|subscription (fragment has no callback builder path)
+    return `${template.kind} ${name} ${content} { __typename }`;
+  }
 
   if (template.elementName) {
     if (template.kind === "fragment" && template.typeName) {
@@ -102,6 +115,8 @@ const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], so
   const fragments: IndexedFragment[] = [];
 
   for (const template of templates) {
+    // Skip non-fragment templates. This also skips callback-variables templates
+    // (which always have kind === query|mutation|subscription, never fragment).
     if (template.kind !== "fragment") {
       continue;
     }
