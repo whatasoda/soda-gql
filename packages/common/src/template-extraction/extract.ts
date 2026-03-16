@@ -158,11 +158,12 @@ export const extractVariablesFromCallbackBuilder = (
         }
       }
     } else if (value.type === "StringLiteral") {
-      // String literal: "($id: ID!)" — span includes quotes, adjust by +1/-1
+      // StringLiteral span is in byte space and includes quote delimiters.
+      // Adjust in byte space before byteOffsetToCharIndex conversion.
+      // Safe because quote characters (", ') are ASCII (1 byte in UTF-8).
       const strLit = value as unknown as { value: string; span: { start: number; end: number } };
       content = strLit.value;
       if (positionCtx) {
-        // +1 to skip opening quote, -1 to skip closing quote
         contentStart = positionCtx.converter.byteOffsetToCharIndex(strLit.span.start + 1 - positionCtx.spanOffset);
         contentEnd = positionCtx.converter.byteOffsetToCharIndex(strLit.span.end - 1 - positionCtx.spanOffset);
       }
