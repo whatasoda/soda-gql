@@ -1,6 +1,7 @@
 type Query {
   user(id: ID!): User
   users: [User!]!
+  search(query: String!): [SearchResult!]!
 }
 
 type User {
@@ -27,3 +28,5 @@ enum UserRole {
   USER
   GUEST
 }
+
+union SearchResult = User | Post
