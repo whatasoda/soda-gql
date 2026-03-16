@@ -6,22 +6,33 @@
 /** Operation kind extracted from tagged template tag name. */
 export type OperationKind = "query" | "mutation" | "subscription" | "fragment";
 
-/** A single tagged template extracted from a TypeScript source file. */
+/** A single template extracted from a TypeScript source file. */
 export type ExtractedTemplate = {
   /** Resolved schema name from gql.{schemaName}. */
   readonly schemaName: string;
   /** Operation kind from tag name. */
   readonly kind: OperationKind;
-  /** Raw GraphQL content between backticks (may contain __FRAG_SPREAD_N__ placeholders). */
+  /**
+   * Raw content extracted from template.
+   * For tagged templates: GraphQL body (e.g., "{ user { id } }").
+   * For callback-variables: variable definition string (e.g., "($id: ID!)").
+   * When source is "callback-variables", content is NOT standalone valid GraphQL —
+   * consumers must wrap it in a dummy operation before parsing.
+   */
   readonly content: string;
   /** Element name from curried tag call (e.g., "GetUser" from query("GetUser")). */
   readonly elementName?: string;
   /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
   readonly typeName?: string;
-  /** Character offset range of GraphQL content within TS source (excludes backticks). */
+  /** Character offset range of content within TS source (excludes backticks/quotes). */
   readonly contentRange?: { readonly start: number; readonly end: number };
   /** Character offset ranges of interpolation expressions within TS source (for __FRAG_SPREAD_N__ restoration). */
   readonly expressionRanges?: readonly { readonly start: number; readonly end: number }[];
+  /**
+   * Extraction source discriminator. Undefined for tagged template (default).
+   * "callback-variables" for variables property extracted from callback builder options object.
+   */
+  readonly source?: "tagged-template" | "callback-variables";
 };
 
 /** ExtractedTemplate with guaranteed position information (when positionCtx is provided). */
