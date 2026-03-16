@@ -189,6 +189,9 @@ export const formatTemplatesInSource = (
 
   for (const template of templates) {
     if (!template.contentRange) continue;
+    // Callback-variables contain only variable definitions (e.g., "($id: ID!)"),
+    // not valid standalone GraphQL — skip formatting.
+    if (template.source === "callback-variables") continue;
 
     // Wrap the content for formatting
     const { wrapped, prefixPattern } = buildGraphqlWrapper(template);
