@@ -118,9 +118,9 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onInitialized(() => {
-    // Register for file watcher on .graphql files
+    // Register for file watcher on .graphql schema files and config files
     connection.client.register(DidChangeWatchedFilesNotification.type, {
-      watchers: [{ globPattern: "**/*.graphql" }],
+      watchers: [{ globPattern: "**/*.graphql" }, { globPattern: "**/soda-gql.config.*" }],
     });
   });
 
@@ -464,6 +464,18 @@ export const createLspServer = (options?: LspServerOptions) => {
           connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${error.message}`);
         }
       }
+    }
+
+    // Notify user to restart when config file changes
+    const configChanged = _params.changes.some(
+      (change) =>
+        /soda-gql\.config\.[cm]?[jt]s$/.test(change.uri) &&
+        (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
+    );
+    if (configChanged) {
+      connection.window.showInformationMessage(
+        "soda-gql: config file changed. Restart the language server to apply.",
+      );
     }
   });
 
