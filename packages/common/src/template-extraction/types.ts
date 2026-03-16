@@ -46,3 +46,33 @@ export type TemplateFormatEdit = {
   readonly end: number;
   readonly newText: string;
 };
+
+/**
+ * A single f("fieldName") call in a callback builder field selection.
+ * Schema-independent — extracted purely from SWC AST.
+ */
+export type FieldCallNode = {
+  readonly fieldName: string;
+  readonly fieldNameSpan: { readonly start: number; readonly end: number };
+  readonly callSpan: { readonly start: number; readonly end: number };
+  readonly nested: FieldCallNested | null;
+};
+
+export type FieldCallNested =
+  | { readonly kind: "object"; readonly span: { readonly start: number; readonly end: number }; readonly children: readonly FieldCallNode[] }
+  | { readonly kind: "union"; readonly span: { readonly start: number; readonly end: number }; readonly branches: readonly UnionBranchNode[] };
+
+export type UnionBranchNode = {
+  readonly typeName: string;
+  readonly typeNameSpan: { readonly start: number; readonly end: number };
+  readonly branchSpan: { readonly start: number; readonly end: number };
+  readonly children: readonly FieldCallNode[];
+};
+
+export type ExtractedFieldTree = {
+  readonly schemaName: string;
+  readonly kind: OperationKind;
+  readonly elementName?: string;
+  readonly rootSpan: { readonly start: number; readonly end: number };
+  readonly children: readonly FieldCallNode[];
+};

@@ -20,7 +20,15 @@ import type {
   TaggedTemplateExpression,
 } from "@swc/types";
 import type { SwcSpanConverter } from "../utils/swc-span";
-import type { ExtractedTemplate, ExtractedTemplateWithPosition, OperationKind } from "./types";
+import type {
+  ExtractedFieldTree,
+  ExtractedTemplate,
+  ExtractedTemplateWithPosition,
+  FieldCallNode,
+  FieldCallNested,
+  OperationKind,
+  UnionBranchNode,
+} from "./types";
 
 export const OPERATION_KINDS = new Set<string>(["query", "mutation", "subscription", "fragment"]);
 
@@ -418,3 +426,212 @@ export function walkAndExtract(
   visit(node);
   return templates;
 }
+
+/**
+ * Convert a byte-space span to a character-index span using a position context.
+ * Used for tracking field name and call positions within a callback builder.
+ */
+const convertSpan = (
+  span: { start: number; end: number },
+  positionCtx: PositionTrackingContext,
+): { start: number; end: number } => ({
+  start: positionCtx.converter.byteOffsetToCharIndex(span.start - positionCtx.spanOffset),
+  end: positionCtx.converter.byteOffsetToCharIndex(span.end - positionCtx.spanOffset),
+});
+
+/**
+ * Walk an arrow function body to extract FieldCallNode children.
+ * The arrow body should return an ObjectExpression where each property
+ * is a SpreadElement wrapping an outer CallExpression:
+ *   `({ f }) => ({ ...f("fieldName")(...) })`
+ */
+const extractFieldCallChildren = (
+  arrow: ArrowFunctionExpression,
+  positionCtx?: PositionTrackingContext,
+): readonly FieldCallNode[] => {
+  // Unwrap the body to get the ObjectExpression
+  let bodyExpr: { type: string } | undefined;
+
+  if (arrow.body.type === "BlockStatement") {
+    for (const stmt of (arrow.body as { stmts: { type: string; argument?: { type: string } }[] }).stmts) {
+      if (stmt.type === "ReturnStatement" && stmt.argument) {
+        bodyExpr = stmt.argument as { type: string };
+        break;
+      }
+    }
+  } else {
+    bodyExpr = arrow.body as { type: string };
+  }
+
+  // Unwrap ParenthesisExpression wrapping ObjectExpression
+  if (bodyExpr?.type === "ParenthesisExpression") {
+    bodyExpr = (bodyExpr as unknown as { expression: { type: string } }).expression;
+  }
+
+  if (!bodyExpr || bodyExpr.type !== "ObjectExpression") {
+    return [];
+  }
+
+  const objExpr = bodyExpr as unknown as ObjectExpression;
+  const children: FieldCallNode[] = [];
+
+  for (const prop of objExpr.properties) {
+    if (prop.type !== "SpreadElement") continue;
+
+    // SpreadElement.arguments is the spread expression: f("fieldName")(...)
+    const outerCall = (prop as unknown as { arguments: { type: string } }).arguments;
+    if (!outerCall || outerCall.type !== "CallExpression") continue;
+
+    const outer = outerCall as unknown as CallExpression;
+
+    // The callee of the outer call should itself be a CallExpression: f("fieldName")
+    if (outer.callee.type !== "CallExpression") continue;
+    const innerCall = outer.callee as CallExpression;
+
+    // innerCall.callee should be Identifier (the "f" function)
+    if (innerCall.callee.type !== "Identifier") continue;
+
+    // innerCall.arguments[0] should be a StringLiteral — the field name
+    const fieldNameArg = innerCall.arguments[0]?.expression;
+    if (!fieldNameArg || fieldNameArg.type !== "StringLiteral") continue;
+
+    const strLit = fieldNameArg as unknown as { value: string; span: { start: number; end: number } };
+    const fieldName = strLit.value;
+
+    // Compute spans
+    const outerCallSpan = (outer as unknown as { span: { start: number; end: number } }).span;
+    const innerCallSpan = (innerCall as unknown as { span: { start: number; end: number } }).span;
+    const strLitSpan = strLit.span;
+
+    // callSpan covers the full outer expression; fieldNameSpan is inside quotes (adjust by +1/-1 for ASCII quote)
+    const callSpan = positionCtx ? convertSpan(outerCallSpan, positionCtx) : { start: outerCallSpan.start, end: outerCallSpan.end };
+    const fieldNameSpan = positionCtx
+      ? { start: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.start + 1 - positionCtx.spanOffset), end: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.end - 1 - positionCtx.spanOffset) }
+      : { start: strLitSpan.start + 1, end: strLitSpan.end - 1 };
+
+    // Discriminate nested kind based on outer call arguments
+    const nested = extractFieldCallNested(outer, innerCallSpan, positionCtx);
+
+    children.push({ fieldName, fieldNameSpan, callSpan, nested });
+  }
+
+  return children;
+};
+
+/**
+ * Extract the nested structure from an outer field call.
+ * The outer call is: f("fieldName")(arg) where arg determines nesting.
+ */
+const extractFieldCallNested = (
+  outer: CallExpression,
+  innerCallSpan: { start: number; end: number },
+  positionCtx?: PositionTrackingContext,
+): FieldCallNested | null => {
+  const outerArg = outer.arguments[0]?.expression;
+
+  // No argument or absent argument → scalar field
+  if (!outerArg) return null;
+
+  // Arrow function argument → object field (recurse into nested callback body)
+  if (outerArg.type === "ArrowFunctionExpression") {
+    const nestedArrow = outerArg as unknown as ArrowFunctionExpression;
+    const argSpan = (outerArg as unknown as { span: { start: number; end: number } }).span;
+    const span = positionCtx ? convertSpan(argSpan, positionCtx) : { start: argSpan.start, end: argSpan.end };
+    const children = extractFieldCallChildren(nestedArrow, positionCtx);
+    return { kind: "object", span, children };
+  }
+
+  // Object argument → union field
+  if (outerArg.type === "ObjectExpression") {
+    const unionObj = outerArg as unknown as ObjectExpression;
+    const argSpan = (outerArg as unknown as { span: { start: number; end: number } }).span;
+    const span = positionCtx ? convertSpan(argSpan, positionCtx) : { start: argSpan.start, end: argSpan.end };
+    const branches: UnionBranchNode[] = [];
+
+    for (const prop of unionObj.properties) {
+      if (prop.type !== "KeyValueProperty") continue;
+
+      const kvProp = prop as unknown as { key: { type: string; value: string; span: { start: number; end: number } }; value: { type: string; span: { start: number; end: number } } };
+
+      // Skip __typename: true (BooleanLiteral value)
+      if (kvProp.key.value === "__typename" && kvProp.value.type === "BooleanLiteral") continue;
+
+      // Key must be Identifier (type name)
+      if (kvProp.key.type !== "Identifier") continue;
+
+      // Value must be ArrowFunctionExpression
+      if (kvProp.value.type !== "ArrowFunctionExpression") continue;
+
+      const typeName = kvProp.key.value;
+      const typeNameSpan = positionCtx
+        ? convertSpan(kvProp.key.span, positionCtx)
+        : { start: kvProp.key.span.start, end: kvProp.key.span.end };
+      const branchSpan = positionCtx
+        ? convertSpan(kvProp.value.span, positionCtx)
+        : { start: kvProp.value.span.start, end: kvProp.value.span.end };
+
+      const branchArrow = kvProp.value as unknown as ArrowFunctionExpression;
+      const children = extractFieldCallChildren(branchArrow, positionCtx);
+
+      branches.push({ typeName, typeNameSpan, branchSpan, children });
+    }
+
+    return { kind: "union", span, branches };
+  }
+
+  return null;
+};
+
+/**
+ * Extract a field call tree from a callback builder expression.
+ *
+ * Expects a top-level expression of the callback builder pattern:
+ *   `query("Name")({ fields: ({ f }) => ({ ...f("id")(), ...f("name")() }) })({})`
+ *
+ * Returns an `ExtractedFieldTree` describing the root children (fields on the root selection set),
+ * or `null` if the expression is not a callback builder or has no `fields` property.
+ *
+ * The `positionCtx` is optional — when provided, all span values will be character offsets
+ * in the original TypeScript source. When omitted, spans are raw SWC byte positions.
+ */
+export const extractFieldCallTree = (
+  expr: Node,
+  schemaName: string,
+  positionCtx?: PositionTrackingContext,
+): ExtractedFieldTree | null => {
+  const result = findCallbackBuilderCalls(expr);
+  if (!result) return null;
+
+  const { curriedCall, configCall } = result;
+
+  // Extract kind and elementName from the curried call: query("Name")
+  const kind = (curriedCall.callee as { value: string }).value as OperationKind;
+  const nameArg = curriedCall.arguments[0]?.expression;
+  const elementName = nameArg?.type === "StringLiteral" ? (nameArg as { value: string }).value : undefined;
+
+  // Find the `fields` property in the config object
+  const configObj = configCall.arguments[0]?.expression as ObjectExpression;
+  for (const prop of configObj.properties) {
+    if (prop.type !== "KeyValueProperty") continue;
+
+    const kvProp = prop as unknown as { key: { type: string; value: string }; value: { type: string; span: { start: number; end: number } } };
+    if (kvProp.key.type !== "Identifier" || kvProp.key.value !== "fields") continue;
+    if (kvProp.value.type !== "ArrowFunctionExpression") continue;
+
+    const fieldsArrow = kvProp.value as unknown as ArrowFunctionExpression;
+    const fieldsSpan = kvProp.value.span;
+    const rootSpan = positionCtx ? convertSpan(fieldsSpan, positionCtx) : { start: fieldsSpan.start, end: fieldsSpan.end };
+
+    const children = extractFieldCallChildren(fieldsArrow, positionCtx);
+
+    return {
+      schemaName,
+      kind,
+      ...(elementName !== undefined ? { elementName } : {}),
+      rootSpan,
+      children,
+    };
+  }
+
+  return null;
+};
