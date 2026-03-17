@@ -58,17 +58,17 @@ soda-gql LSP integrates with [Claude Code](https://claude.com/claude-code) as a 
 
 ### How it works
 
-The integration uses a **proxy binary** (`soda-gql-lsp-proxy`) that resolves the project-local `@soda-gql/lsp` at runtime. This ensures version consistency between the LSP server and the project's soda-gql dependencies — similar to how `typescript-language-server` delegates to the project-local TypeScript.
+The integration uses a separate **proxy package** ([`@soda-gql/lsp-proxy`](../lsp-proxy)) that resolves the project-local `@soda-gql/lsp` at runtime. This ensures version consistency between the LSP server and the project's soda-gql dependencies — similar to how `typescript-language-server` delegates to the project-local TypeScript.
 
 ### Setup for users
 
 1. Install the proxy binary globally:
 
 ```bash
-npm install -g @soda-gql/lsp
+npm install -g @soda-gql/lsp-proxy
 ```
 
-2. Ensure `@soda-gql/lsp` is also a project dependency (the proxy resolves it from `node_modules`):
+2. Ensure `@soda-gql/lsp` is a project dependency (the proxy resolves it from `node_modules`):
 
 ```bash
 bun add -D @soda-gql/lsp
@@ -84,10 +84,10 @@ bun add -D @soda-gql/lsp
 bun run build
 ```
 
-2. Link the LSP package globally:
+2. Link the proxy package globally:
 
 ```bash
-cd packages/lsp && bun link
+cd packages/lsp-proxy && bun link
 ```
 
 3. Install the plugin via `/plugin` in Claude Code, then restart.
