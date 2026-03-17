@@ -169,7 +169,7 @@ const lspConfig: UserConfig = (() => {
   });
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts", "proxy-bin": "packages/lsp/src/proxy-bin.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
