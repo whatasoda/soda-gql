@@ -59,8 +59,16 @@ export type FieldCallNode = {
 };
 
 export type FieldCallNested =
-  | { readonly kind: "object"; readonly span: { readonly start: number; readonly end: number }; readonly children: readonly FieldCallNode[] }
-  | { readonly kind: "union"; readonly span: { readonly start: number; readonly end: number }; readonly branches: readonly UnionBranchNode[] };
+  | {
+      readonly kind: "object";
+      readonly span: { readonly start: number; readonly end: number };
+      readonly children: readonly FieldCallNode[];
+    }
+  | {
+      readonly kind: "union";
+      readonly span: { readonly start: number; readonly end: number };
+      readonly branches: readonly UnionBranchNode[];
+    };
 
 export type UnionBranchNode = {
   readonly typeName: string;

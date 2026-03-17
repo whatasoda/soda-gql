@@ -24,8 +24,8 @@ import type {
   ExtractedFieldTree,
   ExtractedTemplate,
   ExtractedTemplateWithPosition,
-  FieldCallNode,
   FieldCallNested,
+  FieldCallNode,
   OperationKind,
   UnionBranchNode,
 } from "./types";
@@ -77,11 +77,9 @@ export const getGqlCallSchemaName = (identifiers: ReadonlySet<string>, call: Cal
  *
  * Returns null if the expression doesn't match the callback builder pattern.
  */
-const findCallbackBuilderCalls = (
-  expr: Node,
-): { curriedCall: CallExpression; configCall: CallExpression } | null => {
+const findCallbackBuilderCalls = (expr: Node): { curriedCall: CallExpression; configCall: CallExpression } | null => {
   if (expr.type !== "CallExpression") return null;
-  let call = expr as unknown as CallExpression;
+  const call = expr as unknown as CallExpression;
 
   // Unwrap trailing call: query("Name")({ ... })({}) → get to query("Name")({ ... })
   // The trailing call's callee is the config call, whose callee is the curried name call.
@@ -560,9 +558,14 @@ const extractFieldCallChildren = (
     const strLitSpan = strLit.span;
 
     // callSpan covers the full outer expression; fieldNameSpan is inside quotes (adjust by +1/-1 for ASCII quote)
-    const callSpan = positionCtx ? convertSpan(outerCallSpan, positionCtx) : { start: outerCallSpan.start, end: outerCallSpan.end };
+    const callSpan = positionCtx
+      ? convertSpan(outerCallSpan, positionCtx)
+      : { start: outerCallSpan.start, end: outerCallSpan.end };
     const fieldNameSpan = positionCtx
-      ? { start: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.start + 1 - positionCtx.spanOffset), end: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.end - 1 - positionCtx.spanOffset) }
+      ? {
+          start: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.start + 1 - positionCtx.spanOffset),
+          end: positionCtx.converter.byteOffsetToCharIndex(strLitSpan.end - 1 - positionCtx.spanOffset),
+        }
       : { start: strLitSpan.start + 1, end: strLitSpan.end - 1 };
 
     // Discriminate nested kind based on outer call arguments
@@ -578,10 +581,7 @@ const extractFieldCallChildren = (
  * Extract the nested structure from an outer field call.
  * The outer call is: f("fieldName")(arg) where arg determines nesting.
  */
-const extractFieldCallNested = (
-  outer: CallExpression,
-  positionCtx?: PositionTrackingContext,
-): FieldCallNested | null => {
+const extractFieldCallNested = (outer: CallExpression, positionCtx?: PositionTrackingContext): FieldCallNested | null => {
   const outerArg = outer.arguments[0]?.expression;
 
   // No argument or absent argument → scalar field
@@ -606,7 +606,10 @@ const extractFieldCallNested = (
     for (const prop of unionObj.properties) {
       if (prop.type !== "KeyValueProperty") continue;
 
-      const kvProp = prop as unknown as { key: { type: string; value: string; span: { start: number; end: number } }; value: { type: string; span: { start: number; end: number } } };
+      const kvProp = prop as unknown as {
+        key: { type: string; value: string; span: { start: number; end: number } };
+        value: { type: string; span: { start: number; end: number } };
+      };
 
       // Skip __typename: true (BooleanLiteral value)
       if (kvProp.key.value === "__typename" && kvProp.value.type === "BooleanLiteral") continue;
@@ -669,7 +672,10 @@ export const extractFieldCallTree = (
   for (const prop of configObj.properties) {
     if (prop.type !== "KeyValueProperty") continue;
 
-    const kvProp = prop as unknown as { key: { type: string; value: string }; value: { type: string; span: { start: number; end: number } } };
+    const kvProp = prop as unknown as {
+      key: { type: string; value: string };
+      value: { type: string; span: { start: number; end: number } };
+    };
     if (kvProp.key.type !== "Identifier" || kvProp.key.value !== "fields") continue;
     if (kvProp.value.type !== "ArrowFunctionExpression") continue;
 

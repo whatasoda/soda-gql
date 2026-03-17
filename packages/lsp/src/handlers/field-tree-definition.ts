@@ -4,8 +4,8 @@
  */
 
 import { pathToFileURL } from "node:url";
-import { isTypeDefinitionNode, Kind, parse, type TypeDefinitionNode } from "graphql";
 import type { GraphQLSchema, NamedTypeNode } from "graphql";
+import { isTypeDefinitionNode, Kind, parse, type TypeDefinitionNode } from "graphql";
 import {
   getDefinitionQueryResultForField,
   getDefinitionQueryResultForNamedType,
@@ -55,21 +55,19 @@ export const handleFieldTreeDefinition = async (input: HandleFieldTreeDefinition
   if (result.kind === "field") {
     const { node } = result;
     try {
-      const defResult = await getDefinitionQueryResultForField(
-        node.fieldName,
-        node.parentTypeName,
-        objectTypeInfos,
-      );
-      return defResult.definitions.map((def): Location => ({
-        uri: def.path ?? "",
-        range: {
-          start: { line: def.position.line, character: def.position.character },
-          end: {
-            line: def.range?.end?.line ?? def.position.line,
-            character: def.range?.end?.character ?? def.position.character,
+      const defResult = await getDefinitionQueryResultForField(node.fieldName, node.parentTypeName, objectTypeInfos);
+      return defResult.definitions.map(
+        (def): Location => ({
+          uri: def.path ?? "",
+          range: {
+            start: { line: def.position.line, character: def.position.character },
+            end: {
+              line: def.range?.end?.line ?? def.position.line,
+              character: def.range?.end?.character ?? def.position.character,
+            },
           },
-        },
-      }));
+        }),
+      );
     } catch {
       return [];
     }
@@ -86,21 +84,19 @@ export const handleFieldTreeDefinition = async (input: HandleFieldTreeDefinition
       loc: dummyLoc,
     } as unknown as NamedTypeNode;
     try {
-      const defResult = await getDefinitionQueryResultForNamedType(
-        "",
-        namedTypeNode,
-        objectTypeInfos,
-      );
-      return defResult.definitions.map((def): Location => ({
-        uri: def.path ?? "",
-        range: {
-          start: { line: def.position.line, character: def.position.character },
-          end: {
-            line: def.range?.end?.line ?? def.position.line,
-            character: def.range?.end?.character ?? def.position.character,
+      const defResult = await getDefinitionQueryResultForNamedType("", namedTypeNode, objectTypeInfos);
+      return defResult.definitions.map(
+        (def): Location => ({
+          uri: def.path ?? "",
+          range: {
+            start: { line: def.position.line, character: def.position.character },
+            end: {
+              line: def.range?.end?.line ?? def.position.line,
+              character: def.range?.end?.character ?? def.position.character,
+            },
           },
-        },
-      }));
+        }),
+      );
     } catch {
       return [];
     }

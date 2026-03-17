@@ -620,17 +620,16 @@ export const q = gql.default(({ query }) =>
  * Test helper: traverse the AST to find the first callback builder expression
  * inside a gql.{schemaName} call, then call extractFieldCallTree on it.
  */
-const findAndExtractFieldTree = (
-  root: Node,
-  schemaName: string,
-  positionCtx?: PositionTrackingContext,
-) => {
+const findAndExtractFieldTree = (root: Node, schemaName: string, positionCtx?: PositionTrackingContext) => {
   // Find gql.{schemaName} call → get the arrow body expression → call extractFieldCallTree
   const visit = (n: Node | ReadonlyArray<Node> | Record<string, unknown>): ReturnType<typeof extractFieldCallTree> => {
     if (!n || typeof n !== "object") return null;
 
     if ("type" in n && n.type === "CallExpression") {
-      const call = n as unknown as { callee: { type: string; object?: { type: string; value?: string }; property?: { type: string; value?: string } }; arguments: { expression?: { type: string; body?: { type: string }; params?: unknown[] } }[] };
+      const call = n as unknown as {
+        callee: { type: string; object?: { type: string; value?: string }; property?: { type: string; value?: string } };
+        arguments: { expression?: { type: string; body?: { type: string }; params?: unknown[] } }[];
+      };
       if (
         call.callee.type === "MemberExpression" &&
         call.callee.object?.type === "Identifier" &&

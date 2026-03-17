@@ -4,8 +4,8 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { ExtractedFieldTree, FieldCallNode } from "@soda-gql/common/template-extraction";
 import { buildASTSchema, type DocumentNode, parse } from "graphql";
-import type { SchemaFileInfo } from "../schema-resolver";
 import { resolveFieldTree } from "../field-tree-resolver";
+import type { SchemaFileInfo } from "../schema-resolver";
 import { handleFieldTreeDefinition } from "./field-tree-definition";
 
 const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
