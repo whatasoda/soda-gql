@@ -3,10 +3,31 @@
  * @module
  */
 
-import type { FragmentSpreadNode } from "graphql";
-import { parse, visit } from "graphql";
+import { pathToFileURL } from "node:url";
+import type { FragmentSpreadNode, TypeDefinitionNode } from "graphql";
+import { isTypeDefinitionNode, parse, visit } from "graphql";
+import type { ObjectTypeInfo } from "graphql-language-service";
+import type { SchemaFileInfo } from "../schema-resolver";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
 import type { FragmentSpreadLocation, IndexedFragment } from "../types";
+
+/** Build ObjectTypeInfo[] from schema file info for graphql-language-service definition APIs. */
+export const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[] => {
+  const result: ObjectTypeInfo[] = [];
+  for (const file of files) {
+    const doc = parse(file.content);
+    for (const def of doc.definitions) {
+      if (isTypeDefinitionNode(def)) {
+        result.push({
+          filePath: pathToFileURL(file.filePath).href,
+          content: file.content,
+          definition: def as TypeDefinitionNode,
+        });
+      }
+    }
+  }
+  return result;
+};
 
 /**
  * Find the fragment spread node at the given GraphQL offset using AST.

@@ -3,15 +3,13 @@
  * @module
  */
 
-import { pathToFileURL } from "node:url";
-import type { GraphQLSchema, NamedTypeNode, TypeDefinitionNode, TypeNode } from "graphql";
-import { getNamedType, isTypeDefinitionNode, parse, visit } from "graphql";
+import type { GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
+import { getNamedType, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,
   getDefinitionQueryResultForFragmentSpread,
   getDefinitionQueryResultForNamedType,
-  type ObjectTypeInfo,
 } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
 import { computeHeaderLen, reconstructGraphql } from "../document-manager";
@@ -26,7 +24,7 @@ import {
 } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { findFragmentSpreadAtOffset } from "./_utils";
+import { buildObjectTypeInfos, findFragmentSpreadAtOffset } from "./_utils";
 
 export type HandleDefinitionInput = {
   readonly template: ExtractedTemplate;
@@ -39,24 +37,6 @@ export type HandleDefinitionInput = {
   readonly schema?: GraphQLSchema;
   /** Per-file schema source info for go-to-definition in schema files. */
   readonly schemaFiles?: readonly SchemaFileInfo[];
-};
-
-/** Build ObjectTypeInfo[] from schema file info for graphql-language-service definition APIs. */
-const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[] => {
-  const result: ObjectTypeInfo[] = [];
-  for (const file of files) {
-    const doc = parse(file.content);
-    for (const def of doc.definitions) {
-      if (isTypeDefinitionNode(def)) {
-        result.push({
-          filePath: pathToFileURL(file.filePath).href,
-          content: file.content,
-          definition: def as TypeDefinitionNode,
-        });
-      }
-    }
-  }
-  return result;
 };
 
 /** Handle a definition request for a GraphQL template. */
@@ -198,7 +178,7 @@ const resolveVariableTypeDefinition = async (
       const namedType = unwrapToNamedType(node.type);
       if (!namedType?.name.loc) return;
       const { start, end } = namedType.name.loc;
-      if (reconstructedOffset >= start && reconstructedOffset <= end) {
+      if (reconstructedOffset >= start && reconstructedOffset < end) {
         matchedNode = namedType;
       }
     },

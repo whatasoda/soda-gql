@@ -3,19 +3,15 @@
  * @module
  */
 
-import { pathToFileURL } from "node:url";
 import type { GraphQLSchema, NamedTypeNode } from "graphql";
-import { isTypeDefinitionNode, Kind, parse, type TypeDefinitionNode } from "graphql";
-import {
-  getDefinitionQueryResultForField,
-  getDefinitionQueryResultForNamedType,
-  type ObjectTypeInfo,
-} from "graphql-language-service";
+import { Kind } from "graphql";
+import { getDefinitionQueryResultForField, getDefinitionQueryResultForNamedType } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
 import type { TypedFieldTree } from "../field-tree-resolver";
 import { findNodeAtOffset } from "../field-tree-resolver";
 import type { Position } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
+import { buildObjectTypeInfos } from "./_utils";
 
 export type HandleFieldTreeDefinitionInput = {
   readonly fieldTree: TypedFieldTree;
@@ -24,24 +20,6 @@ export type HandleFieldTreeDefinitionInput = {
   readonly tsPosition: Position;
   readonly offset: number;
   readonly schemaFiles: readonly SchemaFileInfo[];
-};
-
-/** Build ObjectTypeInfo[] from schema file info for graphql-language-service definition APIs. */
-const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[] => {
-  const result: ObjectTypeInfo[] = [];
-  for (const file of files) {
-    const doc = parse(file.content);
-    for (const def of doc.definitions) {
-      if (isTypeDefinitionNode(def)) {
-        result.push({
-          filePath: pathToFileURL(file.filePath).href,
-          content: file.content,
-          definition: def as TypeDefinitionNode,
-        });
-      }
-    }
-  }
-  return result;
 };
 
 /** Handle a definition request for a callback builder field tree. */
