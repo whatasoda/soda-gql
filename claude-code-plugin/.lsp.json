@@ -1,0 +1,11 @@
+{
+  "soda-gql": {
+    "command": "soda-gql-lsp-proxy",
+    "args": [],
+    "transport": "stdio",
+    "extensionToLanguage": {
+      ".ts": "typescript",
+      ".tsx": "typescriptreact"
+    }
+  }
+}
