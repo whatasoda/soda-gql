@@ -35,8 +35,7 @@
     "node": ">=18"
   },
   "bin": {
-    "soda-gql-lsp": "./dist/bin.mjs",
-    "soda-gql-lsp-proxy": "./dist/proxy-bin.cjs"
+    "soda-gql-lsp": "./dist/bin.cjs"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
