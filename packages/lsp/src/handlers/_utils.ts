@@ -7,8 +7,8 @@ import { pathToFileURL } from "node:url";
 import type { FragmentSpreadNode, TypeDefinitionNode } from "graphql";
 import { isTypeDefinitionNode, parse, visit } from "graphql";
 import type { ObjectTypeInfo } from "graphql-language-service";
-import type { SchemaFileInfo } from "../schema-resolver";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
+import type { SchemaFileInfo } from "../schema-resolver";
 import type { FragmentSpreadLocation, IndexedFragment } from "../types";
 
 /** Build ObjectTypeInfo[] from schema file info for graphql-language-service definition APIs. */

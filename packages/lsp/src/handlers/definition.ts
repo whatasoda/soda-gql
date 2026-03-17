@@ -3,7 +3,7 @@
  * @module
  */
 
-import type { GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
+import type { DocumentNode, GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
 import { getNamedType, parse, visit } from "graphql";
 import {
   getContextAtPosition,
@@ -163,7 +163,7 @@ const resolveVariableTypeDefinition = async (
   reconstructedOffset: number,
   schemaFiles: readonly SchemaFileInfo[],
 ): Promise<Location[]> => {
-  let ast;
+  let ast: DocumentNode;
   try {
     ast = parse(preprocessed, { noLocation: false });
   } catch {
