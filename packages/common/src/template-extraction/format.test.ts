@@ -266,6 +266,22 @@ describe("formatTemplatesInSource", () => {
     expect(edits).toHaveLength(0);
   });
 
+  it("skips callback-variables templates", () => {
+    const content = "($id: ID!)";
+    const tsSource = `gql.default(({ query }) => query("GetUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}))`;
+    const contentStart = tsSource.indexOf(content);
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUser",
+      source: "callback-variables",
+    };
+    const edits = formatTemplatesInSource([template], tsSource, (s) => s);
+    expect(edits).toHaveLength(0);
+  });
+
   it("handles curried syntax with wrapper reconstruction", () => {
     const template: ExtractedTemplate = {
       schemaName: "default",

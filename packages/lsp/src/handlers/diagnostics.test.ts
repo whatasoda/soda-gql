@@ -248,6 +248,55 @@ describe("computeTemplateDiagnostics", () => {
     });
   });
 
+  describe("callback-variables templates", () => {
+    test("no diagnostics for valid variable types", () => {
+      const content = "($id: ID!)";
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}));`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+        source: "callback-variables",
+      };
+
+      const diagnostics = computeTemplateDiagnostics({
+        template,
+        schema: defaultSchema,
+        tsSource,
+      });
+
+      expect(diagnostics).toHaveLength(0);
+    });
+
+    test("reports diagnostic for unknown variable type", () => {
+      const content = "($id: NonExistentType!)";
+      const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUser")({ variables: \`${content}\`, fields: ({f}) => ({}) })({}));`;
+      const contentStart = tsSource.indexOf(content);
+
+      const template: ExtractedTemplate = {
+        contentRange: { start: contentStart, end: contentStart + content.length },
+        schemaName: "default",
+        kind: "query",
+        content,
+        elementName: "GetUser",
+        source: "callback-variables",
+      };
+
+      const diagnostics = computeTemplateDiagnostics({
+        template,
+        schema: defaultSchema,
+        tsSource,
+      });
+
+      expect(diagnostics.length).toBeGreaterThan(0);
+      expect(diagnostics.some((d) => d.message.includes("NonExistentType"))).toBe(true);
+    });
+  });
+
   test("still reports other diagnostics when placeholder present", () => {
     // Template with both placeholder AND an actual error
     const content = '{ user(id: "1") { ...__FRAG_SPREAD_0__ unknownField } }';

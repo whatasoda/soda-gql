@@ -7,17 +7,19 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { GraphqlSystemIdentifyHelper } from "@soda-gql/builder";
 import { createSwcSpanConverter } from "@soda-gql/common";
-import { type PositionTrackingContext, walkAndExtract } from "@soda-gql/common/template-extraction";
+import { type PositionTrackingContext, walkAndExtract, walkAndExtractFieldTrees } from "@soda-gql/common/template-extraction";
 import type { ImportDeclaration, Module } from "@swc/types";
 import { type FragmentDefinitionNode, parse, visit } from "graphql";
 import { preprocessFragmentArgs } from "./fragment-args-preprocessor";
-import type { DocumentState, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";
+import type { DocumentState, ExtractedFieldTree, ExtractedTemplate, FragmentSpreadLocation, IndexedFragment } from "./types";
 
 export type DocumentManager = {
   readonly update: (uri: string, version: number, source: string) => DocumentState;
   readonly get: (uri: string) => DocumentState | undefined;
   readonly remove: (uri: string) => void;
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
+  /** Find the field call tree containing the given offset. */
+  readonly findFieldTreeAtOffset: (uri: string, offset: number) => ExtractedFieldTree | undefined;
   /** Get fragments from other documents for a given schema, excluding the specified URI. */
   readonly getExternalFragments: (uri: string, schemaName: string) => readonly IndexedFragment[];
   /** Get ALL indexed fragments (including self) for a given schema. */
@@ -82,9 +84,23 @@ const collectGqlIdentifiers = (module: Module, filePath: string, helper: Graphql
 /**
  * Reconstruct full GraphQL source from an extracted template.
  * Prepends the definition header from curried tag call arguments.
+ *
+ * For callback-variables templates (source === "callback-variables"), wraps the
+ * partial variables string in a dummy operation to produce valid GraphQL that
+ * graphql-language-service can parse.
  */
 export const reconstructGraphql = (template: ExtractedTemplate): string => {
   const content = template.content;
+
+  // Callback builder variables: wrap in dummy operation for graphql-language-service.
+  // Content is e.g. "($id: ID!)" — not standalone valid GraphQL.
+  // The content appears in the MIDDLE of the reconstructed string (prefix + content + suffix),
+  // so use computeHeaderLen() instead of (reconstructed.length - content.length) for offset.
+  if (template.source === "callback-variables") {
+    const name = template.elementName ?? "__variables__";
+    // kind is always query|mutation|subscription (fragment has no callback builder path)
+    return `${template.kind} ${name} ${content} { __typename }`;
+  }
 
   if (template.elementName) {
     if (template.kind === "fragment" && template.typeName) {
@@ -98,16 +114,37 @@ export const reconstructGraphql = (template: ExtractedTemplate): string => {
   return content;
 };
 
+/**
+ * Compute the length of the synthesized prefix before the template content
+ * in the reconstructed GraphQL string.
+ *
+ * For tagged templates, headerLen = reconstructed.length - content.length (content is at the end).
+ * For callback-variables, content is in the MIDDLE (prefix + content + suffix), so we must
+ * compute the prefix length explicitly.
+ */
+export const computeHeaderLen = (template: ExtractedTemplate, reconstructed: string): number => {
+  if (template.source === "callback-variables") {
+    // Reconstructed: "query GetUser ($id: ID!) { __typename }"
+    // Prefix:        "query GetUser "
+    const name = template.elementName ?? "__variables__";
+    return `${template.kind} ${name} `.length;
+  }
+  // For tagged templates, content is always at the end
+  return reconstructed.length - template.content.length;
+};
+
 const indexFragments = (uri: string, templates: readonly ExtractedTemplate[], source: string): readonly IndexedFragment[] => {
   const fragments: IndexedFragment[] = [];
 
   for (const template of templates) {
+    // Skip non-fragment templates. This also skips callback-variables templates
+    // (which always have kind === query|mutation|subscription, never fragment).
     if (template.kind !== "fragment") {
       continue;
     }
 
     const reconstructed = reconstructGraphql(template);
-    const headerLen = reconstructed.length - template.content.length;
+    const headerLen = computeHeaderLen(template, reconstructed);
     const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
     try {
@@ -200,12 +237,15 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
   const cache = new Map<string, DocumentState>();
   const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
-  const extractTemplates = (uri: string, source: string): readonly ExtractedTemplate[] => {
+  const extractAll = (
+    uri: string,
+    source: string,
+  ): { templates: readonly ExtractedTemplate[]; fieldTrees: readonly ExtractedFieldTree[] } => {
     const isTsx = uri.endsWith(".tsx");
 
     const program = safeParseSync(source, isTsx);
     if (!program) {
-      return [];
+      return { templates: [], fieldTrees: [] };
     }
 
     // SWC's BytePos counter accumulates across parseSync calls within the same process.
@@ -218,21 +258,24 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
 
     const gqlIdentifiers = collectGqlIdentifiers(program, filePath, helper);
     if (gqlIdentifiers.size === 0) {
-      return [];
+      return { templates: [], fieldTrees: [] };
     }
 
     const positionCtx: PositionTrackingContext = { spanOffset, converter };
-    return walkAndExtract(program, gqlIdentifiers, positionCtx);
+    const templates = walkAndExtract(program, gqlIdentifiers, positionCtx);
+    const fieldTrees = walkAndExtractFieldTrees(program, gqlIdentifiers, positionCtx);
+    return { templates, fieldTrees };
   };
 
   return {
     update: (uri, version, source) => {
-      const templates = extractTemplates(uri, source);
+      const { templates, fieldTrees } = extractAll(uri, source);
       const state: DocumentState = {
         uri,
         version,
         source,
         templates,
+        fieldTrees,
         ...(swcUnavailable ? { swcUnavailable: true as const } : {}),
       };
       cache.set(uri, state);
@@ -257,6 +300,14 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
         return undefined;
       }
       return state.templates.find((t) => offset >= t.contentRange.start && offset <= t.contentRange.end);
+    },
+
+    findFieldTreeAtOffset: (uri, offset) => {
+      const state = cache.get(uri);
+      if (!state) {
+        return undefined;
+      }
+      return state.fieldTrees.find((t) => offset >= t.rootSpan.start && offset <= t.rootSpan.end);
     },
 
     getExternalFragments: (uri, schemaName) => {
@@ -296,7 +347,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
           }
 
           const reconstructed = reconstructGraphql(template);
-          const headerLen = reconstructed.length - template.content.length;
+          const headerLen = computeHeaderLen(template, reconstructed);
           const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
           try {

@@ -6,7 +6,7 @@
 import type { FragmentDefinitionNode, GraphQLSchema } from "graphql";
 import { getDiagnostics } from "graphql-language-service";
 import type { Diagnostic } from "vscode-languageserver-types";
-import { reconstructGraphql } from "../document-manager";
+import { computeHeaderLen, reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, positionToOffset } from "../position-mapping";
 import type { ExtractedTemplate } from "../types";
@@ -23,7 +23,7 @@ export type ComputeDiagnosticsInput = {
 export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): readonly Diagnostic[] => {
   const { template, schema, tsSource } = input;
   const reconstructed = reconstructGraphql(template);
-  const headerLen = reconstructed.length - template.content.length;
+  const headerLen = computeHeaderLen(template, reconstructed);
   const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
@@ -44,6 +44,10 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
   // Pattern to detect interpolation placeholder fragments
   const placeholderPattern = /__FRAG_SPREAD_\d+__/;
 
+  // For callback-variables templates, the dummy body "{ __typename }" never uses
+  // the declared variables, so "variable is never used" diagnostics are false positives.
+  const isCallbackVariables = template.source === "callback-variables";
+
   // Convert position from reconstructed source to template content
   const reconstructedLineOffsets = computeLineOffsets(preprocessed);
   const contentLineOffsets = computeLineOffsets(template.content);
@@ -59,10 +63,21 @@ export const computeTemplateDiagnostics = (input: ComputeDiagnosticsInput): read
       if (placeholderPattern.test(diag.message)) {
         return false;
       }
-      // Suppress diagnostics that point into the synthesized header
+      // Suppress "variable is never used" for callback-variables (dummy body doesn't use them)
+      if (isCallbackVariables && diag.message.includes("is never used")) {
+        return false;
+      }
+      // Suppress diagnostics that point into the synthesized header or suffix
       const offset = positionToOffset(reconstructedLineOffsets, diag.range.start);
       if (offset < headerLen) {
         return false;
+      }
+      // For callback-variables, also suppress diagnostics in the suffix "{ __typename }"
+      if (isCallbackVariables) {
+        const contentEnd = headerLen + template.content.length;
+        if (offset >= contentEnd) {
+          return false;
+        }
       }
       return true;
     })

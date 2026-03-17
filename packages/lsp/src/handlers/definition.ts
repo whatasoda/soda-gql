@@ -3,17 +3,16 @@
  * @module
  */
 
-import { pathToFileURL } from "node:url";
-import type { GraphQLSchema, TypeDefinitionNode } from "graphql";
-import { getNamedType, isTypeDefinitionNode, parse } from "graphql";
+import type { DocumentNode, GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
+import { getNamedType, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,
   getDefinitionQueryResultForFragmentSpread,
-  type ObjectTypeInfo,
+  getDefinitionQueryResultForNamedType,
 } from "graphql-language-service";
 import type { Location } from "vscode-languageserver-types";
-import { reconstructGraphql } from "../document-manager";
+import { computeHeaderLen, reconstructGraphql } from "../document-manager";
 import { preprocessFragmentArgs } from "../fragment-args-preprocessor";
 import {
   computeLineOffsets,
@@ -25,7 +24,7 @@ import {
 } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { findFragmentSpreadAtOffset } from "./_utils";
+import { buildObjectTypeInfos, findFragmentSpreadAtOffset } from "./_utils";
 
 export type HandleDefinitionInput = {
   readonly template: ExtractedTemplate;
@@ -40,29 +39,11 @@ export type HandleDefinitionInput = {
   readonly schemaFiles?: readonly SchemaFileInfo[];
 };
 
-/** Build ObjectTypeInfo[] from schema file info for graphql-language-service definition APIs. */
-const buildObjectTypeInfos = (files: readonly SchemaFileInfo[]): ObjectTypeInfo[] => {
-  const result: ObjectTypeInfo[] = [];
-  for (const file of files) {
-    const doc = parse(file.content);
-    for (const def of doc.definitions) {
-      if (isTypeDefinitionNode(def)) {
-        result.push({
-          filePath: pathToFileURL(file.filePath).href,
-          content: file.content,
-          definition: def as TypeDefinitionNode,
-        });
-      }
-    }
-  }
-  return result;
-};
-
 /** Handle a definition request for a GraphQL template. */
 export const handleDefinition = async (input: HandleDefinitionInput): Promise<Location[]> => {
   const { template, tsSource, tsPosition, externalFragments } = input;
   const reconstructed = reconstructGraphql(template);
-  const headerLen = reconstructed.length - template.content.length;
+  const headerLen = computeHeaderLen(template, reconstructed);
   const { preprocessed } = preprocessFragmentArgs(reconstructed);
 
   const mapper = createPositionMapper({
@@ -87,7 +68,15 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
     return resolveFragmentSpreadDefinition(preprocessed, fragmentSpread, externalFragments);
   }
 
-  // 2. Try field/type navigation in schema files
+  // 2. Try variable type navigation (works for all template types)
+  if (input.schemaFiles && input.schemaFiles.length > 0) {
+    const varTypeResult = await resolveVariableTypeDefinition(preprocessed, reconstructedOffset, input.schemaFiles);
+    if (varTypeResult.length > 0) {
+      return varTypeResult;
+    }
+  }
+
+  // 3. Try field/type navigation in schema files
   if (input.schema && input.schemaFiles && input.schemaFiles.length > 0) {
     const reconstructedLineOffsets = computeLineOffsets(preprocessed);
     const reconstructedPosition = offsetToPosition(reconstructedLineOffsets, reconstructedOffset);
@@ -151,6 +140,69 @@ const resolveFragmentSpreadDefinition = async (
       };
     });
   } catch {
+    return [];
+  }
+};
+
+/** Unwrap NonNullType/ListType wrappers to get the inner NamedType node. */
+const unwrapToNamedType = (typeNode: TypeNode): NamedTypeNode | null => {
+  if (typeNode.kind === "NamedType") return typeNode;
+  if (typeNode.kind === "NonNullType" || typeNode.kind === "ListType") {
+    return unwrapToNamedType(typeNode.type);
+  }
+  return null;
+};
+
+/**
+ * Resolve variable type reference to its definition in a schema file.
+ * Parses the GraphQL source to find VariableDefinition nodes, checks if the
+ * cursor offset falls within a type name, and resolves via getDefinitionQueryResultForNamedType.
+ */
+const resolveVariableTypeDefinition = async (
+  preprocessed: string,
+  reconstructedOffset: number,
+  schemaFiles: readonly SchemaFileInfo[],
+): Promise<Location[]> => {
+  let ast: DocumentNode;
+  try {
+    ast = parse(preprocessed, { noLocation: false });
+  } catch {
+    return [];
+  }
+
+  // Collect all NamedType nodes from variable definitions
+  let matchedNode: NamedTypeNode | null = null;
+  visit(ast, {
+    VariableDefinition(node) {
+      if (matchedNode) return;
+      const namedType = unwrapToNamedType(node.type);
+      if (!namedType?.name.loc) return;
+      const { start, end } = namedType.name.loc;
+      if (reconstructedOffset >= start && reconstructedOffset < end) {
+        matchedNode = namedType;
+      }
+    },
+  });
+
+  if (!matchedNode) return [];
+
+  const objectTypeInfos = buildObjectTypeInfos(schemaFiles);
+  try {
+    const result = await getDefinitionQueryResultForNamedType(preprocessed, matchedNode, objectTypeInfos);
+    return result.definitions.map(
+      (def): Location => ({
+        uri: def.path ?? "",
+        range: {
+          start: { line: def.position.line, character: def.position.character },
+          end: {
+            line: def.range?.end?.line ?? def.position.line,
+            character: def.range?.end?.character ?? def.position.character,
+          },
+        },
+      }),
+    );
+  } catch {
+    // Built-in scalars (ID, String, etc.) have no definition in schema files
     return [];
   }
 };

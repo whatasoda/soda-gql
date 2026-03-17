@@ -21,11 +21,14 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import type { ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
 import { lspErrors } from "./errors";
+import { resolveFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
+import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
+import { handleFieldTreeDefinition } from "./handlers/field-tree-definition";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";
@@ -108,7 +111,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         renameProvider: { prepareProvider: true },
         documentFormattingProvider: true,
         completionProvider: {
-          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", "."],
+          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", ".", '"'],
         },
         codeActionProvider: {
           codeActionKinds: ["refactor.extract"],
@@ -118,9 +121,9 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onInitialized(() => {
-    // Register for file watcher on .graphql files
+    // Register for file watcher on .graphql schema files and config files
     connection.client.register(DidChangeWatchedFilesNotification.type, {
-      watchers: [{ globPattern: "**/*.graphql" }],
+      watchers: [{ globPattern: "**/*.graphql" }, { globPattern: "**/soda-gql.config.*" }],
     });
   });
 
@@ -158,10 +161,34 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const template = ctx.documentManager.findTemplateAtOffset(
-      params.textDocument.uri,
-      positionToOffset(documents.get(params.textDocument.uri)?.getText() ?? "", params.position),
-    );
+    const doc = documents.get(params.textDocument.uri);
+    if (!doc) {
+      return [];
+    }
+
+    const tsSource = doc.getText();
+    const offset = positionToOffset(tsSource, params.position);
+
+    // Field tree dispatch: callback builder field selection
+    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
+    if (untypedTree) {
+      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
+      if (treeEntry) {
+        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
+        if (typedTree) {
+          return handleFieldTreeCompletion({
+            fieldTree: typedTree,
+            schema: treeEntry.schema,
+            tsSource,
+            tsPosition: { line: params.position.line, character: params.position.character },
+            offset,
+          });
+        }
+      }
+    }
+
+    // Template dispatch: tagged templates and callback-variables
+    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
 
     if (!template) {
       return [];
@@ -172,11 +199,6 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return [];
-    }
-
     const externalFragments = ctx.documentManager
       .getExternalFragments(params.textDocument.uri, template.schemaName)
       .map((f) => f.definition);
@@ -184,7 +206,7 @@ export const createLspServer = (options?: LspServerOptions) => {
     return handleCompletion({
       template,
       schema: entry.schema,
-      tsSource: doc.getText(),
+      tsSource,
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
     });
@@ -242,10 +264,30 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const template = ctx.documentManager.findTemplateAtOffset(
-      params.textDocument.uri,
-      positionToOffset(doc.getText(), params.position),
-    );
+    const tsSource = doc.getText();
+    const offset = positionToOffset(tsSource, params.position);
+
+    // Field tree dispatch: callback builder field selection
+    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
+    if (untypedTree) {
+      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
+      if (treeEntry?.files) {
+        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
+        if (typedTree) {
+          return handleFieldTreeDefinition({
+            fieldTree: typedTree,
+            schema: treeEntry.schema,
+            tsSource,
+            tsPosition: { line: params.position.line, character: params.position.character },
+            offset,
+            schemaFiles: treeEntry.files,
+          });
+        }
+      }
+    }
+
+    // Template dispatch: tagged templates and callback-variables
+    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
 
     if (!template) {
       return [];
@@ -256,7 +298,7 @@ export const createLspServer = (options?: LspServerOptions) => {
 
     return handleDefinition({
       template,
-      tsSource: doc.getText(),
+      tsSource,
       tsPosition: { line: params.position.line, character: params.position.character },
       externalFragments,
       schema: entry?.schema,
@@ -464,6 +506,16 @@ export const createLspServer = (options?: LspServerOptions) => {
           connection.window.showErrorMessage(`soda-gql LSP: schema reload failed: ${error.message}`);
         }
       }
+    }
+
+    // Notify user to restart when config file changes
+    const configChanged = _params.changes.some(
+      (change) =>
+        /soda-gql\.config\.[cm]?[jt]s$/.test(change.uri) &&
+        (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
+    );
+    if (configChanged) {
+      connection.window.showInformationMessage("soda-gql: config file changed. Restart the language server to apply.");
     }
   });
 
