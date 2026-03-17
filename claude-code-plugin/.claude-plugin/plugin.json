@@ -1,12 +1,5 @@
 {
   "name": "soda-gql-skills",
   "version": "0.1.0",
-  "description": "Claude Code skills and LSP for soda-gql GraphQL development",
-  "skills": [
-    "skills/gql-codegen",
-    "skills/gql-scaffold",
-    "skills/gql-doctor",
-    "skills/gql-guide"
-  ],
-  "lspServers": "../.lsp.json"
+  "description": "Claude Code skills and LSP for soda-gql GraphQL development"
 }
