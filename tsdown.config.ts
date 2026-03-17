@@ -169,7 +169,7 @@ const lspConfig: UserConfig = (() => {
   });
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts", "proxy-bin": "packages/lsp/src/proxy-bin.ts" },
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
@@ -177,6 +177,24 @@ const lspConfig: UserConfig = (() => {
     clean: true,
   };
 })();
+
+// LSP proxy package (bin-only, CJS-only — bypasses configure() since no @x-* exports)
+const lspProxyConfig: UserConfig = {
+  name: "@soda-gql/lsp-proxy",
+  outDir: "packages/lsp-proxy/dist",
+  entry: { bin: "packages/lsp-proxy/src/bin.ts" },
+  sourcemap: true,
+  external: (id) => {
+    if (id === "@soda-gql/lsp-proxy" || id.startsWith("@soda-gql/lsp-proxy/")) return false;
+    if (id.startsWith("@soda-gql/")) return true;
+    return ["vscode-languageserver", "vscode-languageserver/node"].includes(id);
+  },
+  format: ["cjs"],
+  platform: "node",
+  target: "node18",
+  treeshake: false,
+  clean: true,
+};
 
 export default defineConfig([
   // Core runtime packages
@@ -234,6 +252,7 @@ export default defineConfig([
   },
 
   lspConfig,
+  lspProxyConfig,
 
   // Transformer packages
   {
