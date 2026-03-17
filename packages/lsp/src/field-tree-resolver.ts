@@ -27,8 +27,16 @@ export type TypedFieldNode = {
 };
 
 export type TypedFieldNested =
-  | { readonly kind: "object"; readonly span: { readonly start: number; readonly end: number }; readonly children: readonly TypedFieldNode[] }
-  | { readonly kind: "union"; readonly span: { readonly start: number; readonly end: number }; readonly branches: readonly TypedUnionBranch[] };
+  | {
+      readonly kind: "object";
+      readonly span: { readonly start: number; readonly end: number };
+      readonly children: readonly TypedFieldNode[];
+    }
+  | {
+      readonly kind: "union";
+      readonly span: { readonly start: number; readonly end: number };
+      readonly branches: readonly TypedUnionBranch[];
+    };
 
 export type TypedUnionBranch = {
   readonly typeName: string;
@@ -135,7 +143,11 @@ const resolveNode = (schema: GraphQLSchema, parentTypeName: string, node: FieldC
 const resolveUnionNested = (
   schema: GraphQLSchema,
   unionType: GraphQLNamedType | null,
-  nested: { readonly kind: "union"; readonly span: { readonly start: number; readonly end: number }; readonly branches: readonly UnionBranchNode[] },
+  nested: {
+    readonly kind: "union";
+    readonly span: { readonly start: number; readonly end: number };
+    readonly branches: readonly UnionBranchNode[];
+  },
 ): TypedFieldNested => {
   const memberNames = new Set<string>();
   if (unionType instanceof GraphQLUnionType) {

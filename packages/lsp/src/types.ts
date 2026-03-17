@@ -4,11 +4,9 @@
  */
 
 import type { ExtractedFieldTree, ExtractedTemplateWithPosition, OperationKind } from "@soda-gql/common/template-extraction";
-
-export type { ExtractedFieldTree };
 import type { FragmentDefinitionNode } from "graphql";
 
-export type { OperationKind };
+export type { ExtractedFieldTree, OperationKind };
 
 /** A single tagged template extracted from a TypeScript file (with guaranteed position info). */
 export type ExtractedTemplate = ExtractedTemplateWithPosition;

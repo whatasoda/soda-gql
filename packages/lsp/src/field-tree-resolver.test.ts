@@ -51,9 +51,7 @@ describe("resolveFieldTree", () => {
       schemaName: "default",
       kind: "query",
       rootSpan: { start: 0, end: 200 },
-      children: [
-        objectField("user", 10, [scalarField("id", 30), scalarField("name", 40), scalarField("posts", 50)]),
-      ],
+      children: [objectField("user", 10, [scalarField("id", 30), scalarField("name", 40), scalarField("posts", 50)])],
     };
 
     const result = resolveFieldTree(tree, schema)!;
@@ -123,7 +121,14 @@ describe("resolveFieldTree", () => {
     expect(searchNode.nested).not.toBeNull();
     expect(searchNode.nested!.kind).toBe("union");
 
-    const unionNested = searchNode.nested as { kind: "union"; branches: readonly { typeName: string; valid: boolean; children: readonly { fieldName: string; parentTypeName: string }[] }[] };
+    const unionNested = searchNode.nested as {
+      kind: "union";
+      branches: readonly {
+        typeName: string;
+        valid: boolean;
+        children: readonly { fieldName: string; parentTypeName: string }[];
+      }[];
+    };
     expect(unionNested.branches).toHaveLength(3);
 
     expect(unionNested.branches[0]!.typeName).toBe("User");

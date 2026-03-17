@@ -25,10 +25,10 @@ import { resolveFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition } from "./handlers/definition";
-import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
-import { handleFieldTreeDefinition } from "./handlers/field-tree-definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
+import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
+import { handleFieldTreeDefinition } from "./handlers/field-tree-definition";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";
@@ -515,9 +515,7 @@ export const createLspServer = (options?: LspServerOptions) => {
         (change.type === FileChangeType.Changed || change.type === FileChangeType.Created),
     );
     if (configChanged) {
-      connection.window.showInformationMessage(
-        "soda-gql: config file changed. Restart the language server to apply.",
-      );
+      connection.window.showInformationMessage("soda-gql: config file changed. Restart the language server to apply.");
     }
   });
 

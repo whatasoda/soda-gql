@@ -237,7 +237,10 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
   const cache = new Map<string, DocumentState>();
   const fragmentIndex = new Map<string, readonly IndexedFragment[]>();
 
-  const extractAll = (uri: string, source: string): { templates: readonly ExtractedTemplate[]; fieldTrees: readonly ExtractedFieldTree[] } => {
+  const extractAll = (
+    uri: string,
+    source: string,
+  ): { templates: readonly ExtractedTemplate[]; fieldTrees: readonly ExtractedFieldTree[] } => {
     const isTsx = uri.endsWith(".tsx");
 
     const program = safeParseSync(source, isTsx);

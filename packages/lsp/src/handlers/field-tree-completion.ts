@@ -5,7 +5,7 @@
  */
 
 import type { GraphQLSchema } from "graphql";
-import { getNamedType, GraphQLUnionType, isObjectType } from "graphql";
+import { GraphQLUnionType, getNamedType, isObjectType } from "graphql";
 import type { CompletionItem } from "vscode-languageserver-types";
 import { CompletionItemKind } from "vscode-languageserver-types";
 import type { TypedFieldTree } from "../field-tree-resolver";
@@ -38,17 +38,17 @@ export const handleFieldTreeCompletion = (input: HandleFieldTreeCompletionInput)
     if (!parentType || !isObjectType(parentType)) return [];
 
     const fields = parentType.getFields();
-    return Object.keys(fields)
-      .filter((name) => name.startsWith(prefix))
-      .map((name) => {
-        const field = fields[name]!;
-        const namedType = getNamedType(field.type);
-        return {
-          label: name,
-          kind: CompletionItemKind.Field,
-          detail: namedType?.name,
-        };
+    const items: CompletionItem[] = [];
+    for (const [name, field] of Object.entries(fields)) {
+      if (!name.startsWith(prefix)) continue;
+      const namedType = getNamedType(field.type);
+      items.push({
+        label: name,
+        kind: CompletionItemKind.Field,
+        detail: namedType?.name,
       });
+    }
+    return items;
   }
 
   if (result.kind === "unionMember") {
