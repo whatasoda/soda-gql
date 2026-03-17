@@ -52,8 +52,53 @@ const server = createLspServer({ connection });
 server.start();
 ```
 
+## Claude Code Integration
+
+soda-gql LSP integrates with [Claude Code](https://claude.com/claude-code) as a plugin, providing GraphQL diagnostics, completion, and code intelligence directly in the AI coding assistant.
+
+### How it works
+
+The integration uses a **proxy binary** (`soda-gql-lsp-proxy`) that resolves the project-local `@soda-gql/lsp` at runtime. This ensures version consistency between the LSP server and the project's soda-gql dependencies — similar to how `typescript-language-server` delegates to the project-local TypeScript.
+
+### Setup for users
+
+1. Install the proxy binary globally:
+
+```bash
+npm install -g @soda-gql/lsp
+```
+
+2. Ensure `@soda-gql/lsp` is also a project dependency (the proxy resolves it from `node_modules`):
+
+```bash
+bun add -D @soda-gql/lsp
+```
+
+3. The Claude Code plugin is defined in the project's `.claude-plugin/marketplace.json`. Install it via `/plugin` in Claude Code and restart the session.
+
+### Setup for monorepo contributors
+
+1. Build the packages:
+
+```bash
+bun run build
+```
+
+2. Link the LSP package globally:
+
+```bash
+cd packages/lsp && bun link
+```
+
+3. Install the plugin via `/plugin` in Claude Code, then restart.
+
+### Coexistence with TypeScript LSP
+
+Both soda-gql LSP and the TypeScript LSP plugin can be active simultaneously on `.ts`/`.tsx` files. The TypeScript LSP provides type checking, while soda-gql LSP provides GraphQL-specific intelligence within tagged templates and callback builders.
+
 ## Supported Editors
 
+- **Claude Code** — Via the soda-gql plugin (see above)
 - **VS Code / Cursor** — Via the [soda-gql VS Code extension](../vscode-extension)
 - **Any LSP-compatible editor** — Neovim, Emacs, Sublime Text, etc. using the standalone CLI
 
