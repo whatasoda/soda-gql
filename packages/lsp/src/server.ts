@@ -36,6 +36,53 @@ import { handlePrepareRename, handleRename } from "./handlers/rename";
 
 export type LspServerOptions = {
   readonly connection?: Connection;
+  readonly initializeParams?: InitializeParams;
+};
+
+/** Server capabilities shared between direct and proxy initialization. */
+const serverCapabilities = {
+  textDocumentSync: TextDocumentSyncKind.Full,
+  hoverProvider: true,
+  documentSymbolProvider: true,
+  definitionProvider: true,
+  referencesProvider: true,
+  renameProvider: { prepareProvider: true },
+  documentFormattingProvider: true,
+  completionProvider: {
+    triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", ".", '"'],
+  },
+  codeActionProvider: {
+    codeActionKinds: ["refactor.extract"],
+  },
+} satisfies InitializeResult["capabilities"];
+
+/** Initialize the LSP server from InitializeParams. Used by both direct and proxy modes. */
+const initializeFromParams = (
+  params: InitializeParams,
+  connection: Connection,
+): { result: InitializeResult; registry: ConfigRegistry | undefined } => {
+  const roots = resolveWorkspaceRoots(params);
+  if (roots.length === 0) {
+    connection.window.showErrorMessage("soda-gql LSP: no workspace root provided");
+    return { result: { capabilities: {} }, registry: undefined };
+  }
+
+  const configPaths = discoverConfigs(roots);
+  if (configPaths.length === 0) {
+    connection.window.showErrorMessage("soda-gql LSP: no config file found");
+    return { result: { capabilities: {} }, registry: undefined };
+  }
+
+  const registryResult = createConfigRegistry(configPaths);
+  if (registryResult.isErr()) {
+    connection.window.showErrorMessage(`soda-gql LSP: ${registryResult.error.message}`);
+    return { result: { capabilities: {} }, registry: undefined };
+  }
+
+  return {
+    result: { capabilities: serverCapabilities },
+    registry: registryResult.value,
+  };
 };
 
 export const createLspServer = (options?: LspServerOptions) => {
@@ -80,45 +127,19 @@ export const createLspServer = (options?: LspServerOptions) => {
     }
   };
 
-  connection.onInitialize((params): InitializeResult => {
-    const roots = resolveWorkspaceRoots(params);
-    if (roots.length === 0) {
-      connection.window.showErrorMessage("soda-gql LSP: no workspace root provided");
-      return { capabilities: {} };
-    }
+  let initializeResult: InitializeResult | undefined;
 
-    const configPaths = discoverConfigs(roots);
-    if (configPaths.length === 0) {
-      connection.window.showErrorMessage("soda-gql LSP: no config file found");
-      return { capabilities: {} };
-    }
-
-    const registryResult = createConfigRegistry(configPaths);
-    if (registryResult.isErr()) {
-      connection.window.showErrorMessage(`soda-gql LSP: ${registryResult.error.message}`);
-      return { capabilities: {} };
-    }
-
-    registry = registryResult.value;
-
-    return {
-      capabilities: {
-        textDocumentSync: TextDocumentSyncKind.Full,
-        hoverProvider: true,
-        documentSymbolProvider: true,
-        definitionProvider: true,
-        referencesProvider: true,
-        renameProvider: { prepareProvider: true },
-        documentFormattingProvider: true,
-        completionProvider: {
-          triggerCharacters: ["{", "(", ":", "@", "$", " ", "\n", ".", '"'],
-        },
-        codeActionProvider: {
-          codeActionKinds: ["refactor.extract"],
-        },
-      },
-    };
-  });
+  if (options?.initializeParams) {
+    const init = initializeFromParams(options.initializeParams, connection);
+    registry = init.registry;
+    initializeResult = init.result;
+  } else {
+    connection.onInitialize((params): InitializeResult => {
+      const init = initializeFromParams(params, connection);
+      registry = init.registry;
+      return init.result;
+    });
+  }
 
   connection.onInitialized(() => {
     // Register for file watcher on .graphql schema files and config files
@@ -525,6 +546,7 @@ export const createLspServer = (options?: LspServerOptions) => {
     start: () => {
       connection.listen();
     },
+    initializeResult,
   };
 };
 
