@@ -5,14 +5,24 @@
   },
   "metadata": {
     "description": "Claude Code skills for soda-gql GraphQL development",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "soda-gql-skills",
       "source": "./claude-code-plugin",
-      "description": "Claude Code skills for soda-gql GraphQL development",
-      "version": "0.1.0"
+      "description": "Claude Code skills and LSP for soda-gql GraphQL development",
+      "version": "0.2.0",
+      "lspServers": {
+        "soda-gql": {
+          "command": "soda-gql-lsp-proxy",
+          "args": [],
+          "extensionToLanguage": {
+            ".ts": "typescript",
+            ".tsx": "typescriptreact"
+          }
+        }
+      }
     }
   ]
 }

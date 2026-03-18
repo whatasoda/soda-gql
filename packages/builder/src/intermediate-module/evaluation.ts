@@ -24,14 +24,16 @@ export type BuildIntermediateModulesInput = {
 type TransformSync = typeof import("@swc/core").transformSync;
 let _transformSync: TransformSync | undefined;
 const getTransformSync = (): TransformSync => {
-  if (!_transformSync) {
-    if (typeof import.meta.url !== "string") {
-      throw new Error("@swc/core cannot be resolved: import.meta.url is unavailable in CJS bundle context");
-    }
-    const localRequire = createRequire(import.meta.url);
-    _transformSync = localRequire("@swc/core").transformSync;
+  if (_transformSync) {
+    return _transformSync;
   }
-  return _transformSync!;
+  if (typeof import.meta.url !== "string") {
+    throw new Error("@swc/core cannot be resolved: import.meta.url is unavailable in CJS bundle context");
+  }
+  const localRequire = createRequire(import.meta.url);
+  const transformSync: TransformSync = localRequire("@swc/core").transformSync;
+  _transformSync = transformSync;
+  return transformSync;
 };
 
 const transpile = ({ filePath, sourceCode }: { filePath: string; sourceCode: string }): Result<string, BuilderError> => {

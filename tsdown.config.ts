@@ -165,11 +165,15 @@ const lspConfig: UserConfig = (() => {
       "vscode-languageserver/node",
       "vscode-languageserver-textdocument",
       "graphql-language-service",
+      "@modelcontextprotocol/sdk",
+      "@modelcontextprotocol/sdk/server/mcp.js",
+      "@modelcontextprotocol/sdk/server/stdio.js",
+      "zod",
     ],
   });
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts", "mcp-bin": "packages/lsp/src/mcp-bin.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
@@ -177,6 +181,24 @@ const lspConfig: UserConfig = (() => {
     clean: true,
   };
 })();
+
+// Protocol proxy package (bin-only, CJS-only — bypasses configure() since no @x-* exports)
+const protocolProxyConfig: UserConfig = {
+  name: "@soda-gql/protocol-proxy",
+  outDir: "packages/protocol-proxy/dist",
+  entry: { "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts", "mcp-bin": "packages/protocol-proxy/src/mcp-bin.ts" },
+  sourcemap: true,
+  external: (id) => {
+    if (id === "@soda-gql/protocol-proxy" || id.startsWith("@soda-gql/protocol-proxy/")) return false;
+    if (id.startsWith("@soda-gql/")) return true;
+    return ["vscode-languageserver", "vscode-languageserver/node"].includes(id);
+  },
+  format: ["cjs"],
+  platform: "node",
+  target: "node18",
+  treeshake: false,
+  clean: true,
+};
 
 export default defineConfig([
   // Core runtime packages
@@ -234,6 +256,7 @@ export default defineConfig([
   },
 
   lspConfig,
+  protocolProxyConfig,
 
   // Transformer packages
   {
