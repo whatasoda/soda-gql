@@ -208,8 +208,7 @@ export const formatTemplatesInSource = (
 
     // Restore interpolation expressions: replace __FRAG_SPREAD_N__ with original ${...} syntax
     if (template.expressionRanges && template.expressionRanges.length > 0) {
-      for (let i = 0; i < template.expressionRanges.length; i++) {
-        const range = template.expressionRanges[i]!;
+      for (const [i, range] of template.expressionRanges.entries()) {
         const exprText = tsSource.slice(range.start, range.end);
         unwrapped = unwrapped.replace(`__FRAG_SPREAD_${i}__`, `\${${exprText}}`);
       }

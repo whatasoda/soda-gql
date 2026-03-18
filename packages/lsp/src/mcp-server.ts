@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { findAllConfigFiles } from "@soda-gql/config";
 import { z } from "zod";
-import { createConfigRegistry, type ConfigRegistry } from "./config-registry";
+import { type ConfigRegistry, createConfigRegistry } from "./config-registry";
 
 /** Start the MCP server with soda-gql tools. Blocks until the transport closes. */
 export const startMcpServer = async (): Promise<void> => {

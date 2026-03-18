@@ -10,7 +10,7 @@ const cwd = process.cwd();
 let localLsp: { startMcpServer: () => Promise<void> };
 
 try {
-  const req = createRequire(cwd + "/package.json");
+  const req = createRequire(`${cwd}/package.json`);
   localLsp = req(req.resolve("@soda-gql/lsp"));
 } catch (e) {
   const detail = e instanceof Error ? e.message : String(e);

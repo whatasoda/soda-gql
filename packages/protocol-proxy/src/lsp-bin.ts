@@ -14,12 +14,7 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import type { LspServerOptions } from "@soda-gql/lsp";
-import {
-  createConnection,
-  type InitializeParams,
-  type InitializeResult,
-  ProposedFeatures,
-} from "vscode-languageserver/node";
+import { createConnection, type InitializeParams, type InitializeResult, ProposedFeatures } from "vscode-languageserver/node";
 
 type CreateLspServer = (options: Required<LspServerOptions>) => {
   start: () => void;
@@ -39,12 +34,10 @@ connection.onInitialize((params) => {
   let localLsp: { createLspServer: CreateLspServer } | undefined;
   for (const root of roots) {
     try {
-      const req = createRequire(root + "/package.json");
+      const req = createRequire(`${root}/package.json`);
       localLsp = req(req.resolve("@soda-gql/lsp"));
       break;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   if (!localLsp) {
