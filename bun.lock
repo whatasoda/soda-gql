@@ -137,16 +137,6 @@
         "vscode-languageserver-types": "^3.17.1",
       },
     },
-    "packages/lsp-proxy": {
-      "name": "@soda-gql/lsp-proxy",
-      "version": "0.14.1",
-      "bin": {
-        "soda-gql-lsp-proxy": "./dist/bin.cjs",
-      },
-      "dependencies": {
-        "vscode-languageserver": "^9.0.1",
-      },
-    },
     "packages/metro-plugin": {
       "name": "@soda-gql/metro-plugin",
       "version": "0.14.1",
@@ -166,6 +156,16 @@
         "@soda-gql/swc",
         "metro",
       ],
+    },
+    "packages/protocol-proxy": {
+      "name": "@soda-gql/protocol-proxy",
+      "version": "0.14.1",
+      "bin": {
+        "soda-gql-lsp-proxy": "./dist/lsp-bin.cjs",
+      },
+      "dependencies": {
+        "vscode-languageserver": "^9.0.1",
+      },
     },
     "packages/sdk": {
       "name": "@soda-gql/sdk",
@@ -1185,9 +1185,9 @@
 
     "@soda-gql/lsp": ["@soda-gql/lsp@workspace:packages/lsp"],
 
-    "@soda-gql/lsp-proxy": ["@soda-gql/lsp-proxy@workspace:packages/lsp-proxy"],
-
     "@soda-gql/metro-plugin": ["@soda-gql/metro-plugin@workspace:packages/metro-plugin"],
+
+    "@soda-gql/protocol-proxy": ["@soda-gql/protocol-proxy@workspace:packages/protocol-proxy"],
 
     "@soda-gql/sdk": ["@soda-gql/sdk@workspace:packages/sdk"],
 

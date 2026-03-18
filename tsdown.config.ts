@@ -178,14 +178,14 @@ const lspConfig: UserConfig = (() => {
   };
 })();
 
-// LSP proxy package (bin-only, CJS-only — bypasses configure() since no @x-* exports)
-const lspProxyConfig: UserConfig = {
-  name: "@soda-gql/lsp-proxy",
-  outDir: "packages/lsp-proxy/dist",
-  entry: { bin: "packages/lsp-proxy/src/bin.ts" },
+// Protocol proxy package (bin-only, CJS-only — bypasses configure() since no @x-* exports)
+const protocolProxyConfig: UserConfig = {
+  name: "@soda-gql/protocol-proxy",
+  outDir: "packages/protocol-proxy/dist",
+  entry: { "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts" },
   sourcemap: true,
   external: (id) => {
-    if (id === "@soda-gql/lsp-proxy" || id.startsWith("@soda-gql/lsp-proxy/")) return false;
+    if (id === "@soda-gql/protocol-proxy" || id.startsWith("@soda-gql/protocol-proxy/")) return false;
     if (id.startsWith("@soda-gql/")) return true;
     return ["vscode-languageserver", "vscode-languageserver/node"].includes(id);
   },
@@ -252,7 +252,7 @@ export default defineConfig([
   },
 
   lspConfig,
-  lspProxyConfig,
+  protocolProxyConfig,
 
   // Transformer packages
   {

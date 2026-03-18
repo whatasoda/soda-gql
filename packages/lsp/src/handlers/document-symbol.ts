@@ -116,6 +116,12 @@ export const handleDocumentSymbol = (input: HandleDocumentSymbolInput): Document
     for (const tree of outline.outlineTrees as unknown as OutlineTree[]) {
       const symbol = convertTree(tree, toContentPos, mapper);
       if (symbol) {
+        // Experimental: add detail for skill consumption
+        if (template.kind === "fragment" && template.typeName) {
+          symbol.detail = `on ${template.typeName}`;
+        } else if (template.kind !== "fragment") {
+          symbol.detail = template.kind;
+        }
         symbols.push(symbol);
       }
     }
