@@ -12,10 +12,12 @@ let localLsp: { startMcpServer: () => Promise<void> };
 try {
   const req = createRequire(cwd + "/package.json");
   localLsp = req(req.resolve("@soda-gql/lsp"));
-} catch {
+} catch (e) {
+  const detail = e instanceof Error ? e.message : String(e);
   process.stderr.write(
-    `[soda-gql-mcp-proxy] @soda-gql/lsp not found in ${cwd}\n` +
-      "Install it: bun add -d @soda-gql/lsp\n",
+    `[soda-gql-mcp-proxy] Failed to load @soda-gql/lsp from ${cwd}\n` +
+      `  ${detail}\n` +
+      "  Install it: bun add -d @soda-gql/lsp\n",
   );
   process.exit(1);
 }
