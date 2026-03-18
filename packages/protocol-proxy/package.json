@@ -22,7 +22,8 @@
     "node": ">=18"
   },
   "bin": {
-    "soda-gql-lsp-proxy": "./dist/lsp-bin.cjs"
+    "soda-gql-lsp-proxy": "./dist/lsp-bin.cjs",
+    "soda-gql-mcp-proxy": "./dist/mcp-bin.cjs"
   },
   "dependencies": {
     "vscode-languageserver": "^9.0.1"

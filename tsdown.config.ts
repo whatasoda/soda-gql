@@ -186,7 +186,7 @@ const lspConfig: UserConfig = (() => {
 const protocolProxyConfig: UserConfig = {
   name: "@soda-gql/protocol-proxy",
   outDir: "packages/protocol-proxy/dist",
-  entry: { "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts" },
+  entry: { "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts", "mcp-bin": "packages/protocol-proxy/src/mcp-bin.ts" },
   sourcemap: true,
   external: (id) => {
     if (id === "@soda-gql/protocol-proxy" || id.startsWith("@soda-gql/protocol-proxy/")) return false;
