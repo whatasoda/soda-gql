@@ -165,11 +165,15 @@ const lspConfig: UserConfig = (() => {
       "vscode-languageserver/node",
       "vscode-languageserver-textdocument",
       "graphql-language-service",
+      "@modelcontextprotocol/sdk",
+      "@modelcontextprotocol/sdk/server/mcp.js",
+      "@modelcontextprotocol/sdk/server/stdio.js",
+      "zod",
     ],
   });
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts", "mcp-bin": "packages/lsp/src/mcp-bin.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
