@@ -32,7 +32,6 @@ describe("handleFieldTreeHover", () => {
 
     const hover = handleFieldTreeHover({
       fieldTree,
-      tsSource,
       offset: fieldStart + 1,
     });
 
@@ -53,7 +52,6 @@ describe("handleFieldTreeHover", () => {
 
     const hover = handleFieldTreeHover({
       fieldTree,
-      tsSource,
       offset: 0, // before any field
     });
 
@@ -97,7 +95,6 @@ describe("handleFieldTreeHover", () => {
     // Hover over the union member type name
     const hover = handleFieldTreeHover({
       fieldTree,
-      tsSource,
       offset: typeNameStart + 1,
     });
 
@@ -117,7 +114,6 @@ describe("handleFieldTreeHover", () => {
 
     const hover = handleFieldTreeHover({
       fieldTree,
-      tsSource,
       offset: fieldStart + 1,
     });
 

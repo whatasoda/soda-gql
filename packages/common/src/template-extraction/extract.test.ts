@@ -108,6 +108,7 @@ describe("walkAndExtract", () => {
     expect(templates[0]!.kind).toBe("fragment");
     expect(templates[0]!.elementName).toBe("UserFields");
     expect(templates[0]!.typeName).toBe("User");
+    expect(templates[0]!.typeNameSpan).toBeUndefined();
   });
 
   it("extracts multiple templates from multi-schema source", () => {

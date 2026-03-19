@@ -10,7 +10,6 @@ import { findNodeAtOffset } from "../field-tree-resolver";
 
 export type HandleFieldTreeHoverInput = {
   readonly fieldTree: TypedFieldTree;
-  readonly tsSource: string;
   /** Character offset in the TS source file. */
   readonly offset: number;
 };

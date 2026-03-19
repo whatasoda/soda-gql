@@ -284,8 +284,6 @@ export const extractFromTaggedTemplate = (
           start: positionCtx.converter.byteOffsetToCharIndex(secondArg.span.start + 1 - positionCtx.spanOffset),
           end: positionCtx.converter.byteOffsetToCharIndex(secondArg.span.end - 1 - positionCtx.spanOffset),
         };
-      } else {
-        typeNameSpan = { start: secondArg.span.start + 1, end: secondArg.span.end - 1 };
       }
     }
   } else {

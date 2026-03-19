@@ -272,7 +272,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       if (treeEntry) {
         const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
         if (typedTree) {
-          return handleFieldTreeHover({ fieldTree: typedTree, tsSource, offset });
+          return handleFieldTreeHover({ fieldTree: typedTree, offset });
         }
       }
     }
