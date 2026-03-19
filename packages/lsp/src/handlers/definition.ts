@@ -4,7 +4,7 @@
  */
 
 import type { DocumentNode, GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
-import { getNamedType, parse, visit } from "graphql";
+import { Kind, getNamedType, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,
@@ -247,4 +247,40 @@ const resolveSchemaDefinition = (
   }
 
   return Promise.resolve([]);
+};
+
+/**
+ * Resolve a type name to its definition in a schema file.
+ * Used for fragment type names and inline fragment type conditions.
+ */
+export const resolveTypeNameToSchemaDefinition = async (
+  typeName: string,
+  schemaFiles: readonly SchemaFileInfo[],
+): Promise<Location[]> => {
+  const typeNameLen = typeName.length;
+  const dummyLoc = { start: 0, end: typeNameLen, startToken: null, endToken: null, source: null };
+  const namedTypeNode = {
+    kind: Kind.NAMED_TYPE,
+    name: { kind: Kind.NAME, value: typeName, loc: dummyLoc },
+    loc: dummyLoc,
+  } as unknown as NamedTypeNode;
+
+  const objectTypeInfos = buildObjectTypeInfos(schemaFiles);
+  try {
+    const result = await getDefinitionQueryResultForNamedType("", namedTypeNode, objectTypeInfos);
+    return result.definitions.map(
+      (def): Location => ({
+        uri: def.path ?? "",
+        range: {
+          start: { line: def.position.line, character: def.position.character },
+          end: {
+            line: def.range?.end?.line ?? def.position.line,
+            character: def.range?.end?.character ?? def.position.character,
+          },
+        },
+      }),
+    );
+  } catch {
+    return [];
+  }
 };

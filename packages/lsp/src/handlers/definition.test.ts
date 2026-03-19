@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { buildASTSchema, type DocumentNode, type FragmentDefinitionNode, parse } from "graphql";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { handleDefinition } from "./definition";
+import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./definition";
 
 const makeCurriedFragment = (
   uri: string,
@@ -516,6 +516,30 @@ describe("handleDefinition — schema field navigation", () => {
       schemaFiles,
     });
 
+    expect(locations).toHaveLength(0);
+  });
+});
+
+describe("resolveTypeNameToSchemaDefinition", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves type name to schema definition", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("User", schemaFiles);
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+
+  test("returns empty for unknown type", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("NonExistentType", schemaFiles);
+    expect(locations).toHaveLength(0);
+  });
+
+  test("returns empty for built-in scalar", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("String", schemaFiles);
     expect(locations).toHaveLength(0);
   });
 });

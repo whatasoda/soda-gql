@@ -24,7 +24,7 @@ import { lspErrors } from "./errors";
 import { resolveFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
-import { handleDefinition } from "./handlers/definition";
+import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
@@ -311,6 +311,14 @@ export const createLspServer = (options?: LspServerOptions) => {
     const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
 
     if (!template) {
+      // Try fragment type name navigation (typeNameSpan is outside contentRange)
+      const typeNameTemplate = ctx.documentManager.findTemplateByTypeNameOffset(params.textDocument.uri, offset);
+      if (typeNameTemplate?.typeName) {
+        const typeNameEntry = ctx.schemaResolver.getSchema(typeNameTemplate.schemaName);
+        if (typeNameEntry?.files) {
+          return resolveTypeNameToSchemaDefinition(typeNameTemplate.typeName, typeNameEntry.files);
+        }
+      }
       return [];
     }
 
