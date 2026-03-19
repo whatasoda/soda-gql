@@ -26,6 +26,7 @@ import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
+import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
 import { handleFieldTreeHover } from "./handlers/field-tree-hover";
@@ -110,7 +111,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return;
     }
 
-    const allDiagnostics = state.templates.flatMap((template) => {
+    const templateDiagnostics = state.templates.flatMap((template) => {
       const entry = ctx.schemaResolver.getSchema(template.schemaName);
       if (!entry) {
         return [];
@@ -119,7 +120,19 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
     });
 
-    connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
+    const fieldTreeDiagnostics = state.fieldTrees.flatMap((tree) => {
+      const entry = ctx.schemaResolver.getSchema(tree.schemaName);
+      if (!entry) {
+        return [];
+      }
+      const typedTree = resolveFieldTree(tree, entry.schema);
+      if (!typedTree) {
+        return [];
+      }
+      return [...computeFieldTreeDiagnostics({ fieldTree: typedTree, tsSource: state.source })];
+    });
+
+    connection.sendDiagnostics({ uri, diagnostics: [...templateDiagnostics, ...fieldTreeDiagnostics] });
   };
 
   const publishDiagnosticsForAllOpen = () => {
