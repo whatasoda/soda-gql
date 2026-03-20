@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildSchema } from "graphql";
 import { describe, expect, test } from "bun:test";
-import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./mcp-server";
+import { computeLineFromOffset, diagnosticSeverityToString, extractVariablesFromContent, introspectType, listTypes } from "./mcp-server";
 
 describe("extractVariablesFromContent", () => {
   test("extracts simple variable declaration", () => {
@@ -60,12 +60,39 @@ describe("computeLineFromOffset", () => {
   });
 });
 
+describe("diagnosticSeverityToString", () => {
+  test("maps severity 1 to Error", () => {
+    expect(diagnosticSeverityToString(1)).toBe("Error");
+  });
+
+  test("maps severity 2 to Warning", () => {
+    expect(diagnosticSeverityToString(2)).toBe("Warning");
+  });
+
+  test("maps severity 3 to Information", () => {
+    expect(diagnosticSeverityToString(3)).toBe("Information");
+  });
+
+  test("maps severity 4 to Hint", () => {
+    expect(diagnosticSeverityToString(4)).toBe("Hint");
+  });
+
+  test("defaults to Error for undefined", () => {
+    expect(diagnosticSeverityToString(undefined)).toBe("Error");
+  });
+
+  test("defaults to Error for unknown value", () => {
+    expect(diagnosticSeverityToString(99)).toBe("Error");
+  });
+});
+
 const schemaFixturePath = join(import.meta.dir, "../test/fixtures/schemas/default.graphql");
 const schemaSource = readFileSync(schemaFixturePath, "utf-8");
 const schema = buildSchema(schemaSource);
 
 describe("introspectType", () => {
   test("returns object type with fields and args", () => {
+    // JSON round-trip to erase union type discrimination (toEqual rejects args on INPUT_OBJECT branch)
     const result = JSON.parse(JSON.stringify(introspectType(schema, "Query")));
     expect(result).toEqual({
       name: "Query",
@@ -79,6 +106,7 @@ describe("introspectType", () => {
   });
 
   test("returns object type fields with correct types", () => {
+    // JSON round-trip to erase union type discrimination (same as above)
     const result = JSON.parse(JSON.stringify(introspectType(schema, "User")));
     expect(result).toEqual({
       name: "User",

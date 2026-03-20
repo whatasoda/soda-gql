@@ -29,23 +29,6 @@ import type { DocumentState } from "./types";
 type McpTextContent = { type: "text"; text: string };
 type McpToolResult = { content: McpTextContent[]; isError?: boolean };
 
-let indexed = false;
-const ensureWorkspaceIndexed = (registry: ConfigRegistry): void => {
-  if (indexed) return;
-  indexed = true;
-  for (const ctx of registry.getAllContexts()) {
-    const filesResult = resolveEntryPaths(ctx.config.include, ctx.config.exclude);
-    if (filesResult.isErr()) continue;
-    for (const filePath of filesResult.value) {
-      if (ctx.documentManager.get(filePath)) continue;
-      try {
-        const source = readFileSync(filePath, "utf-8");
-        ctx.documentManager.update(filePath, 1, source);
-      } catch { /* skip unreadable files */ }
-    }
-  }
-};
-
 const errorResult = (message: string): McpToolResult => ({
   content: [{ type: "text", text: JSON.stringify({ error: message }) }],
   isError: true,
@@ -57,6 +40,23 @@ export const startMcpServer = async (): Promise<void> => {
 
   // Lazy-initialized registry (created on first tool call)
   let registry: ConfigRegistry | undefined;
+
+  let indexed = false;
+  const ensureWorkspaceIndexed = (reg: ConfigRegistry): void => {
+    if (indexed) return;
+    indexed = true;
+    for (const ctx of reg.getAllContexts()) {
+      const filesResult = resolveEntryPaths(ctx.config.include, ctx.config.exclude);
+      if (filesResult.isErr()) continue;
+      for (const filePath of filesResult.value) {
+        if (ctx.documentManager.get(filePath)) continue;
+        try {
+          const source = readFileSync(filePath, "utf-8");
+          ctx.documentManager.update(filePath, 1, source);
+        } catch { /* skip unreadable files */ }
+      }
+    }
+  };
 
   const ensureInitialized = (): Result<ConfigRegistry, LspError> => {
     if (registry) return ok(registry);
@@ -197,7 +197,7 @@ export const collectDiagnostics = (state: DocumentState, ctx: ConfigContext): Di
   }));
 };
 
-const diagnosticSeverityToString = (severity: number | undefined): string => {
+export const diagnosticSeverityToString = (severity: number | undefined): string => {
   switch (severity) {
     case 1:
       return "Error";

@@ -22,6 +22,7 @@ import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
 import { collectRawDiagnostics } from "./diagnostics-collector";
 import { lspErrors } from "./errors";
+import type { GraphQLSchema } from "graphql";
 import { resolveFieldTree, type TypedFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
@@ -51,7 +52,7 @@ type ResolvedPositionContext =
       offset: number;
       tsPosition: { line: number; character: number };
       typedTree: TypedFieldTree;
-      schema: import("graphql").GraphQLSchema;
+      schema: GraphQLSchema;
       schemaEntry: SchemaEntry;
     }
   | {
