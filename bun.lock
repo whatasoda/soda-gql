@@ -267,8 +267,8 @@
       "name": "soda-gql-vscode-extension",
       "version": "0.14.1",
       "dependencies": {
-        "@soda-gql/lsp": "workspace:*",
         "vscode-languageclient": "^9.0.1",
+        "vscode-languageserver": "^9.0.1",
       },
       "devDependencies": {
         "@types/vscode": "^1.90.0",
