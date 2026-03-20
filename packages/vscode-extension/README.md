@@ -17,6 +17,7 @@ VS Code extension for soda-gql that provides GraphQL language support for tagged
 ## Requirements
 
 - A soda-gql project with a `soda-gql.config.ts` configuration file
+- `@soda-gql/lsp` installed in your project (the extension resolves it at runtime for version consistency)
 - `@soda-gql/builder` installed in your project (provides `@swc/core` for template extraction)
 - VS Code 1.90.0 or later (also works with Cursor)
 
@@ -69,6 +70,14 @@ The LSP server requires `@swc/core` to parse TypeScript files. This is provided 
 
 ```bash
 bun add @soda-gql/builder
+```
+
+### "@soda-gql/lsp not found" Error
+
+The extension resolves the LSP server from your project's dependencies at runtime. Install it as a project dependency:
+
+```bash
+bun add @soda-gql/lsp
 ```
 
 ### No Diagnostics or Completions
