@@ -6,6 +6,7 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { resolveEntryPaths } from "@soda-gql/builder";
 import { findAllConfigFiles } from "@soda-gql/config";
 import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
@@ -14,6 +15,23 @@ import type { LspError } from "./errors";
 
 type McpTextContent = { type: "text"; text: string };
 type McpToolResult = { content: McpTextContent[]; isError?: boolean };
+
+let indexed = false;
+const ensureWorkspaceIndexed = (registry: ConfigRegistry): void => {
+  if (indexed) return;
+  indexed = true;
+  for (const ctx of registry.getAllContexts()) {
+    const filesResult = resolveEntryPaths(ctx.config.include, ctx.config.exclude);
+    if (filesResult.isErr()) continue;
+    for (const filePath of filesResult.value) {
+      if (ctx.documentManager.get(filePath)) continue;
+      try {
+        const source = readFileSync(filePath, "utf-8");
+        ctx.documentManager.update(filePath, 1, source);
+      } catch { /* skip unreadable files */ }
+    }
+  }
+};
 
 const errorResult = (message: string): McpToolResult => ({
   content: [{ type: "text", text: JSON.stringify({ error: message }) }],
