@@ -18,10 +18,10 @@ import {
   TextDocuments,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import type { ConfigRegistry } from "./config-registry";
+import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
 import { lspErrors } from "./errors";
-import { resolveFieldTree } from "./field-tree-resolver";
+import { resolveFieldTree, type TypedFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
@@ -35,10 +35,85 @@ import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";
 import { handlePrepareRename, handleRename } from "./handlers/rename";
+import type { SchemaEntry } from "./schema-resolver";
+import type { ExtractedTemplate } from "./types";
 
 export type LspServerOptions = {
   readonly connection?: Connection;
   readonly initializeParams?: InitializeParams;
+};
+
+/** Discriminated union describing what LSP context was resolved at a given position. */
+type ResolvedPositionContext =
+  | {
+      kind: "fieldTree";
+      ctx: ConfigContext;
+      tsSource: string;
+      offset: number;
+      tsPosition: { line: number; character: number };
+      typedTree: TypedFieldTree;
+      schema: import("graphql").GraphQLSchema;
+      schemaEntry: SchemaEntry;
+    }
+  | {
+      kind: "template";
+      ctx: ConfigContext;
+      tsSource: string;
+      offset: number;
+      tsPosition: { line: number; character: number };
+      template: ExtractedTemplate;
+      schemaEntry: SchemaEntry | undefined;
+    }
+  | undefined;
+
+/**
+ * Shared 3-phase dispatch: registry/ctx/doc guard → field-tree → template.
+ * Used by completion, hover, and definition handlers.
+ */
+const resolvePositionContext = (
+  registry: ConfigRegistry | undefined,
+  documents: TextDocuments<TextDocument>,
+  uri: string,
+  position: { line: number; character: number },
+): ResolvedPositionContext => {
+  if (!registry) {
+    return undefined;
+  }
+
+  const ctx = registry.resolveForUri(uri);
+  if (!ctx) {
+    return undefined;
+  }
+
+  const doc = documents.get(uri);
+  if (!doc) {
+    return undefined;
+  }
+
+  const tsSource = doc.getText();
+  const offset = positionToOffset(tsSource, position);
+  const tsPosition = { line: position.line, character: position.character };
+
+  // Field tree dispatch: callback builder field selection
+  const untypedTree = ctx.documentManager.findFieldTreeAtOffset(uri, offset);
+  if (untypedTree) {
+    const schemaEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
+    if (schemaEntry) {
+      const typedTree = resolveFieldTree(untypedTree, schemaEntry.schema);
+      if (typedTree) {
+        return { kind: "fieldTree", ctx, tsSource, offset, tsPosition, typedTree, schema: schemaEntry.schema, schemaEntry };
+      }
+    }
+  }
+
+  // Template dispatch: tagged templates and callback-variables
+  const template = ctx.documentManager.findTemplateAtOffset(uri, offset);
+  if (!template) {
+    return undefined;
+  }
+
+  const schemaEntry = ctx.schemaResolver.getSchema(template.schemaName);
+  return { kind: "template", ctx, tsSource, offset, tsPosition, template, schemaEntry };
 };
 
 /** Server capabilities shared between direct and proxy initialization. */
@@ -187,157 +262,82 @@ export const createLspServer = (options?: LspServerOptions) => {
   });
 
   connection.onCompletion((params) => {
-    if (!registry) {
+    const resolved = resolvePositionContext(registry, documents, params.textDocument.uri, params.position);
+
+    if (!resolved) {
       return [];
     }
 
-    const ctx = registry.resolveForUri(params.textDocument.uri);
-    if (!ctx) {
+    if (resolved.kind === "fieldTree") {
+      return handleFieldTreeCompletion({
+        fieldTree: resolved.typedTree,
+        schema: resolved.schema,
+        tsSource: resolved.tsSource,
+        tsPosition: resolved.tsPosition,
+        offset: resolved.offset,
+      });
+    }
+
+    // resolved.kind === "template"
+    if (!resolved.schemaEntry) {
       return [];
     }
 
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return [];
-    }
-
-    const tsSource = doc.getText();
-    const offset = positionToOffset(tsSource, params.position);
-
-    // Field tree dispatch: callback builder field selection
-    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
-    if (untypedTree) {
-      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
-      if (treeEntry) {
-        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
-        if (typedTree) {
-          return handleFieldTreeCompletion({
-            fieldTree: typedTree,
-            schema: treeEntry.schema,
-            tsSource,
-            tsPosition: { line: params.position.line, character: params.position.character },
-            offset,
-          });
-        }
-      }
-    }
-
-    // Template dispatch: tagged templates and callback-variables
-    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
-
-    if (!template) {
-      return [];
-    }
-
-    const entry = ctx.schemaResolver.getSchema(template.schemaName);
-    if (!entry) {
-      return [];
-    }
-
-    const externalFragments = ctx.documentManager
-      .getExternalFragments(params.textDocument.uri, template.schemaName)
+    const externalFragments = resolved.ctx.documentManager
+      .getExternalFragments(params.textDocument.uri, resolved.template.schemaName)
       .map((f) => f.definition);
 
     return handleCompletion({
-      template,
-      schema: entry.schema,
-      tsSource,
-      tsPosition: { line: params.position.line, character: params.position.character },
+      template: resolved.template,
+      schema: resolved.schemaEntry.schema,
+      tsSource: resolved.tsSource,
+      tsPosition: resolved.tsPosition,
       externalFragments,
     });
   });
 
   connection.onHover((params) => {
-    if (!registry) {
+    const resolved = resolvePositionContext(registry, documents, params.textDocument.uri, params.position);
+
+    if (!resolved) {
       return null;
     }
 
-    const ctx = registry.resolveForUri(params.textDocument.uri);
-    if (!ctx) {
-      return null;
+    if (resolved.kind === "fieldTree") {
+      return handleFieldTreeHover({ fieldTree: resolved.typedTree, offset: resolved.offset });
     }
 
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return null;
-    }
-
-    const tsSource = doc.getText();
-    const offset = positionToOffset(tsSource, params.position);
-
-    // Field tree dispatch: callback builder field selection
-    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
-    if (untypedTree) {
-      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
-      if (treeEntry) {
-        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
-        if (typedTree) {
-          return handleFieldTreeHover({ fieldTree: typedTree, offset });
-        }
-      }
-    }
-
-    // Template dispatch: tagged templates and callback-variables
-    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
-
-    if (!template) {
-      return null;
-    }
-
-    const entry = ctx.schemaResolver.getSchema(template.schemaName);
-    if (!entry) {
+    // resolved.kind === "template"
+    if (!resolved.schemaEntry) {
       return null;
     }
 
     return handleHover({
-      template,
-      schema: entry.schema,
-      tsSource,
-      tsPosition: { line: params.position.line, character: params.position.character },
+      template: resolved.template,
+      schema: resolved.schemaEntry.schema,
+      tsSource: resolved.tsSource,
+      tsPosition: resolved.tsPosition,
     });
   });
 
   connection.onDefinition(async (params) => {
-    if (!registry) {
-      return [];
-    }
+    const resolved = resolvePositionContext(registry, documents, params.textDocument.uri, params.position);
 
-    const ctx = registry.resolveForUri(params.textDocument.uri);
-    if (!ctx) {
-      return [];
-    }
-
-    const doc = documents.get(params.textDocument.uri);
-    if (!doc) {
-      return [];
-    }
-
-    const tsSource = doc.getText();
-    const offset = positionToOffset(tsSource, params.position);
-
-    // Field tree dispatch: callback builder field selection
-    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
-    if (untypedTree) {
-      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
-      if (treeEntry?.files) {
-        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
-        if (typedTree) {
-          return handleFieldTreeDefinition({
-            fieldTree: typedTree,
-            schema: treeEntry.schema,
-            tsSource,
-            tsPosition: { line: params.position.line, character: params.position.character },
-            offset,
-            schemaFiles: treeEntry.files,
-          });
-        }
+    if (!resolved) {
+      // resolvePositionContext returns undefined when no field tree or template found.
+      // For definition, also try fragment type name navigation as a fallback.
+      if (!registry) {
+        return [];
       }
-    }
-
-    // Template dispatch: tagged templates and callback-variables
-    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
-
-    if (!template) {
+      const ctx = registry.resolveForUri(params.textDocument.uri);
+      if (!ctx) {
+        return [];
+      }
+      const doc = documents.get(params.textDocument.uri);
+      if (!doc) {
+        return [];
+      }
+      const offset = positionToOffset(doc.getText(), params.position);
       // Try fragment type name navigation (typeNameSpan is outside contentRange)
       const typeNameTemplate = ctx.documentManager.findTemplateByTypeNameOffset(params.textDocument.uri, offset);
       if (typeNameTemplate?.typeName) {
@@ -349,16 +349,33 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [];
     }
 
-    const externalFragments = ctx.documentManager.getExternalFragments(params.textDocument.uri, template.schemaName);
-    const entry = ctx.schemaResolver.getSchema(template.schemaName);
+    if (resolved.kind === "fieldTree") {
+      if (!resolved.schemaEntry.files) {
+        return [];
+      }
+      return handleFieldTreeDefinition({
+        fieldTree: resolved.typedTree,
+        schema: resolved.schema,
+        tsSource: resolved.tsSource,
+        tsPosition: resolved.tsPosition,
+        offset: resolved.offset,
+        schemaFiles: resolved.schemaEntry.files,
+      });
+    }
+
+    // resolved.kind === "template"
+    const externalFragments = resolved.ctx.documentManager.getExternalFragments(
+      params.textDocument.uri,
+      resolved.template.schemaName,
+    );
 
     return handleDefinition({
-      template,
-      tsSource,
-      tsPosition: { line: params.position.line, character: params.position.character },
+      template: resolved.template,
+      tsSource: resolved.tsSource,
+      tsPosition: resolved.tsPosition,
       externalFragments,
-      schema: entry?.schema,
-      schemaFiles: entry?.files,
+      schema: resolved.schemaEntry?.schema,
+      schemaFiles: resolved.schemaEntry?.files,
     });
   });
 
