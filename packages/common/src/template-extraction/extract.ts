@@ -260,6 +260,7 @@ export const extractFromTaggedTemplate = (
   let kind: string;
   let elementName: string | undefined;
   let typeName: string | undefined;
+  let typeNameSpan: { start: number; end: number } | undefined;
 
   if (tagged.tag.type === "Identifier") {
     kind = tagged.tag.value;
@@ -278,6 +279,12 @@ export const extractFromTaggedTemplate = (
     const secondArg = tagCall.arguments[1]?.expression;
     if (secondArg?.type === "StringLiteral") {
       typeName = (secondArg as { value: string }).value;
+      if (positionCtx) {
+        typeNameSpan = {
+          start: positionCtx.converter.byteOffsetToCharIndex(secondArg.span.start + 1 - positionCtx.spanOffset),
+          end: positionCtx.converter.byteOffsetToCharIndex(secondArg.span.end - 1 - positionCtx.spanOffset),
+        };
+      }
     }
   } else {
     return;
@@ -335,6 +342,7 @@ export const extractFromTaggedTemplate = (
     content,
     ...(elementName !== undefined ? { elementName } : {}),
     ...(typeName !== undefined ? { typeName } : {}),
+    ...(typeNameSpan !== undefined ? { typeNameSpan } : {}),
     ...(positionCtx && contentStart !== -1 && contentEnd !== -1
       ? { contentRange: { start: contentStart, end: contentEnd } }
       : {}),

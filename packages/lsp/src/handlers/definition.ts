@@ -4,7 +4,7 @@
  */
 
 import type { DocumentNode, GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
-import { getNamedType, parse, visit } from "graphql";
+import { Kind, getNamedType, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,
@@ -24,7 +24,7 @@ import {
 } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { buildObjectTypeInfos, findFragmentSpreadAtOffset } from "./_utils";
+import { buildObjectTypeInfos, findFragmentSpreadAtOffset, resolveDirectiveDefinition } from "./_utils";
 
 export type HandleDefinitionInput = {
   readonly template: ExtractedTemplate;
@@ -80,7 +80,7 @@ export const handleDefinition = async (input: HandleDefinitionInput): Promise<Lo
   if (input.schema && input.schemaFiles && input.schemaFiles.length > 0) {
     const reconstructedLineOffsets = computeLineOffsets(preprocessed);
     const reconstructedPosition = offsetToPosition(reconstructedLineOffsets, reconstructedOffset);
-    return resolveSchemaDefinition(preprocessed, reconstructedPosition, input.schema, input.schemaFiles);
+    return resolveSchemaDefinition(preprocessed, reconstructedPosition, reconstructedOffset, input.schema, input.schemaFiles);
   }
 
   return [];
@@ -208,15 +208,28 @@ const resolveVariableTypeDefinition = async (
 };
 
 /** Resolve field or type name to its definition in a schema .graphql file. */
-const resolveSchemaDefinition = (
+const resolveSchemaDefinition = async (
   preprocessed: string,
   position: Position,
+  reconstructedOffset: number,
   schema: GraphQLSchema,
   schemaFiles: readonly SchemaFileInfo[],
 ): Promise<Location[]> => {
+  // Try type condition / directive resolution first (AST-based).
+  // This must run before field resolution because getContextAtPosition's
+  // typeInfo.fieldDef stays populated at inline fragment and directive positions
+  // (from the enclosing field), which would incorrectly match the field path.
+  // When matched, return the locations even if empty (e.g., built-in directives
+  // have no schema file definition — returning empty is correct, not a signal to
+  // fall through to field resolution).
+  const astResult = await tryResolveTypeConditionOrDirective(preprocessed, reconstructedOffset, schemaFiles);
+  if (astResult.matched) {
+    return astResult.locations;
+  }
+
   const context = getContextAtPosition(preprocessed, toIPosition(position), schema);
   if (!context) {
-    return Promise.resolve([]);
+    return [];
   }
 
   const { typeInfo } = context;
@@ -226,25 +239,110 @@ const resolveSchemaDefinition = (
     const fieldName = typeInfo.fieldDef.name;
     const namedParentType = getNamedType(typeInfo.parentType);
     if (!namedParentType) {
-      return Promise.resolve([]);
+      return [];
     }
     const parentTypeName = namedParentType.name;
     const objectTypeInfos = buildObjectTypeInfos(schemaFiles);
-    return getDefinitionQueryResultForField(fieldName, parentTypeName, objectTypeInfos).then((result) =>
-      result.definitions.map(
-        (def): Location => ({
-          uri: def.path ?? "",
-          range: {
-            start: { line: def.position.line, character: def.position.character },
-            end: {
-              line: def.range?.end?.line ?? def.position.line,
-              character: def.range?.end?.character ?? def.position.character,
-            },
+    const result = await getDefinitionQueryResultForField(fieldName, parentTypeName, objectTypeInfos);
+    return result.definitions.map(
+      (def): Location => ({
+        uri: def.path ?? "",
+        range: {
+          start: { line: def.position.line, character: def.position.character },
+          end: {
+            line: def.range?.end?.line ?? def.position.line,
+            character: def.range?.end?.character ?? def.position.character,
           },
-        }),
-      ),
+        },
+      }),
     );
   }
 
-  return Promise.resolve([]);
+  return [];
+};
+
+/**
+ * Try to resolve inline fragment type conditions and directive names via AST walking.
+ * Returns { matched: true, locations } when cursor is on a type condition or directive,
+ * or { matched: false } when cursor is on neither (caller should try field resolution).
+ */
+const tryResolveTypeConditionOrDirective = async (
+  preprocessed: string,
+  reconstructedOffset: number,
+  schemaFiles: readonly SchemaFileInfo[],
+): Promise<{ matched: true; locations: Location[] } | { matched: false }> => {
+  let ast: DocumentNode;
+  try {
+    ast = parse(preprocessed, { noLocation: false });
+  } catch {
+    return { matched: false };
+  }
+
+  let matchedTypeName: string | null = null;
+  let matchedDirectiveName: string | null = null;
+
+  visit(ast, {
+    InlineFragment(node) {
+      const loc = node.typeCondition?.name.loc;
+      if (loc && reconstructedOffset >= loc.start && reconstructedOffset < loc.end) {
+        matchedTypeName = node.typeCondition!.name.value;
+      }
+    },
+    FragmentDefinition(node) {
+      const loc = node.typeCondition.name.loc;
+      if (loc && reconstructedOffset >= loc.start && reconstructedOffset < loc.end) {
+        matchedTypeName = node.typeCondition.name.value;
+      }
+    },
+    Directive(node) {
+      const loc = node.name.loc;
+      if (loc && reconstructedOffset >= loc.start && reconstructedOffset < loc.end) {
+        matchedDirectiveName = node.name.value;
+      }
+    },
+  });
+
+  if (matchedTypeName) {
+    return { matched: true, locations: await resolveTypeNameToSchemaDefinition(matchedTypeName, schemaFiles) };
+  }
+  if (matchedDirectiveName) {
+    return { matched: true, locations: resolveDirectiveDefinition(matchedDirectiveName, schemaFiles) };
+  }
+  return { matched: false };
+};
+
+/**
+ * Resolve a type name to its definition in a schema file.
+ * Used for fragment type names and inline fragment type conditions.
+ */
+export const resolveTypeNameToSchemaDefinition = async (
+  typeName: string,
+  schemaFiles: readonly SchemaFileInfo[],
+): Promise<Location[]> => {
+  const typeNameLen = typeName.length;
+  const dummyLoc = { start: 0, end: typeNameLen, startToken: null, endToken: null, source: null };
+  const namedTypeNode = {
+    kind: Kind.NAMED_TYPE,
+    name: { kind: Kind.NAME, value: typeName, loc: dummyLoc },
+    loc: dummyLoc,
+  } as unknown as NamedTypeNode;
+
+  const objectTypeInfos = buildObjectTypeInfos(schemaFiles);
+  try {
+    const result = await getDefinitionQueryResultForNamedType("", namedTypeNode, objectTypeInfos);
+    return result.definitions.map(
+      (def): Location => ({
+        uri: def.path ?? "",
+        range: {
+          start: { line: def.position.line, character: def.position.character },
+          end: {
+            line: def.range?.end?.line ?? def.position.line,
+            character: def.range?.end?.character ?? def.position.character,
+          },
+        },
+      }),
+    );
+  } catch {
+    return [];
+  }
 };

@@ -24,6 +24,8 @@ export type ExtractedTemplate = {
   readonly elementName?: string;
   /** Type name from curried fragment call (e.g., "User" from fragment("UserFields", "User")). */
   readonly typeName?: string;
+  /** Character offset range of typeName within TS source (excludes quotes). */
+  readonly typeNameSpan?: { readonly start: number; readonly end: number };
   /** Character offset range of content within TS source (excludes backticks/quotes). */
   readonly contentRange?: { readonly start: number; readonly end: number };
   /** Character offset ranges of interpolation expressions within TS source (for __FRAG_SPREAD_N__ restoration). */

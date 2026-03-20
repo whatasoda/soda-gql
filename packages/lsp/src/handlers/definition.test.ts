@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { buildASTSchema, type DocumentNode, type FragmentDefinitionNode, parse } from "graphql";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { ExtractedTemplate, IndexedFragment } from "../types";
-import { handleDefinition } from "./definition";
+import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./definition";
 
 const makeCurriedFragment = (
   uri: string,
@@ -516,6 +516,160 @@ describe("handleDefinition — schema field navigation", () => {
       schemaFiles,
     });
 
+    expect(locations).toHaveLength(0);
+  });
+});
+
+describe("handleDefinition — inline fragment type condition navigation", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schema = buildASTSchema(parse(schemaSource) as unknown as DocumentNode);
+
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves inline fragment type condition to schema definition", async () => {
+    const content = "{ search(query: \"test\") { ... on User { id name } } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("Search")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "Search",
+    };
+
+    // Position cursor on "User" in "... on User"
+    const userIdx = content.indexOf("User") + 1;
+    const cursorInTs = contentStart + userIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+});
+
+describe("handleDefinition — directive navigation", () => {
+  test("resolves custom directive to schema definition", async () => {
+    const directiveSchema = `
+directive @cacheControl(maxAge: Int) on FIELD_DEFINITION
+
+type Query {
+  users: [User!]!
+}
+
+type User {
+  id: ID!
+  name: String!
+}
+`.trim();
+    const schema = buildASTSchema(parse(directiveSchema) as unknown as DocumentNode);
+    const schemaFile = "/tmp/test-directive.graphql";
+    const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaFile, content: directiveSchema }];
+
+    const content = "{ users @cacheControl(maxAge: 60) { id } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUsers")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUsers",
+    };
+
+    // Position cursor on "cacheControl" in "@cacheControl"
+    const directiveIdx = content.indexOf("cacheControl") + 2;
+    const cursorInTs = contentStart + directiveIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaFile).href);
+  });
+
+  test("returns empty for built-in directive", async () => {
+    const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+    const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+    const schemaSource = readFileSync(schemaPath, "utf8");
+    const schema = buildASTSchema(parse(schemaSource) as unknown as DocumentNode);
+    const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+    const content = "{ users { id @skip(if: true) } }";
+    const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("GetUsers")\`${content}\`);`;
+    const contentStart = tsSource.indexOf(content);
+
+    const template: ExtractedTemplate = {
+      contentRange: { start: contentStart, end: contentStart + content.length },
+      schemaName: "default",
+      kind: "query",
+      content,
+      elementName: "GetUsers",
+    };
+
+    // Position cursor on "skip" in "@skip"
+    const skipIdx = content.indexOf("skip") + 1;
+    const cursorInTs = contentStart + skipIdx;
+    const lines = tsSource.slice(0, cursorInTs).split("\n");
+    const tsPosition = { line: lines.length - 1, character: lines[lines.length - 1]!.length };
+
+    const locations = await handleDefinition({
+      template,
+      tsSource,
+      tsPosition,
+      externalFragments: [],
+      schema,
+      schemaFiles,
+    });
+
+    // Built-in directives have no schema file definition
+    expect(locations).toHaveLength(0);
+  });
+});
+
+describe("resolveTypeNameToSchemaDefinition", () => {
+  const fixturesDir = resolve(import.meta.dir, "../../test/fixtures");
+  const schemaPath = resolve(fixturesDir, "schemas/default.graphql");
+  const schemaSource = readFileSync(schemaPath, "utf8");
+  const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
+
+  test("resolves type name to schema definition", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("User", schemaFiles);
+
+    expect(locations.length).toBeGreaterThan(0);
+    expect(locations[0]!.uri).toBe(pathToFileURL(schemaPath).href);
+  });
+
+  test("returns empty for unknown type", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("NonExistentType", schemaFiles);
+    expect(locations).toHaveLength(0);
+  });
+
+  test("returns empty for built-in scalar", async () => {
+    const locations = await resolveTypeNameToSchemaDefinition("String", schemaFiles);
     expect(locations).toHaveLength(0);
   });
 });

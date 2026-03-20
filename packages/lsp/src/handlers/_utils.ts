@@ -6,6 +6,7 @@
 import { pathToFileURL } from "node:url";
 import type { FragmentSpreadNode, TypeDefinitionNode } from "graphql";
 import { isTypeDefinitionNode, parse, visit } from "graphql";
+import type { Location } from "vscode-languageserver-types";
 import type { ObjectTypeInfo } from "graphql-language-service";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
@@ -187,4 +188,34 @@ export const computeSpreadLocationRanges = (spreadLocations: readonly FragmentSp
   }
 
   return ranges;
+};
+
+/**
+ * Resolve a directive name to its definition in schema files.
+ * Parses each schema file and finds DirectiveDefinitionNode matching the name.
+ */
+export const resolveDirectiveDefinition = (
+  directiveName: string,
+  schemaFiles: readonly SchemaFileInfo[],
+): Location[] => {
+  const locations: Location[] = [];
+  for (const file of schemaFiles) {
+    try {
+      const doc = parse(file.content, { noLocation: false });
+      const lineOffsets = computeLineOffsets(file.content);
+      for (const def of doc.definitions) {
+        if (def.kind === "DirectiveDefinition" && def.name.value === directiveName && def.name.loc) {
+          const start = offsetToPosition(lineOffsets, def.name.loc.start);
+          const end = offsetToPosition(lineOffsets, def.name.loc.end);
+          locations.push({
+            uri: pathToFileURL(file.filePath).href,
+            range: { start, end },
+          });
+        }
+      }
+    } catch {
+      // Parse error — skip
+    }
+  }
+  return locations;
 };

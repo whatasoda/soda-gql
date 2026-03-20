@@ -24,10 +24,12 @@ import { lspErrors } from "./errors";
 import { resolveFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
-import { handleDefinition } from "./handlers/definition";
+import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
+import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
+import { handleFieldTreeHover } from "./handlers/field-tree-hover";
 import { handleFieldTreeDefinition } from "./handlers/field-tree-definition";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
@@ -109,7 +111,7 @@ export const createLspServer = (options?: LspServerOptions) => {
       return;
     }
 
-    const allDiagnostics = state.templates.flatMap((template) => {
+    const templateDiagnostics = state.templates.flatMap((template) => {
       const entry = ctx.schemaResolver.getSchema(template.schemaName);
       if (!entry) {
         return [];
@@ -118,7 +120,19 @@ export const createLspServer = (options?: LspServerOptions) => {
       return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
     });
 
-    connection.sendDiagnostics({ uri, diagnostics: allDiagnostics });
+    const fieldTreeDiagnostics = state.fieldTrees.flatMap((tree) => {
+      const entry = ctx.schemaResolver.getSchema(tree.schemaName);
+      if (!entry) {
+        return [];
+      }
+      const typedTree = resolveFieldTree(tree, entry.schema);
+      if (!typedTree) {
+        return [];
+      }
+      return [...computeFieldTreeDiagnostics({ fieldTree: typedTree, tsSource: state.source })];
+    });
+
+    connection.sendDiagnostics({ uri, diagnostics: [...templateDiagnostics, ...fieldTreeDiagnostics] });
   };
 
   const publishDiagnosticsForAllOpen = () => {
@@ -248,10 +262,23 @@ export const createLspServer = (options?: LspServerOptions) => {
       return null;
     }
 
-    const template = ctx.documentManager.findTemplateAtOffset(
-      params.textDocument.uri,
-      positionToOffset(doc.getText(), params.position),
-    );
+    const tsSource = doc.getText();
+    const offset = positionToOffset(tsSource, params.position);
+
+    // Field tree dispatch: callback builder field selection
+    const untypedTree = ctx.documentManager.findFieldTreeAtOffset(params.textDocument.uri, offset);
+    if (untypedTree) {
+      const treeEntry = ctx.schemaResolver.getSchema(untypedTree.schemaName);
+      if (treeEntry) {
+        const typedTree = resolveFieldTree(untypedTree, treeEntry.schema);
+        if (typedTree) {
+          return handleFieldTreeHover({ fieldTree: typedTree, offset });
+        }
+      }
+    }
+
+    // Template dispatch: tagged templates and callback-variables
+    const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
 
     if (!template) {
       return null;
@@ -265,7 +292,7 @@ export const createLspServer = (options?: LspServerOptions) => {
     return handleHover({
       template,
       schema: entry.schema,
-      tsSource: doc.getText(),
+      tsSource,
       tsPosition: { line: params.position.line, character: params.position.character },
     });
   });
@@ -311,6 +338,14 @@ export const createLspServer = (options?: LspServerOptions) => {
     const template = ctx.documentManager.findTemplateAtOffset(params.textDocument.uri, offset);
 
     if (!template) {
+      // Try fragment type name navigation (typeNameSpan is outside contentRange)
+      const typeNameTemplate = ctx.documentManager.findTemplateByTypeNameOffset(params.textDocument.uri, offset);
+      if (typeNameTemplate?.typeName) {
+        const typeNameEntry = ctx.schemaResolver.getSchema(typeNameTemplate.schemaName);
+        if (typeNameEntry?.files) {
+          return resolveTypeNameToSchemaDefinition(typeNameTemplate.typeName, typeNameEntry.files);
+        }
+      }
       return [];
     }
 

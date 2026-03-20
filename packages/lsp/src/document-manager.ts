@@ -20,6 +20,8 @@ export type DocumentManager = {
   readonly findTemplateAtOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
   /** Find the field call tree containing the given offset. */
   readonly findFieldTreeAtOffset: (uri: string, offset: number) => ExtractedFieldTree | undefined;
+  /** Find a template whose typeNameSpan contains the given offset. */
+  readonly findTemplateByTypeNameOffset: (uri: string, offset: number) => ExtractedTemplate | undefined;
   /** Get fragments from other documents for a given schema, excluding the specified URI. */
   readonly getExternalFragments: (uri: string, schemaName: string) => readonly IndexedFragment[];
   /** Get ALL indexed fragments (including self) for a given schema. */
@@ -308,6 +310,14 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
         return undefined;
       }
       return state.fieldTrees.find((t) => offset >= t.rootSpan.start && offset <= t.rootSpan.end);
+    },
+
+    findTemplateByTypeNameOffset: (uri, offset) => {
+      const state = cache.get(uri);
+      if (!state) {
+        return undefined;
+      }
+      return state.templates.find((t) => t.typeNameSpan && offset >= t.typeNameSpan.start && offset <= t.typeNameSpan.end);
     },
 
     getExternalFragments: (uri, schemaName) => {

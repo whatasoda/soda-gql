@@ -108,6 +108,7 @@ describe("walkAndExtract", () => {
     expect(templates[0]!.kind).toBe("fragment");
     expect(templates[0]!.elementName).toBe("UserFields");
     expect(templates[0]!.typeName).toBe("User");
+    expect(templates[0]!.typeNameSpan).toBeUndefined();
   });
 
   it("extracts multiple templates from multi-schema source", () => {
@@ -238,6 +239,46 @@ export const GetUser = gql.default(({ query }) =>
     const range = templates[0]!.contentRange!;
     const extracted = source.slice(range.start, range.end);
     expect(extracted).toBe("{ user { id } }");
+  });
+
+  it("populates typeNameSpan for curried fragment when positionCtx is provided", () => {
+    const source = `import { gql } from "./graphql-system";
+export const UserFields = gql.default(({ fragment }) =>
+  fragment("UserFields", "User")\`{ id name }\`()
+);`;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const converter = createSwcSpanConverter(source);
+    const spanOffset = module.span.start;
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+
+    const templates = walkAndExtract(module as unknown as Node, identifiers, positionCtx);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.typeName).toBe("User");
+    expect(templates[0]!.typeNameSpan).toBeDefined();
+
+    const span = templates[0]!.typeNameSpan!;
+    expect(source.slice(span.start, span.end)).toBe("User");
+  });
+
+  it("does not populate typeNameSpan for query templates", () => {
+    const source = `import { gql } from "./graphql-system";
+export const GetUser = gql.default(({ query }) =>
+  query("GetUser")\`{ user { id } }\`
+);`;
+
+    const module = parseSource(source);
+    const identifiers = collectTestIdentifiers(module);
+    const converter = createSwcSpanConverter(source);
+    const spanOffset = module.span.start;
+    const positionCtx: PositionTrackingContext = { spanOffset, converter };
+
+    const templates = walkAndExtract(module as unknown as Node, identifiers, positionCtx);
+
+    expect(templates).toHaveLength(1);
+    expect(templates[0]!.typeNameSpan).toBeUndefined();
   });
 
   it("does not populate contentRange when positionCtx is omitted", () => {
