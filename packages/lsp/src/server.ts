@@ -20,13 +20,12 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
+import { collectRawDiagnostics } from "./diagnostics-collector";
 import { lspErrors } from "./errors";
 import { resolveFieldTree, type TypedFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
-import { computeTemplateDiagnostics } from "./handlers/diagnostics";
-import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
 import { handleFieldTreeHover } from "./handlers/field-tree-hover";
@@ -186,28 +185,8 @@ export const createLspServer = (options?: LspServerOptions) => {
       return;
     }
 
-    const templateDiagnostics = state.templates.flatMap((template) => {
-      const entry = ctx.schemaResolver.getSchema(template.schemaName);
-      if (!entry) {
-        return [];
-      }
-      const externalFragments = ctx.documentManager.getExternalFragments(uri, template.schemaName).map((f) => f.definition);
-      return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
-    });
-
-    const fieldTreeDiagnostics = state.fieldTrees.flatMap((tree) => {
-      const entry = ctx.schemaResolver.getSchema(tree.schemaName);
-      if (!entry) {
-        return [];
-      }
-      const typedTree = resolveFieldTree(tree, entry.schema);
-      if (!typedTree) {
-        return [];
-      }
-      return [...computeFieldTreeDiagnostics({ fieldTree: typedTree, tsSource: state.source })];
-    });
-
-    connection.sendDiagnostics({ uri, diagnostics: [...templateDiagnostics, ...fieldTreeDiagnostics] });
+    const diagnostics = collectRawDiagnostics(state, ctx);
+    connection.sendDiagnostics({ uri, diagnostics: [...diagnostics] });
   };
 
   const publishDiagnosticsForAllOpen = () => {

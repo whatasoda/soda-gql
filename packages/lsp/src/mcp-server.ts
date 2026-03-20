@@ -22,10 +22,8 @@ import { err, ok, type Result } from "neverthrow";
 import { z } from "zod";
 import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
+import { collectRawDiagnostics } from "./diagnostics-collector";
 import type { LspError } from "./errors";
-import { resolveFieldTree } from "./field-tree-resolver";
-import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
-import { computeTemplateDiagnostics } from "./handlers/diagnostics";
 import type { DocumentState } from "./types";
 
 type McpTextContent = { type: "text"; text: string };
@@ -186,30 +184,12 @@ export const computeLineFromOffset = (source: string, offset: number): number =>
   return line;
 };
 
-/** Collect diagnostics from both templates and field trees in a document. */
+/** Collect diagnostics and map to JSON-serializable format. */
 type DiagnosticResult = { message: string; line: number; column: number; severity: string };
 
 export const collectDiagnostics = (state: DocumentState, ctx: ConfigContext): DiagnosticResult[] => {
-  const templateDiags = state.templates.flatMap((template) => {
-    const entry = ctx.schemaResolver.getSchema(template.schemaName);
-    if (!entry) return [];
-    const externalFragments = ctx.documentManager
-      .getExternalFragments(state.uri, template.schemaName)
-      .map((f) => f.definition);
-    return [
-      ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments }),
-    ];
-  });
-
-  const fieldTreeDiags = state.fieldTrees.flatMap((tree) => {
-    const entry = ctx.schemaResolver.getSchema(tree.schemaName);
-    if (!entry) return [];
-    const typedTree = resolveFieldTree(tree, entry.schema);
-    if (!typedTree) return [];
-    return [...computeFieldTreeDiagnostics({ fieldTree: typedTree, tsSource: state.source })];
-  });
-
-  return [...templateDiags, ...fieldTreeDiags].map((d) => ({
+  const diagnostics = collectRawDiagnostics(state, ctx);
+  return [...diagnostics].map((d) => ({
     message: d.message,
     line: d.range.start.line + 1,
     column: d.range.start.character + 1,
