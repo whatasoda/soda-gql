@@ -61,13 +61,13 @@
     ]
   },
   "dependencies": {
-    "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver": "^9.0.1"
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@types/vscode": "^1.90.0",
     "@vscode/vsce": "^3.2.1",
-    "esbuild": "^0.24.2"
+    "esbuild": "^0.24.2",
+    "vscode-languageserver": "^9.0.1"
   },
   "scripts": {
     "build": "node build.mjs",
