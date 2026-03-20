@@ -317,7 +317,7 @@ export const createDocumentManager = (helper: GraphqlSystemIdentifyHelper, swcOp
       if (!state) {
         return undefined;
       }
-      return state.templates.find((t) => t.typeNameSpan && offset >= t.typeNameSpan.start && offset < t.typeNameSpan.end);
+      return state.templates.find((t) => t.typeNameSpan && offset >= t.typeNameSpan.start && offset <= t.typeNameSpan.end);
     },
 
     getExternalFragments: (uri, schemaName) => {
