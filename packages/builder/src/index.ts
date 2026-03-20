@@ -26,6 +26,7 @@ export type {
   DiscoveryCache,
   DiscoverySnapshot,
 } from "./discovery/types";
+export { resolveEntryPaths } from "./discovery/entry-paths";
 export { builderErrors } from "./errors";
 export type { FormattedError } from "./errors/formatter";
 export { formatBuilderErrorForCLI, formatBuilderErrorStructured } from "./errors/formatter";

@@ -1,5 +1,8 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { buildSchema } from "graphql";
 import { describe, expect, test } from "bun:test";
-import { computeLineFromOffset, extractVariablesFromContent } from "./mcp-server";
+import { computeLineFromOffset, diagnosticSeverityToString, extractVariablesFromContent, introspectType, listTypes } from "./mcp-server";
 
 describe("extractVariablesFromContent", () => {
   test("extracts simple variable declaration", () => {
@@ -54,5 +57,131 @@ describe("computeLineFromOffset", () => {
 
   test("handles empty source", () => {
     expect(computeLineFromOffset("", 0)).toBe(1);
+  });
+});
+
+describe("diagnosticSeverityToString", () => {
+  test("maps severity 1 to Error", () => {
+    expect(diagnosticSeverityToString(1)).toBe("Error");
+  });
+
+  test("maps severity 2 to Warning", () => {
+    expect(diagnosticSeverityToString(2)).toBe("Warning");
+  });
+
+  test("maps severity 3 to Information", () => {
+    expect(diagnosticSeverityToString(3)).toBe("Information");
+  });
+
+  test("maps severity 4 to Hint", () => {
+    expect(diagnosticSeverityToString(4)).toBe("Hint");
+  });
+
+  test("defaults to Error for undefined", () => {
+    expect(diagnosticSeverityToString(undefined)).toBe("Error");
+  });
+
+  test("defaults to Error for unknown value", () => {
+    expect(diagnosticSeverityToString(99)).toBe("Error");
+  });
+});
+
+const schemaFixturePath = join(import.meta.dir, "../test/fixtures/schemas/default.graphql");
+const schemaSource = readFileSync(schemaFixturePath, "utf-8");
+const schema = buildSchema(schemaSource);
+
+describe("introspectType", () => {
+  test("returns object type with fields and args", () => {
+    // JSON round-trip to erase union type discrimination (toEqual rejects args on INPUT_OBJECT branch)
+    const result = JSON.parse(JSON.stringify(introspectType(schema, "Query")));
+    expect(result).toEqual({
+      name: "Query",
+      kind: "OBJECT",
+      fields: [
+        { name: "user", type: "User", args: [{ name: "id", type: "ID!" }] },
+        { name: "users", type: "[User!]!", args: [] },
+        { name: "search", type: "[SearchResult!]!", args: [{ name: "query", type: "String!" }] },
+      ],
+    });
+  });
+
+  test("returns object type fields with correct types", () => {
+    // JSON round-trip to erase union type discrimination (same as above)
+    const result = JSON.parse(JSON.stringify(introspectType(schema, "User")));
+    expect(result).toEqual({
+      name: "User",
+      kind: "OBJECT",
+      fields: [
+        { name: "id", type: "ID!", args: [] },
+        { name: "name", type: "String!", args: [] },
+        { name: "email", type: "String", args: [] },
+        { name: "posts", type: "[Post!]!", args: [] },
+      ],
+    });
+  });
+
+  test("returns enum type with values", () => {
+    const result = introspectType(schema, "UserRole");
+    expect(result).toEqual({
+      name: "UserRole",
+      kind: "ENUM",
+      values: [{ name: "ADMIN" }, { name: "USER" }, { name: "GUEST" }],
+    });
+  });
+
+  test("returns union type with members", () => {
+    const result = introspectType(schema, "SearchResult");
+    expect(result).toEqual({
+      name: "SearchResult",
+      kind: "UNION",
+      members: [{ name: "User" }, { name: "Post" }],
+    });
+  });
+
+  test("returns input type with fields", () => {
+    const result = introspectType(schema, "CreateUserInput");
+    expect(result).toEqual({
+      name: "CreateUserInput",
+      kind: "INPUT_OBJECT",
+      fields: [
+        { name: "name", type: "String!" },
+        { name: "email", type: "String" },
+      ],
+    });
+  });
+
+  test("returns scalar type", () => {
+    const result = introspectType(schema, "String");
+    expect(result).toEqual({ name: "String", kind: "SCALAR" });
+  });
+
+  test("returns undefined for unknown type", () => {
+    expect(introspectType(schema, "NonExistent")).toBeUndefined();
+  });
+});
+
+describe("listTypes", () => {
+  test("lists all user-defined types excluding introspection types", () => {
+    const result = listTypes(schema);
+    const typeNames = result.types.map((t) => t.name).sort();
+    // Should include user-defined types and built-in scalars, but NOT __Schema, __Type, etc.
+    expect(typeNames).toContain("Query");
+    expect(typeNames).toContain("User");
+    expect(typeNames).toContain("Post");
+    expect(typeNames).toContain("UserRole");
+    expect(typeNames).toContain("SearchResult");
+    expect(typeNames).toContain("CreateUserInput");
+    expect(typeNames).not.toContain("__Schema");
+    expect(typeNames).not.toContain("__Type");
+  });
+
+  test("includes correct kind for each type", () => {
+    const result = listTypes(schema);
+    const typeMap = new Map(result.types.map((t) => [t.name, t.kind]));
+    expect(typeMap.get("Query")).toBe("OBJECT");
+    expect(typeMap.get("UserRole")).toBe("ENUM");
+    expect(typeMap.get("SearchResult")).toBe("UNION");
+    expect(typeMap.get("CreateUserInput")).toBe("INPUT_OBJECT");
+    expect(typeMap.get("String")).toBe("SCALAR");
   });
 });
