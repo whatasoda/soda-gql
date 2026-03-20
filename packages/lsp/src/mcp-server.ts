@@ -124,9 +124,12 @@ export const startMcpServer = async (): Promise<void> => {
       const entry = ctx.schemaResolver.getSchema(targetSchemaName);
       if (!entry) return errorResult(`Schema '${targetSchemaName}' not found`);
 
-      const result = typeName ? introspectType(entry.schema, typeName) : listTypes(entry.schema);
-      if (!result) return errorResult(`Type '${typeName}' not found in schema`);
-      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      if (typeName) {
+        const result = introspectType(entry.schema, typeName);
+        if (!result) return errorResult(`Type '${typeName}' not found in schema`);
+        return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+      }
+      return { content: [{ type: "text", text: JSON.stringify(listTypes(entry.schema), null, 2) }] };
     },
   );
 
