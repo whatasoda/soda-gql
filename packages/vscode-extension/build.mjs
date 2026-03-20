@@ -30,22 +30,16 @@ async function buildExtension() {
 
 async function buildServer() {
   await build({
-    entryPoints: [join(__dirname, "..", "lsp", "src", "bin.ts")],
+    entryPoints: [join(__dirname, "..", "protocol-proxy", "src", "lsp-bin.ts")],
     bundle: true,
     outfile: join(__dirname, "dist", "server.js"),
-    external: ["@swc/core"],
+    external: ["@soda-gql/lsp"],
     format: "cjs",
     platform: "node",
     target: "node18",
     ...releaseOptions,
-    conditions: ["@soda-gql"],
-    // Suppress import.meta warnings from lazy @swc/core loaders in config/builder packages.
-    // These code paths use import.meta.url as fallback resolution base, which is undefined
-    // in CJS output. This is acceptable because the primary resolution paths (createRequire
-    // from configPath or __filename) handle the bundled context correctly.
-    logOverride: { "empty-import-meta": "silent" },
   });
-  console.log("✓ LSP server built successfully");
+  console.log("✓ LSP server proxy built successfully");
 }
 
 Promise.all([buildExtension(), buildServer()]).catch((err) => {
