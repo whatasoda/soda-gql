@@ -1,7 +1,7 @@
 {
   "name": "@soda-gql/protocol-proxy",
   "version": "0.14.1",
-  "description": "Thin proxy binaries for soda-gql LSP and MCP — resolves project-local @soda-gql/lsp at runtime",
+  "description": "Thin proxy binaries for soda-gql LSP — resolves project-local @soda-gql/lsp at runtime",
   "type": "module",
   "private": false,
   "license": "MIT",
@@ -23,8 +23,7 @@
   },
   "bin": {
     "soda-gql-lsp-proxy": "./dist/lsp-bin.cjs",
-    "soda-gql-lsp-cli": "./dist/cli-bin.cjs",
-    "soda-gql-mcp-proxy": "./dist/mcp-bin.cjs"
+    "soda-gql-lsp-cli": "./dist/cli-bin.cjs"
   },
   "dependencies": {
     "vscode-languageserver": "^9.0.1"
