@@ -6,7 +6,6 @@ export { createDocumentManager } from "./document-manager";
 export type { LspError, LspErrorCode, LspResult } from "./errors";
 export { lspErrors } from "./errors";
 export { preprocessFragmentArgs } from "./fragment-args-preprocessor";
-export { startMcpServer } from "./mcp-server";
 export type { PositionMapper } from "./position-mapping";
 export { createPositionMapper } from "./position-mapping";
 export type { SchemaEntry, SchemaResolver } from "./schema-resolver";

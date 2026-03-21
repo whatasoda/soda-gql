@@ -165,15 +165,11 @@ const lspConfig: UserConfig = (() => {
       "vscode-languageserver/node",
       "vscode-languageserver-textdocument",
       "graphql-language-service",
-      "@modelcontextprotocol/sdk",
-      "@modelcontextprotocol/sdk/server/mcp.js",
-      "@modelcontextprotocol/sdk/server/stdio.js",
-      "zod",
     ],
   });
   return {
     ...base,
-    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts", "mcp-bin": "packages/lsp/src/mcp-bin.ts" },
+    entry: { ...base.entry, bin: "packages/lsp/src/bin.ts" },
     format: ["esm", "cjs"],
     platform: "node",
     target: "node18",
@@ -189,7 +185,6 @@ const protocolProxyConfig: UserConfig = {
   entry: {
     "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts",
     "cli-bin": "packages/protocol-proxy/src/cli-bin.ts",
-    "mcp-bin": "packages/protocol-proxy/src/mcp-bin.ts",
   },
   sourcemap: true,
   external: (id) => {
