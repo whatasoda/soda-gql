@@ -8,7 +8,7 @@ import {
   extractVariablesFromContent,
   introspectType,
   listTypes,
-} from "./mcp-server";
+} from "./cli-utils";
 
 describe("extractVariablesFromContent", () => {
   test("extracts simple variable declaration", () => {
