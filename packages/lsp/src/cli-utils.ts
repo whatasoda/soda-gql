@@ -1,5 +1,5 @@
 /**
- * Shared utility functions for CLI and MCP server.
+ * Shared utility functions for CLI.
  * @module
  */
 

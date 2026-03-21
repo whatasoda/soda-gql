@@ -1,5 +1,5 @@
 /**
- * Shared diagnostics collection logic used by both LSP server and MCP server.
+ * Shared diagnostics collection logic used by LSP server and CLI.
  * @module
  */
 

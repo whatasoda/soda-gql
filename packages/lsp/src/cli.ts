@@ -1,6 +1,6 @@
 /**
  * One-shot CLI runner: exposes soda-gql GraphQL intelligence as CLI subcommands.
- * Designed to replace MCP tools for Claude Code skills with a stable, daemon-free interface.
+ * Provides a stable, daemon-free interface for Claude Code skills.
  * @module
  */
 
