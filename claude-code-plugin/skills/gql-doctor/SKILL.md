@@ -2,7 +2,7 @@
 name: gql:doctor
 description: Run comprehensive diagnostics on soda-gql project
 user-invocable: true
-allowed-tools: Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(bun *), Bash(soda-gql-lsp-cli *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
 # GraphQL Doctor Skill
@@ -195,6 +195,50 @@ Error: Field 'userName' does not exist on type 'User'
 
 **Auto-fix offer:** If the error is a simple typo or field name mismatch, use AskUserQuestion: "Would you like me to fix this field name?"
 
+#### Extended Check 1.5: Per-file LSP Diagnostics
+
+> **Conditional:** Only run this check when `hasLsp: true` from detect-project output AND typegen reported errors for specific files.
+
+When typegen (Extended Check 1) reports errors referencing specific source files, run `soda-gql-lsp-cli diagnostics` on each affected file to get pinpoint field-level diagnostics with exact line and column locations.
+
+**For single-schema projects:**
+```bash
+soda-gql-lsp-cli diagnostics <file>
+```
+
+**For multi-schema projects** (pass `--schema <name>` based on detect-project schemas):
+```bash
+soda-gql-lsp-cli diagnostics <file> --schema <schemaName>
+```
+
+**Output format** (JSON array):
+```json
+[
+  {
+    "message": "Field 'userName' does not exist on type 'User'",
+    "line": 10,
+    "column": 5,
+    "severity": "Error"
+  }
+]
+```
+
+Severity values: `"Error"`, `"Warning"`, `"Information"`, `"Hint"`
+
+**Presenting results:**
+- For each file with diagnostics, show the filename and each issue with its exact location:
+  ```
+  src/graphql/operations.ts
+    Line 10, Col 5 [Error]: Field 'userName' does not exist on type 'User'
+    Line 24, Col 3 [Warning]: Fragment spread may be unused
+  ```
+- This provides precise locations that complement typegen's project-wide error messages.
+
+**Graceful fallback:**
+- If `soda-gql-lsp-cli` binary is not found, skip this check silently — it is supplementary, not required.
+- If execution fails for any reason (non-zero exit, unexpected output), skip this check and continue with the remaining extended checks.
+- Do NOT treat binary unavailability or execution failure as a diagnostic error.
+
 #### Extended Check 2: TypeScript Type Check
 
 ```bash
@@ -267,6 +311,9 @@ Extended checks (3/3):
   ✓ type-check
   ✓ formatting
 
+LSP diagnostics: ✓ available (no issues found)
+  [shown when hasLsp: true and soda-gql-lsp-cli is available]
+
 Your soda-gql project is healthy!
 ```
 
@@ -284,6 +331,11 @@ Extended checks (2/3):
   ✓ template-validation
   ❌ type-check: 3 type errors found
   ✓ formatting
+
+LSP diagnostics: ❌ 2 issues found (see per-file details above)
+  [shown when hasLsp: true and soda-gql-lsp-cli is available]
+  [shown as "⚠️ not available" when binary is missing or execution failed]
+  [omitted when hasLsp: false]
 
 Recommended actions:
 1. Fix config structure (see details above)

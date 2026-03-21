@@ -92,15 +92,6 @@ cd packages/protocol-proxy && bun link
 
 3. Install the plugin via `/plugin` in Claude Code, then restart.
 
-### MCP Server (Claude Code Tools)
-
-In addition to the LSP server, soda-gql provides an MCP server that exposes GraphQL intelligence as MCP tools for Claude Code. This bypasses the LSP multi-server limitation where TypeScript LSP takes priority.
-
-Available MCP tools:
-- **`soda-gql-symbols`** — List fragments and operations in a file with type information
-
-The MCP server is configured in the plugin via `claude-code-plugin/.mcp.json` and uses the `soda-gql-mcp-proxy` binary from `@soda-gql/protocol-proxy`.
-
 ### Coexistence with TypeScript LSP
 
 Both soda-gql LSP and the TypeScript LSP plugin can be active simultaneously on `.ts`/`.tsx` files. The TypeScript LSP provides type checking, while soda-gql LSP provides GraphQL-specific intelligence within tagged templates and callback builders.

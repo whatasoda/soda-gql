@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "soda-gql": {
-      "command": "soda-gql-mcp-proxy",
-      "args": []
-    }
-  }
-}

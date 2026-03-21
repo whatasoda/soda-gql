@@ -2,7 +2,7 @@
 /**
  * CLI proxy binary: resolves project-local @soda-gql/lsp and runs its CLI.
  *
- * One-shot alternative to the MCP server — exposes the same GraphQL intelligence
+ * One-shot CLI — exposes GraphQL intelligence
  * (diagnostics, schema introspection, symbols) as CLI subcommands.
  * @module
  */

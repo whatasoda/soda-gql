@@ -1,6 +1,6 @@
 /**
  * One-shot CLI runner: exposes soda-gql GraphQL intelligence as CLI subcommands.
- * Designed to replace MCP tools for Claude Code skills with a stable, daemon-free interface.
+ * Provides a stable, daemon-free interface for Claude Code skills.
  * @module
  */
 
@@ -8,9 +8,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { resolveEntryPaths } from "@soda-gql/builder";
 import { findAllConfigFiles } from "@soda-gql/config";
+import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./cli-utils";
 import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
-import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./mcp-server";
 
 interface CliArgs {
   readonly subcommand: "diagnostics" | "schema" | "symbols";

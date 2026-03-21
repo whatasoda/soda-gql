@@ -35,8 +35,7 @@
     "node": ">=18"
   },
   "bin": {
-    "soda-gql-lsp": "./dist/bin.cjs",
-    "soda-gql-mcp": "./dist/mcp-bin.cjs"
+    "soda-gql-lsp": "./dist/bin.cjs"
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -64,8 +63,6 @@
     "typescript": "^5.0.0",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11",
-    "@modelcontextprotocol/sdk": "^1.27.1",
-    "vscode-languageserver-types": "^3.17.1",
-    "zod": "^3.25.0"
+    "vscode-languageserver-types": "^3.17.1"
   }
 }
