@@ -48,24 +48,27 @@ export const parseCliArgs = (args: readonly string[]): CliArgs | undefined => {
 
   let i = 1;
   // Collect positional arg first (before any flags)
-  if (i < args.length && !args[i]!.startsWith("--")) {
+  const firstArg = args[i];
+  if (firstArg !== undefined && !firstArg.startsWith("--")) {
     if (subcommand === "schema") {
-      typeName = args[i];
+      typeName = firstArg;
     } else {
-      filePath = resolve(args[i]!);
+      filePath = resolve(firstArg);
     }
     i++;
   }
 
   // Collect flags
   for (; i < args.length; i++) {
-    const arg = args[i]!;
+    const arg = args[i];
+    if (arg === undefined) continue;
     if (arg === "--workspace") {
       workspace = true;
     } else if (arg === "--schema" && i + 1 < args.length) {
       schemaName = args[++i];
     } else if (arg === "--config" && i + 1 < args.length) {
-      configPath = resolve(args[++i]!);
+      const nextArg = args[++i];
+      if (nextArg !== undefined) configPath = resolve(nextArg);
     }
   }
 
@@ -103,7 +106,9 @@ const indexWorkspace = (registry: ConfigRegistry): void => {
       try {
         const source = readFileSync(fp, "utf-8");
         ctx.documentManager.update(fp, 1, source);
-      } catch { /* skip unreadable files */ }
+      } catch {
+        /* skip unreadable files */
+      }
     }
   }
 };
@@ -125,8 +130,7 @@ const readSource = (filePath: string): string => {
 };
 
 const handleDiagnostics = (registry: ConfigRegistry, args: CliArgs): void => {
-  if (!args.filePath) return fail("diagnostics requires a file path argument");
-
+  if (!args.filePath) fail("diagnostics requires a file path argument");
   const ctx = resolveContext(registry, args.filePath);
   const source = readSource(args.filePath);
   const state = ctx.documentManager.update(args.filePath, 1, source);
@@ -136,14 +140,14 @@ const handleDiagnostics = (registry: ConfigRegistry, args: CliArgs): void => {
 const handleSchema = (registry: ConfigRegistry, args: CliArgs): void => {
   const ctx = resolveContext(registry, args.configPath);
   const targetSchemaName = args.schemaName ?? ctx.schemaResolver.getSchemaNames()[0];
-  if (!targetSchemaName) return fail("No schema available");
+  if (!targetSchemaName) fail("No schema available");
 
   const entry = ctx.schemaResolver.getSchema(targetSchemaName);
-  if (!entry) return fail(`Schema '${targetSchemaName}' not found`);
+  if (!entry) fail(`Schema '${targetSchemaName}' not found`);
 
   if (args.typeName) {
     const result = introspectType(entry.schema, args.typeName);
-    if (!result) return fail(`Type '${args.typeName}' not found in schema`);
+    if (!result) fail(`Type '${args.typeName}' not found in schema`);
     output(result);
   } else {
     output(listTypes(entry.schema));
@@ -151,15 +155,15 @@ const handleSchema = (registry: ConfigRegistry, args: CliArgs): void => {
 };
 
 const handleSymbols = (registry: ConfigRegistry, args: CliArgs): void => {
-  if (!args.filePath) return fail("symbols requires a file path argument");
+  if (!args.filePath) fail("symbols requires a file path argument");
 
   const ctx = resolveContext(registry, args.filePath);
   const source = readSource(args.filePath);
   const state = ctx.documentManager.update(args.filePath, 1, source);
   const symbols = state.templates
-    .filter((t) => t.elementName)
+    .filter((t): t is typeof t & { elementName: string } => t.elementName !== undefined)
     .map((t) => ({
-      name: t.elementName!,
+      name: t.elementName,
       kind: t.kind,
       typeName: t.typeName,
       schemaName: t.schemaName,
