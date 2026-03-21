@@ -208,7 +208,7 @@ soda-gql-lsp-cli diagnostics <file>
 
 **For multi-schema projects** (pass `--schema <name>` based on detect-project schemas):
 ```bash
-soda-gql-lsp-cli diagnostics --schema <schemaName> <file>
+soda-gql-lsp-cli diagnostics <file> --schema <schemaName>
 ```
 
 **Output format** (JSON array):
