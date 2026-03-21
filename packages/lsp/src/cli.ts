@@ -10,7 +10,7 @@ import { resolveEntryPaths } from "@soda-gql/builder";
 import { findAllConfigFiles } from "@soda-gql/config";
 import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
-import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./mcp-server";
+import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./cli-utils";
 
 interface CliArgs {
   readonly subcommand: "diagnostics" | "schema" | "symbols";
