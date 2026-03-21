@@ -79,20 +79,22 @@ const output = (data: unknown): void => {
   process.stdout.write(`${JSON.stringify(data, null, 2)}\n`);
 };
 
-const fail = (message: string): never => {
+class CliError extends Error {}
+
+const cliError = (message: string): CliError => {
   process.stderr.write(`${JSON.stringify({ error: message })}\n`);
-  process.exit(1);
+  return new CliError(message);
 };
 
 const initRegistry = (): ConfigRegistry => {
   const cwd = process.cwd();
   const configPaths = findAllConfigFiles(cwd);
   if (configPaths.length === 0) {
-    return fail(`No soda-gql config found in ${cwd}`);
+    throw cliError(`No soda-gql config found in ${cwd}`);
   }
   const result = createConfigRegistry(configPaths);
   if (result.isErr()) {
-    return fail(result.error.message);
+    throw cliError(result.error.message);
   }
   return result.value;
 };
@@ -116,7 +118,7 @@ const indexWorkspace = (registry: ConfigRegistry): void => {
 const resolveContext = (registry: ConfigRegistry, filePath?: string): ConfigContext => {
   const ctx = filePath ? registry.resolveForUri(filePath) : registry.getAllContexts()[0];
   if (!ctx) {
-    return fail(filePath ? `No soda-gql config covers ${filePath}` : "No soda-gql config context found");
+    throw cliError(filePath ? `No soda-gql config covers ${filePath}` : "No soda-gql config context found");
   }
   return ctx;
 };
@@ -125,29 +127,35 @@ const readSource = (filePath: string): string => {
   try {
     return readFileSync(filePath, "utf-8");
   } catch (e) {
-    return fail(`Failed to read file: ${e instanceof Error ? e.message : String(e)}`);
+    throw cliError(`Failed to read file: ${e instanceof Error ? e.message : String(e)}`);
   }
 };
 
+const requireFilePath = (args: CliArgs, subcommand: string): string => {
+  const { filePath } = args;
+  if (!filePath) throw cliError(`${subcommand} requires a file path argument`);
+  return filePath;
+};
+
 const handleDiagnostics = (registry: ConfigRegistry, args: CliArgs): void => {
-  if (!args.filePath) fail("diagnostics requires a file path argument");
-  const ctx = resolveContext(registry, args.filePath);
-  const source = readSource(args.filePath);
-  const state = ctx.documentManager.update(args.filePath, 1, source);
+  const filePath = requireFilePath(args, "diagnostics");
+  const ctx = resolveContext(registry, filePath);
+  const source = readSource(filePath);
+  const state = ctx.documentManager.update(filePath, 1, source);
   output(collectDiagnostics(state, ctx));
 };
 
 const handleSchema = (registry: ConfigRegistry, args: CliArgs): void => {
   const ctx = resolveContext(registry, args.configPath);
   const targetSchemaName = args.schemaName ?? ctx.schemaResolver.getSchemaNames()[0];
-  if (!targetSchemaName) fail("No schema available");
+  if (!targetSchemaName) throw cliError("No schema available");
 
   const entry = ctx.schemaResolver.getSchema(targetSchemaName);
-  if (!entry) fail(`Schema '${targetSchemaName}' not found`);
+  if (!entry) throw cliError(`Schema '${targetSchemaName}' not found`);
 
   if (args.typeName) {
     const result = introspectType(entry.schema, args.typeName);
-    if (!result) fail(`Type '${args.typeName}' not found in schema`);
+    if (!result) throw cliError(`Type '${args.typeName}' not found in schema`);
     output(result);
   } else {
     output(listTypes(entry.schema));
@@ -155,11 +163,10 @@ const handleSchema = (registry: ConfigRegistry, args: CliArgs): void => {
 };
 
 const handleSymbols = (registry: ConfigRegistry, args: CliArgs): void => {
-  if (!args.filePath) fail("symbols requires a file path argument");
-
-  const ctx = resolveContext(registry, args.filePath);
-  const source = readSource(args.filePath);
-  const state = ctx.documentManager.update(args.filePath, 1, source);
+  const filePath = requireFilePath(args, "symbols");
+  const ctx = resolveContext(registry, filePath);
+  const source = readSource(filePath);
+  const state = ctx.documentManager.update(filePath, 1, source);
   const symbols = state.templates
     .filter((t): t is typeof t & { elementName: string } => t.elementName !== undefined)
     .map((t) => ({
@@ -181,20 +188,25 @@ export const runLspCli = async (args: readonly string[]): Promise<void> => {
     process.exit(args.includes("--help") ? 0 : 1);
   }
 
-  const registry = initRegistry();
-  if (parsed.workspace) {
-    indexWorkspace(registry);
-  }
+  try {
+    const registry = initRegistry();
+    if (parsed.workspace) {
+      indexWorkspace(registry);
+    }
 
-  switch (parsed.subcommand) {
-    case "diagnostics":
-      handleDiagnostics(registry, parsed);
-      break;
-    case "schema":
-      handleSchema(registry, parsed);
-      break;
-    case "symbols":
-      handleSymbols(registry, parsed);
-      break;
+    switch (parsed.subcommand) {
+      case "diagnostics":
+        handleDiagnostics(registry, parsed);
+        break;
+      case "schema":
+        handleSchema(registry, parsed);
+        break;
+      case "symbols":
+        handleSymbols(registry, parsed);
+        break;
+    }
+  } catch (e) {
+    if (e instanceof CliError) process.exit(1);
+    throw e;
   }
 };
