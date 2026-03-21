@@ -8,9 +8,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { resolveEntryPaths } from "@soda-gql/builder";
 import { findAllConfigFiles } from "@soda-gql/config";
+import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./cli-utils";
 import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
-import { collectDiagnostics, computeLineFromOffset, extractVariablesFromContent, introspectType, listTypes } from "./cli-utils";
 
 interface CliArgs {
   readonly subcommand: "diagnostics" | "schema" | "symbols";
