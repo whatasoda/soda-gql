@@ -3,7 +3,7 @@ name: gql:scaffold
 description: Generate GraphQL fragments and operations with type-safe syntax
 user-invocable: true
 argument-hint: [description of what to query]
-allowed-tools: Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(bun *), Bash(soda-gql-lsp-cli *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
 # GraphQL Scaffold Skill
@@ -34,7 +34,44 @@ Exit the skill.
 
 ### 3. Read Schema Files
 
-Use the Read tool to read schema files from the detected paths:
+Use lsp-cli when available for structured JSON type information, or fall back to reading raw schema files.
+
+#### Primary path: lsp-cli (when `hasLsp: true`)
+
+First, verify the binary is available:
+
+```bash
+soda-gql-lsp-cli schema
+```
+
+If the command succeeds, it returns the type list as JSON:
+```json
+{ "types": [{ "name": "string", "kind": "string" }] }
+```
+
+Then fetch details for each relevant type:
+
+```bash
+soda-gql-lsp-cli schema <TypeName>
+```
+
+**Multi-schema projects**: When the detect-project output `schemas` has multiple keys, pass `--schema <schemaName>` to every lsp-cli command:
+
+```bash
+soda-gql-lsp-cli schema --schema <schemaName>
+soda-gql-lsp-cli schema <TypeName> --schema <schemaName>
+```
+
+**Type detail JSON output shapes by kind:**
+
+- **OBJECT / INTERFACE**: `{ "name": "string", "kind": "string", "fields": [{ "name": "string", "type": "string", "args": [{ "name": "string", "type": "string" }] }] }`
+- **UNION**: `{ "name": "string", "kind": "UNION", "members": [{ "name": "string" }] }`
+- **ENUM**: `{ "name": "string", "kind": "ENUM", "values": [{ "name": "string" }] }`
+- **INPUT_OBJECT**: `{ "name": "string", "kind": "INPUT_OBJECT", "fields": [{ "name": "string", "type": "string" }] }`
+
+#### Fallback path: Read tool (when `hasLsp: false` OR binary fails)
+
+If `hasLsp: false` or `soda-gql-lsp-cli schema` fails (binary not found, non-zero exit, etc.), fall back to reading the raw schema files directly:
 
 ```bash
 # For each schema file in schemas object
@@ -400,6 +437,24 @@ Write <file-path> <generated-code>
 ### 12. Validate Generated Code
 
 Run validation to ensure the generated code is correct:
+
+**Step 0: Run lsp-cli diagnostics (when available)**
+
+If `soda-gql-lsp-cli` is available (verified successfully in Step 3), run diagnostics on the generated file before typegen:
+
+```bash
+soda-gql-lsp-cli diagnostics <generated-file-absolute-path>
+```
+
+The output is a JSON array of diagnostic objects:
+```json
+[{ "message": "string", "line": "number", "column": "number", "severity": "string" }]
+```
+
+- An empty array (`[]`) means no issues — proceed to Step 1.
+- Items with `severity: "Error"` indicate real problems — treat these as validation failures and proceed to Step 13's fix loop.
+- Items with other severity levels (e.g., `"Warning"`, `"Hint"`) can be noted but do not block validation.
+- If `soda-gql-lsp-cli` is not available, skip this sub-step gracefully and proceed to Step 1.
 
 **Step 1: Run typegen**
 ```bash
