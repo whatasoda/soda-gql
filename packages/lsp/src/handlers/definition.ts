@@ -4,7 +4,7 @@
  */
 
 import type { DocumentNode, GraphQLSchema, NamedTypeNode, TypeNode } from "graphql";
-import { Kind, getNamedType, parse, visit } from "graphql";
+import { getNamedType, Kind, parse, visit } from "graphql";
 import {
   getContextAtPosition,
   getDefinitionQueryResultForField,

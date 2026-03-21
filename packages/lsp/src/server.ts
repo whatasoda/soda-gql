@@ -5,6 +5,7 @@
 
 import { fileURLToPath } from "node:url";
 import { findAllConfigFiles, findConfigFile } from "@soda-gql/config";
+import type { GraphQLSchema } from "graphql";
 import {
   type Connection,
   createConnection,
@@ -22,15 +23,14 @@ import type { ConfigContext, ConfigRegistry } from "./config-registry";
 import { createConfigRegistry } from "./config-registry";
 import { collectRawDiagnostics } from "./diagnostics-collector";
 import { lspErrors } from "./errors";
-import type { GraphQLSchema } from "graphql";
 import { resolveFieldTree, type TypedFieldTree } from "./field-tree-resolver";
 import { handleCodeAction } from "./handlers/code-action";
 import { handleCompletion } from "./handlers/completion";
 import { handleDefinition, resolveTypeNameToSchemaDefinition } from "./handlers/definition";
 import { handleDocumentSymbol } from "./handlers/document-symbol";
 import { handleFieldTreeCompletion } from "./handlers/field-tree-completion";
-import { handleFieldTreeHover } from "./handlers/field-tree-hover";
 import { handleFieldTreeDefinition } from "./handlers/field-tree-definition";
+import { handleFieldTreeHover } from "./handlers/field-tree-hover";
 import { handleFormatting } from "./handlers/formatting";
 import { handleHover } from "./handlers/hover";
 import { handleReferences } from "./handlers/references";

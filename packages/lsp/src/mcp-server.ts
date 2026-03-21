@@ -53,7 +53,9 @@ export const startMcpServer = async (): Promise<void> => {
         try {
           const source = readFileSync(filePath, "utf-8");
           ctx.documentManager.update(filePath, 1, source);
-        } catch { /* skip unreadable files */ }
+        } catch {
+          /* skip unreadable files */
+        }
       }
     }
   };
@@ -112,7 +114,11 @@ export const startMcpServer = async (): Promise<void> => {
       typeName,
       schemaName,
       filePath,
-    }: { typeName?: string; schemaName?: string; filePath?: string }): Promise<McpToolResult> => {
+    }: {
+      typeName?: string;
+      schemaName?: string;
+      filePath?: string;
+    }): Promise<McpToolResult> => {
       const regResult = ensureInitialized();
       if (regResult.isErr()) return errorResult(regResult.error.message);
 

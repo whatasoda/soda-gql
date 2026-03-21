@@ -3,12 +3,7 @@ import type { TypedFieldNode, TypedFieldTree } from "../field-tree-resolver";
 import { handleFieldTreeHover } from "./field-tree-hover";
 
 // Helper: build a TypedFieldNode
-const makeNode = (
-  fieldName: string,
-  parentTypeName: string,
-  fieldTypeName: string | null,
-  start: number,
-): TypedFieldNode => ({
+const makeNode = (fieldName: string, parentTypeName: string, fieldTypeName: string | null, start: number): TypedFieldNode => ({
   fieldName,
   fieldNameSpan: { start, end: start + fieldName.length },
   callSpan: { start, end: start + fieldName.length + 10 },

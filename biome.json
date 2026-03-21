@@ -55,6 +55,7 @@
       "!**/node_modules/**/*",
       "!**/graphql-system/**/*",
       "!**/tests/.tmp/**/*",
+      "!**/.next/**/*",
       "!**/.cache/**/*",
       "!**/*.generated.ts",
       "!packages/swc/src/native/**/*",

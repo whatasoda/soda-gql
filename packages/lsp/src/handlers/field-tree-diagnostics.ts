@@ -4,7 +4,7 @@
  * @module
  */
 
-import { DiagnosticSeverity, type Diagnostic } from "vscode-languageserver-types";
+import { type Diagnostic, DiagnosticSeverity } from "vscode-languageserver-types";
 import type { TypedFieldNested, TypedFieldNode, TypedFieldTree } from "../field-tree-resolver";
 import { computeLineOffsets, offsetToPosition } from "../position-mapping";
 
