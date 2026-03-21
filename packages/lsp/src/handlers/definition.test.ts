@@ -530,7 +530,7 @@ describe("handleDefinition — inline fragment type condition navigation", () =>
   const schemaFiles: SchemaFileInfo[] = [{ filePath: schemaPath, content: schemaSource }];
 
   test("resolves inline fragment type condition to schema definition", async () => {
-    const content = "{ search(query: \"test\") { ... on User { id name } } }";
+    const content = '{ search(query: "test") { ... on User { id name } } }';
     const tsSource = `import { gql } from "@/graphql-system";\n\ngql.default(({ query }) => query("Search")\`${content}\`);`;
     const contentStart = tsSource.indexOf(content);
 

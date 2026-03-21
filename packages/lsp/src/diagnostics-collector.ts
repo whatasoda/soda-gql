@@ -6,8 +6,8 @@
 import type { Diagnostic } from "vscode-languageserver-types";
 import type { ConfigContext } from "./config-registry";
 import { resolveFieldTree } from "./field-tree-resolver";
-import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
 import { computeTemplateDiagnostics } from "./handlers/diagnostics";
+import { computeFieldTreeDiagnostics } from "./handlers/field-tree-diagnostics";
 import type { DocumentState } from "./types";
 
 /** Collect all diagnostics (template + field tree) for a document state. */
@@ -17,12 +17,8 @@ export const collectRawDiagnostics = (state: DocumentState, ctx: ConfigContext):
     if (!entry) {
       return [];
     }
-    const externalFragments = ctx.documentManager
-      .getExternalFragments(state.uri, template.schemaName)
-      .map((f) => f.definition);
-    return [
-      ...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments }),
-    ];
+    const externalFragments = ctx.documentManager.getExternalFragments(state.uri, template.schemaName).map((f) => f.definition);
+    return [...computeTemplateDiagnostics({ template, schema: entry.schema, tsSource: state.source, externalFragments })];
   });
 
   const fieldTreeDiagnostics = state.fieldTrees.flatMap((tree) => {

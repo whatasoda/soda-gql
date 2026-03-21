@@ -6,8 +6,8 @@
 import { pathToFileURL } from "node:url";
 import type { FragmentSpreadNode, TypeDefinitionNode } from "graphql";
 import { isTypeDefinitionNode, parse, visit } from "graphql";
-import type { Location } from "vscode-languageserver-types";
 import type { ObjectTypeInfo } from "graphql-language-service";
+import type { Location } from "vscode-languageserver-types";
 import { computeLineOffsets, createPositionMapper, offsetToPosition, type Position } from "../position-mapping";
 import type { SchemaFileInfo } from "../schema-resolver";
 import type { FragmentSpreadLocation, IndexedFragment } from "../types";
@@ -194,10 +194,7 @@ export const computeSpreadLocationRanges = (spreadLocations: readonly FragmentSp
  * Resolve a directive name to its definition in schema files.
  * Parses each schema file and finds DirectiveDefinitionNode matching the name.
  */
-export const resolveDirectiveDefinition = (
-  directiveName: string,
-  schemaFiles: readonly SchemaFileInfo[],
-): Location[] => {
+export const resolveDirectiveDefinition = (directiveName: string, schemaFiles: readonly SchemaFileInfo[]): Location[] => {
   const locations: Location[] = [];
   for (const file of schemaFiles) {
     try {
