@@ -23,6 +23,7 @@
   },
   "bin": {
     "soda-gql-lsp-proxy": "./dist/lsp-bin.cjs",
+    "soda-gql-lsp-cli": "./dist/cli-bin.cjs",
     "soda-gql-mcp-proxy": "./dist/mcp-bin.cjs"
   },
   "dependencies": {
