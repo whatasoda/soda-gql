@@ -2,7 +2,7 @@
 name: gql:codegen
 description: Generate GraphQL system from schema files
 user-invocable: true
-allowed-tools: Bash(bun *), Read, Grep, Glob, AskUserQuestion
+allowed-tools: Bash(bun *), Read, Write, Grep, Glob, AskUserQuestion
 ---
 
 # GraphQL Codegen Skill

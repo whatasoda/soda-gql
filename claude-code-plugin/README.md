@@ -112,6 +112,28 @@ Runs comprehensive diagnostics on your soda-gql project and offers automated fix
 /gql:doctor
 ```
 
+### `/gql:inspect` - Inspect GraphQL Fragments and Operations
+
+Analyzes GraphQL fragments and operations in your soda-gql project using the `soda-gql-lsp-cli` tool.
+
+**What it does:**
+- Lists all GraphQL symbols (fragments, operations) in a file with their types and line numbers
+- Runs LSP diagnostics to detect field errors, type mismatches, and unused fragments
+- Fetches schema type information for context
+- Supports file path, symbol name, or interactive selection as input
+
+**When to use:**
+- Exploring what GraphQL definitions exist in a file
+- Checking for errors in specific files
+- Looking up schema type details
+- Understanding fragment/operation structure
+
+**Example:**
+```
+/gql:inspect src/graphql/fragments.ts
+/gql:inspect UserFragment
+```
+
 ### `/gql:guide` - API Documentation and Examples
 
 Provides topic-based guidance and code examples for soda-gql features.
@@ -254,7 +276,10 @@ claude-code-plugin/
     ├── gql-doctor/
     │   └── SKILL.md         # Doctor skill definition
     ├── gql-guide/
-    │   └── SKILL.md         # Guide skill definition
+    │   ├── SKILL.md         # Guide skill definition (routing stub)
+    │   └── topics/          # Per-topic guide content
+    ├── gql-inspect/
+    │   └── SKILL.md         # Inspect skill definition
     └── gql-scaffold/
         └── SKILL.md         # Scaffold skill definition
 ```
