@@ -184,19 +184,6 @@ const result = Bun.spawnSync({
 - Check config file syntax: `bun run soda-gql doctor`
 - See [Getting Started](../README.md#quick-start) for initial setup
 
-### `validate-templates.ts` fails with import errors
-
-**Possible causes:**
-1. LSP package (`@soda-gql/lsp`) not installed
-2. Running from wrong directory
-3. Config file not found
-
-**Solutions:**
-- The script falls back to CLI validation when LSP is unavailable
-- Ensure you're running from your project root
-- Run `bun install` to install all dependencies
-- Check CLI fallback output for detailed error messages
-
 ### Skills don't appear in Claude Code
 
 **Possible causes:**
@@ -260,8 +247,7 @@ claude-code-plugin/
 │   └── plugin.json          # Plugin metadata
 ├── package.json             # Plugin package.json
 ├── scripts/
-│   ├── detect-project.ts    # Project detection script
-│   └── validate-templates.ts # LSP-based template validation
+│   └── detect-project.ts    # Project detection script
 └── skills/
     ├── gql-codegen/
     │   └── SKILL.md         # Codegen skill definition
