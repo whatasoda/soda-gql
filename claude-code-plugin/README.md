@@ -112,6 +112,28 @@ Runs comprehensive diagnostics on your soda-gql project and offers automated fix
 /gql:doctor
 ```
 
+### `/gql:inspect` - Inspect GraphQL Fragments and Operations
+
+Analyzes GraphQL fragments and operations in your soda-gql project using the `soda-gql-lsp-cli` tool.
+
+**What it does:**
+- Lists all GraphQL symbols (fragments, operations) in a file with their types and line numbers
+- Runs LSP diagnostics to detect field errors, type mismatches, and unused fragments
+- Fetches schema type information for context
+- Supports file path, symbol name, or interactive selection as input
+
+**When to use:**
+- Exploring what GraphQL definitions exist in a file
+- Checking for errors in specific files
+- Looking up schema type details
+- Understanding fragment/operation structure
+
+**Example:**
+```
+/gql:inspect src/graphql/fragments.ts
+/gql:inspect UserFragment
+```
+
 ### `/gql:guide` - API Documentation and Examples
 
 Provides topic-based guidance and code examples for soda-gql features.
@@ -184,19 +206,6 @@ const result = Bun.spawnSync({
 - Check config file syntax: `bun run soda-gql doctor`
 - See [Getting Started](../README.md#quick-start) for initial setup
 
-### `validate-templates.ts` fails with import errors
-
-**Possible causes:**
-1. LSP package (`@soda-gql/lsp`) not installed
-2. Running from wrong directory
-3. Config file not found
-
-**Solutions:**
-- The script falls back to CLI validation when LSP is unavailable
-- Ensure you're running from your project root
-- Run `bun install` to install all dependencies
-- Check CLI fallback output for detailed error messages
-
 ### Skills don't appear in Claude Code
 
 **Possible causes:**
@@ -260,15 +269,17 @@ claude-code-plugin/
 │   └── plugin.json          # Plugin metadata
 ├── package.json             # Plugin package.json
 ├── scripts/
-│   ├── detect-project.ts    # Project detection script
-│   └── validate-templates.ts # LSP-based template validation
+│   └── detect-project.ts    # Project detection script
 └── skills/
     ├── gql-codegen/
     │   └── SKILL.md         # Codegen skill definition
     ├── gql-doctor/
     │   └── SKILL.md         # Doctor skill definition
     ├── gql-guide/
-    │   └── SKILL.md         # Guide skill definition
+    │   ├── SKILL.md         # Guide skill definition (routing stub)
+    │   └── topics/          # Per-topic guide content
+    ├── gql-inspect/
+    │   └── SKILL.md         # Inspect skill definition
     └── gql-scaffold/
         └── SKILL.md         # Scaffold skill definition
 ```
