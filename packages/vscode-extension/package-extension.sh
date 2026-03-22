@@ -14,4 +14,4 @@ cd "$SCRIPT_DIR"
 SODA_GQL_RELEASE=1 node build.mjs
 
 # Package VSIX
-bunx vsce package --no-dependencies "$@"
+bunx vsce package --no-dependencies --pre-release "$@"

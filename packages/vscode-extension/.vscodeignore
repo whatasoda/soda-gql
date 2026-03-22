@@ -17,4 +17,4 @@ test/
 *.test.ts
 
 # Documentation
-README.md
+# README.md is included for VS Code Marketplace listing

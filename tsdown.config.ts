@@ -183,6 +183,7 @@ const protocolProxyConfig: UserConfig = {
   name: "@soda-gql/protocol-proxy",
   outDir: "packages/protocol-proxy/dist",
   entry: {
+    index: "packages/protocol-proxy/src/index.ts",
     "lsp-bin": "packages/protocol-proxy/src/lsp-bin.ts",
     "cli-bin": "packages/protocol-proxy/src/cli-bin.ts",
   },
