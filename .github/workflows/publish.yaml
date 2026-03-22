@@ -205,6 +205,23 @@ jobs:
             cd -
           done
 
+  publish-vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2
+        with:
+          bun-version-file: .bun-version
+
+      - run: bun install --frozen-lockfile
+
+      - name: Publish to VS Code Marketplace
+        working-directory: packages/vscode-extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: bunx vsce publish --no-dependencies --pre-release -p "$VSCE_PAT"
+
   notify-local-required:
     needs: check-publishable
     if: needs.check-publishable.outputs.can_publish == 'local'
