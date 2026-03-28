@@ -53,6 +53,12 @@ export default defineConfig({
             { text: "Prebuilt Types", link: "/guide/prebuilt-types" },
           ],
         },
+        {
+          text: "Developer Tools",
+          items: [
+            { text: "Claude Code Plugin", link: "/guide/claude-code" },
+          ],
+        },
       ],
       "/api/": [
         {

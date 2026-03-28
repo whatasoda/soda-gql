@@ -92,6 +92,19 @@ This enables a **development without typegen** workflow:
 
 See [LSP Workflow Guide](./docs/guides/lsp-workflow.md) for detailed setup and usage.
 
+### Claude Code Plugin
+
+AI-assisted GraphQL development with 5 specialized skills: code generation, scaffolding, diagnostics, inspection, and documentation.
+
+```bash
+claude plugin marketplace add whatasoda/soda-gql-skills
+claude plugin install soda-gql-skills@soda-gql-skills
+```
+
+Available skills: `/gql:codegen`, `/gql:scaffold`, `/gql:doctor`, `/gql:inspect`, `/gql:guide`
+
+See the [Claude Code Integration Guide](./website/docs/guide/claude-code.md) for details.
+
 ### Generated Files
 
 | File | Purpose | Version Control |
