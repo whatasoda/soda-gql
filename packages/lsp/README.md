@@ -74,7 +74,14 @@ npm install -g @soda-gql/protocol-proxy
 bun add -D @soda-gql/lsp
 ```
 
-3. The Claude Code plugin is defined in the project's `.claude-plugin/marketplace.json`. Install it via `/plugin` in Claude Code and restart the session.
+3. Install the Claude Code plugin:
+
+```bash
+claude plugin marketplace add soda-gql-skills --source github:whatasoda/soda-gql-skills
+claude plugin install soda-gql-skills@soda-gql-skills
+```
+
+Restart the Claude Code session to activate.
 
 ### Setup for monorepo contributors
 
@@ -90,7 +97,14 @@ bun run build
 cd packages/protocol-proxy && bun link
 ```
 
-3. Install the plugin via `/plugin` in Claude Code, then restart.
+3. Install the Claude Code plugin:
+
+```bash
+claude plugin marketplace add soda-gql-skills --source github:whatasoda/soda-gql-skills
+claude plugin install soda-gql-skills@soda-gql-skills
+```
+
+Restart the Claude Code session to activate.
 
 ### Coexistence with TypeScript LSP
 

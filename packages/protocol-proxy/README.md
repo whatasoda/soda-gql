@@ -24,10 +24,14 @@ bun add -D @soda-gql/lsp
 
 ## Claude Code Plugin
 
-The proxy binary is configured in the soda-gql Claude Code plugin:
-- LSP server via `.claude-plugin/marketplace.json`
+The proxy binary is configured in the soda-gql Claude Code plugin. Install via:
 
-After installing the plugin via `/plugin` in Claude Code, restart the session to activate.
+```bash
+claude plugin marketplace add soda-gql-skills --source github:whatasoda/soda-gql-skills
+claude plugin install soda-gql-skills@soda-gql-skills
+```
+
+Restart the Claude Code session to activate.
 
 ## Related Packages
 
