@@ -156,6 +156,27 @@ soda-gql requires a build plugin to transform your code. Choose the one that mat
 
 See the [Recipes](/recipes/) section for framework-specific setup guides.
 
+## Claude Code Plugin
+
+soda-gql has a [Claude Code](https://claude.com/claude-code) plugin with AI-assisted skills for GraphQL development.
+
+### Install the Plugin
+
+```bash
+claude plugin marketplace add whatasoda/soda-gql-skills
+claude plugin install soda-gql-skills@soda-gql-skills
+```
+
+Restart your Claude Code session after installation.
+
+### Key Skills
+
+- **`/gql:codegen`** — Generate GraphQL system from your schema. Use this after creating or modifying `schema.graphql`.
+- **`/gql:scaffold`** — Generate type-safe fragments and operations. Describe what you want to query and the plugin generates the code.
+- **`/gql:guide`** — Look up API documentation and examples by topic (e.g., `/gql:guide tagged-template`).
+
+See the [Claude Code Plugin guide](/guide/claude-code) for all available skills and detailed usage.
+
 ## Next Steps
 
 - Learn about [Fragments](/guide/fragments) and [Operations](/guide/operations) in detail
