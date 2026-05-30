@@ -11,6 +11,7 @@ import type { AnyVarRef } from "../types/type-foundation/var-ref";
 import { parseOutputField } from "../utils/deferred-specifier-parser";
 import { wrapByKey } from "../utils/wrap-by-key";
 import { appendToPath, getCurrentFieldPath, isListType, withFieldPath } from "./field-path-context";
+import { suggestSchemaObjectName } from "./schema-object-suggestion";
 
 // ============================================================================
 // Relocated builder contract types (type-erased from types/element/fields-builder.ts)
@@ -111,7 +112,9 @@ export const createFieldFactories = <TSchema extends AnyGraphqlSchema>(
 const createFieldFactoriesInner = (schema: AnyGraphqlSchema, typeName: string): FieldAccessorFunction => {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
-    throw new Error(`Type ${typeName} is not defined in schema objects`);
+    throw new Error(
+      `Type ${typeName} is not defined in schema objects.${suggestSchemaObjectName(typeName, Object.keys(schema.object))}`,
+    );
   }
 
   return (fieldName, fieldArgs, extras) => {

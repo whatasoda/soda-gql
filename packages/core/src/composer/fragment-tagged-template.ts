@@ -23,6 +23,7 @@ import { recordFragmentUsage } from "./fragment-usage-context";
 import { createVarAssignments } from "./input";
 import { mergeVariableDefinitions } from "./merge-variable-definitions";
 import type { FragmentTemplateMetadataOptions, TemplateResult } from "./operation-tagged-template";
+import { suggestSchemaObjectName } from "./schema-object-suggestion";
 import { varRefTools } from "./var-ref-tools";
 
 /** Tagged template function type for fragments. */
@@ -403,7 +404,9 @@ function extractASTValue(
 function resolveFieldTypeName(schema: AnyGraphqlSchema, typeName: string, fieldName: string): string {
   const typeDef = schema.object[typeName];
   if (!typeDef) {
-    throw new Error(`Type "${typeName}" is not defined in schema objects`);
+    throw new Error(
+      `Type "${typeName}" is not defined in schema objects.${suggestSchemaObjectName(typeName, Object.keys(schema.object))}`,
+    );
   }
   // Runtime duck-typing: codegen may emit string or { spec, arguments }
   const fieldDef = typeDef.fields[fieldName] as string | { spec: string } | undefined;
@@ -449,7 +452,9 @@ export function createFragmentTaggedTemplate<TSchema extends AnyGraphqlSchema>(s
   return (fragmentName: string, onType: string): FragmentTaggedTemplateFunction => {
     // Validate onType exists in schema at curried call time
     if (!(onType in schema.object)) {
-      throw new Error(`Type "${onType}" is not defined in schema objects`);
+      throw new Error(
+        `Type "${onType}" is not defined in schema objects.${suggestSchemaObjectName(onType, Object.keys(schema.object))}`,
+      );
     }
 
     return (
