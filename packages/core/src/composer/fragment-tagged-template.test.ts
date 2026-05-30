@@ -189,6 +189,12 @@ describe("createFragmentTaggedTemplate", () => {
       expect(() => fragment("Foo", "NonExistent")).toThrow('Type "NonExistent" is not defined in schema objects');
     });
 
+    it("suggests the correct-cased type name when only the casing is wrong", () => {
+      // Hasura table types are lowercase while action/custom output types are
+      // PascalCase, so hand-written parent types are easy to mis-case.
+      expect(() => fragment("Foo", "user")).toThrow('Type "user" is not defined in schema objects. Did you mean "User"?');
+    });
+
     it("throws when interpolated value is not a Fragment or callback", () => {
       const fn = createFragmentTaggedTemplate(minimalSchema);
       expect(() => (fn("Foo", "User") as any)(["part1", "part2"], "interpolated")).toThrow(
