@@ -6,6 +6,11 @@ on:
     paths:
       - "package.json"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only, without tagging or creating a release"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -16,7 +21,7 @@ jobs:
     outputs:
       should_release: ${{ steps.result.outputs.should_release }}
       version: ${{ steps.version.outputs.version }}
-      is_dry_run: ${{ github.event_name == 'workflow_dispatch' }}
+      is_dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -45,12 +50,14 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check if tag exists (push only)
-        if: github.event_name == 'push' && steps.version-check.outputs.changed == 'true'
+      - name: Check if tag exists
+        if: steps.version-check.outputs.changed == 'true' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
         id: tag
         run: |
           TAG="v${{ steps.version.outputs.version }}"
-          git fetch --tags
+          # The claude-code-plugin submodule is declared with an SSH URL, unreachable from CI.
+          # Recursing into it would abort the tag fetch.
+          git fetch --tags --no-recurse-submodules
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
@@ -60,10 +67,16 @@ jobs:
       - name: Determine if should release
         id: result
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            # workflow_dispatch always proceeds (dry-run mode)
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" == "true" ]; then
+            # Dry run builds every artifact but never tags or releases
             echo "should_release=true" >> $GITHUB_OUTPUT
-          elif [ "${{ steps.version-check.outputs.changed }}" == "true" ] && [ "${{ steps.tag.outputs.exists }}" != "true" ]; then
+          elif [ "${{ steps.tag.outputs.exists }}" == "true" ]; then
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              echo "::error::Tag v${{ steps.version.outputs.version }} already exists. Bump the version before releasing."
+              exit 1
+            fi
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ steps.version-check.outputs.changed }}" == "true" ]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
           else
             echo "should_release=false" >> $GITHUB_OUTPUT
