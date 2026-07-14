@@ -730,8 +730,11 @@ ${typeExports.join("\n")}`);
     // Build gql composer as a named variable for Context type extraction
     const gqlVarName = `gql_${name}`;
     if (adapterVar) {
+      // Type arguments are explicit because the options parameter is NoInfer<TAdapter>:
+      // without them TAdapter falls back to DefaultAdapter and adapter helpers are
+      // erased from the composer context type.
       schemaBlocks.push(
-        `const ${gqlVarName} = createGqlElementComposer(${fullSchemaVar}, { adapter: ${adapterVar}, directiveMethods: ${customDirectivesVar} });`,
+        `const ${gqlVarName} = createGqlElementComposer<typeof ${fullSchemaVar}, typeof ${customDirectivesVar}, typeof ${adapterVar}>(${fullSchemaVar}, { adapter: ${adapterVar}, directiveMethods: ${customDirectivesVar} });`,
       );
     } else {
       schemaBlocks.push(
@@ -1004,6 +1007,7 @@ export const generateIndexModule = (schemaNames: string[], _allFieldNames?: Read
   const prebuiltImports = schemaNames.map((name) => `PrebuiltTypes_${name}`).join(", ");
   const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
   const directiveImports = schemaNames.map((name) => `__directiveMethods_${name}`).join(", ");
+  const contextTypeImports = schemaNames.map((name) => `Context_${name}`).join(", ");
 
   const perSchemaTypes = schemaNames
     .map(
@@ -1057,7 +1061,11 @@ type GenericFieldAccessor_${name} = (fieldName: string, ...args: any[]) => {
 };
 type GenericFieldsBuilderTools_${name} = { readonly f: GenericFieldAccessor_${name}; readonly $: Readonly<Record<string, never>> };
 
-export type PrebuiltContext_${name} = {
+// Adapter helpers are whatever the composer context carries beyond the core members
+// replaced by the prebuilt-backed versions below (empty when no adapter is configured).
+type AdapterHelpers_${name} = Omit<Context_${name}, "fragment" | "query" | "mutation" | "subscription" | "define" | "extend" | "$dir" | "$colocate">;
+
+export type PrebuiltContext_${name} = AdapterHelpers_${name} & {
   readonly fragment: PrebuiltCurriedFragment_${name};
   readonly query: PrebuiltCurriedOperation_${name}<"query"> & {
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
@@ -1094,6 +1102,7 @@ export * from "./_internal";
 import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
+import type { ${contextTypeImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
 import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 ${perSchemaTypes}

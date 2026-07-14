@@ -8,6 +8,7 @@ export * from "./_internal";
 import { __gql_default, __gql_admin } from "./_internal";
 import type { Schema_default, Schema_admin } from "./_internal";
 import type { __directiveMethods_default, __directiveMethods_admin } from "./_internal";
+import type { Context_default, Context_admin } from "./_internal";
 import type { PrebuiltTypes_default, PrebuiltTypes_admin } from "./types.prebuilt";
 import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
 
@@ -60,7 +61,11 @@ type GenericFieldAccessor_default = (fieldName: string, ...args: any[]) => {
 };
 type GenericFieldsBuilderTools_default = { readonly f: GenericFieldAccessor_default; readonly $: Readonly<Record<string, never>> };
 
-export type PrebuiltContext_default = {
+// Adapter helpers are whatever the composer context carries beyond the core members
+// replaced by the prebuilt-backed versions below (empty when no adapter is configured).
+type AdapterHelpers_default = Omit<Context_default, "fragment" | "query" | "mutation" | "subscription" | "define" | "extend" | "$dir" | "$colocate">;
+
+export type PrebuiltContext_default = AdapterHelpers_default & {
   readonly fragment: PrebuiltCurriedFragment_default;
   readonly query: PrebuiltCurriedOperation_default<"query"> & {
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
@@ -131,7 +136,11 @@ type GenericFieldAccessor_admin = (fieldName: string, ...args: any[]) => {
 };
 type GenericFieldsBuilderTools_admin = { readonly f: GenericFieldAccessor_admin; readonly $: Readonly<Record<string, never>> };
 
-export type PrebuiltContext_admin = {
+// Adapter helpers are whatever the composer context carries beyond the core members
+// replaced by the prebuilt-backed versions below (empty when no adapter is configured).
+type AdapterHelpers_admin = Omit<Context_admin, "fragment" | "query" | "mutation" | "subscription" | "define" | "extend" | "$dir" | "$colocate">;
+
+export type PrebuiltContext_admin = AdapterHelpers_admin & {
   readonly fragment: PrebuiltCurriedFragment_admin;
   readonly query: PrebuiltCurriedOperation_admin<"query"> & {
     readonly compat: (operationName: string) => (strings: TemplateStringsArray, ...values: never[]) => GqlDefine<unknown>;
