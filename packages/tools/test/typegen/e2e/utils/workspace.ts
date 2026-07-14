@@ -38,6 +38,8 @@ export type CreateTestWorkspaceOptions = {
   readonly fixtureDir: string;
   /** Source files to copy from fixtures/sources/ to the workspace. */
   readonly sourceFiles: readonly string[];
+  /** Optional adapter fixture file (relative to fixtureDir) injected as inject.adapter. */
+  readonly adapterFixture?: string;
 };
 
 /**
@@ -51,7 +53,7 @@ export type CreateTestWorkspaceOptions = {
  * 5. Returns a config ready for typegen
  */
 export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): Promise<WorkspaceSetup> => {
-  const { fixtureDir, sourceFiles } = options;
+  const { fixtureDir, sourceFiles, adapterFixture } = options;
 
   // Create temp directory
   const tmpRoot = mkdtempSync(path.join(tmpdir(), "soda-gql-typegen-e2e-"));
@@ -66,6 +68,12 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
   cpSync(path.join(fixtureDir, "schema.graphql"), schemaPath);
   await fs.mkdir(scalarsDir, { recursive: true });
   cpSync(path.join(fixtureDir, "scalars.ts"), scalarsPath);
+
+  let adapterPath: string | undefined;
+  if (adapterFixture) {
+    adapterPath = path.join(scalarsDir, "adapter.ts");
+    cpSync(path.join(fixtureDir, adapterFixture), adapterPath);
+  }
 
   // Copy and rewrite source files
   const srcDir = path.join(workspaceRoot, "src");
@@ -83,7 +91,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
     schemas: {
       default: {
         schema: [schemaPath],
-        inject: { scalars: scalarsPath },
+        inject: { scalars: scalarsPath, ...(adapterPath ? { adapter: adapterPath } : {}) },
       },
     },
     outPath,
@@ -145,7 +153,7 @@ export const createTestWorkspace = async (options: CreateTestWorkspaceOptions): 
     schemas: {
       default: {
         schema: [schemaPath],
-        inject: { scalars: scalarsPath },
+        inject: { scalars: scalarsPath, ...(adapterPath ? { adapter: adapterPath } : {}) },
         defaultInputDepth: 3,
         inputDepthOverrides: {},
       },
