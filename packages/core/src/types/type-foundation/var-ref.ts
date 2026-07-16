@@ -9,6 +9,14 @@ export interface AnyVarRefBrand {
   readonly typeName: string;
   readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
+  /**
+   * Optional TypeScript payload type for the variable this VarRef stands for.
+   * When present, `$var` selector tools derive their proxy parameter type from it,
+   * so `getValueAt`/`getNameAt`/`getPath` selectors are checked against the real
+   * variable shape instead of an opaque `unknown`. Brands that do not carry a
+   * payload keep working — the selector proxy simply falls back to `unknown`.
+   */
+  readonly payload?: unknown;
 }
 
 /**
@@ -59,6 +67,40 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
     return varRef.inner;
   }
 }
+
+/**
+ * Extracts the brand of a VarRef type.
+ */
+export type VarRefBrandOf<TVarRef> = TVarRef extends VarRef<infer TBrand> ? TBrand : never;
+
+/**
+ * Extracts the TypeScript payload type carried by a VarRef's brand.
+ * Falls back to `unknown` for brands that do not declare a payload, which keeps
+ * selector callbacks permissive for VarRefs built without payload information.
+ */
+export type VarRefPayload<TVarRef> = VarRefBrandOf<TVarRef> extends { readonly payload: infer TPayload } ? TPayload : unknown;
+
+/**
+ * Builds a VarRef brand that carries `TPayload` as its TypeScript payload type.
+ * The GraphQL-facing fields (`typeName`, `kind`, `signature`) are intentionally
+ * generic: such VarRefs are consumed by `$var` inspection tools, not by argument
+ * assignment, so only the payload needs to be precise.
+ */
+export type VarRefFromPayload<TPayload> = VarRef<{
+  readonly typeName: string;
+  readonly kind: CreatableInputTypeKind;
+  readonly signature: unknown;
+  readonly payload: TPayload;
+}>;
+
+/**
+ * Maps a record of variable name -> TypeScript payload type into a record of
+ * VarRefs whose brands carry those payloads. Used to type the `$` tools object
+ * passed to metadata builder callbacks from generated per-operation variable types.
+ */
+export type VarRefsFromVarTypes<TVarTypes> = {
+  readonly [K in keyof TVarTypes]-?: VarRefFromPayload<TVarTypes[K]>;
+};
 
 /**
  * Creates a VarRef from a variable name.

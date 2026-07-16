@@ -965,15 +965,15 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
       }
     }
   }`({
-    metadata: ({ $ }: { $: { projectId: string; includeTeam: boolean } }) => ({
+    metadata: ({ $, $var }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $.projectId,
-      includesRelations: $.includeTeam,
-      cacheKey: `project:${$.projectId}:team=${$.includeTeam}`,
+      entityId: $var.getName($.projectId),
+      includesRelations: $var.getName($.includeTeam),
+      cacheKey: `project:${$var.getName($.projectId)}:team=${$var.getName($.includeTeam)}`,
       headers: {
         "X-Entity-Type": "Project",
-        "X-Entity-Id": $.projectId,
+        "X-Entity-Id": $var.getName($.projectId),
       },
     }),
   }),
@@ -993,7 +993,7 @@ export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+    metadata: ({ $, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "employee",
       entityId: $.employeeId,
@@ -1020,7 +1020,7 @@ export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query 
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+    metadata: ({ $, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "project",
       entityId: $.projectId,

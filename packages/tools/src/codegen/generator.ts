@@ -1049,10 +1049,23 @@ type PrebuiltCurriedFragment_${name} = <TKey extends string>(
 ) => ((options: { fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>)
   & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>);
 
+// Per-operation variable payload types, backing the metadata builder's typed \`$\`/\`$var\` tools.
+type ResolveVarTypes_${name}<TName extends string> =
+  TName extends keyof PrebuiltTypes_${name}["operations"]
+    ? PrebuiltTypes_${name}["operations"][TName]["varTypes"]
+    : Record<string, never>;
+
+// Trailing operation-builder options; \`TMetadata\` is inferred from a static value or the
+// builder callback's return, whose \`$\` is typed from the operation's variables.
+type PrebuiltOperationOptions_${name}<TName extends string, TMetadata> = {
+  readonly metadata?: TMetadata | MetadataBuilder<VarRefsFromVarTypes<ResolveVarTypes_${name}<TName>>, TMetadata>;
+  readonly transformDocument?: OperationDocumentTransformer<TMetadata>;
+};
+
 type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
   operationName: TName,
-) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
-  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
+) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions_${name}<TName, TMetadata>) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions_${name}<TName, TMetadata>) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
 
 // biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor — returns callable result for nested builders
 type GenericFieldAccessor_${name} = (fieldName: string, ...args: any[]) => {
@@ -1104,7 +1117,7 @@ import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
 import type { ${contextTypeImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
-import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine, MetadataBuilder, OperationMetadata, OperationDocumentTransformer, VarRefsFromVarTypes } from "@soda-gql/core";
 ${perSchemaTypes}
 
 export const gql = {

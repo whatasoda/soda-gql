@@ -1,6 +1,6 @@
 import type { DocumentNode } from "graphql";
 import type { ConstValue } from "../type-foundation/const-value";
-import type { AnyVarRef } from "../type-foundation/var-ref";
+import type { AnyVarRef, VarRefPayload } from "../type-foundation/var-ref";
 
 /**
  * Base metadata types that can be attached to operations.
@@ -23,12 +23,27 @@ export type VarRefTools = {
   readonly getName: (varRef: AnyVarRef) => string;
   /** Get const value from a nested-value VarRef */
   readonly getValue: (varRef: AnyVarRef) => ConstValue;
-  /** Get variable name at a specific path in a nested VarRef */
-  readonly getNameAt: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => string;
-  /** Get const value at a specific path in a nested VarRef */
-  readonly getValueAt: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => U;
-  /** Get path segments to a variable within a nested structure */
-  readonly getPath: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => readonly string[];
+  /**
+   * Get variable name at a specific path in a nested VarRef.
+   * The selector's proxy type is derived from the VarRef's brand payload.
+   */
+  readonly getNameAt: <TVarRef extends AnyVarRef>(
+    varRef: TVarRef,
+    selector: (proxy: VarRefPayload<TVarRef>) => unknown,
+  ) => string;
+  /**
+   * Get const value at a specific path in a nested VarRef.
+   * The selector's proxy type is derived from the VarRef's brand payload.
+   */
+  readonly getValueAt: <TVarRef extends AnyVarRef, U>(varRef: TVarRef, selector: (proxy: VarRefPayload<TVarRef>) => U) => U;
+  /**
+   * Get path segments to a variable within a nested structure.
+   * The selector's proxy type is derived from the VarRef's brand payload.
+   */
+  readonly getPath: <TVarRef extends AnyVarRef>(
+    varRef: TVarRef,
+    selector: (proxy: VarRefPayload<TVarRef>) => unknown,
+  ) => readonly string[];
   /** Check if a value contains any VarRef */
   readonly hasVarRefInside: (value: unknown) => boolean;
 };
