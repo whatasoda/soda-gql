@@ -965,16 +965,11 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
       }
     }
   }`({
-    metadata: ({ $, $var }) => ({
+    metadata: ({ $ }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $var.getName($.projectId),
-      includesRelations: $var.getName($.includeTeam),
-      cacheKey: `project:${$var.getName($.projectId)}:team=${$var.getName($.includeTeam)}`,
-      headers: {
-        "X-Entity-Type": "Project",
-        "X-Entity-Id": $var.getName($.projectId),
-      },
+      entityId: $.projectId,
+      includesRelations: $.includeTeam,
     }),
   }),
 );

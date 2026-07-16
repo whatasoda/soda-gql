@@ -512,29 +512,47 @@ export const generateInputType = (
  * Generate TypeScript type for a single input field from its parsed specifier.
  * Used by generateInputTypeFromSpecifiers.
  */
+const resolveInputBaseTypeFromSpecifier = (
+  schema: AnyGraphqlSchema,
+  specifier: { kind: string; name: string },
+  options: GenerateInputObjectTypeOptions,
+): string => {
+  const { formatters } = options;
+
+  switch (specifier.kind) {
+    case "scalar":
+      return formatters?.scalarInput?.(specifier.name) ?? getScalarInputType(schema, specifier.name);
+    case "enum":
+      return getEnumType(schema, specifier.name);
+    case "input":
+      return formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options);
+    default:
+      return "unknown";
+  }
+};
+
 const generateInputFieldTypeFromSpecifier = (
   schema: AnyGraphqlSchema,
   specifier: { kind: string; name: string; modifier: string },
   options: GenerateInputObjectTypeOptions,
 ): string => {
-  let baseType: string;
-  const { formatters } = options;
-
-  switch (specifier.kind) {
-    case "scalar":
-      baseType = formatters?.scalarInput?.(specifier.name) ?? getScalarInputType(schema, specifier.name);
-      break;
-    case "enum":
-      baseType = getEnumType(schema, specifier.name);
-      break;
-    case "input":
-      baseType = formatters?.inputObject?.(specifier.name) ?? generateInputObjectType(schema, specifier.name, options);
-      break;
-    default:
-      baseType = "unknown";
-  }
-
+  const baseType = resolveInputBaseTypeFromSpecifier(schema, specifier, options);
   return applyTypeModifier(baseType, specifier.modifier as TypeModifier);
+};
+
+/**
+ * Wraps a base type in array brackets for each list level in the modifier,
+ * ignoring nullability. Mirrors the per-variable payload shape produced for
+ * operations, where the VarRef payload keeps list dimensions but drops the outer
+ * `| null | undefined` wrappers.
+ */
+const applyListModifier = (baseType: string, modifier: string): string => {
+  const listDepth = modifier.split("[]").length - 1;
+  let result = baseType;
+  for (let i = 0; i < listDepth; i++) {
+    result = `(${result})[]`;
+  }
+  return result;
 };
 
 /**
@@ -610,6 +628,32 @@ export const generateInputTypeFromVarDefs = (
     const isOptional = !isOuterRequired || hasDefault;
 
     return `readonly ${name}${isOptional ? "?" : ""}: ${baseType}`;
+  });
+
+  return `{ ${fields.join("; ")} }`;
+};
+
+/**
+ * Generate the per-variable payload type map for a fragment's variables.
+ *
+ * Mirrors the operation-side `varTypes` map: one non-optional entry per variable
+ * whose type keeps list dimensions but drops the outer nullability wrappers, so it
+ * backs the VarRef payload types consumed by `$`/`$var` in metadata builders.
+ */
+export const generateVarTypesFromVarDefs = (
+  schema: AnyGraphqlSchema,
+  varDefs: VariableDefinitions,
+  options: GenerateInputObjectTypeOptions = {},
+): string => {
+  const entries = Object.entries(varDefs);
+
+  if (entries.length === 0) {
+    return "{}";
+  }
+
+  const fields = entries.map(([name, varSpec]) => {
+    const baseType = resolveInputBaseTypeFromSpecifier(schema, varSpec, options);
+    return `readonly ${name}: ${applyListModifier(baseType, varSpec.modifier)}`;
   });
 
   return `{ ${fields.join("; ")} }`;

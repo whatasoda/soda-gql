@@ -1,18 +1,20 @@
 /**
- * E2E tests for metadata-builder typing on generated prebuilt operations.
+ * E2E tests for metadata-builder typing on generated prebuilt operations and fragments.
  *
- * Validates that the trailing options call of a generated operation types its
- * `metadata` builder: `({ $, $var }) => ...` receives `$` keyed by the
- * operation's variables, `$var` selectors derive their proxy from the
- * variable's payload type, and static metadata objects still work.
+ * Validates that the trailing options call of a generated operation/fragment types its
+ * `metadata` builder: `({ $, $var }) => ...` receives `$` keyed by the element's
+ * variables, `$var` selectors derive their proxy from the variable's payload type,
+ * `getValueAt` rejects compose-time variable refs, and static metadata still works.
  *
  * @module
  */
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import type { AnyVarRef, MetadataBuilderTools, VarRefTools } from "@soda-gql/core";
 import { runTypegen } from "../../../src/typegen/runner";
 import { createTestWorkspace, type WorkspaceSetup } from "./utils/workspace";
 
@@ -20,13 +22,13 @@ const fixtureDir = fileURLToPath(new URL("./fixtures", import.meta.url));
 const projectRoot = resolve(fileURLToPath(import.meta.url), "../../../../../..");
 const tscPath = join(projectRoot, "node_modules/.bin/tsc");
 
-describe("prebuilt operation metadata typing E2E", () => {
+describe("prebuilt operation/fragment metadata typing E2E", () => {
   let workspace: WorkspaceSetup;
 
   beforeEach(async () => {
     workspace = await createTestWorkspace({
       fixtureDir,
-      sourceFiles: ["operation-with-name.ts"],
+      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts"],
     });
   });
 
@@ -34,17 +36,19 @@ describe("prebuilt operation metadata typing E2E", () => {
     await workspace.cleanup();
   });
 
-  test("generated index types the trailing options call from per-operation varTypes", () => {
+  test("generated index types the trailing options call from per-element varTypes", () => {
     const indexContent = readFileSync(join(workspace.workspaceRoot, "graphql-system", "index.ts"), "utf-8");
 
     expect(indexContent).toContain("type ResolveVarTypes_default<TName extends string>");
-    expect(indexContent).toContain("type PrebuiltOperationOptions_default<TName extends string, TMetadata>");
-    expect(indexContent).toContain("MetadataBuilder<VarRefsFromVarTypes<ResolveVarTypes_default<TName>>, TMetadata>");
+    expect(indexContent).toContain("type ResolveFragmentVarTypes_default<TKey extends string>");
+    expect(indexContent).toContain("PrebuiltOperationOptions<ResolveVarTypes_default<TName>, TMetadata");
+    expect(indexContent).toContain("PrebuiltFragmentOptions<ResolveFragmentVarTypes_default<TKey>, TMetadata>");
     expect(indexContent).not.toContain("(...args: unknown[]) => ResolveOperationAtBuilder_default");
+    expect(indexContent).not.toContain("(...args: unknown[]) => ResolveFragmentAtBuilder_default");
   });
 
   test(
-    "typed metadata callbacks, static metadata, and no-options all compile; invalid access is rejected",
+    "typed callbacks, static metadata, and no-options compile; invalid access is rejected",
     async () => {
       const result = await runTypegen({ config: workspace.config });
       expect(result.isOk()).toBe(true);
@@ -53,7 +57,7 @@ describe("prebuilt operation metadata typing E2E", () => {
       const typeCheckContent = `
 import { gql } from "../graphql-system";
 
-// A metadata builder callback: $ is keyed by the operation's variables and
+// Operation metadata callback: $ is keyed by the operation's variables and
 // $var selectors derive their proxy from the variable's payload type.
 export const withCallback = gql.default(({ query }) =>
   query("GetUser")\`($id: ID!) { user(id: $id) { id name } }\`({
@@ -62,6 +66,15 @@ export const withCallback = gql.default(({ query }) =>
         idName: $var.getName($.id),
         idPath: $var.getPath($.id, (p) => p),
       },
+    }),
+  }),
+);
+
+// Fragment metadata callback: same typing applies to fragments.
+export const fragmentWithCallback = gql.default(({ fragment }) =>
+  fragment("UserByIdFields", "Query")\`($id: ID!) { user(id: $id) { id name } }\`({
+    metadata: ({ $, $var }) => ({
+      custom: { idName: $var.getName($.id) },
     }),
   }),
 );
@@ -78,22 +91,34 @@ export const withoutOptions = gql.default(({ query }) =>
   query("GetUser")\`($id: ID!) { user(id: $id) { id } }\`(),
 );
 
-export const invalidAccess = gql.default(({ query }) =>
+export const invalidOperationAccess = gql.default(({ query }) =>
   query("GetUser")\`($id: ID!) { user(id: $id) { id } }\`({
     metadata: ({ $, $var }) => ({
       custom: {
         // @ts-expect-error - "missing" is not a declared variable on this operation
         missing: $var.getName($.missing),
+        // @ts-expect-error - getValueAt rejects compose-time variable refs (no runtime const value)
+        noConstValue: $var.getValueAt($.id, (p) => p),
         // @ts-expect-error - "nope" is not a field on the variable's payload type
-        bad: $var.getValueAt($.id, (p) => p.nope),
+        badField: $var.getNameAt($.id, (p) => p.nope),
+      },
+    }),
+  }),
+);
+
+export const invalidFragmentAccess = gql.default(({ fragment }) =>
+  fragment("UserByIdFields", "Query")\`($id: ID!) { user(id: $id) { id } }\`({
+    metadata: ({ $, $var }) => ({
+      custom: {
+        // @ts-expect-error - "missing" is not a declared variable on this fragment
+        missing: $var.getName($.missing),
       },
     }),
   }),
 );
 `;
 
-      const fs = await import("node:fs/promises");
-      await fs.writeFile(typeCheckFile, typeCheckContent, "utf-8");
+      await writeFile(typeCheckFile, typeCheckContent, "utf-8");
 
       const proc = Bun.spawn([tscPath, "--noEmit", "--project", workspace.workspaceRoot], {
         cwd: workspace.workspaceRoot,
@@ -115,14 +140,12 @@ export const invalidAccess = gql.default(({ query }) =>
   );
 
   test("metadata builder runs through the composer and produces the expected metadata", async () => {
-    type VarRefLike = unknown;
-    type BuilderTools = { $: Record<string, VarRefLike>; $var: { getName: (varRef: VarRefLike) => string } };
-    type MetadataResult = { readonly metadata?: unknown };
+    type ElementResult = { readonly metadata?: unknown };
     type TaggedTemplate = (
       strings: TemplateStringsArray,
       ...values: unknown[]
-    ) => (options: { metadata: (tools: BuilderTools) => unknown }) => MetadataResult;
-    type Composer = (build: (ctx: { query: (name: string) => TaggedTemplate }) => MetadataResult) => MetadataResult;
+    ) => (options: { metadata: (tools: MetadataBuilderTools<{ id: AnyVarRef }>) => unknown }) => ElementResult;
+    type Composer = (build: (ctx: { query: (name: string) => TaggedTemplate }) => ElementResult) => ElementResult;
 
     const mod = (await import(pathToFileURL(join(workspace.workspaceRoot, "graphql-system", "index.ts")).href)) as {
       gql: { default: Composer };
@@ -130,9 +153,10 @@ export const invalidAccess = gql.default(({ query }) =>
 
     const operation = mod.gql.default(({ query }) =>
       query("GetUser")`($id: ID!) { user(id: $id) { id name } }`({
-        metadata: ({ $, $var }) => ({
-          custom: { idName: $var.getName($.id) },
-        }),
+        metadata: ({ $, $var }) => {
+          const tools: VarRefTools = $var;
+          return { custom: { idName: tools.getName($.id) } };
+        },
       }),
     );
 

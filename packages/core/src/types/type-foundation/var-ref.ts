@@ -17,6 +17,13 @@ export interface AnyVarRefBrand {
    * payload keep working — the selector proxy simply falls back to `unknown`.
    */
   readonly payload?: unknown;
+  /**
+   * Marks a VarRef that stands for a compose-time operation/fragment variable —
+   * it carries a variable reference, never a const value. `$var.getValueAt` (which
+   * throws at runtime for such refs) rejects brands carrying this marker, so the
+   * always-throwing call is caught at compile time instead of at app startup.
+   */
+  readonly composeTimeVariable?: boolean;
 }
 
 /**
@@ -91,7 +98,15 @@ export type VarRefFromPayload<TPayload> = VarRef<{
   readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
   readonly payload: TPayload;
+  readonly composeTimeVariable: true;
 }>;
+
+/**
+ * A VarRef that may carry a const value — i.e. any VarRef whose brand is not
+ * marked as a compose-time variable ref. `getValueAt` accepts these and rejects
+ * compose-time variable refs, whose runtime value never exists.
+ */
+export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 
 /**
  * Maps a record of variable name -> TypeScript payload type into a record of

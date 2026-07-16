@@ -264,9 +264,21 @@ The metadata callback provides `$var`, a tools object for inspecting variable re
 | `$var.getName(ref)` | Get variable name string |
 | `$var.getValue(ref)` | Get const value from a nested-value ref |
 | `$var.getNameAt(ref, selector)` | Get variable name at a nested path |
-| `$var.getValueAt(ref, selector)` | Get const value at a nested path |
+| `$var.getValueAt(ref, selector)` | Get const value at a nested path (nested-value refs only) |
 | `$var.getPath(ref, selector)` | Get path segments to a variable |
 | `$var.hasVarRefInside(value)` | Check if a value contains any VarRef |
+
+#### Typed `$` and `$var` in generated code
+
+In the generated (prebuilt) graphql-system, the trailing options call is fully typed per operation and fragment. Inside the `metadata` callback:
+
+- `$` is keyed by the element's own variables, so `$.<name>` is checked and unknown names are compile errors.
+- Selector callbacks (`getNameAt`/`getValueAt`/`getPath`) derive their proxy parameter type from the variable's payload — `getNameAt($.filter, (p) => p.user.id)` checks `p` against the variable's TypeScript shape. An explicitly annotated selector parameter still overrides the inferred proxy type.
+- `getValueAt` accepts only nested-value refs. It rejects an operation/fragment variable ref (`$.id`) at compile time, because such a ref carries a variable reference, never a const value — the call would otherwise always throw at runtime.
+
+`metadata` also accepts a static object, and passing no options remains valid.
+
+The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, `VarRefFromPayload`, `VarRefPayload`, and `VarRefBrandOf`.
 
 #### Cache Key Generation
 

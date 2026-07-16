@@ -115,6 +115,15 @@ describe("getValueAt", () => {
     expect(getValueAt(varRef, (p: any) => p.user.age)).toBe(30);
   });
 
+  it("infers an explicitly-annotated selector's proxy type on a payload-less varRef", () => {
+    const varRef = createVarRefFromNestedValue({ user: { name: "Alice", age: 30 } });
+    // The brand carries no payload, so the caller supplies the proxy type via annotation
+    // (the pre-payload behavior); T is inferred from the annotation, not forced to unknown.
+    const name = getValueAt(varRef, (proxy: { user: { name: string; age: number } }) => proxy.user.name);
+    const upper: string = name.toUpperCase();
+    expect(upper).toBe("ALICE");
+  });
+
   it("throws when path leads to VarRef", () => {
     const innerVarRef = createVarRefFromVariable("userId");
     const varRef = createVarRefFromNestedValue({ user: { id: innerVarRef } });
@@ -143,8 +152,8 @@ describe("getVariablePath", () => {
 
   it("returns path segments when accessing inside a variable", () => {
     const varRef = createVarRefFromVariable("user");
-    // Returns variable name + path after the variable reference point
-    expect(getVariablePath(varRef, (p: any) => p.profile.name)).toEqual(["$user", "name"]);
+    // Returns variable name + every segment navigated inside the variable's value
+    expect(getVariablePath(varRef, (p: any) => p.profile.name)).toEqual(["$user", "profile", "name"]);
   });
 
   it("returns variable path from nested VarRef in object", () => {
@@ -156,8 +165,8 @@ describe("getVariablePath", () => {
   it("returns path for variable inside nested-value with further path access", () => {
     const innerVarRef = createVarRefFromVariable("user");
     const varRef = createVarRefFromNestedValue({ data: { profile: innerVarRef } });
-    // Returns variable name + path after the variable reference point
-    expect(getVariablePath(varRef, (p: any) => p.data.profile.name)).toEqual(["$user"]);
+    // Returns variable name + every segment navigated inside the variable's value
+    expect(getVariablePath(varRef, (p: any) => p.data.profile.name)).toEqual(["$user", "name"]);
   });
 
   it("throws when path leads to non-variable value", () => {

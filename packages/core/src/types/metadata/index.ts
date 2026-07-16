@@ -21,5 +21,7 @@ export type {
   MetadataBuilder,
   MetadataBuilderTools,
   OperationMetadata,
+  PrebuiltFragmentOptions,
+  PrebuiltOperationOptions,
   VarRefTools,
 } from "./metadata";

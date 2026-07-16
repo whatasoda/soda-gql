@@ -1,6 +1,7 @@
 import type { DocumentNode } from "graphql";
 import type { ConstValue } from "../type-foundation/const-value";
-import type { AnyVarRef, VarRefPayload } from "../type-foundation/var-ref";
+import type { AnyVarRef, NestedValueVarRef, VarRefPayload, VarRefsFromVarTypes } from "../type-foundation/var-ref";
+import type { OperationDocumentTransformer } from "./adapter";
 
 /**
  * Base metadata types that can be attached to operations.
@@ -25,24 +26,31 @@ export type VarRefTools = {
   readonly getValue: (varRef: AnyVarRef) => ConstValue;
   /**
    * Get variable name at a specific path in a nested VarRef.
-   * The selector's proxy type is derived from the VarRef's brand payload.
+   * An annotated selector parameter supplies the proxy type; otherwise it
+   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
    */
-  readonly getNameAt: <TVarRef extends AnyVarRef>(
+  readonly getNameAt: <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
     varRef: TVarRef,
-    selector: (proxy: VarRefPayload<TVarRef>) => unknown,
+    selector: (proxy: T) => unknown,
   ) => string;
   /**
    * Get const value at a specific path in a nested VarRef.
-   * The selector's proxy type is derived from the VarRef's brand payload.
+   * Rejects compose-time variable refs, whose runtime const value never exists.
+   * An annotated selector parameter supplies the proxy type; otherwise it
+   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
    */
-  readonly getValueAt: <TVarRef extends AnyVarRef, U>(varRef: TVarRef, selector: (proxy: VarRefPayload<TVarRef>) => U) => U;
+  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = VarRefPayload<TVarRef>, U = unknown>(
+    varRef: TVarRef,
+    selector: (proxy: T) => U,
+  ) => U;
   /**
    * Get path segments to a variable within a nested structure.
-   * The selector's proxy type is derived from the VarRef's brand payload.
+   * An annotated selector parameter supplies the proxy type; otherwise it
+   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
    */
-  readonly getPath: <TVarRef extends AnyVarRef>(
+  readonly getPath: <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
     varRef: TVarRef,
-    selector: (proxy: VarRefPayload<TVarRef>) => unknown,
+    selector: (proxy: T) => unknown,
   ) => readonly string[];
   /** Check if a value contains any VarRef */
   readonly hasVarRefInside: (value: unknown) => boolean;
@@ -113,3 +121,32 @@ export type FragmentMetadataBuilderTools<TVarRefs extends Record<string, AnyVarR
 export type FragmentMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = OperationMetadata> = (
   tools: FragmentMetadataBuilderTools<TVarRefs>,
 ) => TMetadata | Promise<TMetadata>;
+
+/**
+ * Trailing options accepted by a prebuilt operation builder call.
+ * `metadata` accepts a static value or a builder callback whose `$` is keyed by
+ * the operation's variables (derived from generated `varTypes`); `TMetadata` is
+ * inferred from whichever form is provided. The adapter's aggregated
+ * fragment-metadata and schema-level types are threaded through so the callback's
+ * `fragmentMetadata`/`schemaLevel` are typed per configured adapter.
+ */
+export type PrebuiltOperationOptions<
+  TVarTypes,
+  TMetadata,
+  TAggregatedFragmentMetadata = readonly (OperationMetadata | undefined)[],
+  TSchemaLevel = unknown,
+> = {
+  readonly metadata?:
+    | TMetadata
+    | MetadataBuilder<VarRefsFromVarTypes<TVarTypes>, TMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+  readonly transformDocument?: OperationDocumentTransformer<TMetadata>;
+};
+
+/**
+ * Trailing options accepted by a prebuilt fragment builder call.
+ * `metadata` accepts a static value or a fragment builder callback whose `$` is
+ * keyed by the fragment's variables (derived from generated `varTypes`).
+ */
+export type PrebuiltFragmentOptions<TVarTypes, TMetadata> = {
+  readonly metadata?: TMetadata | FragmentMetadataBuilder<VarRefsFromVarTypes<TVarTypes>, TMetadata>;
+};
