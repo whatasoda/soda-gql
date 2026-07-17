@@ -73,25 +73,27 @@ export const withCallback = gql.default(({ query }) =>
   }),
 );
 
-// Object-payload variable: getPath/getNameAt navigate the input object's fields.
+// Object-payload variable: getPath navigates the input object's fields, including
+// through a nullable input-object field (GraphQL's default nullability).
 export const objectVarNav = gql.default(({ query }) =>
   query("SearchUsers")\`($filter: UserFilter!) { searchUsers(filter: $filter) { id } }\`({
     metadata: ({ $, $var }) => ({
       custom: {
         filterNamePath: $var.getPath($.filter, (p) => p.name),
+        filterCityPath: $var.getPath($.filter, (p) => p.address.city),
       },
     }),
   }),
 );
 
-// Fragment metadata callback: $ is keyed by the fragment's variables. Unlike operation
-// refs, fragment refs are value-bearing at spread time, so getValueAt is allowed here.
+// Fragment metadata callback: $ is keyed by the fragment's variables; getName/getPath
+// work but getValue/getValueAt are rejected (a spread may pass an operation variable ref).
 export const fragmentWithCallback = gql.default(({ fragment }) =>
   fragment("UserByIdFields", "Query")\`($id: ID!) { user(id: $id) { id name } }\`({
     metadata: ({ $, $var }) => ({
       custom: {
         idName: $var.getName($.id),
-        idValue: $var.getValueAt($.id, (p) => p),
+        idPath: $var.getPath($.id, (p) => p),
       },
     }),
   }),
@@ -130,6 +132,8 @@ export const invalidObjectVarAccess = gql.default(({ query }) =>
       custom: {
         // @ts-expect-error - "nope" is not a field on the variable's object payload
         badField: $var.getPath($.filter, (p) => p.nope),
+        // @ts-expect-error - getNameAt navigation throws on a compose-time variable ref (identity only)
+        nameAtNav: $var.getNameAt($.filter, (p) => p.name),
       },
     }),
   }),
@@ -141,6 +145,8 @@ export const invalidFragmentAccess = gql.default(({ fragment }) =>
       custom: {
         // @ts-expect-error - "missing" is not a declared variable on this fragment
         missing: $var.getName($.missing),
+        // @ts-expect-error - getValueAt is rejected on a fragment ref (a spread may pass through an operation variable)
+        noConstValue: $var.getValueAt($.id, (p) => p),
       },
     }),
   }),
@@ -197,16 +203,26 @@ export const invalidFragmentAccess = gql.default(({ fragment }) =>
     expect(result.isOk()).toBe(true);
 
     const prebuilt = readFileSync(join(workspace.workspaceRoot, "graphql-system", "types.prebuilt.ts"), "utf-8");
+    // Balanced-brace extraction: a simple \\{[^}]*\\} regex truncates at the first inner
+    // brace, so a nested/input-object payload would false-pass on a prefix match.
     const extractVarTypes = (key: string): string => {
       const line = prebuilt.split("\n").find((l) => l.includes(`readonly "${key}":`));
       if (!line) throw new Error(`entry for ${key} not found`);
-      const varTypes = line.match(/readonly varTypes: (\{[^}]*\})/)?.[1];
-      if (!varTypes) throw new Error(`varTypes for ${key} not found`);
-      return varTypes;
+      const marker = "readonly varTypes: ";
+      const start = line.indexOf(marker);
+      if (start === -1 || line[start + marker.length] !== "{") throw new Error(`varTypes for ${key} not found`);
+      const from = start + marker.length;
+      let depth = 0;
+      for (let i = from; i < line.length; i++) {
+        if (line[i] === "{") depth++;
+        else if (line[i] === "}" && --depth === 0) return line.slice(from, i + 1);
+      }
+      throw new Error(`unbalanced varTypes for ${key}`);
     };
 
     // The operation (TypeNode-based) and fragment (specifier-based) varTypes generators
-    // must produce identical payload maps for the same GraphQL variable declarations.
+    // must produce identical payload maps for the same GraphQL variable declarations,
+    // including the input-object variable ($filter) that exercises brace nesting.
     expect(extractVarTypes("SharedVarsFragment")).toBe(extractVarTypes("SharedVarsOperation"));
   });
 });

@@ -541,10 +541,10 @@ const generateInputFieldTypeFromSpecifier = (
 };
 
 /**
- * Wraps a base type in array brackets for each list level in the modifier,
- * ignoring nullability. Mirrors the per-variable payload shape produced for
- * operations, where the VarRef payload keeps list dimensions but drops the outer
- * `| null | undefined` wrappers.
+ * Wraps a base type in array brackets for each list level in the modifier. Only the
+ * list dimensions are applied here; nullability is layered on by the caller. Matches
+ * the operation-side `graphqlTypeToTypeScript`, which also drops inner-list-element
+ * nullability (a shared limitation of the generated `input` type).
  */
 const applyListModifier = (baseType: string, modifier: string): string => {
   const listDepth = modifier.split("[]").length - 1;
@@ -636,9 +636,11 @@ export const generateInputTypeFromVarDefs = (
 /**
  * Generate the per-variable payload type map for a fragment's variables.
  *
- * Mirrors the operation-side `varTypes` map: one non-optional entry per variable
- * whose type keeps list dimensions but drops the outer nullability wrappers, so it
- * backs the VarRef payload types consumed by `$`/`$var` in metadata builders.
+ * Mirrors the operation-side `varTypes` map: the key is always present (`$.<name>` is
+ * always a ref) while the value keeps the variable's outer nullability — an optional
+ * or nullable variable reads as `| null | undefined`, so downstream consumers see the
+ * value that actually arrives at spread time. Backs the VarRef payload types consumed
+ * by `$`/`$var` in metadata builders.
  */
 export const generateVarTypesFromVarDefs = (
   schema: AnyGraphqlSchema,
@@ -653,7 +655,10 @@ export const generateVarTypesFromVarDefs = (
 
   const fields = entries.map(([name, varSpec]) => {
     const baseType = resolveInputBaseTypeFromSpecifier(schema, varSpec, options);
-    return `readonly ${name}: ${applyListModifier(baseType, varSpec.modifier)}`;
+    const listType = applyListModifier(baseType, varSpec.modifier);
+    const isOuterRequired = varSpec.modifier.endsWith("!");
+    const valueType = isOuterRequired ? listType : `(${listType} | null | undefined)`;
+    return `readonly ${name}: ${valueType}`;
   });
 
   return `{ ${fields.join("; ")} }`;

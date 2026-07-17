@@ -533,10 +533,10 @@ export const projectWithCallbackMetadataFragment = gql.default(({ fragment }) =>
     status
     priority
   }`({
-    metadata: ({ $ }) => ({
+    metadata: ({ $, $var }) => ({
       entityType: "project",
-      entityId: $.projectId,
-      priority: $.priority,
+      entityIdVariable: $var.getName($.projectId),
+      priorityVariable: $var.getName($.priority),
     }),
   }),
 );
@@ -553,10 +553,10 @@ export const taskWithMetadataFragment = gql.default(({ fragment }) =>
     priority
     dueDate
   }`({
-    metadata: ({ $ }) => ({
+    metadata: ({ $, $var }) => ({
       entityType: "task",
-      entityId: $.taskId,
-      includeComments: $.includeComments,
+      entityIdVariable: $var.getName($.taskId),
+      includeCommentsVariable: $var.getName($.includeComments),
     }),
   }),
 );

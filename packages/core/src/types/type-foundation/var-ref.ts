@@ -80,10 +80,13 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
  * compose-time variable refs (operation variables), whose runtime const value
  * never exists.
  *
- * Note: `VarRef<any>` (the untyped `AnyVarRef`) also satisfies this — a brand-level
- * constraint cannot exclude `any`. The compile-time rejection therefore applies to
- * the concretely-branded refs the generated operation code produces, not to values
- * a caller has widened to `AnyVarRef`.
+ * Note: `VarRef<any>` (the untyped `AnyVarRef`) also satisfies this. `any` is detectable
+ * (`IsAny` below), so `getValueAt`/`getValue` could reject it — but doing so would break
+ * their primary legitimate use: `createVarRefFromNestedValue(...)` returns `AnyVarRef`, so
+ * `getValueAt(createVarRefFromNestedValue({ … }), (p) => …)` (the documented nested-input
+ * decomposition pattern, exercised across the core tests) would no longer compile. The
+ * compile-time rejection therefore applies to the concretely-branded compose-time refs the
+ * generated code produces, not to values a caller has deliberately widened to `AnyVarRef`.
  */
 export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 
@@ -157,23 +160,39 @@ export interface SelectorLeaf<T> {
  * Proxy type for `$var` selector callbacks derived from a variable's payload.
  * Object payloads are navigable field by field (`p.user.id` compiles iff the field
  * exists); scalar and array payloads are terminal leaves offering no members.
+ * `null`/`undefined` is stripped before the object test so nullable input-object
+ * fields (GraphQL's default nullability) stay navigable.
  */
-export type SelectorProxy<T> = [T] extends [readonly unknown[]]
+export type SelectorProxy<T> = [NonNullable<T>] extends [readonly unknown[]]
   ? SelectorLeaf<T>
-  : [T] extends [object]
-    ? { readonly [K in keyof T]-?: SelectorProxy<T[K]> }
+  : [NonNullable<T>] extends [object]
+    ? { readonly [K in keyof NonNullable<T>]-?: SelectorProxy<NonNullable<T>[K]> }
     : SelectorLeaf<T>;
 
 /**
- * Recovers the const value a selector navigated to: a terminal leaf resolves to its
- * carried payload type, an object proxy resolves field by field. Used for the
- * return type of `getValueAt`.
+ * Recovers the const value a leaf selector navigated to: a terminal leaf resolves to
+ * its carried payload type; anything else passes through. Used for `getValueAt`'s
+ * return. A selector must navigate to a value — a constructed object is not a
+ * registered proxy at runtime, so its type is left as-is rather than fabricated.
  */
-export type SelectedValue<R> = R extends SelectorLeaf<infer V>
-  ? V
-  : R extends object
-    ? { -readonly [K in keyof R]: SelectedValue<R[K]> }
-    : R;
+export type SelectedValue<R> = R extends SelectorLeaf<infer V> ? V : R;
+
+/**
+ * `0 extends (1 & T)` is only true when `T` is `any` — used to detect an `any` brand.
+ */
+type IsAny<T> = 0 extends 1 & T ? true : false;
+
+/**
+ * Proxy type for `getNameAt`'s selector. A compose-time variable ref only yields its
+ * name under an identity selector (navigating a variable ref throws at runtime), so
+ * its proxy is a terminal leaf; a value-bearing (nested-value) ref stays navigable.
+ * An `any` brand keeps the navigable proxy to preserve caller-annotated selectors.
+ */
+export type NameAtProxy<TVarRef> = IsAny<VarRefBrandOf<TVarRef>> extends true
+  ? SelectorProxy<VarRefPayload<TVarRef>>
+  : VarRefBrandOf<TVarRef> extends { readonly composeTimeVariable: true }
+    ? SelectorLeaf<VarRefPayload<TVarRef>>
+    : SelectorProxy<VarRefPayload<TVarRef>>;
 
 /**
  * Creates a VarRef from a variable name.

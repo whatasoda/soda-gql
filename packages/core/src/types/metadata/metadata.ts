@@ -3,11 +3,11 @@ import type { ConstValue } from "../type-foundation/const-value";
 import type {
   AnyVarRef,
   ComposeTimeVarRefsFromVarTypes,
+  NameAtProxy,
   NestedValueVarRef,
   SelectedValue,
   SelectorProxy,
   VarRefPayload,
-  VarRefsFromVarTypes,
 } from "../type-foundation/var-ref";
 import type { OperationDocumentTransformer } from "./adapter";
 
@@ -37,10 +37,11 @@ export type VarRefTools = {
   readonly getValue: (varRef: NestedValueVarRef) => ConstValue;
   /**
    * Get variable name at a specific path in a nested VarRef.
-   * The selector proxy defaults to the variable's payload shape (object fields
-   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
+   * The selector proxy defaults to the variable's payload shape, except a compose-time
+   * variable ref gets an identity-only leaf (navigating a variable ref throws at
+   * runtime); an explicit annotation overrides it.
    */
-  readonly getNameAt: <TVarRef extends AnyVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>>(
+  readonly getNameAt: <TVarRef extends AnyVarRef, T = NameAtProxy<TVarRef>>(
     varRef: TVarRef,
     selector: (proxy: T) => unknown,
   ) => string;
@@ -156,8 +157,10 @@ export type PrebuiltOperationOptions<
 /**
  * Trailing options accepted by a prebuilt fragment builder call.
  * `metadata` accepts a static value or a fragment builder callback whose `$` is
- * keyed by the fragment's variables (derived from generated `varTypes`).
+ * keyed by the fragment's variables. The refs are compose-time: at spread time a
+ * fragment `$` entry may be a pass-through operation variable ref (no const value),
+ * so `getValue`/`getValueAt` are rejected here just as for operations.
  */
 export type PrebuiltFragmentOptions<TVarTypes, TMetadata> = {
-  readonly metadata?: TMetadata | FragmentMetadataBuilder<VarRefsFromVarTypes<TVarTypes>, TMetadata>;
+  readonly metadata?: TMetadata | FragmentMetadataBuilder<ComposeTimeVarRefsFromVarTypes<TVarTypes>, TMetadata>;
 };

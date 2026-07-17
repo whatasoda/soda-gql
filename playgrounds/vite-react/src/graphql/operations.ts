@@ -965,11 +965,11 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
       }
     }
   }`({
-    metadata: ({ $ }) => ({
+    metadata: ({ $, $var }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $.projectId,
-      includesRelations: $.includeTeam,
+      entityIdVariable: $var.getName($.projectId),
+      includeTeamVariable: $var.getName($.includeTeam),
     }),
   }),
 );
@@ -1008,10 +1008,10 @@ export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }) => ({
+    metadata: ({ $, $var, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "employee",
-      entityId: $.employeeId,
+      entityIdVariable: $var.getName($.employeeId),
       hasFragmentMetadata: fragmentMetadata !== undefined && fragmentMetadata.length > 0,
       fragmentCount: fragmentMetadata?.length ?? 0,
       fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
@@ -1035,13 +1035,13 @@ export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query 
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }) => ({
+    metadata: ({ $, $var, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $.projectId,
-      priority: $.priority,
+      entityIdVariable: $var.getName($.projectId),
+      priorityVariable: $var.getName($.priority),
       fragmentMetadataCount: fragmentMetadata?.length ?? 0,
-      // Reads a field the spread fragment actually emits ({ entityType, entityId, priority })
+      // Reads a field the spread fragment actually emits ({ entityType, entityIdVariable, priorityVariable })
       hasFragmentEntityType: (fragmentMetadata?.[0] as { entityType?: string })?.entityType !== undefined,
       fragmentEntityType: (fragmentMetadata?.[0] as { entityType?: string })?.entityType,
     }),

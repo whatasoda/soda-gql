@@ -8,9 +8,14 @@ type Query {
   searchUsers(filter: UserFilter!): [User!]!
 }
 
+input AddressInput {
+  city: String!
+}
+
 input UserFilter {
   name: String!
   minAge: Int
+  address: AddressInput
 }
 
 type User {

@@ -352,8 +352,12 @@ const generateVarTypes = (
 
   const fields = variableDefinitions.map((varDef) => {
     const name = varDef.variable.name.value;
+    // Key is always present ($.<name> is always a ref); the value keeps the variable's
+    // outer nullability so an optional/nullable variable reads as | null | undefined.
+    const isRequired = varDef.type.kind === Kind.NON_NULL_TYPE;
     const tsType = graphqlTypeToTypeScript(schema, varDef.type, formatters);
-    return `readonly ${name}: ${tsType}`;
+    const valueType = isRequired ? tsType : `(${tsType} | null | undefined)`;
+    return `readonly ${name}: ${valueType}`;
   });
 
   return `{ ${fields.join("; ")} }`;
