@@ -91,7 +91,12 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
 export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 
 /**
- * Extracts the brand of a VarRef type.
+ * Extracts a VarRef's brand: the type-only descriptor of the variable it stands
+ * for (`typeName`, `kind`, `signature`, and optionally `payload` / the
+ * compose-time marker). The brand lives on a phantom unique-symbol field that is
+ * never assigned at runtime — it exists so structurally-identical VarRefs for
+ * different variables are not assignable to each other, and so tools like
+ * {@link VarRefPayload} can recover the variable's TypeScript type from it.
  */
 export type VarRefBrandOf<TVarRef> = TVarRef extends VarRef<infer TBrand> ? TBrand : never;
 
