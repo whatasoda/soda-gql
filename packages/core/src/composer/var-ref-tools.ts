@@ -12,6 +12,7 @@ import {
   type AnyVarRef,
   type NestedValueElement,
   type NestedValueVarRef,
+  type SelectedValue,
   VarRef,
   type VarRefInner,
 } from "../types/type-foundation/var-ref";
@@ -182,7 +183,7 @@ export const getNameAt = <TVarRef extends AnyVarRef, T = unknown>(varRef: TVarRe
 export const getValueAt = <TVarRef extends NestedValueVarRef, T = unknown, U = unknown>(
   varRef: TVarRef,
   selector: (proxy: T) => U,
-): U => {
+): SelectedValue<U> => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
@@ -199,7 +200,7 @@ export const getValueAt = <TVarRef extends NestedValueVarRef, T = unknown, U = u
     throw new Error(`Value at path [${inner.segments.join(".")}] contains nested VarRef`);
   }
 
-  return inner.varInner.value as U;
+  return inner.varInner.value as SelectedValue<U>;
 };
 
 /**

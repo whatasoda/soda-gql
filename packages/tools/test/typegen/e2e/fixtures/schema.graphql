@@ -5,6 +5,12 @@ schema {
 type Query {
   user(id: ID!): User
   users(limit: Int): [User!]!
+  searchUsers(filter: UserFilter!): [User!]!
+}
+
+input UserFilter {
+  name: String!
+  minAge: Int
 }
 
 type User {

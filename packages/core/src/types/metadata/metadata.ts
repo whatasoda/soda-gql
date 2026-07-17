@@ -4,6 +4,9 @@ import type {
   AnyVarRef,
   ComposeTimeVarRefsFromVarTypes,
   NestedValueVarRef,
+  SelectedValue,
+  SelectorProxy,
+  VarRefPayload,
   VarRefsFromVarTypes,
 } from "../type-foundation/var-ref";
 import type { OperationDocumentTransformer } from "./adapter";
@@ -34,26 +37,29 @@ export type VarRefTools = {
   readonly getValue: (varRef: NestedValueVarRef) => ConstValue;
   /**
    * Get variable name at a specific path in a nested VarRef.
-   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
-   * it defaults to `unknown` because the runtime proxy has no statically known shape.
+   * The selector proxy defaults to the variable's payload shape (object fields
+   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
    */
-  readonly getNameAt: <TVarRef extends AnyVarRef, T = unknown>(varRef: TVarRef, selector: (proxy: T) => unknown) => string;
+  readonly getNameAt: <TVarRef extends AnyVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>>(
+    varRef: TVarRef,
+    selector: (proxy: T) => unknown,
+  ) => string;
   /**
    * Get const value at a specific path in a nested VarRef.
    * Rejects compose-time variable refs, whose runtime const value never exists.
-   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
-   * it defaults to `unknown` because the runtime proxy has no statically known shape.
+   * The selector proxy defaults to the variable's payload shape (object fields
+   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
    */
-  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = unknown, U = unknown>(
+  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>, U = unknown>(
     varRef: TVarRef,
     selector: (proxy: T) => U,
-  ) => U;
+  ) => SelectedValue<U>;
   /**
    * Get path segments to a variable within a nested structure.
-   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
-   * it defaults to `unknown` because the runtime proxy has no statically known shape.
+   * The selector proxy defaults to the variable's payload shape (object fields
+   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
    */
-  readonly getPath: <TVarRef extends AnyVarRef, T = unknown>(
+  readonly getPath: <TVarRef extends AnyVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>>(
     varRef: TVarRef,
     selector: (proxy: T) => unknown,
   ) => readonly string[];

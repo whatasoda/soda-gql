@@ -3,8 +3,9 @@
  *
  * Validates that the trailing options call of a generated operation/fragment types its
  * `metadata` builder: `({ $, $var }) => ...` receives `$` keyed by the element's
- * variables, `getValue`/`getValueAt` reject compose-time operation variable refs while
- * fragment refs allow them, and static metadata still works.
+ * variables, selector proxies navigate object payloads while scalars are terminal,
+ * `getValue`/`getValueAt` reject compose-time operation variable refs while fragment
+ * refs allow them, and static metadata still works.
  *
  * @module
  */
@@ -28,7 +29,7 @@ describe("prebuilt operation/fragment metadata typing E2E", () => {
   beforeEach(async () => {
     workspace = await createTestWorkspace({
       fixtureDir,
-      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts", "shared-var-types.ts"],
+      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts", "shared-var-types.ts", "operation-with-object-var.ts"],
     });
   });
 
@@ -72,6 +73,17 @@ export const withCallback = gql.default(({ query }) =>
   }),
 );
 
+// Object-payload variable: getPath/getNameAt navigate the input object's fields.
+export const objectVarNav = gql.default(({ query }) =>
+  query("SearchUsers")\`($filter: UserFilter!) { searchUsers(filter: $filter) { id } }\`({
+    metadata: ({ $, $var }) => ({
+      custom: {
+        filterNamePath: $var.getPath($.filter, (p) => p.name),
+      },
+    }),
+  }),
+);
+
 // Fragment metadata callback: $ is keyed by the fragment's variables. Unlike operation
 // refs, fragment refs are value-bearing at spread time, so getValueAt is allowed here.
 export const fragmentWithCallback = gql.default(({ fragment }) =>
@@ -105,8 +117,19 @@ export const invalidOperationAccess = gql.default(({ query }) =>
         missing: $var.getName($.missing),
         // @ts-expect-error - getValueAt rejects compose-time operation variable refs (no runtime const value)
         noConstValue: $var.getValueAt($.id, (p) => p),
-        // @ts-expect-error - the selector proxy defaults to unknown, so navigating it is rejected
-        badField: $var.getNameAt($.id, (p) => p.nope),
+        // @ts-expect-error - a scalar payload is a terminal leaf, so navigating it is rejected
+        scalarTerminal: $var.getPath($.id, (p) => p.length),
+      },
+    }),
+  }),
+);
+
+export const invalidObjectVarAccess = gql.default(({ query }) =>
+  query("SearchUsers")\`($filter: UserFilter!) { searchUsers(filter: $filter) { id } }\`({
+    metadata: ({ $, $var }) => ({
+      custom: {
+        // @ts-expect-error - "nope" is not a field on the variable's object payload
+        badField: $var.getPath($.filter, (p) => p.nope),
       },
     }),
   }),

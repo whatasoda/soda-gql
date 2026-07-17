@@ -273,12 +273,12 @@ The metadata callback provides `$var`, a tools object for inspecting variable re
 In the generated (prebuilt) graphql-system, the trailing options call is fully typed per operation and fragment. Inside the `metadata` callback:
 
 - `$` is keyed by the element's own variables, so `$.<name>` is checked and unknown names are compile errors.
-- The `getNameAt`/`getValueAt`/`getPath` selector parameter is caller-supplied (defaults to `unknown`) — annotate it when you need to navigate a nested-value ref: `getValueAt($.filter, (p: FilterShape) => p.user.id)`. The runtime proxy has no statically known shape, so an unannotated selector can only return the proxy root (`(p) => p`).
+- The `getNameAt`/`getValueAt`/`getPath` selector receives a proxy derived from the variable's payload type: object fields are navigable (`getPath($.filter, (p) => p.user.id)` compiles only if the fields exist), while scalar and array payloads are terminal — a selector on them can only return the proxy root (`(p) => p`), so `getPath($.id, (p) => p.length)` on `$id: ID!` is a compile error rather than a runtime crash. An explicit parameter annotation overrides the derived proxy (useful for a payload-less `AnyVarRef`).
 - `getValue`/`getValueAt` reject a generated **operation** variable ref (`$.id`) at compile time: an operation variable stands for a reference and carries no compose-time const value, so the call would always throw at runtime. **Fragment** `$` refs are value-bearing at spread time, so `getValue`/`getValueAt` are allowed for fragment metadata builders. This rejection applies to the concretely-branded refs the generated operation code produces; a value manually widened to `AnyVarRef` cannot be excluded by the type system.
 
 `metadata` also accepts a static object, and passing no options remains valid.
 
-The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, and `ComposeTimeVarRefsFromVarTypes`.
+The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, `ComposeTimeVarRefsFromVarTypes`, `VarRefPayload`, and `SelectorProxy`.
 
 **Migration note.** Because these options are now typed (previously the trailing call accepted `unknown[]`), a metadata callback with an explicit parameter annotation that does not match the real tools type — e.g. `({ fragmentMetadata }: { fragmentMetadata: unknown[] })`, where the actual type is `readonly (OperationMetadata | undefined)[] | undefined` — no longer compiles after regenerating. Remove the manual annotation and let the parameter be inferred, or annotate it with `MetadataBuilderTools<…>`.
 

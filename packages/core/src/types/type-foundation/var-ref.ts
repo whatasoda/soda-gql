@@ -10,6 +10,13 @@ export interface AnyVarRefBrand {
   readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
   /**
+   * Optional TypeScript payload type for the variable this VarRef stands for.
+   * When present, `$var` selector tools derive their proxy parameter type from it,
+   * so `getNameAt`/`getValueAt`/`getPath` selectors are checked against the real
+   * variable shape. Brands without a payload fall back to an opaque proxy.
+   */
+  readonly payload?: unknown;
+  /**
    * Marks a VarRef that stands for a compose-time operation variable — it carries a
    * variable reference, never a const value. `getValue`/`getValueAt` (which throw at
    * runtime for such refs) reject brands carrying this marker, so the always-throwing
@@ -81,34 +88,92 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
 export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 
 /**
- * Brand for a compose-time operation variable ref: it stands for a variable
- * reference and never carries a const value, so `getValue`/`getValueAt` reject it.
+ * Extracts the brand of a VarRef type.
  */
-type ComposeTimeVarRefBrand = {
+export type VarRefBrandOf<TVarRef> = TVarRef extends VarRef<infer TBrand> ? TBrand : never;
+
+/**
+ * Extracts the TypeScript payload type carried by a VarRef's brand.
+ * Falls back to `unknown` for brands that do not declare a payload.
+ */
+export type VarRefPayload<TVarRef> = VarRefBrandOf<TVarRef> extends { readonly payload: infer TPayload } ? TPayload : unknown;
+
+/**
+ * A value-bearing VarRef brand carrying `TPayload`. Used for fragment `$` refs,
+ * whose entries are nested-value refs at spread time, so `getValue`/`getValueAt`
+ * are valid on them.
+ */
+export type VarRefFromPayload<TPayload> = VarRef<{
   readonly typeName: string;
   readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
-  readonly composeTimeVariable: true;
-};
+  readonly payload: TPayload;
+}>;
 
 /**
- * `$` tools for operation metadata builders: each declared variable maps to a
- * compose-time variable ref. Only the keys are meaningful — accessing an
- * undeclared variable is a compile error, while `getValue`/`getValueAt` on these
- * refs is rejected because an operation variable has no compose-time value.
+ * A compose-time operation variable ref brand carrying `TPayload`. It stands for a
+ * variable reference and never carries a const value, so `getValue`/`getValueAt`
+ * reject it while `getName`/`getNameAt`/`getPath` still work.
  */
-export type ComposeTimeVarRefsFromVarTypes<TVarTypes> = {
-  readonly [K in keyof TVarTypes]-?: VarRef<ComposeTimeVarRefBrand>;
-};
+export type ComposeTimeVarRefFromPayload<TPayload> = VarRef<{
+  readonly typeName: string;
+  readonly kind: CreatableInputTypeKind;
+  readonly signature: unknown;
+  readonly payload: TPayload;
+  readonly composeTimeVariable: true;
+}>;
 
 /**
  * `$` tools for fragment metadata builders: each declared variable maps to a
- * value-bearing VarRef. Fragment `$` entries are nested-value refs at spread time,
- * so `getValue`/`getValueAt` on them is valid. Only the keys are meaningful.
+ * value-bearing VarRef carrying its payload type, so undeclared variables are a
+ * compile error and selector proxies are derived from the variable's shape.
  */
 export type VarRefsFromVarTypes<TVarTypes> = {
-  readonly [K in keyof TVarTypes]-?: AnyVarRef;
+  readonly [K in keyof TVarTypes]-?: VarRefFromPayload<TVarTypes[K]>;
 };
+
+/**
+ * `$` tools for operation metadata builders: same as `VarRefsFromVarTypes` but the
+ * refs are marked compose-time, so `getValue`/`getValueAt` are rejected (an
+ * operation variable has no compose-time const value).
+ */
+export type ComposeTimeVarRefsFromVarTypes<TVarTypes> = {
+  readonly [K in keyof TVarTypes]-?: ComposeTimeVarRefFromPayload<TVarTypes[K]>;
+};
+
+declare const SELECTOR_LEAF: unique symbol;
+
+/**
+ * Terminal node of a {@link SelectorProxy}. A scalar or array payload exposes no
+ * navigable members, so a `$var` selector can only return the proxy itself — it
+ * cannot fabricate paths like `p.length` or `p[0]` that crash or mislead at runtime.
+ * Carries the payload type so `getValueAt` can recover it.
+ */
+export interface SelectorLeaf<T> {
+  readonly [SELECTOR_LEAF]: T;
+}
+
+/**
+ * Proxy type for `$var` selector callbacks derived from a variable's payload.
+ * Object payloads are navigable field by field (`p.user.id` compiles iff the field
+ * exists); scalar and array payloads are terminal leaves offering no members.
+ */
+export type SelectorProxy<T> = [T] extends [readonly unknown[]]
+  ? SelectorLeaf<T>
+  : [T] extends [object]
+    ? { readonly [K in keyof T]-?: SelectorProxy<T[K]> }
+    : SelectorLeaf<T>;
+
+/**
+ * Recovers the const value a selector navigated to: a terminal leaf resolves to its
+ * carried payload type, an object proxy resolves field by field. Used for the
+ * return type of `getValueAt`.
+ */
+export type SelectedValue<R> = R extends SelectorLeaf<infer V>
+  ? V
+  : R extends object
+    ? { -readonly [K in keyof R]: SelectedValue<R[K]> }
+    : R;
 
 /**
  * Creates a VarRef from a variable name.
