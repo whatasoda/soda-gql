@@ -1,6 +1,5 @@
 import {
   type AnyGraphqlSchema,
-  type ExtractUnifiedAdapterTypes,
   type OperationMetadata,
   createDirectiveMethod,
   createTypedDirectiveMethod,

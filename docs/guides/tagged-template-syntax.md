@@ -273,12 +273,14 @@ The metadata callback provides `$var`, a tools object for inspecting variable re
 In the generated (prebuilt) graphql-system, the trailing options call is fully typed per operation and fragment. Inside the `metadata` callback:
 
 - `$` is keyed by the element's own variables, so `$.<name>` is checked and unknown names are compile errors.
-- Selector callbacks (`getNameAt`/`getValueAt`/`getPath`) derive their proxy parameter type from the variable's payload — `getNameAt($.filter, (p) => p.user.id)` checks `p` against the variable's TypeScript shape. An explicitly annotated selector parameter still overrides the inferred proxy type.
-- `getValueAt` accepts only nested-value refs. It rejects an operation/fragment variable ref (`$.id`) at compile time, because such a ref carries a variable reference, never a const value — the call would otherwise always throw at runtime.
+- The `getNameAt`/`getValueAt`/`getPath` selector parameter is caller-supplied (defaults to `unknown`) — annotate it when you need to navigate a nested-value ref: `getValueAt($.filter, (p: FilterShape) => p.user.id)`. The runtime proxy has no statically known shape, so an unannotated selector can only return the proxy root (`(p) => p`).
+- `getValue`/`getValueAt` reject a generated **operation** variable ref (`$.id`) at compile time: an operation variable stands for a reference and carries no compose-time const value, so the call would always throw at runtime. **Fragment** `$` refs are value-bearing at spread time, so `getValue`/`getValueAt` are allowed for fragment metadata builders. This rejection applies to the concretely-branded refs the generated operation code produces; a value manually widened to `AnyVarRef` cannot be excluded by the type system.
 
 `metadata` also accepts a static object, and passing no options remains valid.
 
-The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, `VarRefFromPayload`, `VarRefPayload`, and `VarRefBrandOf`.
+The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, and `ComposeTimeVarRefsFromVarTypes`.
+
+**Migration note.** Because these options are now typed (previously the trailing call accepted `unknown[]`), a metadata callback with an explicit parameter annotation that does not match the real tools type — e.g. `({ fragmentMetadata }: { fragmentMetadata: unknown[] })`, where the actual type is `readonly (OperationMetadata | undefined)[] | undefined` — no longer compiles after regenerating. Remove the manual annotation and let the parameter be inferred, or annotate it with `MetadataBuilderTools<…>`.
 
 #### Cache Key Generation
 
@@ -321,10 +323,13 @@ const nestedInput = createVarRefFromNestedValue({
   filter: { status: "active" },
 });
 
+// Annotate the selector parameter to navigate the structure:
+type Shape = { pagination: { limit: number; offset: unknown }; filter: { status: string } };
+
 // Inside metadata callback:
-$var.getValueAt(nestedInput, (p) => p.filter.status);       // "active"
-$var.getNameAt(nestedInput, (p) => p.pagination.offset);    // "pageOffset"
-$var.getPath(nestedInput, (p) => p.pagination.offset);      // ["$pageOffset"]
+$var.getValueAt(nestedInput, (p: Shape) => p.filter.status);    // "active"
+$var.getNameAt(nestedInput, (p: Shape) => p.pagination.offset); // "pageOffset"
+$var.getPath(nestedInput, (p: Shape) => p.pagination.offset);   // ["$pageOffset"]
 ```
 
 ## Compat Mode

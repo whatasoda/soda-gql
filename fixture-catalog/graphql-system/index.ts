@@ -44,15 +44,17 @@ type ResolveOperationAtBuilder_default<TOperationType extends OperationType, TNa
         PrebuiltEntryNotFound<TName, "operation">
       >;
 
-// Per-fragment / per-operation variable payload types, backing the metadata builder's typed `$`/`$var` tools.
+// Per-fragment / per-operation variable name maps, backing the metadata builder's typed `$`.
+// `varTypes` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
 type ResolveFragmentVarTypes_default<TKey extends string> =
   TKey extends keyof PrebuiltTypes_default["fragments"]
-    ? PrebuiltTypes_default["fragments"][TKey]["varTypes"]
+    ? PrebuiltTypes_default["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type ResolveVarTypes_default<TName extends string> =
   TName extends keyof PrebuiltTypes_default["operations"]
-    ? PrebuiltTypes_default["operations"][TName]["varTypes"]
+    ? PrebuiltTypes_default["operations"][TName] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type PrebuiltCurriedFragment_default = <TKey extends string>(
@@ -130,15 +132,17 @@ type ResolveOperationAtBuilder_admin<TOperationType extends OperationType, TName
         PrebuiltEntryNotFound<TName, "operation">
       >;
 
-// Per-fragment / per-operation variable payload types, backing the metadata builder's typed `$`/`$var` tools.
+// Per-fragment / per-operation variable name maps, backing the metadata builder's typed `$`.
+// `varTypes` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
 type ResolveFragmentVarTypes_admin<TKey extends string> =
   TKey extends keyof PrebuiltTypes_admin["fragments"]
-    ? PrebuiltTypes_admin["fragments"][TKey]["varTypes"]
+    ? PrebuiltTypes_admin["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type ResolveVarTypes_admin<TName extends string> =
   TName extends keyof PrebuiltTypes_admin["operations"]
-    ? PrebuiltTypes_admin["operations"][TName]["varTypes"]
+    ? PrebuiltTypes_admin["operations"][TName] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type PrebuiltCurriedFragment_admin = <TKey extends string>(

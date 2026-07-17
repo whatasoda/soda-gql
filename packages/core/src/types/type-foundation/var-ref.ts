@@ -10,18 +10,10 @@ export interface AnyVarRefBrand {
   readonly kind: CreatableInputTypeKind;
   readonly signature: unknown;
   /**
-   * Optional TypeScript payload type for the variable this VarRef stands for.
-   * When present, `$var` selector tools derive their proxy parameter type from it,
-   * so `getValueAt`/`getNameAt`/`getPath` selectors are checked against the real
-   * variable shape instead of an opaque `unknown`. Brands that do not carry a
-   * payload keep working — the selector proxy simply falls back to `unknown`.
-   */
-  readonly payload?: unknown;
-  /**
-   * Marks a VarRef that stands for a compose-time operation/fragment variable —
-   * it carries a variable reference, never a const value. `$var.getValueAt` (which
-   * throws at runtime for such refs) rejects brands carrying this marker, so the
-   * always-throwing call is caught at compile time instead of at app startup.
+   * Marks a VarRef that stands for a compose-time operation variable — it carries a
+   * variable reference, never a const value. `getValue`/`getValueAt` (which throw at
+   * runtime for such refs) reject brands carrying this marker, so the always-throwing
+   * call is caught at compile time instead of at app startup.
    */
   readonly composeTimeVariable?: boolean;
 }
@@ -76,45 +68,46 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
 }
 
 /**
- * Extracts the brand of a VarRef type.
- */
-export type VarRefBrandOf<TVarRef> = TVarRef extends VarRef<infer TBrand> ? TBrand : never;
-
-/**
- * Extracts the TypeScript payload type carried by a VarRef's brand.
- * Falls back to `unknown` for brands that do not declare a payload, which keeps
- * selector callbacks permissive for VarRefs built without payload information.
- */
-export type VarRefPayload<TVarRef> = VarRefBrandOf<TVarRef> extends { readonly payload: infer TPayload } ? TPayload : unknown;
-
-/**
- * Builds a VarRef brand that carries `TPayload` as its TypeScript payload type.
- * The GraphQL-facing fields (`typeName`, `kind`, `signature`) are intentionally
- * generic: such VarRefs are consumed by `$var` inspection tools, not by argument
- * assignment, so only the payload needs to be precise.
- */
-export type VarRefFromPayload<TPayload> = VarRef<{
-  readonly typeName: string;
-  readonly kind: CreatableInputTypeKind;
-  readonly signature: unknown;
-  readonly payload: TPayload;
-  readonly composeTimeVariable: true;
-}>;
-
-/**
- * A VarRef that may carry a const value — i.e. any VarRef whose brand is not
- * marked as a compose-time variable ref. `getValueAt` accepts these and rejects
- * compose-time variable refs, whose runtime value never exists.
+ * A VarRef that may carry a const value — any VarRef whose brand is not marked as
+ * a compose-time variable ref. `getValue`/`getValueAt` accept these and reject
+ * compose-time variable refs (operation variables), whose runtime const value
+ * never exists.
+ *
+ * Note: `VarRef<any>` (the untyped `AnyVarRef`) also satisfies this — a brand-level
+ * constraint cannot exclude `any`. The compile-time rejection therefore applies to
+ * the concretely-branded refs the generated operation code produces, not to values
+ * a caller has widened to `AnyVarRef`.
  */
 export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 
 /**
- * Maps a record of variable name -> TypeScript payload type into a record of
- * VarRefs whose brands carry those payloads. Used to type the `$` tools object
- * passed to metadata builder callbacks from generated per-operation variable types.
+ * Brand for a compose-time operation variable ref: it stands for a variable
+ * reference and never carries a const value, so `getValue`/`getValueAt` reject it.
+ */
+type ComposeTimeVarRefBrand = {
+  readonly typeName: string;
+  readonly kind: CreatableInputTypeKind;
+  readonly signature: unknown;
+  readonly composeTimeVariable: true;
+};
+
+/**
+ * `$` tools for operation metadata builders: each declared variable maps to a
+ * compose-time variable ref. Only the keys are meaningful — accessing an
+ * undeclared variable is a compile error, while `getValue`/`getValueAt` on these
+ * refs is rejected because an operation variable has no compose-time value.
+ */
+export type ComposeTimeVarRefsFromVarTypes<TVarTypes> = {
+  readonly [K in keyof TVarTypes]-?: VarRef<ComposeTimeVarRefBrand>;
+};
+
+/**
+ * `$` tools for fragment metadata builders: each declared variable maps to a
+ * value-bearing VarRef. Fragment `$` entries are nested-value refs at spread time,
+ * so `getValue`/`getValueAt` on them is valid. Only the keys are meaningful.
  */
 export type VarRefsFromVarTypes<TVarTypes> = {
-  readonly [K in keyof TVarTypes]-?: VarRefFromPayload<TVarTypes[K]>;
+  readonly [K in keyof TVarTypes]-?: AnyVarRef;
 };
 
 /**

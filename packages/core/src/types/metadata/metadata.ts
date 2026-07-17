@@ -1,6 +1,11 @@
 import type { DocumentNode } from "graphql";
 import type { ConstValue } from "../type-foundation/const-value";
-import type { AnyVarRef, NestedValueVarRef, VarRefPayload, VarRefsFromVarTypes } from "../type-foundation/var-ref";
+import type {
+  AnyVarRef,
+  ComposeTimeVarRefsFromVarTypes,
+  NestedValueVarRef,
+  VarRefsFromVarTypes,
+} from "../type-foundation/var-ref";
 import type { OperationDocumentTransformer } from "./adapter";
 
 /**
@@ -22,33 +27,33 @@ export type OperationMetadata = {
 export type VarRefTools = {
   /** Get variable name from a VarRef */
   readonly getName: (varRef: AnyVarRef) => string;
-  /** Get const value from a nested-value VarRef */
-  readonly getValue: (varRef: AnyVarRef) => ConstValue;
+  /**
+   * Get const value from a nested-value VarRef.
+   * Rejects compose-time variable refs, whose runtime const value never exists.
+   */
+  readonly getValue: (varRef: NestedValueVarRef) => ConstValue;
   /**
    * Get variable name at a specific path in a nested VarRef.
-   * An annotated selector parameter supplies the proxy type; otherwise it
-   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
+   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
+   * it defaults to `unknown` because the runtime proxy has no statically known shape.
    */
-  readonly getNameAt: <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
-    varRef: TVarRef,
-    selector: (proxy: T) => unknown,
-  ) => string;
+  readonly getNameAt: <TVarRef extends AnyVarRef, T = unknown>(varRef: TVarRef, selector: (proxy: T) => unknown) => string;
   /**
    * Get const value at a specific path in a nested VarRef.
    * Rejects compose-time variable refs, whose runtime const value never exists.
-   * An annotated selector parameter supplies the proxy type; otherwise it
-   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
+   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
+   * it defaults to `unknown` because the runtime proxy has no statically known shape.
    */
-  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = VarRefPayload<TVarRef>, U = unknown>(
+  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = unknown, U = unknown>(
     varRef: TVarRef,
     selector: (proxy: T) => U,
   ) => U;
   /**
    * Get path segments to a variable within a nested structure.
-   * An annotated selector parameter supplies the proxy type; otherwise it
-   * defaults to the VarRef's brand payload (or `unknown` when the brand carries none).
+   * The selector proxy type is caller-supplied (annotate the parameter to navigate);
+   * it defaults to `unknown` because the runtime proxy has no statically known shape.
    */
-  readonly getPath: <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
+  readonly getPath: <TVarRef extends AnyVarRef, T = unknown>(
     varRef: TVarRef,
     selector: (proxy: T) => unknown,
   ) => readonly string[];
@@ -138,7 +143,7 @@ export type PrebuiltOperationOptions<
 > = {
   readonly metadata?:
     | TMetadata
-    | MetadataBuilder<VarRefsFromVarTypes<TVarTypes>, TMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+    | MetadataBuilder<ComposeTimeVarRefsFromVarTypes<TVarTypes>, TMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
   readonly transformDocument?: OperationDocumentTransformer<TMetadata>;
 };
 

@@ -607,12 +607,19 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   // Generate per-schema definitions (granular pattern)
   const schemaBlocks: string[] = [];
   const gqlExports: string[] = [];
+  let anySchemaHasAdapter = false;
+  let anySchemaWithoutAdapter = false;
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const fullSchemaVar = `fullSchema_${name}`;
 
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
+    if (adapterVar) {
+      anySchemaHasAdapter = true;
+    } else {
+      anySchemaWithoutAdapter = true;
+    }
 
     // Build type exports
     const typeExports = [`export type Schema_${name} = typeof ${fullSchemaVar} & { _?: never };`];
@@ -779,11 +786,19 @@ ${typeExports.join("\n")}`);
   // In split mode (always on), we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
   const needsDefineEnum = false;
 
+  // ExtractUnifiedAdapterTypes is only referenced by adapter-configured schemas; OperationMetadata
+  // only by adapter-less ones. Import each solely when its branch is present to avoid unused-import
+  // errors in the generated (noUnusedLocals) code the consumer cannot edit.
+  const adapterMetadataImports = [
+    anySchemaHasAdapter ? "  type ExtractUnifiedAdapterTypes," : "",
+    anySchemaWithoutAdapter ? "  type OperationMetadata," : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return `\
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
-  type AnyGraphqlSchema,
-  type ExtractUnifiedAdapterTypes,
-  type OperationMetadata,
+  type AnyGraphqlSchema,${adapterMetadataImports ? `\n${adapterMetadataImports}` : ""}
   createDirectiveMethod,
   createTypedDirectiveMethod,
   createGqlElementComposer,
@@ -1063,15 +1078,17 @@ type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TNa
         PrebuiltEntryNotFound<TName, "operation">
       >;
 
-// Per-fragment / per-operation variable payload types, backing the metadata builder's typed \`$\`/\`$var\` tools.
+// Per-fragment / per-operation variable name maps, backing the metadata builder's typed \`$\`.
+// \`varTypes\` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
 type ResolveFragmentVarTypes_${name}<TKey extends string> =
   TKey extends keyof PrebuiltTypes_${name}["fragments"]
-    ? PrebuiltTypes_${name}["fragments"][TKey]["varTypes"]
+    ? PrebuiltTypes_${name}["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type ResolveVarTypes_${name}<TName extends string> =
   TName extends keyof PrebuiltTypes_${name}["operations"]
-    ? PrebuiltTypes_${name}["operations"][TName]["varTypes"]
+    ? PrebuiltTypes_${name}["operations"][TName] extends { varTypes: infer V } ? V : Record<string, never>
     : Record<string, never>;
 
 type PrebuiltCurriedFragment_${name} = <TKey extends string>(

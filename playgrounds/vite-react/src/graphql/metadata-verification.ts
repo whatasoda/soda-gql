@@ -125,14 +125,14 @@ const fragmentCallbackPropagationMetadata = getProjectWithFragmentCallbackMetada
   entityId: string;
   priority?: number | null;
   fragmentMetadataCount: number;
-  hasFragmentCacheKey: boolean;
-  fragmentCacheKey?: string;
+  hasFragmentEntityType: boolean;
+  fragmentEntityType?: string;
 };
 
-// Invoke the callback to verify callback metadata works
+// Invoke the callback with the shape the spread fragment actually emits
 const fragmentCallbackPropagationResult = fragmentCallbackPropagationMetadata({
   $: { projectId: "proj_xyz", priority: 2 },
-  fragmentMetadata: [{ cacheKey: "project:proj_xyz", isPriorityQuery: true, headers: { "X-Project-Id": "proj_xyz" } }],
+  fragmentMetadata: [{ entityType: "project", entityId: "proj_xyz", priority: 2 }],
 });
 
 // Verify callback metadata propagates
@@ -142,8 +142,8 @@ const _fragmentCallbackPropagationCheck: typeof fragmentCallbackPropagationResul
   entityId: "proj_xyz",
   priority: 2,
   fragmentMetadataCount: 1,
-  hasFragmentCacheKey: true,
-  fragmentCacheKey: "project:proj_xyz",
+  hasFragmentEntityType: true,
+  fragmentEntityType: "project",
 };
 
 /**

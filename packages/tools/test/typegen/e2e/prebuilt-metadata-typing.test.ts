@@ -3,8 +3,8 @@
  *
  * Validates that the trailing options call of a generated operation/fragment types its
  * `metadata` builder: `({ $, $var }) => ...` receives `$` keyed by the element's
- * variables, `$var` selectors derive their proxy from the variable's payload type,
- * `getValueAt` rejects compose-time variable refs, and static metadata still works.
+ * variables, `getValue`/`getValueAt` reject compose-time operation variable refs while
+ * fragment refs allow them, and static metadata still works.
  *
  * @module
  */
@@ -28,7 +28,7 @@ describe("prebuilt operation/fragment metadata typing E2E", () => {
   beforeEach(async () => {
     workspace = await createTestWorkspace({
       fixtureDir,
-      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts"],
+      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts", "shared-var-types.ts"],
     });
   });
 
@@ -45,6 +45,8 @@ describe("prebuilt operation/fragment metadata typing E2E", () => {
     expect(indexContent).toContain("PrebuiltFragmentOptions<ResolveFragmentVarTypes_default<TKey>, TMetadata>");
     expect(indexContent).not.toContain("(...args: unknown[]) => ResolveOperationAtBuilder_default");
     expect(indexContent).not.toContain("(...args: unknown[]) => ResolveFragmentAtBuilder_default");
+    // varTypes is read defensively so a stale types.prebuilt.ts degrades instead of erroring
+    expect(indexContent).toContain("extends { varTypes: infer V } ? V : Record<string, never>");
   });
 
   test(
@@ -57,8 +59,8 @@ describe("prebuilt operation/fragment metadata typing E2E", () => {
       const typeCheckContent = `
 import { gql } from "../graphql-system";
 
-// Operation metadata callback: $ is keyed by the operation's variables and
-// $var selectors derive their proxy from the variable's payload type.
+// Operation metadata callback: $ is keyed by the operation's variables; getName reads
+// the variable name and getPath accepts an identity selector.
 export const withCallback = gql.default(({ query }) =>
   query("GetUser")\`($id: ID!) { user(id: $id) { id name } }\`({
     metadata: ({ $, $var }) => ({
@@ -70,11 +72,15 @@ export const withCallback = gql.default(({ query }) =>
   }),
 );
 
-// Fragment metadata callback: same typing applies to fragments.
+// Fragment metadata callback: $ is keyed by the fragment's variables. Unlike operation
+// refs, fragment refs are value-bearing at spread time, so getValueAt is allowed here.
 export const fragmentWithCallback = gql.default(({ fragment }) =>
   fragment("UserByIdFields", "Query")\`($id: ID!) { user(id: $id) { id name } }\`({
     metadata: ({ $, $var }) => ({
-      custom: { idName: $var.getName($.id) },
+      custom: {
+        idName: $var.getName($.id),
+        idValue: $var.getValueAt($.id, (p) => p),
+      },
     }),
   }),
 );
@@ -97,9 +103,9 @@ export const invalidOperationAccess = gql.default(({ query }) =>
       custom: {
         // @ts-expect-error - "missing" is not a declared variable on this operation
         missing: $var.getName($.missing),
-        // @ts-expect-error - getValueAt rejects compose-time variable refs (no runtime const value)
+        // @ts-expect-error - getValueAt rejects compose-time operation variable refs (no runtime const value)
         noConstValue: $var.getValueAt($.id, (p) => p),
-        // @ts-expect-error - "nope" is not a field on the variable's payload type
+        // @ts-expect-error - the selector proxy defaults to unknown, so navigating it is rejected
         badField: $var.getNameAt($.id, (p) => p.nope),
       },
     }),
@@ -161,5 +167,23 @@ export const invalidFragmentAccess = gql.default(({ fragment }) =>
     );
 
     expect(operation.metadata).toEqual({ custom: { idName: "id" } });
+  });
+
+  test("operation and fragment varTypes stay in sync for identical variable declarations", async () => {
+    const result = await runTypegen({ config: workspace.config });
+    expect(result.isOk()).toBe(true);
+
+    const prebuilt = readFileSync(join(workspace.workspaceRoot, "graphql-system", "types.prebuilt.ts"), "utf-8");
+    const extractVarTypes = (key: string): string => {
+      const line = prebuilt.split("\n").find((l) => l.includes(`readonly "${key}":`));
+      if (!line) throw new Error(`entry for ${key} not found`);
+      const varTypes = line.match(/readonly varTypes: (\{[^}]*\})/)?.[1];
+      if (!varTypes) throw new Error(`varTypes for ${key} not found`);
+      return varTypes;
+    };
+
+    // The operation (TypeNode-based) and fragment (specifier-based) varTypes generators
+    // must produce identical payload maps for the same GraphQL variable declarations.
+    expect(extractVarTypes("SharedVarsFragment")).toBe(extractVarTypes("SharedVarsOperation"));
   });
 });

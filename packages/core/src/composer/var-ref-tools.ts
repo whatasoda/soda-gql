@@ -14,7 +14,6 @@ import {
   type NestedValueVarRef,
   VarRef,
   type VarRefInner,
-  type VarRefPayload,
 } from "../types/type-foundation/var-ref";
 
 /**
@@ -150,10 +149,7 @@ const createSelectableProxy = <T>(current: ProxyInner): T => {
  * });
  * getNameAt(ref, p => p.user.age); // returns the variable name
  */
-export const getNameAt = <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
-  varRef: TVarRef,
-  selector: (proxy: T) => unknown,
-): string => {
+export const getNameAt = <TVarRef extends AnyVarRef, T = unknown>(varRef: TVarRef, selector: (proxy: T) => unknown): string => {
   const proxy = createSelectableProxy<T>({ varInner: VarRef.getInner(varRef), segments: [] });
   const selected = selector(proxy);
   const inner = getSelectableProxyInner(selected);
@@ -183,7 +179,7 @@ export const getNameAt = <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>
  * });
  * getValueAt(ref, p => p.user.name); // returns "Alice"
  */
-export const getValueAt = <TVarRef extends NestedValueVarRef, T = VarRefPayload<TVarRef>, U = unknown>(
+export const getValueAt = <TVarRef extends NestedValueVarRef, T = unknown, U = unknown>(
   varRef: TVarRef,
   selector: (proxy: T) => U,
 ): U => {
@@ -218,7 +214,7 @@ export const getValueAt = <TVarRef extends NestedValueVarRef, T = VarRefPayload<
  * // Returns: ["$filter", "user", "id"]
  * ```
  */
-export const getVariablePath = <TVarRef extends AnyVarRef, T = VarRefPayload<TVarRef>>(
+export const getVariablePath = <TVarRef extends AnyVarRef, T = unknown>(
   varRef: TVarRef,
   selector: (proxy: T) => unknown,
 ): readonly PathSegment[] => {
