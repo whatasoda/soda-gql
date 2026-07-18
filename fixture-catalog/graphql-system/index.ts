@@ -45,8 +45,10 @@ type ResolveOperationAtBuilder_default<TOperationType extends OperationType, TNa
       >;
 
 // Per-fragment / per-operation variable name maps, backing the metadata builder's typed `$`.
-// `varTypes` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
-// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
+// `varTypes` is accessed defensively: a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes falls back to `Record<string, never>` — a permissive map that
+// accepts any `$.<name>` — instead of erroring in generated code. (A freshly generated
+// zero-variable element emits `varTypes: {}`, which still rejects an unknown `$.<name>`.)
 type ResolveFragmentVarTypes_default<TKey extends string> =
   TKey extends keyof PrebuiltTypes_default["fragments"]
     ? PrebuiltTypes_default["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
@@ -133,8 +135,10 @@ type ResolveOperationAtBuilder_admin<TOperationType extends OperationType, TName
       >;
 
 // Per-fragment / per-operation variable name maps, backing the metadata builder's typed `$`.
-// `varTypes` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
-// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
+// `varTypes` is accessed defensively: a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes falls back to `Record<string, never>` — a permissive map that
+// accepts any `$.<name>` — instead of erroring in generated code. (A freshly generated
+// zero-variable element emits `varTypes: {}`, which still rejects an unknown `$.<name>`.)
 type ResolveFragmentVarTypes_admin<TKey extends string> =
   TKey extends keyof PrebuiltTypes_admin["fragments"]
     ? PrebuiltTypes_admin["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
