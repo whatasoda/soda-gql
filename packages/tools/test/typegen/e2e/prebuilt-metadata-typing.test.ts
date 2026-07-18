@@ -29,7 +29,13 @@ describe("prebuilt operation/fragment metadata typing E2E", () => {
   beforeEach(async () => {
     workspace = await createTestWorkspace({
       fixtureDir,
-      sourceFiles: ["operation-with-name.ts", "fragment-with-variable.ts", "shared-var-types.ts", "operation-with-object-var.ts"],
+      sourceFiles: [
+        "operation-with-name.ts",
+        "fragment-with-variable.ts",
+        "shared-var-types.ts",
+        "operation-with-object-var.ts",
+        "operation-with-branded-scalar.ts",
+      ],
     });
   });
 
@@ -121,6 +127,27 @@ export const invalidOperationAccess = gql.default(({ query }) =>
         noConstValue: $var.getValueAt($.id, (p) => p),
         // @ts-expect-error - a scalar payload is a terminal leaf, so navigating it is rejected
         scalarTerminal: $var.getPath($.id, (p) => p.length),
+      },
+    }),
+  }),
+);
+
+// A branded custom-scalar variable ($uuid: UUID! -> \`string & { __brand: "UUID" }\`) must be
+// terminal through the full pipeline: varTypes emits \`$uuid: ScalarInput_default<"UUID">\`, and the
+// selector proxy keeps branded primitives terminal — a regression of #383 would let \`.length\`
+// compile and fabricate a runtime path. Identity access on the ref stays valid.
+export const brandedScalarTerminal = gql.default(({ query }) =>
+  query("GetByUuid")\`($uuid: UUID!) { userByUuid(uuid: $uuid) { id } }\`({
+    metadata: ({ $, $var }) => ({
+      custom: {
+        uuidName: $var.getName($.uuid),
+        uuidIdentity: $var.getPath($.uuid, (p) => p),
+        // @ts-expect-error - "notAVar" is undeclared: proves \`$\` is keyed from the scanned
+        // GetByUuid op, not the permissive stale-types fallback (which would accept any name and
+        // make the terminal-leaf assertion below pass vacuously on a never payload)
+        notDeclared: $var.getName($.notAVar),
+        // @ts-expect-error - a branded string scalar payload is a terminal leaf (no \`.length\`)
+        uuidBogus: $var.getPath($.uuid, (p) => p.length),
       },
     }),
   }),

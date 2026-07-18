@@ -2,11 +2,14 @@ schema {
   query: Query
 }
 
+scalar UUID
+
 type Query {
   user(id: ID!): User
   users(limit: Int): [User!]!
   searchUsers(filter: UserFilter!): [User!]!
   usersByIds(ids: [ID!]!, tags: [String!]): [User!]!
+  userByUuid(uuid: UUID!): User
 }
 
 input AddressInput {
