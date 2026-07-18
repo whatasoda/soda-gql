@@ -45,19 +45,19 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "exports": {
-    "./transformer": {
-      "@soda-gql": "./@x-transformer.ts",
-      "types": "./dist/transformer.d.mts",
-      "import": "./dist/transformer.mjs",
-      "require": "./dist/transformer.cjs",
-      "default": "./dist/transformer.mjs"
-    },
     ".": {
       "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
+    },
+    "./transformer": {
+      "@soda-gql": "./@x-transformer.ts",
+      "types": "./dist/transformer.d.mts",
+      "import": "./dist/transformer.mjs",
+      "require": "./dist/transformer.cjs",
+      "default": "./dist/transformer.mjs"
     },
     "./package.json": "./package.json"
   },

@@ -77,19 +77,19 @@
     "@swc/core": "^1.0.0"
   },
   "exports": {
-    "./native": {
-      "@soda-gql": "./@x-native.ts",
-      "types": "./dist/native.d.mts",
-      "import": "./dist/native.mjs",
-      "require": "./dist/native.cjs",
-      "default": "./dist/native.mjs"
-    },
     ".": {
       "@soda-gql": "./@x-index.ts",
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs",
       "default": "./dist/index.mjs"
+    },
+    "./native": {
+      "@soda-gql": "./@x-native.ts",
+      "types": "./dist/native.d.mts",
+      "import": "./dist/native.mjs",
+      "require": "./dist/native.cjs",
+      "default": "./dist/native.mjs"
     },
     "./package.json": "./package.json"
   },

@@ -52,12 +52,12 @@
       "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     },
-    "./runtime": {
-      "@soda-gql": "./@x-runtime.ts",
-      "types": "./dist/runtime.d.ts",
-      "import": "./dist/runtime.js",
-      "require": "./dist/runtime.cjs",
-      "default": "./dist/runtime.js"
+    "./_internal": {
+      "@soda-gql": "./@x-_internal.ts",
+      "types": "./dist/_internal.d.ts",
+      "import": "./dist/_internal.js",
+      "require": "./dist/_internal.cjs",
+      "default": "./dist/_internal.js"
     },
     "./adapter": {
       "@soda-gql": "./@x-adapter.ts",
@@ -66,12 +66,12 @@
       "require": "./dist/adapter.cjs",
       "default": "./dist/adapter.js"
     },
-    "./_internal": {
-      "@soda-gql": "./@x-_internal.ts",
-      "types": "./dist/_internal.d.ts",
-      "import": "./dist/_internal.js",
-      "require": "./dist/_internal.cjs",
-      "default": "./dist/_internal.js"
+    "./runtime": {
+      "@soda-gql": "./@x-runtime.ts",
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js",
+      "require": "./dist/runtime.cjs",
+      "default": "./dist/runtime.js"
     },
     "./package.json": "./package.json"
   },
