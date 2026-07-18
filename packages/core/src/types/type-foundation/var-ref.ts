@@ -107,18 +107,6 @@ export type VarRefBrandOf<TVarRef> = TVarRef extends VarRef<infer TBrand> ? TBra
 export type VarRefPayload<TVarRef> = VarRefBrandOf<TVarRef> extends { readonly payload: infer TPayload } ? TPayload : unknown;
 
 /**
- * A value-bearing VarRef brand carrying `TPayload`. Used for fragment `$` refs,
- * whose entries are nested-value refs at spread time, so `getValue`/`getValueAt`
- * are valid on them.
- */
-export type VarRefFromPayload<TPayload> = VarRef<{
-  readonly typeName: string;
-  readonly kind: CreatableInputTypeKind;
-  readonly signature: unknown;
-  readonly payload: TPayload;
-}>;
-
-/**
  * A compose-time operation variable ref brand carrying `TPayload`. It stands for a
  * variable reference and never carries a const value, so `getValue`/`getValueAt`
  * reject it while `getName`/`getNameAt`/`getPath` still work.
@@ -132,18 +120,11 @@ export type ComposeTimeVarRefFromPayload<TPayload> = VarRef<{
 }>;
 
 /**
- * `$` tools for fragment metadata builders: each declared variable maps to a
- * value-bearing VarRef carrying its payload type, so undeclared variables are a
- * compile error and selector proxies are derived from the variable's shape.
- */
-export type VarRefsFromVarTypes<TVarTypes> = {
-  readonly [K in keyof TVarTypes]-?: VarRefFromPayload<TVarTypes[K]>;
-};
-
-/**
- * `$` tools for operation metadata builders: same as `VarRefsFromVarTypes` but the
- * refs are marked compose-time, so `getValue`/`getValueAt` are rejected (an
- * operation variable has no compose-time const value).
+ * `$` tools for operation and fragment metadata builders: each declared variable maps to a
+ * compose-time VarRef carrying its payload type, so undeclared variables are a compile error
+ * and selector proxies are derived from the variable's shape. The refs are marked compose-time
+ * — `getValue`/`getValueAt` are rejected because an operation variable has no compose-time const
+ * value, and a fragment spread may forward such a pass-through variable ref.
  */
 export type ComposeTimeVarRefsFromVarTypes<TVarTypes> = {
   readonly [K in keyof TVarTypes]-?: ComposeTimeVarRefFromPayload<TVarTypes[K]>;
@@ -165,14 +146,24 @@ export interface SelectorLeaf<T> {
  * Proxy type for `$var` selector callbacks derived from a variable's payload.
  * Object payloads are navigable field by field (`p.user.id` compiles iff the field
  * exists); scalar and array payloads are terminal leaves offering no members.
- * `null`/`undefined` is stripped before the object test so nullable input-object
- * fields (GraphQL's default nullability) stay navigable.
+ *
+ * A payload that is a *branded* primitive (`string & { __brand }`, a common custom-scalar
+ * codegen shape) is still a primitive at runtime, so it is matched as a leaf before the
+ * object test — otherwise its brand intersection reads as an object and would expose bogus
+ * members like `.length`, letting a selector fabricate a path that crashes at runtime.
+ * `null`/`undefined` is stripped before the object test so nullable input-object fields
+ * (GraphQL's default nullability) stay navigable.
+ *
+ * Residual limitation: a scalar mapped to a non-primitive object type (e.g. `Date`) is not
+ * distinguishable from an input-object shape here and stays navigable.
  */
 export type SelectorProxy<T> = [NonNullable<T>] extends [readonly unknown[]]
   ? SelectorLeaf<T>
-  : [NonNullable<T>] extends [object]
-    ? { readonly [K in keyof NonNullable<T>]-?: SelectorProxy<NonNullable<T>[K]> }
-    : SelectorLeaf<T>;
+  : [NonNullable<T>] extends [string | number | boolean | bigint | symbol]
+    ? SelectorLeaf<T>
+    : [NonNullable<T>] extends [object]
+      ? { readonly [K in keyof NonNullable<T>]-?: SelectorProxy<NonNullable<T>[K]> }
+      : SelectorLeaf<T>;
 
 /**
  * Recovers the const value a leaf selector navigated to: a terminal leaf resolves to
@@ -191,7 +182,8 @@ type IsAny<T> = 0 extends 1 & T ? true : false;
  * Proxy type for `getNameAt`'s selector. A compose-time variable ref only yields its
  * name under an identity selector (navigating a variable ref throws at runtime), so
  * its proxy is a terminal leaf; a value-bearing (nested-value) ref stays navigable.
- * An `any` brand keeps the navigable proxy to preserve caller-annotated selectors.
+ * An `any` brand takes the `SelectorProxy` branch so a caller-supplied selector annotation
+ * still applies (the default proxy is `SelectorProxy<unknown>`, i.e. identity-only).
  */
 export type NameAtProxy<TVarRef> = IsAny<VarRefBrandOf<TVarRef>> extends true
   ? SelectorProxy<VarRefPayload<TVarRef>>
