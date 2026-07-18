@@ -87,6 +87,13 @@ export class VarRef<TBrand extends AnyVarRefBrand> {
  * decomposition pattern, exercised across the core tests) would no longer compile. The
  * compile-time rejection therefore applies to the concretely-branded compose-time refs the
  * generated code produces, not to values a caller has deliberately widened to `AnyVarRef`.
+ *
+ * Sharp edge: a ref annotated with the bare base brand `VarRef<AnyVarRefBrand>` is also
+ * rejected — its `composeTimeVariable?: boolean` is assignable to neither `false` nor absent —
+ * even though it may hold a const value at runtime. Generated code never emits the bare base
+ * brand (only payload / compose-time brands), and `createVarRefFromNestedValue` returns
+ * `AnyVarRef`, so this only bites a hand-written helper that annotates a nested-value ref as
+ * `VarRef<AnyVarRefBrand>`; widen it to `AnyVarRef` in that case.
  */
 export type NestedValueVarRef = VarRef<AnyVarRefBrand & { readonly composeTimeVariable?: false }>;
 

@@ -91,7 +91,10 @@ const SelectableProxyInnerRegistry = new WeakMap<AnySelectableProxy, ProxyInner>
 const getSelectableProxyInner = (proxy: AnySelectableProxy): ProxyInner => {
   const inner = SelectableProxyInnerRegistry.get(proxy);
   if (!inner) {
-    throw new Error(`Proxy inner not found`);
+    throw new Error(
+      "$var selector must return the proxy itself or a field navigated from it " +
+        "(e.g. (p) => p or (p) => p.user.id); it returned a value that is not a selector proxy",
+    );
   }
   return inner;
 };
