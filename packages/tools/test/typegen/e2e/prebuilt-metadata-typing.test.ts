@@ -250,6 +250,15 @@ export const invalidFragmentAccess = gql.default(({ fragment }) =>
     // The operation (TypeNode-based) and fragment (specifier-based) varTypes generators
     // must produce identical payload maps for the same GraphQL variable declarations,
     // including the input-object variable ($filter) that exercises brace nesting.
-    expect(extractVarTypes("SharedVarsFragment")).toBe(extractVarTypes("SharedVarsOperation"));
+    const operationVarTypes = extractVarTypes("SharedVarsOperation");
+    expect(extractVarTypes("SharedVarsFragment")).toBe(operationVarTypes);
+
+    // Guard against a vacuous pass where both generators drop the same variable: assert the
+    // divergence-prone shapes are actually present. `$matrix: [[Int!]!]!` must produce a
+    // nested (doubly-bracketed) array payload, and `$roles: [Role!]` an enum-union list.
+    expect(operationVarTypes).toContain("readonly matrix:");
+    expect(operationVarTypes).toMatch(/matrix:[^;]*\)\[\]\)\[\]/); // two list levels
+    expect(operationVarTypes).toContain("readonly roles:");
+    expect(operationVarTypes).toMatch(/roles:[^;]*"ADMIN"[^;]*"MEMBER"/); // enum members
   });
 });
