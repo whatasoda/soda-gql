@@ -607,12 +607,19 @@ const multiRuntimeTemplate = ($$: MultiRuntimeTemplateOptions) => {
   // Generate per-schema definitions (granular pattern)
   const schemaBlocks: string[] = [];
   const gqlExports: string[] = [];
+  let anySchemaHasAdapter = false;
+  let anySchemaWithoutAdapter = false;
 
   for (const [name, config] of Object.entries($$.schemas)) {
     const fullSchemaVar = `fullSchema_${name}`;
 
     // Get optional adapter
     const adapterVar = adapterAliases.get(name);
+    if (adapterVar) {
+      anySchemaHasAdapter = true;
+    } else {
+      anySchemaWithoutAdapter = true;
+    }
 
     // Build type exports
     const typeExports = [`export type Schema_${name} = typeof ${fullSchemaVar} & { _?: never };`];
@@ -747,6 +754,21 @@ ${typeExports.join("\n")}`);
       `export type Context_${name} = Parameters<typeof ${gqlVarName}>[0] extends (ctx: infer C) => unknown ? C : never;`,
     );
 
+    // Export the adapter's aggregated-fragment-metadata and schema-level types so the
+    // generated prebuilt options type the metadata builder's fragmentMetadata/schemaLevel
+    // per configured adapter (defaults when no adapter is configured).
+    if (adapterVar) {
+      schemaBlocks.push(
+        `export type AdapterAggregatedFragmentMetadata_${name} = ExtractUnifiedAdapterTypes<typeof ${adapterVar}>["aggregatedFragmentMetadata"];`,
+        `export type AdapterSchemaLevel_${name} = ExtractUnifiedAdapterTypes<typeof ${adapterVar}>["schemaLevel"];`,
+      );
+    } else {
+      schemaBlocks.push(
+        `export type AdapterAggregatedFragmentMetadata_${name} = readonly (OperationMetadata | undefined)[];`,
+        `export type AdapterSchemaLevel_${name} = unknown;`,
+      );
+    }
+
     // Prebuilt module exports (for typegen)
     const prebuiltExports: string[] = [
       `export { ${fullSchemaVar} as __schema_${name} }`,
@@ -764,9 +786,19 @@ ${typeExports.join("\n")}`);
   // In split mode (always on), we don't need defineEnum in _internal.ts since enums are defined in _defs/enums.ts
   const needsDefineEnum = false;
 
+  // ExtractUnifiedAdapterTypes is only referenced by adapter-configured schemas; OperationMetadata
+  // only by adapter-less ones. Import each solely when its branch is present to avoid unused-import
+  // errors in the generated (noUnusedLocals) code the consumer cannot edit.
+  const adapterMetadataImports = [
+    anySchemaHasAdapter ? "  type ExtractUnifiedAdapterTypes," : "",
+    anySchemaWithoutAdapter ? "  type OperationMetadata," : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   return `\
 import {${needsDefineEnum ? "\n  defineEnum," : ""}
-  type AnyGraphqlSchema,
+  type AnyGraphqlSchema,${adapterMetadataImports ? `\n${adapterMetadataImports}` : ""}
   createDirectiveMethod,
   createTypedDirectiveMethod,
   createGqlElementComposer,
@@ -1008,6 +1040,9 @@ export const generateIndexModule = (schemaNames: string[], _allFieldNames?: Read
   const schemaTypeImports = schemaNames.map((name) => `Schema_${name}`).join(", ");
   const directiveImports = schemaNames.map((name) => `__directiveMethods_${name}`).join(", ");
   const contextTypeImports = schemaNames.map((name) => `Context_${name}`).join(", ");
+  const adapterMetadataTypeImports = schemaNames
+    .flatMap((name) => [`AdapterAggregatedFragmentMetadata_${name}`, `AdapterSchemaLevel_${name}`])
+    .join(", ");
 
   const perSchemaTypes = schemaNames
     .map(
@@ -1043,16 +1078,29 @@ type ResolveOperationAtBuilder_${name}<TOperationType extends OperationType, TNa
         PrebuiltEntryNotFound<TName, "operation">
       >;
 
+// Per-fragment / per-operation variable name maps, backing the metadata builder's typed \`$\`.
+// \`varTypes\` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
+type ResolveFragmentVarTypes_${name}<TKey extends string> =
+  TKey extends keyof PrebuiltTypes_${name}["fragments"]
+    ? PrebuiltTypes_${name}["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
+    : Record<string, never>;
+
+type ResolveVarTypes_${name}<TName extends string> =
+  TName extends keyof PrebuiltTypes_${name}["operations"]
+    ? PrebuiltTypes_${name}["operations"][TName] extends { varTypes: infer V } ? V : Record<string, never>
+    : Record<string, never>;
+
 type PrebuiltCurriedFragment_${name} = <TKey extends string>(
   name: TKey,
   typeName: string,
-) => ((options: { fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>)
-  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_${name}<TKey>);
+) => ((options: { fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => <TMetadata = OperationMetadata>(options?: PrebuiltFragmentOptions<ResolveFragmentVarTypes_${name}<TKey>, TMetadata>) => ResolveFragmentAtBuilder_${name}<TKey>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => <TMetadata = OperationMetadata>(options?: PrebuiltFragmentOptions<ResolveFragmentVarTypes_${name}<TKey>, TMetadata>) => ResolveFragmentAtBuilder_${name}<TKey>);
 
 type PrebuiltCurriedOperation_${name}<TOperationType extends OperationType> = <TName extends string>(
   operationName: TName,
-) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
-  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
+) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_${name}) => Record<string, unknown> }) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions<ResolveVarTypes_${name}<TName>, TMetadata, AdapterAggregatedFragmentMetadata_${name}, AdapterSchemaLevel_${name}>) => ResolveOperationAtBuilder_${name}<TOperationType, TName>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions<ResolveVarTypes_${name}<TName>, TMetadata, AdapterAggregatedFragmentMetadata_${name}, AdapterSchemaLevel_${name}>) => ResolveOperationAtBuilder_${name}<TOperationType, TName>);
 
 // biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor — returns callable result for nested builders
 type GenericFieldAccessor_${name} = (fieldName: string, ...args: any[]) => {
@@ -1103,8 +1151,9 @@ import { ${gqlImports} } from "./_internal";
 import type { ${schemaTypeImports} } from "./_internal";
 import type { ${directiveImports} } from "./_internal";
 import type { ${contextTypeImports} } from "./_internal";
+import type { ${adapterMetadataTypeImports} } from "./_internal";
 import type { ${prebuiltImports} } from "./types.prebuilt";
-import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine, OperationMetadata, PrebuiltOperationOptions, PrebuiltFragmentOptions } from "@soda-gql/core";
 ${perSchemaTypes}
 
 export const gql = {

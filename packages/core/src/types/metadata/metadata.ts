@@ -1,6 +1,15 @@
 import type { DocumentNode } from "graphql";
 import type { ConstValue } from "../type-foundation/const-value";
-import type { AnyVarRef } from "../type-foundation/var-ref";
+import type {
+  AnyVarRef,
+  ComposeTimeVarRefsFromVarTypes,
+  NameAtProxy,
+  NestedValueVarRef,
+  SelectedValue,
+  SelectorProxy,
+  VarRefPayload,
+} from "../type-foundation/var-ref";
+import type { OperationDocumentTransformer } from "./adapter";
 
 /**
  * Base metadata types that can be attached to operations.
@@ -21,14 +30,40 @@ export type OperationMetadata = {
 export type VarRefTools = {
   /** Get variable name from a VarRef */
   readonly getName: (varRef: AnyVarRef) => string;
-  /** Get const value from a nested-value VarRef */
-  readonly getValue: (varRef: AnyVarRef) => ConstValue;
-  /** Get variable name at a specific path in a nested VarRef */
-  readonly getNameAt: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => string;
-  /** Get const value at a specific path in a nested VarRef */
-  readonly getValueAt: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => U;
-  /** Get path segments to a variable within a nested structure */
-  readonly getPath: <T, U>(varRef: AnyVarRef, selector: (proxy: T) => U) => readonly string[];
+  /**
+   * Get const value from a nested-value VarRef.
+   * Rejects compose-time variable refs, whose runtime const value never exists.
+   */
+  readonly getValue: (varRef: NestedValueVarRef) => ConstValue;
+  /**
+   * Get variable name at a specific path in a nested VarRef.
+   * The selector proxy defaults to the variable's payload shape, except a compose-time
+   * variable ref gets an identity-only leaf (navigating a variable ref throws at
+   * runtime); an explicit annotation overrides it.
+   */
+  readonly getNameAt: <TVarRef extends AnyVarRef, T = NameAtProxy<TVarRef>>(
+    varRef: TVarRef,
+    selector: (proxy: T) => unknown,
+  ) => string;
+  /**
+   * Get const value at a specific path in a nested VarRef.
+   * Rejects compose-time variable refs, whose runtime const value never exists.
+   * The selector proxy defaults to the variable's payload shape (object fields
+   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
+   */
+  readonly getValueAt: <TVarRef extends NestedValueVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>, U = unknown>(
+    varRef: TVarRef,
+    selector: (proxy: T) => U,
+  ) => SelectedValue<U>;
+  /**
+   * Get path segments to a variable within a nested structure.
+   * The selector proxy defaults to the variable's payload shape (object fields
+   * navigable, scalars/arrays terminal); an explicit annotation overrides it.
+   */
+  readonly getPath: <TVarRef extends AnyVarRef, T = SelectorProxy<VarRefPayload<TVarRef>>>(
+    varRef: TVarRef,
+    selector: (proxy: T) => unknown,
+  ) => readonly string[];
   /** Check if a value contains any VarRef */
   readonly hasVarRefInside: (value: unknown) => boolean;
 };
@@ -98,3 +133,34 @@ export type FragmentMetadataBuilderTools<TVarRefs extends Record<string, AnyVarR
 export type FragmentMetadataBuilder<TVarRefs extends Record<string, AnyVarRef>, TMetadata = OperationMetadata> = (
   tools: FragmentMetadataBuilderTools<TVarRefs>,
 ) => TMetadata | Promise<TMetadata>;
+
+/**
+ * Trailing options accepted by a prebuilt operation builder call.
+ * `metadata` accepts a static value or a builder callback whose `$` is keyed by
+ * the operation's variables (derived from generated `varTypes`); `TMetadata` is
+ * inferred from whichever form is provided. The adapter's aggregated
+ * fragment-metadata and schema-level types are threaded through so the callback's
+ * `fragmentMetadata`/`schemaLevel` are typed per configured adapter.
+ */
+export type PrebuiltOperationOptions<
+  TVarTypes,
+  TMetadata,
+  TAggregatedFragmentMetadata = readonly (OperationMetadata | undefined)[],
+  TSchemaLevel = unknown,
+> = {
+  readonly metadata?:
+    | TMetadata
+    | MetadataBuilder<ComposeTimeVarRefsFromVarTypes<TVarTypes>, TMetadata, TAggregatedFragmentMetadata, TSchemaLevel>;
+  readonly transformDocument?: OperationDocumentTransformer<TMetadata>;
+};
+
+/**
+ * Trailing options accepted by a prebuilt fragment builder call.
+ * `metadata` accepts a static value or a fragment builder callback whose `$` is
+ * keyed by the fragment's variables. The refs are compose-time: at spread time a
+ * fragment `$` entry may be a pass-through operation variable ref (no const value),
+ * so `getValue`/`getValueAt` are rejected here just as for operations.
+ */
+export type PrebuiltFragmentOptions<TVarTypes, TMetadata> = {
+  readonly metadata?: TMetadata | FragmentMetadataBuilder<ComposeTimeVarRefsFromVarTypes<TVarTypes>, TMetadata>;
+};

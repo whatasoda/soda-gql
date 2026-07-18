@@ -18,6 +18,7 @@ export type PrebuiltTypeRegistry = {
       readonly typename: string;
       readonly input: unknown;
       readonly output: object;
+      readonly varTypes?: unknown;
     };
   };
   readonly operations: {

@@ -40,6 +40,7 @@ import {
   generateInputObjectType,
   generateInputType,
   generateInputTypeFromVarDefs,
+  generateVarTypesFromVarDefs,
   graphqlTypeToTypeScript,
   parseInputSpecifier,
 } from "@soda-gql/core";
@@ -77,6 +78,7 @@ type PrebuiltFragmentEntry = {
   readonly typename: string;
   readonly inputType: string;
   readonly outputType: string;
+  readonly varTypes: string;
 };
 
 type PrebuiltOperationEntry = {
@@ -169,11 +171,14 @@ const groupBySchema = (
           ? generateInputTypeFromVarDefs(schema, selection.variableDefinitions, { formatters: inputFormatters })
           : "void";
 
+        const varTypes = generateVarTypesFromVarDefs(schema, selection.variableDefinitions, { formatters: inputFormatters });
+
         group.fragments.push({
           key: selection.key,
           typename: selection.typename,
           inputType,
           outputType,
+          varTypes,
         });
       } catch (error) {
         warnings.push(
@@ -347,8 +352,12 @@ const generateVarTypes = (
 
   const fields = variableDefinitions.map((varDef) => {
     const name = varDef.variable.name.value;
+    // Key is always present ($.<name> is always a ref); the value keeps the variable's
+    // outer nullability so an optional/nullable variable reads as | null | undefined.
+    const isRequired = varDef.type.kind === Kind.NON_NULL_TYPE;
     const tsType = graphqlTypeToTypeScript(schema, varDef.type, formatters);
-    return `readonly ${name}: ${tsType}`;
+    const valueType = isRequired ? tsType : `(${tsType} | null | undefined)`;
+    return `readonly ${name}: ${valueType}`;
   });
 
   return `{ ${fields.join("; ")} }`;
@@ -527,7 +536,7 @@ const generateTypesCode = (
       .sort((a, b) => a.key.localeCompare(b.key))
       .map(
         (f) =>
-          `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType} };`,
+          `    readonly "${f.key}": { readonly typename: "${f.typename}"; readonly input: ${f.inputType}; readonly output: ${f.outputType}; readonly varTypes: ${f.varTypes} };`,
       );
 
     // Generate operations type (deduplicate by key — last occurrence wins)

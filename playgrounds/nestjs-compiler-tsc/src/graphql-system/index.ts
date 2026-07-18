@@ -9,8 +9,9 @@ import { __gql_default } from "./_internal";
 import type { Schema_default } from "./_internal";
 import type { __directiveMethods_default } from "./_internal";
 import type { Context_default } from "./_internal";
+import type { AdapterAggregatedFragmentMetadata_default, AdapterSchemaLevel_default } from "./_internal";
 import type { PrebuiltTypes_default } from "./types.prebuilt";
-import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine } from "@soda-gql/core";
+import type { Fragment, AnyFragment, Operation, OperationType, PrebuiltEntryNotFound, AnyConstAssignableInput, AnyFields, AnyGraphqlSchema, AnyOperation, GqlDefine, OperationMetadata, PrebuiltOperationOptions, PrebuiltFragmentOptions } from "@soda-gql/core";
 
 type ResolveFragmentAtBuilder_default<TKey extends string> =
   TKey extends keyof PrebuiltTypes_default["fragments"]
@@ -43,16 +44,29 @@ type ResolveOperationAtBuilder_default<TOperationType extends OperationType, TNa
         PrebuiltEntryNotFound<TName, "operation">
       >;
 
+// Per-fragment / per-operation variable name maps, backing the metadata builder's typed `$`.
+// `varTypes` is accessed defensively so a stale types.prebuilt.ts (regenerated index but not
+// types) that predates varTypes degrades to an empty map instead of erroring in generated code.
+type ResolveFragmentVarTypes_default<TKey extends string> =
+  TKey extends keyof PrebuiltTypes_default["fragments"]
+    ? PrebuiltTypes_default["fragments"][TKey] extends { varTypes: infer V } ? V : Record<string, never>
+    : Record<string, never>;
+
+type ResolveVarTypes_default<TName extends string> =
+  TName extends keyof PrebuiltTypes_default["operations"]
+    ? PrebuiltTypes_default["operations"][TName] extends { varTypes: infer V } ? V : Record<string, never>
+    : Record<string, never>;
+
 type PrebuiltCurriedFragment_default = <TKey extends string>(
   name: TKey,
   typeName: string,
-) => ((options: { fields: (tools: GenericFieldsBuilderTools_default) => Record<string, unknown> }) => (...args: unknown[]) => ResolveFragmentAtBuilder_default<TKey>)
-  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveFragmentAtBuilder_default<TKey>);
+) => ((options: { fields: (tools: GenericFieldsBuilderTools_default) => Record<string, unknown> }) => <TMetadata = OperationMetadata>(options?: PrebuiltFragmentOptions<ResolveFragmentVarTypes_default<TKey>, TMetadata>) => ResolveFragmentAtBuilder_default<TKey>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => <TMetadata = OperationMetadata>(options?: PrebuiltFragmentOptions<ResolveFragmentVarTypes_default<TKey>, TMetadata>) => ResolveFragmentAtBuilder_default<TKey>);
 
 type PrebuiltCurriedOperation_default<TOperationType extends OperationType> = <TName extends string>(
   operationName: TName,
-) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_default) => Record<string, unknown> }) => (...args: unknown[]) => ResolveOperationAtBuilder_default<TOperationType, TName>)
-  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => (...args: unknown[]) => ResolveOperationAtBuilder_default<TOperationType, TName>);
+) => ((options: { variables?: string; fields: (tools: GenericFieldsBuilderTools_default) => Record<string, unknown> }) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions<ResolveVarTypes_default<TName>, TMetadata, AdapterAggregatedFragmentMetadata_default, AdapterSchemaLevel_default>) => ResolveOperationAtBuilder_default<TOperationType, TName>)
+  & ((strings: TemplateStringsArray, ...values: (AnyFragment | ((ctx: { $: Readonly<Record<string, unknown>> }) => Record<string, unknown>))[]) => <TMetadata = OperationMetadata>(options?: PrebuiltOperationOptions<ResolveVarTypes_default<TName>, TMetadata, AdapterAggregatedFragmentMetadata_default, AdapterSchemaLevel_default>) => ResolveOperationAtBuilder_default<TOperationType, TName>);
 
 // biome-ignore lint/suspicious/noExplicitAny: Type-erased field accessor — returns callable result for nested builders
 type GenericFieldAccessor_default = (fieldName: string, ...args: any[]) => {

@@ -965,15 +965,30 @@ export const getProjectWithCallbackMetadataQuery = gql.default(({ query }) =>
       }
     }
   }`({
-    metadata: ({ $ }: { $: { projectId: string; includeTeam: boolean } }) => ({
+    metadata: ({ $, $var }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $.projectId,
-      includesRelations: $.includeTeam,
-      cacheKey: `project:${$.projectId}:team=${$.includeTeam}`,
-      headers: {
-        "X-Entity-Type": "Project",
-        "X-Entity-Id": $.projectId,
+      entityIdVariable: $var.getName($.projectId),
+      includeTeamVariable: $var.getName($.includeTeam),
+    }),
+  }),
+);
+
+/**
+ * Operation whose metadata derives plain strings from variable names via `$var.getName`.
+ * Use this pattern when the metadata must be serializable (headers, cache keys, logs):
+ * `$var.getName($.x)` returns the variable's name as a string, whereas storing `$.x`
+ * directly keeps the resolvable VarRef for a downstream resolver to substitute.
+ */
+export const getProjectWithLabeledVariablesQuery = gql.default(({ query }) =>
+  query("GetProjectWithLabeledVariables")`($projectId: ID!, $priority: Int) {
+    project(id: $projectId) { id title priority }
+  }`({
+    metadata: ({ $, $var }) => ({
+      operationType: "read",
+      variableLabels: {
+        [$var.getName($.projectId)]: { role: "identifier" },
+        [$var.getName($.priority)]: { role: "filter" },
       },
     }),
   }),
@@ -993,10 +1008,10 @@ export const getEmployeeWithFragmentMetadataQuery = gql.default(({ query }) =>
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+    metadata: ({ $, $var, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "employee",
-      entityId: $.employeeId,
+      entityIdVariable: $var.getName($.employeeId),
       hasFragmentMetadata: fragmentMetadata !== undefined && fragmentMetadata.length > 0,
       fragmentCount: fragmentMetadata?.length ?? 0,
       fragmentTags: (fragmentMetadata?.[0] as { tags?: string[] })?.tags ?? [],
@@ -1020,14 +1035,15 @@ export const getProjectWithFragmentCallbackMetadataQuery = gql.default(({ query 
       })),
     }),
   })({
-    metadata: ({ $, fragmentMetadata }: { $: Record<string, unknown>; fragmentMetadata: unknown[] }) => ({
+    metadata: ({ $, $var, fragmentMetadata }) => ({
       operationType: "read",
       entityType: "project",
-      entityId: $.projectId,
-      priority: $.priority,
+      entityIdVariable: $var.getName($.projectId),
+      priorityVariable: $var.getName($.priority),
       fragmentMetadataCount: fragmentMetadata?.length ?? 0,
-      hasFragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey !== undefined,
-      fragmentCacheKey: (fragmentMetadata?.[0] as { cacheKey?: string })?.cacheKey,
+      // Reads a field the spread fragment actually emits ({ entityType, entityIdVariable, priorityVariable })
+      hasFragmentEntityType: (fragmentMetadata?.[0] as { entityType?: string })?.entityType !== undefined,
+      fragmentEntityType: (fragmentMetadata?.[0] as { entityType?: string })?.entityType,
     }),
   }),
 );

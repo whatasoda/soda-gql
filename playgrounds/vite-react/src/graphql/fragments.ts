@@ -533,12 +533,10 @@ export const projectWithCallbackMetadataFragment = gql.default(({ fragment }) =>
     status
     priority
   }`({
-    metadata: ({ $ }: { $: { projectId: string; priority?: number | null } }) => ({
-      cacheKey: `project:${$.projectId}`,
-      isPriorityQuery: $.priority !== undefined,
-      headers: {
-        "X-Project-Id": $.projectId,
-      },
+    metadata: ({ $, $var }) => ({
+      entityType: "project",
+      entityIdVariable: $var.getName($.projectId),
+      priorityVariable: $var.getName($.priority),
     }),
   }),
 );
@@ -555,11 +553,10 @@ export const taskWithMetadataFragment = gql.default(({ fragment }) =>
     priority
     dueDate
   }`({
-    metadata: ({ $ }: { $: { taskId: string; includeComments?: boolean | null } }) => ({
+    metadata: ({ $, $var }) => ({
       entityType: "task",
-      entityId: $.taskId,
-      includesRelations: $.includeComments === true,
-      cacheStrategy: $.includeComments ? "no-cache" : "cache-first",
+      entityIdVariable: $var.getName($.taskId),
+      includeCommentsVariable: $var.getName($.includeComments),
     }),
   }),
 );

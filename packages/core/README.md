@@ -228,7 +228,7 @@ The `$var` object provides utility functions for inspecting variable references:
 // Example: getPath with nested structure
 const varRef = createVarRefFromVariable("user");
 $var.getPath(varRef, (p) => p.profile.name);
-// Returns: ["$user", "name"] (variable name + path after variable reference point)
+// Returns: ["$user", "profile", "name"] (variable name + every segment navigated inside it)
 ```
 
 ## Adapter

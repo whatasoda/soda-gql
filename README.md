@@ -227,7 +227,9 @@ export const userQuery = gql.default(({ query }) =>
 );
 ```
 
-See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure and advanced usage.
+In the generated (prebuilt) graphql-system, the `metadata` callback is typed per operation and fragment: `$` is keyed by the element's variables (unknown names are compile errors), and `$var` selectors derive their proxy type from each variable's payload. A static metadata object and passing no options both remain valid.
+
+See [@soda-gql/core README](./packages/core/README.md#metadata) for detailed documentation on metadata structure and advanced usage, and the [tagged-template syntax guide](./docs/guides/tagged-template-syntax.md#typed--and-var-in-generated-code) for the typed builder and its `@soda-gql/core` exports (`PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`).
 
 ### Define Element (Value Sharing)
 

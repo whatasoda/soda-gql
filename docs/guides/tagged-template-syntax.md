@@ -264,9 +264,24 @@ The metadata callback provides `$var`, a tools object for inspecting variable re
 | `$var.getName(ref)` | Get variable name string |
 | `$var.getValue(ref)` | Get const value from a nested-value ref |
 | `$var.getNameAt(ref, selector)` | Get variable name at a nested path |
-| `$var.getValueAt(ref, selector)` | Get const value at a nested path |
+| `$var.getValueAt(ref, selector)` | Get const value at a nested path (nested-value refs only) |
 | `$var.getPath(ref, selector)` | Get path segments to a variable |
 | `$var.hasVarRefInside(value)` | Check if a value contains any VarRef |
+
+#### Typed `$` and `$var` in generated code
+
+In the generated (prebuilt) graphql-system, the trailing options call is fully typed per operation and fragment. Inside the `metadata` callback:
+
+- `$` is keyed by the element's own variables, so `$.<name>` is checked and unknown names are compile errors. Optional and nullable variables keep `| null | undefined` in their payload type, so the value that actually arrives at spread time is visible.
+- `getPath` receives a proxy derived from the variable's payload type: object fields are navigable (`getPath($.filter, (p) => p.user.id)` compiles only if the fields exist, and nullable input-object fields navigate too), while scalar and array payloads are terminal — a selector on them can only return the proxy root (`(p) => p`), so `getPath($.id, (p) => p.length)` on `$id: ID!` is a compile error rather than a runtime crash.
+- `getNameAt` on a `$` ref accepts only an identity selector (`(p) => p`): a `$` ref is a compose-time variable ref, and navigating one throws at runtime, so its proxy is a terminal leaf. Navigating selectors are for manually-built nested-value refs (`createVarRefFromNestedValue`).
+- `getValue`/`getValueAt` reject a `$` ref at compile time — for both operations **and** fragments. An operation variable carries no compose-time const value, and a fragment `$` ref can be a pass-through operation variable when the spread forwards one (`fragment.spread({ id: $.id })`), so neither is guaranteed to hold a value. These accessors are for manually-built nested-value refs. This rejection applies to the concretely-branded refs the generated code produces; a value deliberately widened to `AnyVarRef` cannot be excluded by the type system (doing so would reject the legitimate `createVarRefFromNestedValue` decomposition pattern). An explicit selector-parameter annotation always overrides the derived proxy.
+
+`metadata` also accepts a static object, and passing no options remains valid.
+
+The generated types are backed by these `@soda-gql/core` exports, available for advanced typing: `PrebuiltOperationOptions`, `PrebuiltFragmentOptions`, `VarRefsFromVarTypes`, `ComposeTimeVarRefsFromVarTypes`, `VarRefPayload`, and `SelectorProxy`.
+
+**Migration note.** Because these options are now typed (previously the trailing call accepted `unknown[]`), a metadata callback with an explicit parameter annotation that does not match the real tools type — e.g. `({ fragmentMetadata }: { fragmentMetadata: unknown[] })`, where the actual type is `readonly (OperationMetadata | undefined)[] | undefined` — no longer compiles after regenerating. Remove the manual annotation and let the parameter be inferred, or annotate it with `MetadataBuilderTools<…>`.
 
 #### Cache Key Generation
 
@@ -309,10 +324,13 @@ const nestedInput = createVarRefFromNestedValue({
   filter: { status: "active" },
 });
 
+// Annotate the selector parameter to navigate the structure:
+type Shape = { pagination: { limit: number; offset: unknown }; filter: { status: string } };
+
 // Inside metadata callback:
-$var.getValueAt(nestedInput, (p) => p.filter.status);       // "active"
-$var.getNameAt(nestedInput, (p) => p.pagination.offset);    // "pageOffset"
-$var.getPath(nestedInput, (p) => p.pagination.offset);      // ["$pageOffset"]
+$var.getValueAt(nestedInput, (p: Shape) => p.filter.status);    // "active"
+$var.getNameAt(nestedInput, (p: Shape) => p.pagination.offset); // "pageOffset"
+$var.getPath(nestedInput, (p: Shape) => p.pagination.offset);   // ["$pageOffset"]
 ```
 
 ## Compat Mode

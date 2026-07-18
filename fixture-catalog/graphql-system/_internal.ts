@@ -1,5 +1,6 @@
 import {
   type AnyGraphqlSchema,
+  type OperationMetadata,
   createDirectiveMethod,
   createTypedDirectiveMethod,
   createGqlElementComposer,
@@ -86,6 +87,8 @@ const customDirectives_default = { ...createStandardDirectives(), ...{
 export type Schema_default = typeof fullSchema_default & { _?: never };
 const gql_default = createGqlElementComposer(fullSchema_default, { directiveMethods: customDirectives_default });
 export type Context_default = Parameters<typeof gql_default>[0] extends (ctx: infer C) => unknown ? C : never;
+export type AdapterAggregatedFragmentMetadata_default = readonly (OperationMetadata | undefined)[];
+export type AdapterSchemaLevel_default = unknown;
 export { fullSchema_default as __schema_default };
 export { fullSchema_default as __fullSchema_default };
 export { customDirectives_default as __directiveMethods_default };
@@ -128,6 +131,8 @@ const customDirectives_admin = { ...createStandardDirectives(), ...{} };
 export type Schema_admin = typeof fullSchema_admin & { _?: never };
 const gql_admin = createGqlElementComposer(fullSchema_admin, { directiveMethods: customDirectives_admin });
 export type Context_admin = Parameters<typeof gql_admin>[0] extends (ctx: infer C) => unknown ? C : never;
+export type AdapterAggregatedFragmentMetadata_admin = readonly (OperationMetadata | undefined)[];
+export type AdapterSchemaLevel_admin = unknown;
 export { fullSchema_admin as __schema_admin };
 export { fullSchema_admin as __fullSchema_admin };
 export { customDirectives_admin as __directiveMethods_admin };
