@@ -29,6 +29,13 @@ jobs:
       - name: Prepare quality checks
         run: bun quality:prepare
 
+      - name: Verify committed graphql-system outputs are up to date
+        run: |
+          git diff --exit-code -- '*graphql-system/index.ts' || {
+            echo "::error::Committed graphql-system outputs drifted from 'bun quality:prepare'. Run 'bun quality:prepare' locally and commit the result.";
+            exit 1;
+          }
+
       - name: Run quality checks
         run: bun quality
 
