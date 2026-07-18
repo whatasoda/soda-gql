@@ -152,7 +152,22 @@ async function syncPackageExports(config: TsdownConfig): Promise<void> {
     packageJson.types = entry.types;
   }
 
-  packageJson.exports = exports;
+  // Deterministic key order: `discoverExports` walks the filesystem, whose readdir order is
+  // platform-dependent, so the raw `exports` order differs across OS/bun versions. Emit a canonical
+  // order — "." first, remaining keys sorted, static exports ("./package.json") last — so the
+  // written package.json is byte-identical regardless of environment.
+  const orderedKeys = [
+    ...("." in exports ? ["."] : []),
+    ...Object.keys(exports)
+      .filter((key) => key !== "." && !STATIC_EXPORTS.includes(key))
+      .sort(),
+    ...STATIC_EXPORTS.filter((key) => key in exports),
+  ];
+  const orderedExports: Record<string, unknown> = {};
+  for (const key of orderedKeys) {
+    orderedExports[key] = exports[key];
+  }
+  packageJson.exports = orderedExports;
 
   // Write updated package.json
   await writeFile(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
